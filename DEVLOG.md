@@ -1,6 +1,6 @@
 # Development log
 
-## 2026-08-14
+## [0.2.0] - 2026-08-14
 
 ### Telegram DevLog integration
 
@@ -55,7 +55,7 @@ Known:
   installed; it was not executed against the configured VPS.
 - pytest-asyncio emits Python 3.14 deprecation warnings in the current toolchain.
 
-## 2026-08-14
+## [0.1.0] - 2026-08-14
 
 ### Milestone 0 — Foundation
 
