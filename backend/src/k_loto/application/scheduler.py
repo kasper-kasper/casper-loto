@@ -23,7 +23,7 @@ class RecoveryReport:
 
 
 class DrawScheduleService:
-    """Prepare exactly one next draw per lottery under a lottery row lock."""
+    """Prepare exactly one draw still open for sales under a lottery row lock."""
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
@@ -43,6 +43,7 @@ class DrawScheduleService:
                 .where(
                     Draw.lottery_id == lottery.id,
                     Draw.status != DrawStatus.COMPLETED,
+                    Draw.sales_close_at > reference,
                 )
                 .order_by(Draw.scheduled_at)
                 .limit(1)

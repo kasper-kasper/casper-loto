@@ -200,6 +200,43 @@ async def test_duplicate_purchase_idempotency_key_returns_original_result() -> N
     assert fake.added == []
 
 
+async def test_purchase_after_cutoff_creates_and_uses_next_weekly_draw() -> None:
+    now = datetime(2026, 8, 16, 16, 56, tzinfo=UTC)
+    user_id, lottery, closing_draw, balance, jackpot, distribution = (
+        build_purchase_accounts(now)
+    )
+    closing_draw.scheduled_at = datetime(2026, 8, 16, 17, tzinfo=UTC)
+    closing_draw.sales_close_at = datetime(2026, 8, 16, 16, 55, tzinfo=UTC)
+    lottery.next_draw_number = 2
+    fake = FakeSession(
+        scalar_values=[
+            None,
+            lottery,
+            None,
+            None,
+            closing_draw,
+            balance,
+            jackpot,
+            distribution,
+        ]
+    )
+
+    result = await WeeklyTicketPurchaseService(cast(AsyncSession, fake)).purchase(
+        user_id=user_id,
+        combinations=[[1, 2, 3, 4, 5]],
+        idempotency_key="after-cutoff",
+        now=now,
+    )
+
+    created_draws = [item for item in fake.added if isinstance(item, Draw)]
+    assert len(created_draws) == 1
+    next_draw = created_draws[0]
+    assert next_draw.public_number == 2
+    assert next_draw.scheduled_at == datetime(2026, 8, 23, 17, tzinfo=UTC)
+    assert result.draw_id == next_draw.id
+    assert lottery.next_draw_number == 3
+
+
 async def test_empty_draw_settlement_completes_and_uses_secure_generator() -> None:
     now = datetime(2026, 8, 14, 17, tzinfo=UTC)
     execution_time = now + timedelta(hours=2)

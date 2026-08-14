@@ -1,5 +1,51 @@
 # Development log
 
+## [0.6.0] - 2026-08-15
+
+### Milestone 5 — Telegram Mini App
+
+Implemented the authenticated player Mini App and its backend read/purchase API.
+
+Done:
+
+- created a mobile-first React, TypeScript and Vite application;
+- added dashboard balance, Weekly/Daily cards, jackpot and Moscow countdowns;
+- added Weekly 5/20 picker, Web Crypto random pick and accessible number states;
+- added single purchase, duplicate combinations and atomic multi-ticket cart;
+- added active tickets, history, matches, prizes and recent results;
+- added Telegram `initData` HMAC/age validation and user binding on every API
+  request;
+- added a configurable `/start` Web App launch button;
+- purchases after 19:55 now prepare and use the next Weekly draw under the
+  existing lottery lock.
+
+System behavior:
+
+- price, balance and draw assignment come only from the backend;
+- changed, expired, malformed and future-dated Telegram authentication is
+  rejected before database access;
+- Daily is visible but cannot be purchased until its payout model is resolved;
+- cart persistence has no guessed TTL: without owner configuration it stays in
+  memory for the current session, while configured storage expires strictly;
+- checkout retries use client-generated idempotency keys and the existing
+  server ledger protections.
+
+Technical:
+
+- migration: no schema change after `0002_notification_outbox`;
+- backend: 34 typed source files, 67 pytest tests;
+- frontend: 7 Vitest tests, TypeScript, ESLint and Vite production build;
+- dependencies: React 19, TypeScript 5.9, Vite 7;
+- local in-app browser visual inspection was unavailable because no browser
+  runtime was connected; component tests and production build passed;
+- live `alembic check` remains unavailable without local PostgreSQL and no VPS
+  connection was attempted.
+
+Known:
+
+- OD-007 exact cart TTL and OD-008 final visual design remain owner decisions;
+- Python 3.14 continues to expose pytest-asyncio deprecation warnings.
+
 ## [0.5.0] - 2026-08-14
 
 ### Milestone 4 — Telegram Bot

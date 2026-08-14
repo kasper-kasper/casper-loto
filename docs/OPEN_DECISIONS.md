@@ -10,7 +10,7 @@ Unresolved requirements are kept here instead of being guessed in code.
 | OD-004 | Weekly base jackpot | Open | Must be configured by the owner. |
 | OD-005 | Daily base jackpot | Open | Must be configured by the owner. |
 | OD-006 | Daily Lottery payout model | Open | Do not copy Weekly economics. |
-| OD-007 | Cart TTL | Open | Must be short and configurable. |
+| OD-007 | Cart TTL | Open | Must be short and configurable. Mini App persistence remains disabled until a value is supplied; the in-memory cart still works for the open session. |
 | OD-008 | Final visual design | Open | Current visual references are directional only. |
 | OD-009 | Reserve scope | Resolved 2026-08-14 | Per-lottery reserves, matching the Milestone 1 requirement. |
 | OD-010 | Integer payout remainder allocation | Resolved 2026-08-14 | Allocate one extra CAS by ascending public ticket number until exhausted. |

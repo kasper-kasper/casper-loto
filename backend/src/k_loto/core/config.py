@@ -3,7 +3,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, PostgresDsn, SecretStr
+from pydantic import Field, HttpUrl, PostgresDsn, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,6 +15,7 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
         case_sensitive=False,
+        env_ignore_empty=True,
     )
 
     app_env: Literal["development", "test", "production"] = "development"
@@ -26,6 +27,8 @@ class Settings(BaseSettings):
     scheduler_interval_seconds: int = Field(default=30, ge=5, le=3600)
     lottery_bot_token: SecretStr | None = None
     bot_outbox_interval_seconds: int = Field(default=2, ge=1, le=60)
+    telegram_init_data_max_age_seconds: int = Field(default=3600, ge=60, le=86400)
+    miniapp_url: HttpUrl | None = None
 
     @property
     def docs_enabled(self) -> bool:

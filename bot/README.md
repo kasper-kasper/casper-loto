@@ -2,8 +2,9 @@
 
 The aiogram 3.x bot is a transport adapter. `/start` idempotently binds the
 Telegram identity to a backend user and displays the CAS balance. Ticket
-purchase controls are intentionally absent: checkout belongs to the future
-Mini App.
+purchase controls are intentionally absent. When `MINIAPP_URL` is configured,
+`/start` shows a Telegram Web App launch button and checkout occurs inside the
+authenticated Mini App.
 
 After a committed ticket purchase or Weekly settlement, the bot delivers a
 durable outbox event. Unique event keys and terminal `SENT` records protect

@@ -6,7 +6,7 @@ balances, tickets and audit records are designed as multi-user entities from
 the beginning. No real money, payments, donations, cryptocurrency or cash-out
 are part of this project.
 
-Current version: **0.5.0 — Milestone 4 / Telegram Bot**.
+Current version: **0.6.0 — Milestone 5 / Telegram Mini App**.
 
 ## Architecture
 
@@ -90,6 +90,18 @@ In a second terminal, run the player bot:
 python -m bot
 ```
 
+For Mini App development, install Node.js 22+, then run:
+
+```powershell
+Set-Location frontend/miniapp
+npm install
+npm run dev
+```
+
+Set `MINIAPP_URL` to the deployed HTTPS Mini App URL to show its launch button
+in `/start`. `VITE_CART_TTL_SECONDS` remains unset until the owner resolves the
+exact cart TTL; the cart then stays only in the current open session.
+
 Alternatively, `uv sync --extra dev` installs the reproducible environment from
 `uv.lock`.
 
@@ -113,15 +125,15 @@ mypy backend/src
 pytest
 ```
 
-Lottery mathematics, settlement/recovery idempotency, notification formatting
-and dispatch behavior have focused tests.
+Lottery mathematics, settlement/recovery idempotency, Telegram authentication,
+notification dispatch and Mini App behavior have focused tests.
 
 ## Bot, frontend and admin
 
-The aiogram bot implements `/start`, Telegram identity binding and durable
-purchase/result notifications. It deliberately has no purchase buttons;
-checkout belongs to the future Mini App. Neither frontend may determine
-balances, prices, draw assignment or payouts.
+The aiogram bot implements `/start`, Telegram identity binding, a configured
+Mini App launch button and durable purchase/result notifications. Checkout is
+performed by the Mini App through authenticated backend endpoints. Neither
+frontend may determine balances, prices, draw assignment or payouts.
 
 ## Secrets
 

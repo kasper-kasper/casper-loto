@@ -13,6 +13,7 @@ from k_loto.application.notifications import (
     NotificationDispatcher,
 )
 from k_loto.domain.enums import NotificationType
+from k_loto.infrastructure.telegram_bot import miniapp_markup
 from k_loto.infrastructure.telegram_messages import (
     BotNotificationFormatter,
     format_purchase_message,
@@ -108,6 +109,18 @@ async def test_telegram_identity_rejects_invalid_id() -> None:
         await TelegramIdentityService(cast(AsyncSession, session)).bind(
             telegram_id=0, username=None, display_name="Player"
         )
+
+
+def test_miniapp_launch_button_is_only_added_when_url_is_configured() -> None:
+    assert miniapp_markup(None) is None
+
+    markup = miniapp_markup("https://example.test/miniapp")
+
+    assert markup is not None
+    button = markup.inline_keyboard[0][0]
+    assert button.text == "Открыть K-Loto"
+    assert button.web_app is not None
+    assert button.web_app.url == "https://example.test/miniapp"
 
 
 def test_purchase_message_contains_all_tickets_and_balance() -> None:

@@ -21,6 +21,10 @@ orchestrate transactions and authorization. Infrastructure implements database,
 Telegram, clock, random-number and notification adapters. Transport layers map
 requests and responses only.
 
+The Mini App sends Telegram `initData` on every request. The backend validates
+its HMAC signature and age before binding the Telegram identity. Client values
+for balance, ticket price and draw assignment are display-only and never trusted.
+
 ## Planned backend modules
 
 - `identity`: users and external identities without Telegram coupling.

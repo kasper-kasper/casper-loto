@@ -7,7 +7,12 @@ from datetime import UTC, datetime
 import structlog
 from aiogram import Bot, Dispatcher, Router
 from aiogram.filters import CommandStart
-from aiogram.types import Message
+from aiogram.types import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+    WebAppInfo,
+)
 
 from k_loto.application.identity import TelegramIdentityService
 from k_loto.application.notifications import NotificationDispatcher
@@ -21,6 +26,21 @@ from k_loto.infrastructure.telegram_messages import (
 
 logger = structlog.get_logger(__name__)
 router = Router(name="player")
+
+
+def miniapp_markup(url: str | None) -> InlineKeyboardMarkup | None:
+    if not url:
+        return None
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="Открыть K-Loto",
+                    web_app=WebAppInfo(url=url),
+                )
+            ]
+        ]
+    )
 
 
 @router.message(CommandStart())
@@ -38,10 +58,12 @@ async def start(message: Message) -> None:
             username=telegram_user.username,
             display_name=display_name,
         )
+    miniapp_url = get_settings().miniapp_url
     await message.answer(
         "K-Loto\n\n"
         "Профиль привязан. Покупка билетов будет доступна через Mini App.\n"
-        f"Баланс: {format_cas(profile.balance)} CAS"
+        f"Баланс: {format_cas(profile.balance)} CAS",
+        reply_markup=miniapp_markup(str(miniapp_url) if miniapp_url else None),
     )
 
 

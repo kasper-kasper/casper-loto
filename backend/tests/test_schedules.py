@@ -157,6 +157,33 @@ async def test_existing_pending_draw_prevents_duplicate_creation() -> None:
     assert fake.added == []
 
 
+async def test_cutoff_prepares_next_weekly_draw_before_current_settlement() -> None:
+    lottery = weekly_lottery()
+    closing_draw = Draw(
+        id=UUID(int=2),
+        lottery_id=lottery.id,
+        public_number=6,
+        status=DrawStatus.SCHEDULED,
+        scheduled_at=local(2026, 8, 16, 20, 0).astimezone(UTC),
+        sales_close_at=local(2026, 8, 16, 19, 55).astimezone(UTC),
+        correlation_id=UUID(int=3),
+        ticket_count=0,
+        total_sales=0,
+        total_payout=0,
+        reserve_used=0,
+    )
+    fake = FakeSession([lottery, None, closing_draw])
+
+    draw, created = await DrawScheduleService(
+        cast(AsyncSession, fake)
+    ).ensure_next_draw(lottery.id, reference=local(2026, 8, 16, 19, 55).astimezone(UTC))
+
+    assert created
+    assert draw.public_number == 7
+    assert draw.scheduled_at.astimezone(MOSCOW) == local(2026, 8, 23, 20, 0)
+    assert lottery.next_draw_number == 8
+
+
 async def test_recovery_processes_multiple_missed_draws_chronologically(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

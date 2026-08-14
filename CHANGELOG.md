@@ -4,6 +4,23 @@ All notable changes follow Keep a Changelog and Semantic Versioning principles.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-08-15
+
+### Added
+
+- Telegram Mini App dashboard with balance, Weekly/Daily cards, jackpots and
+  countdowns.
+- Weekly 5/20 number picker, random selection and single-ticket purchase.
+- Multi-ticket cart checkout with configurable expiring persistence.
+- Active tickets, completed history and recent results.
+- Server-side Telegram `initData` authentication for every Mini App request.
+- Configurable Mini App launch button in the Telegram bot.
+
+### Fixed
+
+- Purchases after the Weekly cutoff now atomically prepare and use the next
+  numbered draw without waiting for the current draw settlement.
+
 ## [0.5.0] - 2026-08-14
 
 ### Added

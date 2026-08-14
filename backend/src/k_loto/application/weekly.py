@@ -24,6 +24,7 @@ from k_loto.domain.errors import (
     InvalidStateTransition,
     NoAvailableDraw,
 )
+from k_loto.domain.schedules import next_draw_at, sales_close_at
 from k_loto.domain.weekly import (
     SettlementTicket,
     SystemRandomNumberGenerator,
@@ -167,7 +168,29 @@ class WeeklyTicketPurchaseService:
                 .with_for_update()
             )
             if draw is None:
-                raise NoAvailableDraw("No Weekly draw is open for sales.")
+                latest = await self._session.scalar(
+                    select(Draw)
+                    .where(Draw.lottery_id == lottery.id)
+                    .order_by(Draw.scheduled_at.desc())
+                    .limit(1)
+                )
+                schedule_base = latest.scheduled_at if latest is not None else timestamp
+                scheduled_at = next_draw_at(LotteryKind.WEEKLY, schedule_base)
+                draw = Draw(
+                    id=uuid4(),
+                    lottery_id=lottery.id,
+                    public_number=lottery.next_draw_number,
+                    status=DrawStatus.SCHEDULED,
+                    scheduled_at=scheduled_at,
+                    sales_close_at=sales_close_at(LotteryKind.WEEKLY, scheduled_at),
+                    correlation_id=uuid4(),
+                    ticket_count=0,
+                    total_sales=0,
+                    total_payout=0,
+                    reserve_used=0,
+                )
+                lottery.next_draw_number += 1
+                self._session.add(draw)
 
             balance = await self._session.scalar(
                 select(Balance).where(Balance.user_id == user_id).with_for_update()
