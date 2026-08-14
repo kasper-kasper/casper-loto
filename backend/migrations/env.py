@@ -9,6 +9,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from k_loto.core.config import get_settings
+from k_loto.infrastructure.database import models  # noqa: F401
 from k_loto.infrastructure.database.base import Base
 
 config = context.config

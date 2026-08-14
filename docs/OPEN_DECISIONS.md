@@ -12,7 +12,7 @@ Unresolved requirements are kept here instead of being guessed in code.
 | OD-006 | Daily Lottery payout model | Open | Do not copy Weekly economics. |
 | OD-007 | Cart TTL | Open | Must be short and configurable. |
 | OD-008 | Final visual design | Open | Current visual references are directional only. |
-| OD-009 | Reserve scope | Open | Choose system-wide or per-lottery reserve. |
+| OD-009 | Reserve scope | Resolved 2026-08-14 | Per-lottery reserves, matching the Milestone 1 requirement. |
 | OD-010 | Integer payout remainder allocation | Open | Needed for equal splits in whole CAS. |
 | OD-011 | Behavior when reserve cannot cover guaranteed payouts | Open | Must not be invented. |
 | OD-012 | Sales cutoff for Daily schedule slots | Open | Weekly cutoff is known; Daily cutoff is not specified. |

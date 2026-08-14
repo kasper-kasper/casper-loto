@@ -1,6 +1,6 @@
 # Development log
 
-## 2026-08-15
+## 2026-08-14
 
 ### Telegram DevLog integration
 
@@ -14,6 +14,46 @@ Validation:
 - mypy: passed for 5 script modules;
 - pytest: 2 passed;
 - live test notification: delivered successfully.
+
+### Milestone 1 — Domain Model
+
+Implemented PostgreSQL/SQLAlchemy models for users, configurable lotteries,
+draws, immutable tickets, balances, the polymorphic CAS ledger, jackpot
+accounts, distribution funds, per-lottery reserves and administrator audit.
+
+Architecture and integrity:
+
+- independent per-lottery draw and global ticket counters;
+- unique `(lottery_id, public_number)` constraints;
+- integer `BIGINT` storage for all CAS values and balance equations in SQL;
+- explicit draw state machine with completed draws as a terminal state;
+- PostgreSQL triggers preventing completed draw, settled ticket and ledger
+  mutation/deletion;
+- idempotency keys and operation IDs for ledger groups;
+- row versions on mutable accounts for concurrency diagnostics;
+- Weekly and Daily represented as separate configurable lottery entities.
+
+Migration:
+
+- `0001_domain_model` creates all tables, indexes, foreign keys, checks and
+  immutability triggers;
+- offline PostgreSQL SQL generation passed.
+
+Tests:
+
+- Ruff and formatting passed;
+- strict mypy passed for 21 source files;
+- pytest: 11 passed.
+
+Resolved:
+
+- reserves are scoped per lottery, following the Milestone 1 requirement.
+
+Known:
+
+- schema migration was compiled offline because local Docker/PostgreSQL is not
+  installed; it was not executed against the configured VPS.
+- pytest-asyncio emits Python 3.14 deprecation warnings in the current toolchain.
 
 ## 2026-08-14
 

@@ -7,6 +7,10 @@ All notable changes follow Keep a Changelog and Semantic Versioning principles.
 ### Added
 
 - Secret-safe Telegram DevLog chat discovery and notification scripts.
+- Complete initial domain schema for users, lotteries, draws, tickets, CAS
+  accounts, immutable ledger and administrator audit history.
+- Database-enforced immutable completed draws, settled tickets and ledger rows.
+- Independent per-lottery draw and ticket numbering foundations.
 
 ## [0.1.0] - 2026-08-14
 
