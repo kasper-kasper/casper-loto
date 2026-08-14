@@ -2,6 +2,8 @@
 .env
 .env.*
 !.env.example
+!frontend/miniapp/.env.browser
+!frontend/miniapp/.env.telegram
 
 # Python
 __pycache__/

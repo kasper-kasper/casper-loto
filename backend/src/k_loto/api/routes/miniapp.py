@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Annotated, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,6 +13,7 @@ from k_loto.api.dependencies import (
     get_current_miniapp_user,
     get_db_session,
 )
+from k_loto.application.dev_mode import DevBootstrapConfig, DevBootstrapService
 from k_loto.application.miniapp import (
     MiniAppDashboard,
     MiniAppLottery,
@@ -20,12 +21,20 @@ from k_loto.application.miniapp import (
     MiniAppTicket,
 )
 from k_loto.application.weekly import WeeklyTicketPurchaseService
+from k_loto.core.config import Settings, get_settings
 from k_loto.domain.enums import LotteryKind, TicketStatus
 from k_loto.domain.errors import (
     ConfigurationError,
     InsufficientBalance,
     InvalidTicket,
     NoAvailableDraw,
+)
+from k_loto.infrastructure.local_dev_auth import (
+    LOCAL_DEV_COOKIE,
+    is_loopback_authority,
+    is_loopback_host,
+    is_loopback_origin,
+    issue_local_dev_session,
 )
 
 router = APIRouter(prefix="/api/v1/miniapp", tags=["miniapp"])
@@ -84,6 +93,72 @@ class PurchaseResponse(BaseModel):
     total_cost: int
     balance_after: int
     already_processed: bool
+
+
+class DevSessionResponse(BaseModel):
+    mode: Literal["local-development"]
+
+
+class DevRefillResponse(BaseModel):
+    balance: int
+
+
+@router.post("/dev/session", response_model=DevSessionResponse)
+async def create_local_dev_session(
+    request: Request,
+    response: Response,
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> DevSessionResponse:
+    """Issue a loopback-only HttpOnly session; unavailable outside development."""
+    if not settings.local_dev_auth_available:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    client_host = request.client.host if request.client else None
+    if (
+        not is_loopback_host(client_host)
+        or not is_loopback_authority(request.headers.get("host"))
+        or not is_loopback_origin(request.headers.get("origin"))
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Local development sessions require a loopback browser.",
+        )
+    secret = settings.miniapp_dev_session_secret
+    if secret is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    token = issue_local_dev_session(
+        secret.get_secret_value(),
+        max_age_seconds=settings.miniapp_dev_session_max_age_seconds,
+    )
+    response.set_cookie(
+        key=LOCAL_DEV_COOKIE,
+        value=token,
+        max_age=settings.miniapp_dev_session_max_age_seconds,
+        httponly=True,
+        secure=False,
+        samesite="strict",
+        path="/api/v1/miniapp",
+    )
+    return DevSessionResponse(mode="local-development")
+
+
+@router.post("/dev/refill", response_model=DevRefillResponse)
+async def refill_local_dev_balance(
+    user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> DevRefillResponse:
+    if not settings.local_dev_auth_available:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    balance = await DevBootstrapService(
+        session,
+        DevBootstrapConfig(
+            initial_user_balance=settings.miniapp_dev_initial_balance,
+            weekly_ticket_price=settings.miniapp_dev_weekly_ticket_price,
+            weekly_base_jackpot=settings.miniapp_dev_weekly_base_jackpot,
+            weekly_reserve=settings.miniapp_dev_weekly_reserve,
+        ),
+    ).refill_user(user.id, settings.miniapp_dev_initial_balance)
+    return DevRefillResponse(balance=balance)
 
 
 def _lottery_response(item: MiniAppLottery) -> LotteryResponse:

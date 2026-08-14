@@ -6,7 +6,7 @@ balances, tickets and audit records are designed as multi-user entities from
 the beginning. No real money, payments, donations, cryptocurrency or cash-out
 are part of this project.
 
-Current version: **0.6.0 — Milestone 5 / Telegram Mini App**.
+Current version: **0.7.0 — Local Development & Test Mode**.
 
 ## Architecture
 
@@ -42,7 +42,8 @@ integers. The domain layer does not depend on Telegram, HTTP or React.
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md),
 [docs/SCHEDULER.md](docs/SCHEDULER.md),
 [docs/TELEGRAM_BOT.md](docs/TELEGRAM_BOT.md) and
-[docs/OPEN_DECISIONS.md](docs/OPEN_DECISIONS.md).
+[docs/OPEN_DECISIONS.md](docs/OPEN_DECISIONS.md). Beginner-friendly browser and
+tunnel setup is in [docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md).
 
 ## Local development
 
@@ -90,17 +91,16 @@ In a second terminal, run the player bot:
 python -m bot
 ```
 
-For Mini App development, install Node.js 22+, then run:
+For a one-command local browser session after PostgreSQL and `.env` setup:
 
 ```powershell
-Set-Location frontend/miniapp
-npm install
-npm run dev
+powershell -ExecutionPolicy Bypass -File .\scripts\enable_local_dev.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\start_local_dev.ps1
 ```
 
-Set `MINIAPP_URL` to the deployed HTTPS Mini App URL to show its launch button
-in `/start`. `VITE_CART_TTL_SECONDS` remains unset until the owner resolves the
-exact cart TTL; the cart then stays only in the current open session.
+The second command applies migrations, starts API and Mini App, creates the
+ledgered test fixtures on first request and opens `http://127.0.0.1:5173`.
+Production and Telegram authentication remain unchanged.
 
 Alternatively, `uv sync --extra dev` installs the reproducible environment from
 `uv.lock`.

@@ -1,10 +1,12 @@
 {
   "name": "@k-loto/miniapp",
   "private": true,
-  "version": "0.6.0",
+  "version": "0.7.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --mode browser",
+    "dev:browser": "vite --mode browser",
+    "dev:telegram": "vite --mode telegram",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "test": "vitest run",

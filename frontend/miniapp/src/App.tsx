@@ -11,6 +11,7 @@ type TicketView = "active" | "history";
 
 interface AppProps {
   initData: string;
+  localDev?: boolean;
 }
 
 function Numbers({ values, winning }: { values: number[]; winning?: number[] | null }) {
@@ -175,7 +176,8 @@ function NumberPicker({
   );
 }
 
-export default function App({ initData }: AppProps) {
+export default function App({ initData, localDev = false }: AppProps) {
+  const authenticated = Boolean(initData) || localDev;
   const [cartTtl] = useState(() => configuredCartTtl());
   const [view, setView] = useState<View>("home");
   const [ticketView, setTicketView] = useState<TicketView>("active");
@@ -183,17 +185,17 @@ export default function App({ initData }: AppProps) {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [cart, setCart] = useState<CartTicket[]>(() => loadCart(cartTtl));
   const [pickerLottery, setPickerLottery] = useState<Lottery | null>(null);
-  const [loading, setLoading] = useState(Boolean(initData));
+  const [loading, setLoading] = useState(authenticated);
   const [purchasing, setPurchasing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [now, setNow] = useState(0);
 
   const refreshDashboard = useCallback(async () => {
-    if (!initData) return;
+    if (!authenticated) return;
     const data = await miniAppApi.dashboard(initData);
     setDashboard(data);
-  }, [initData]);
+  }, [authenticated, initData]);
 
   useEffect(() => {
     const initial = window.requestAnimationFrame(() => setNow(Date.now()));
@@ -207,25 +209,26 @@ export default function App({ initData }: AppProps) {
   useEffect(() => saveCart(cart, cartTtl), [cart, cartTtl]);
 
   useEffect(() => {
-    if (!initData) return;
-    miniAppApi
-      .dashboard(initData)
+    if (!authenticated) return;
+    const prepare = localDev && !initData ? miniAppApi.devSession() : Promise.resolve();
+    prepare
+      .then(() => miniAppApi.dashboard(initData))
       .then(setDashboard)
       .catch((reason: unknown) => {
         setError(reason instanceof Error ? reason.message : "Не удалось загрузить K-Loto.");
       })
       .finally(() => setLoading(false));
-  }, [initData]);
+  }, [authenticated, initData, localDev]);
 
   useEffect(() => {
-    if (view !== "tickets" || !initData) return;
+    if (view !== "tickets" || !authenticated) return;
     miniAppApi
       .tickets(initData, ticketView)
       .then(setTickets)
       .catch((reason: unknown) => {
         setError(reason instanceof Error ? reason.message : "Не удалось загрузить билеты.");
       });
-  }, [initData, ticketView, view]);
+  }, [authenticated, initData, ticketView, view]);
 
   const addToCart = (numbers: number[]) => {
     setCart((current) => [...current, { id: crypto.randomUUID(), numbers: [...numbers] }]);
@@ -256,7 +259,20 @@ export default function App({ initData }: AppProps) {
     }
   };
 
-  if (!initData) {
+  const refillDevBalance = async () => {
+    setError(null);
+    try {
+      const result = await miniAppApi.devRefill();
+      setDashboard((current) =>
+        current ? { ...current, balance: result.balance } : current,
+      );
+      setNotice("Тестовый баланс пополнен через ledger.");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Баланс не пополнен.");
+    }
+  };
+
+  if (!authenticated) {
     return (
       <main className="centered-message">
         <div className="brand-mark">K</div>
@@ -294,6 +310,7 @@ export default function App({ initData }: AppProps) {
     <main className="app-shell">
       <header className="app-header">
         <div className="wordmark"><span>K</span> LOTO</div>
+        {localDev && <button className="dev-badge" onClick={() => void refillDevBalance()} type="button">+ TEST CAS</button>}
         <div className="balance-pill"><small>Баланс</small><strong>{formatCas(dashboard.balance)}</strong></div>
       </header>
 

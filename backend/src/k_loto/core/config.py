@@ -29,11 +29,29 @@ class Settings(BaseSettings):
     bot_outbox_interval_seconds: int = Field(default=2, ge=1, le=60)
     telegram_init_data_max_age_seconds: int = Field(default=3600, ge=60, le=86400)
     miniapp_url: HttpUrl | None = None
+    miniapp_dev_auth_enabled: bool = False
+    miniapp_dev_session_secret: SecretStr | None = None
+    miniapp_dev_session_max_age_seconds: int = Field(default=28800, ge=300, le=86400)
+    miniapp_dev_user_telegram_id: int = Field(default=900000001, gt=0)
+    miniapp_dev_initial_balance: int = Field(default=100_000, ge=0)
+    miniapp_dev_weekly_ticket_price: int = Field(default=100, gt=0)
+    miniapp_dev_weekly_base_jackpot: int = Field(default=10_000, ge=0)
+    miniapp_dev_weekly_reserve: int = Field(default=100_000, ge=0)
 
     @property
     def docs_enabled(self) -> bool:
         """Keep interactive docs off by default in production."""
         return self.app_env != "production"
+
+    @property
+    def local_dev_auth_available(self) -> bool:
+        """Never permit browser bypass outside an explicit development runtime."""
+        return (
+            self.app_env == "development"
+            and self.miniapp_dev_auth_enabled
+            and self.miniapp_dev_session_secret is not None
+            and len(self.miniapp_dev_session_secret.get_secret_value()) >= 32
+        )
 
 
 @lru_cache

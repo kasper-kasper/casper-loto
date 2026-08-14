@@ -12,13 +12,13 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, initData: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers);
+  headers.set("Content-Type", "application/json");
+  if (initData) headers.set("X-Telegram-Init-Data", initData);
   const response = await fetch(`${API_BASE}${path}`, {
     ...init,
-    headers: {
-      "Content-Type": "application/json",
-      "X-Telegram-Init-Data": initData,
-      ...init?.headers,
-    },
+    credentials: "include",
+    headers,
   });
   if (!response.ok) {
     const payload = (await response.json().catch(() => ({}))) as { detail?: string };
@@ -28,6 +28,16 @@ async function request<T>(path: string, initData: string, init?: RequestInit): P
 }
 
 export const miniAppApi = {
+  devSession: () =>
+    request<{ mode: "local-development" }>(
+      "/api/v1/miniapp/dev/session",
+      "",
+      { method: "POST" },
+    ),
+  devRefill: () =>
+    request<{ balance: number }>("/api/v1/miniapp/dev/refill", "", {
+      method: "POST",
+    }),
   dashboard: (initData: string) =>
     request<Dashboard>("/api/v1/miniapp/dashboard", initData),
   tickets: async (initData: string, state: "active" | "history") => {

@@ -1,5 +1,48 @@
 # Development log
 
+## [0.7.0] - 2026-08-15
+
+### Local Development & Test Mode
+
+Added a playable ordinary-browser workflow before Milestone 6 without weakening
+Telegram or production authentication.
+
+Done:
+
+- added a signed local browser session stored in an HttpOnly SameSite cookie;
+- restricted session issue/use to development, loopback client, Host and Origin;
+- added idempotent `Local Test Player`, Weekly/Daily fixtures and future draws;
+- initial user balance, jackpot and reserve are credited through immutable
+  ledger entries;
+- added a local-only `+ TEST CAS` refill, also recorded through ledger;
+- added one-command enable/start scripts and automatic browser launch;
+- added an isolated `dev:telegram` frontend mode and Cloudflare Quick Tunnel
+  helper that refuses to run while browser bypass is enabled;
+- documented PostgreSQL setup and beginner workflows.
+
+System behavior:
+
+- browser testing needs neither Telegram nor a domain;
+- the first browser request creates playable local fixtures exactly once;
+- restarting does not duplicate the player, lotteries or initial CAS credits;
+- Telegram tunnel testing uses real signed `initData`, never the local cookie;
+- `APP_ENV=production` makes the development session endpoint unavailable even
+  if its enable flag is accidentally set.
+
+Technical:
+
+- migration: no schema change after `0002_notification_outbox`;
+- backend: 36 typed source files, 78 pytest tests;
+- frontend: 8 Vitest tests, TypeScript, ESLint and production build;
+- tunnel: official `cloudflared` Quick Tunnel download/run helper;
+- local PostgreSQL integration was not executed because PostgreSQL/Docker is not
+  installed on this machine; no VPS connection was attempted.
+
+Known:
+
+- PostgreSQL 16+ remains a one-time local prerequisite;
+- temporary tunnel URLs change after restart and must be copied to `MINIAPP_URL`.
+
 ## [0.6.0] - 2026-08-15
 
 ### Milestone 5 — Telegram Mini App

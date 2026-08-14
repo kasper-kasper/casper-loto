@@ -4,6 +4,18 @@ All notable changes follow Keep a Changelog and Semantic Versioning principles.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-08-15
+
+### Added
+
+- One-command local browser development mode without Telegram authentication.
+- Idempotent local test player, playable lottery fixtures and ledgered test CAS.
+- Development-only balance refill through the immutable ledger.
+- Loopback-only signed HttpOnly development sessions.
+- Separate Telegram tunnel frontend mode with a free Cloudflare Quick Tunnel
+  helper and no browser authentication bypass.
+- Beginner-focused local PostgreSQL, browser and Telegram tunnel guide.
+
 ## [0.6.0] - 2026-08-15
 
 ### Added

@@ -8,6 +8,8 @@ import type { Dashboard } from "./types";
 vi.mock("./api", () => ({
   ApiError: class ApiError extends Error {},
   miniAppApi: {
+    devSession: vi.fn(),
+    devRefill: vi.fn(),
     dashboard: vi.fn(),
     tickets: vi.fn(),
     purchase: vi.fn(),
@@ -51,6 +53,8 @@ const dashboard: Dashboard = {
 };
 
 beforeEach(() => {
+  vi.mocked(miniAppApi.devSession).mockResolvedValue({ mode: "local-development" });
+  vi.mocked(miniAppApi.devRefill).mockResolvedValue({ balance: 105_000 });
   vi.mocked(miniAppApi.dashboard).mockResolvedValue(dashboard);
   vi.mocked(miniAppApi.tickets).mockResolvedValue([]);
   vi.mocked(miniAppApi.purchase).mockResolvedValue({
@@ -74,6 +78,14 @@ it("requires a signed Telegram launch", () => {
   render(<App initData="" />);
 
   expect(screen.getByText("Откройте K-Loto в Telegram")).toBeInTheDocument();
+});
+
+it("opens a loopback development session outside Telegram", async () => {
+  render(<App initData="" localDev />);
+
+  expect(await screen.findByRole("button", { name: "+ TEST CAS" })).toBeInTheDocument();
+  expect(miniAppApi.devSession).toHaveBeenCalledOnce();
+  expect(miniAppApi.dashboard).toHaveBeenCalledWith("");
 });
 
 it("renders server-authoritative balance and lottery states", async () => {

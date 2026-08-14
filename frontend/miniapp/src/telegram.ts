@@ -19,3 +19,7 @@ export function initializeTelegram(): string {
   document.documentElement.dataset.telegramTheme = webApp.colorScheme ?? "dark";
   return webApp.initData;
 }
+
+export function isLocalDevMode(): boolean {
+  return import.meta.env.VITE_LOCAL_DEV_AUTH === "true";
+}

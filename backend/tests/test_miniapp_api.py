@@ -97,3 +97,5 @@ def test_miniapp_routes_are_registered() -> None:
     assert "/api/v1/miniapp/dashboard" in paths
     assert "/api/v1/miniapp/tickets" in paths
     assert "/api/v1/miniapp/weekly/purchases" in paths
+    assert "/api/v1/miniapp/dev/session" in paths
+    assert "/api/v1/miniapp/dev/refill" in paths

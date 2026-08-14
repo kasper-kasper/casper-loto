@@ -25,6 +25,12 @@ The Mini App sends Telegram `initData` on every request. The backend validates
 its HMAC signature and age before binding the Telegram identity. Client values
 for balance, ticket price and draw assignment are display-only and never trusted.
 
+Local browser authentication is a separate development-only adapter. It needs
+an explicit flag and secret, accepts only loopback client/Host/Origin, and uses
+a short-lived HttpOnly SameSite cookie. `APP_ENV=production` disables it even if
+other flags are accidentally present. Public tunnels run a separate frontend
+mode and the tunnel helper refuses to start while the bypass flag is enabled.
+
 ## Planned backend modules
 
 - `identity`: users and external identities without Telegram coupling.
