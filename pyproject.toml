@@ -4,12 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "k-loto"
-version = "0.4.0"
+version = "0.5.0"
 description = "K-Loto virtual lottery platform"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.14,<2",
+    "aiogram>=3.18,<4",
     "apscheduler>=3.11,<4",
     "asyncpg>=0.30,<1",
     "fastapi>=0.115,<1",
@@ -28,6 +29,9 @@ dev = [
     "pytest-asyncio>=0.25,<1",
     "ruff>=0.9,<1",
 ]
+
+[project.scripts]
+k-loto-bot = "k_loto.infrastructure.telegram_bot:main"
 
 [tool.setuptools]
 package-dir = {"" = "backend/src"}

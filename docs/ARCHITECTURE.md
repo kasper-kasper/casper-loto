@@ -29,7 +29,7 @@ requests and responses only.
 - `tickets`: validation, cart checkout and immutable purchased tickets.
 - `finance`: balances, ledger, jackpots, distribution funds and reserves.
 - `audit`: administrator actions and correction records.
-- `notifications`: outbox-driven player/devlog notifications when implemented.
+- `notifications`: durable outbox-driven player notifications.
 
 Modules may share one database but must interact through application services,
 not by embedding business rules in controllers or UI code.
@@ -51,8 +51,9 @@ The following operations must be atomic and concurrency-safe:
 - administrative balance/reserve adjustments plus audit and ledger entries.
 
 Uniqueness constraints and row locks are required in addition to application
-checks. External notifications occur after commit, eventually through an outbox,
-so Telegram failure cannot roll back a completed business transaction.
+checks. Notification events are inserted inside the purchase/settlement
+transaction. Telegram delivery occurs after commit through an outbox, so
+transport failure cannot roll back a completed business transaction.
 
 ## Architectural risks and contradictions
 
@@ -64,9 +65,11 @@ later milestones:
 2. **Draw recovery and schedule changes interact.** Editing schedules must never
    rewrite already prepared or completed official draws; effective-date rules
    should be defined before schedule editing is built.
-3. **Notifications are not part of settlement atomicity.** A durable retry/outbox
-   boundary is needed to prevent duplicate messages without risking duplicate
-   payouts.
+3. **Telegram has no caller-supplied idempotency key.** Unique outbox event keys,
+   row locks and terminal sent records prevent normal duplicate dispatch. A
+   process crash after Telegram accepts a message but before the database marks
+   it sent may still produce a repeated delivery; business settlement remains
+   exactly-once and unaffected.
 
 Per-lottery reserves, deterministic whole-CAS remainder allocation and atomic
 retry on insufficient reserve are now resolved. Daily slots are 02:22 and 18:00

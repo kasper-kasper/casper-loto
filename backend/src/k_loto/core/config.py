@@ -3,7 +3,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, PostgresDsn
+from pydantic import Field, PostgresDsn, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     database_url: PostgresDsn
     scheduler_enabled: bool = True
     scheduler_interval_seconds: int = Field(default=30, ge=5, le=3600)
+    lottery_bot_token: SecretStr | None = None
+    bot_outbox_interval_seconds: int = Field(default=2, ge=1, le=60)
 
     @property
     def docs_enabled(self) -> bool:

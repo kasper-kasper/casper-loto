@@ -26,6 +26,8 @@ from k_loto.domain.enums import (
     DrawStatus,
     LedgerAccountKind,
     LotteryKind,
+    NotificationStatus,
+    NotificationType,
     TicketStatus,
     TransactionType,
 )
@@ -312,6 +314,41 @@ class AdminAuditLog(Base):
     old_values: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     new_values: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     reason: Mapped[str | None] = mapped_column(String(512))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class NotificationOutbox(Base):
+    __tablename__ = "notification_outbox"
+    __table_args__ = (
+        CheckConstraint("attempts >= 0", name="attempts_nonnegative"),
+        Index("ix_notification_outbox_dispatch", "status", "available_at"),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), primary_key=True, default=uuid4
+    )
+    event_key: Mapped[str] = mapped_column(String(180), unique=True)
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT")
+    )
+    type: Mapped[NotificationType] = mapped_column(
+        enum_type(NotificationType, "notification_type")
+    )
+    status: Mapped[NotificationStatus] = mapped_column(
+        enum_type(NotificationStatus, "notification_status"),
+        default=NotificationStatus.PENDING,
+        server_default=NotificationStatus.PENDING.value,
+    )
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    available_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    locked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_error: Mapped[str | None] = mapped_column(String(128))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

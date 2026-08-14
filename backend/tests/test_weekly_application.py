@@ -16,6 +16,7 @@ from k_loto.domain.enums import (
     DrawStatus,
     LedgerAccountKind,
     LotteryKind,
+    NotificationType,
     TransactionType,
 )
 from k_loto.domain.errors import InvalidStateTransition
@@ -27,6 +28,7 @@ from k_loto.infrastructure.database.models import (
     LedgerTransaction,
     Lottery,
     LotteryReserve,
+    NotificationOutbox,
     Ticket,
 )
 
@@ -159,6 +161,12 @@ async def test_multi_ticket_purchase_updates_all_accounts_and_numbering() -> Non
     assert result.total_cost == 200
     assert len(ledger) == 3
     assert sum(item.amount for item in ledger) == 0
+    notifications = [
+        item for item in fake.added if isinstance(item, NotificationOutbox)
+    ]
+    assert len(notifications) == 1
+    assert notifications[0].type == NotificationType.TICKET_PURCHASED
+    assert len(notifications[0].payload["tickets"]) == 2
 
 
 async def test_duplicate_purchase_idempotency_key_returns_original_result() -> None:
@@ -233,6 +241,44 @@ async def test_completed_draw_settlement_is_idempotent() -> None:
     assert result.total_payout == 123
     assert generator.calls == 0
     assert fake.added == []
+
+
+async def test_settlement_enqueues_one_result_notification_per_user() -> None:
+    now = datetime(2026, 8, 14, 17, tzinfo=UTC)
+    execution_time = now + timedelta(hours=2)
+    user_id, lottery, draw, balance, jackpot, distribution = build_purchase_accounts(
+        now
+    )
+    ticket = Ticket(
+        id=UUID(int=800),
+        public_number=11,
+        lottery_id=lottery.id,
+        draw_id=draw.id,
+        user_id=user_id,
+        numbers=[6, 7, 8, 9, 10],
+        purchase_price=100,
+        prize_amount=0,
+    )
+    reserve = LotteryReserve(
+        id=UUID(int=700), lottery_id=lottery.id, balance=1_000, version=1
+    )
+    fake = FakeSession(
+        scalar_values=[draw, lottery, jackpot, distribution, reserve],
+        scalar_collections=[[ticket], [balance]],
+    )
+
+    await WeeklySettlementService(cast(AsyncSession, fake), FixedGenerator()).settle(
+        draw.id, now=execution_time
+    )
+
+    notifications = [
+        item for item in fake.added if isinstance(item, NotificationOutbox)
+    ]
+    assert len(notifications) == 1
+    notification = notifications[0]
+    assert notification.type == NotificationType.DRAW_RESULT
+    assert notification.payload["total_prize"] == 0
+    assert notification.payload["tickets"][0]["matches"] == 0
 
 
 async def test_draw_cannot_be_settled_before_official_time() -> None:

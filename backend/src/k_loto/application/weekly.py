@@ -14,6 +14,8 @@ from k_loto.domain.enums import (
     DrawStatus,
     LedgerAccountKind,
     LotteryKind,
+    NotificationStatus,
+    NotificationType,
     TicketStatus,
     TransactionType,
 )
@@ -36,6 +38,7 @@ from k_loto.infrastructure.database.models import (
     LedgerTransaction,
     Lottery,
     LotteryReserve,
+    NotificationOutbox,
     Ticket,
 )
 
@@ -190,10 +193,17 @@ class WeeklyTicketPurchaseService:
 
             operation_id = uuid4()
             ticket_ids: list[UUID] = []
+            ticket_payloads: list[dict[str, Any]] = []
             first_number = lottery.next_ticket_number
             for offset, combination in enumerate(quote.combinations):
                 ticket_id = uuid4()
                 ticket_ids.append(ticket_id)
+                ticket_payloads.append(
+                    {
+                        "public_number": first_number + offset,
+                        "numbers": list(combination),
+                    }
+                )
                 self._session.add(
                     Ticket(
                         id=ticket_id,
@@ -268,6 +278,24 @@ class WeeklyTicketPurchaseService:
                         details=shared_details,
                     ),
                 ]
+            )
+            self._session.add(
+                NotificationOutbox(
+                    id=uuid4(),
+                    event_key=f"purchase:{operation_id}:user:{user_id}",
+                    user_id=user_id,
+                    type=NotificationType.TICKET_PURCHASED,
+                    status=NotificationStatus.PENDING,
+                    payload={
+                        "lottery_name": lottery.name,
+                        "draw_number": draw.public_number,
+                        "tickets": ticket_payloads,
+                        "total_cost": quote.total_cost,
+                        "balance_after": balance.amount,
+                    },
+                    attempts=0,
+                    available_at=timestamp,
+                )
             )
 
         return PurchaseResult(
@@ -496,6 +524,39 @@ class WeeklySettlementService:
             draw.distribution_closing = plan.distribution_closing
             draw.reserve_used = plan.reserve_used
             self._session.add_all(ledger_entries)
+            for user_id in sorted(user_ids, key=lambda value: value.int):
+                user_tickets = [
+                    ticket for ticket in ticket_models if ticket.user_id == user_id
+                ]
+                user_payouts = [payout_by_ticket[ticket.id] for ticket in user_tickets]
+                self._session.add(
+                    NotificationOutbox(
+                        id=uuid4(),
+                        event_key=f"result:{draw.id}:user:{user_id}",
+                        user_id=user_id,
+                        type=NotificationType.DRAW_RESULT,
+                        status=NotificationStatus.PENDING,
+                        payload={
+                            "lottery_name": lottery.name,
+                            "draw_number": draw.public_number,
+                            "scheduled_at": draw.scheduled_at.isoformat(),
+                            "winning_numbers": list(plan.winning_numbers),
+                            "tickets": [
+                                {
+                                    "public_number": ticket.public_number,
+                                    "numbers": list(ticket.numbers),
+                                    "matches": payout_by_ticket[ticket.id].matches,
+                                    "prize": payout_by_ticket[ticket.id].amount,
+                                }
+                                for ticket in user_tickets
+                            ],
+                            "total_prize": sum(item.amount for item in user_payouts),
+                            "balance_after": balances[user_id].amount,
+                        },
+                        attempts=0,
+                        available_at=timestamp,
+                    )
+                )
 
         return SettlementResult(
             draw_id=draw.id,

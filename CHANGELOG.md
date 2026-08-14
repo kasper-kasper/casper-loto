@@ -4,6 +4,16 @@ All notable changes follow Keep a Changelog and Semantic Versioning principles.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-14
+
+### Added
+
+- Telegram player bot with `/start` and idempotent user/balance binding.
+- Purchase confirmations for single and multi-ticket orders.
+- Per-user Weekly draw-result notifications, including losing tickets.
+- Durable notification outbox with retry, recovery and duplicate protection.
+- Separate bot runtime for local and Docker Compose operation.
+
 ## [0.4.0] - 2026-08-14
 
 ### Added

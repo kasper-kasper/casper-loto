@@ -42,3 +42,15 @@ class AuditAction(StrEnum):
     CREATE = "CREATE"
     UPDATE = "UPDATE"
     ADJUST = "ADJUST"
+
+
+class NotificationType(StrEnum):
+    TICKET_PURCHASED = "TICKET_PURCHASED"
+    DRAW_RESULT = "DRAW_RESULT"
+
+
+class NotificationStatus(StrEnum):
+    PENDING = "PENDING"
+    PROCESSING = "PROCESSING"
+    SENT = "SENT"
+    FAILED = "FAILED"

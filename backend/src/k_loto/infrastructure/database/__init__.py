@@ -9,6 +9,7 @@ from k_loto.infrastructure.database.models import (
     LedgerTransaction,
     Lottery,
     LotteryReserve,
+    NotificationOutbox,
     Ticket,
     User,
 )
@@ -22,6 +23,7 @@ __all__ = [
     "LedgerTransaction",
     "Lottery",
     "LotteryReserve",
+    "NotificationOutbox",
     "Ticket",
     "User",
 ]

@@ -21,6 +21,7 @@ def test_all_required_domain_tables_are_registered() -> None:
         "distribution_funds",
         "lottery_reserves",
         "admin_audit_log",
+        "notification_outbox",
     }.issubset(Base.metadata.tables)
 
 

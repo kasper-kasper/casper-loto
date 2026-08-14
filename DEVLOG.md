@@ -1,5 +1,53 @@
 # Development log
 
+## [0.5.0] - 2026-08-14
+
+### Milestone 4 — Telegram Bot
+
+Implemented the player Telegram adapter and durable notification delivery.
+
+Done:
+
+- `/start` idempotently binds a Telegram identity and creates a zero-CAS
+  balance when needed;
+- the bot shows the current balance and directs purchases to the future Mini
+  App without exposing ordinary Telegram purchase buttons;
+- each committed checkout creates one purchase notification for the complete
+  single- or multi-ticket order;
+- each committed Weekly settlement creates one result notification per player,
+  including all tickets, matches, prizes and zero-win results;
+- an outbox worker claims events concurrently, retries failures with backoff and
+  recovers stale processing locks;
+- unique event keys and terminal sent records prevent routine repeat delivery.
+
+System behavior:
+
+- Telegram outages do not roll back or repeat tickets, ledger entries, payouts
+  or completed draws;
+- an idempotent business retry cannot create a second notification event;
+- notification payload/history is immutable at the PostgreSQL layer;
+- only redacted failure codes are persisted.
+
+Technical:
+
+- migration: `0002_notification_outbox`;
+- dependency: aiogram 3.x;
+- tests cover identity binding, Russian message formatting, multi-ticket
+  payloads, result payloads, one-time dispatch and redacted failure handling;
+- Ruff and formatting passed;
+- strict mypy passed for 31 source files;
+- pytest: 58 passed;
+- Alembic head and offline PostgreSQL upgrade generation passed;
+- live `alembic check` was not run because no local PostgreSQL is installed and
+  the project must not connect to the configured VPS during development.
+
+Known:
+
+- Telegram Bot API has no caller idempotency key; a process crash after Telegram
+  accepts a message but before `SENT` commits may repeat that message, without
+  repeating any business operation;
+- pytest-asyncio emits Python 3.14 deprecation warnings in the current toolchain.
+
 ## [0.4.0] - 2026-08-14
 
 ### Milestone 3 — Scheduler & Recovery

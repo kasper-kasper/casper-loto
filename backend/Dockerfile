@@ -8,6 +8,7 @@ WORKDIR /app
 
 COPY pyproject.toml README.md alembic.ini ./
 COPY backend ./backend
+COPY bot ./bot
 RUN python -m pip install --no-cache-dir .
 
 RUN addgroup --system app && adduser --system --ingroup app app \
