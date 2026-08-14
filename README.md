@@ -6,7 +6,7 @@ balances, tickets and audit records are designed as multi-user entities from
 the beginning. No real money, payments, donations, cryptocurrency or cash-out
 are part of this project.
 
-Current version: **0.1.0 — Milestone 0 / Foundation**.
+Current version: **0.3.0 — Milestone 2 / Weekly Core**.
 
 ## Architecture
 
@@ -96,8 +96,8 @@ alembic revision --autogenerate -m "describe change"
 alembic upgrade head
 ```
 
-Every schema change must include a migration. Milestone 0 contains only the
-migration framework; domain tables arrive in Milestone 1.
+Every schema change must include a migration. Migration `0001_domain_model`
+creates the current domain tables and database immutability protections.
 
 ## Checks and tests
 

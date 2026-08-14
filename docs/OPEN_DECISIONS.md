@@ -13,8 +13,8 @@ Unresolved requirements are kept here instead of being guessed in code.
 | OD-007 | Cart TTL | Open | Must be short and configurable. |
 | OD-008 | Final visual design | Open | Current visual references are directional only. |
 | OD-009 | Reserve scope | Resolved 2026-08-14 | Per-lottery reserves, matching the Milestone 1 requirement. |
-| OD-010 | Integer payout remainder allocation | Open | Needed for equal splits in whole CAS. |
-| OD-011 | Behavior when reserve cannot cover guaranteed payouts | Open | Must not be invented. |
+| OD-010 | Integer payout remainder allocation | Resolved 2026-08-14 | Allocate one extra CAS by ascending public ticket number until exhausted. |
+| OD-011 | Behavior when reserve cannot cover guaranteed payouts | Resolved 2026-08-14 | Abort atomically and retry after reserve funding; never use jackpot or mint CAS. |
 | OD-012 | Sales cutoff for Daily schedule slots | Open | Weekly cutoff is known; Daily cutoff is not specified. |
 
 When the owner resolves an item, record the decision in the relevant

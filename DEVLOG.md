@@ -1,5 +1,48 @@
 # Development log
 
+## [0.3.0] - 2026-08-14
+
+### Milestone 2 — Weekly Core
+
+Implemented the complete Weekly 5/20 domain mathematics and transactional
+application services.
+
+Done:
+
+- canonical ticket validation and atomic multi-ticket purchase;
+- duplicate combinations remain valid independent tickets;
+- backend chooses the first draw still open for sales;
+- one transaction updates balance, ticket numbering, draw totals, jackpot,
+  distribution fund and three balancing ledger records;
+- official numbers use `secrets.SystemRandom`;
+- categories 0/5 through 5/5, reserve fallback and both carryovers;
+- completed draw retry returns the existing result without new payouts;
+- empty draws receive official numbers and complete normally.
+
+System behavior:
+
+- Weekly prices must be divisible by 4 CAS so 25% prizes are exact integers;
+- indivisible equal-split remainders are assigned deterministically by ascending
+  public ticket number;
+- insufficient reserve aborts the atomic settlement for later retry, without
+  using jackpot or creating CAS;
+- a won jackpot is fully paid and then receives a ledgered base-jackpot reset.
+
+Technical:
+
+- no schema migration was required after `0001_domain_model`;
+- row locks serialize lottery counters, accounts and draw settlement;
+- purchase keys are checked both before and after the lottery lock to prevent
+  concurrent duplicate checkout;
+- Ruff and formatting passed;
+- strict mypy passed for 23 source files;
+- pytest: 42 passed.
+
+Known:
+
+- PostgreSQL integration tests still require a local Docker/PostgreSQL runtime;
+- Python 3.14 causes third-party pytest-asyncio deprecation warnings.
+
 ## [0.2.0] - 2026-08-14
 
 ### Telegram DevLog integration

@@ -4,6 +4,18 @@ All notable changes follow Keep a Changelog and Semantic Versioning principles.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-14
+
+### Added
+
+- Atomic single- and multi-ticket purchases for Weekly 5/20.
+- Server-authoritative draw selection after a sales cutoff.
+- Complete Weekly payout calculation for categories 0/5 through 5/5.
+- Jackpot and distribution contributions, carryovers and jackpot reset.
+- Reserve fallback for guaranteed 2/5 and 3/5 prizes.
+- Cryptographically secure official draw generation.
+- Idempotent purchase and settlement processing, including empty draws.
+
 ## [0.2.0] - 2026-08-14
 
 ### Added
