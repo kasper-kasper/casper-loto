@@ -36,6 +36,7 @@ where = ["backend/src"]
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers"
 asyncio_mode = "auto"
+pythonpath = [".", "backend/src"]
 testpaths = ["backend/tests"]
 
 [tool.ruff]

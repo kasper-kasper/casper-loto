@@ -1,5 +1,20 @@
 # Development log
 
+## 2026-08-15
+
+### Telegram DevLog integration
+
+Added secret-safe local tools to discover `DEVLOG_CHAT_ID` from an incoming bot
+message and send compact development notifications. The helpers load `.env`
+without logging values and redact Telegram HTTP/API failures.
+
+Validation:
+
+- Ruff: passed;
+- mypy: passed for 5 script modules;
+- pytest: 2 passed;
+- live test notification: delivered successfully.
+
 ## 2026-08-14
 
 ### Milestone 0 — Foundation

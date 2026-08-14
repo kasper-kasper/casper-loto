@@ -4,6 +4,10 @@ All notable changes follow Keep a Changelog and Semantic Versioning principles.
 
 ## [Unreleased]
 
+### Added
+
+- Secret-safe Telegram DevLog chat discovery and notification scripts.
+
 ## [0.1.0] - 2026-08-14
 
 ### Added
