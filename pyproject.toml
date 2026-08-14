@@ -4,12 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "k-loto"
-version = "0.3.0"
+version = "0.4.0"
 description = "K-Loto virtual lottery platform"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.14,<2",
+    "apscheduler>=3.11,<4",
     "asyncpg>=0.30,<1",
     "fastapi>=0.115,<1",
     "pydantic-settings>=2.7,<3",
@@ -55,3 +56,7 @@ strict = true
 packages = ["k_loto"]
 mypy_path = "backend/src"
 plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = "apscheduler.*"
+ignore_missing_imports = true

@@ -6,7 +6,7 @@ balances, tickets and audit records are designed as multi-user entities from
 the beginning. No real money, payments, donations, cryptocurrency or cash-out
 are part of this project.
 
-Current version: **0.3.0 — Milestone 2 / Weekly Core**.
+Current version: **0.4.0 — Milestone 3 / Scheduler & Recovery**.
 
 ## Architecture
 
@@ -70,6 +70,11 @@ docker compose up --build
 
 The API is available at `http://localhost:8000`; health information is exposed
 at `GET /health` and includes application and database status.
+
+The API process runs startup draw reconciliation and a periodic APScheduler job
+by default. Set `SCHEDULER_ENABLED=false` only for dedicated maintenance or test
+processes. Multiple invocations remain protected by database locks and
+idempotent settlement.
 
 ### Run without Docker
 

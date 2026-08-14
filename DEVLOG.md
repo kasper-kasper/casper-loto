@@ -1,5 +1,45 @@
 # Development log
 
+## [0.4.0] - 2026-08-14
+
+### Milestone 3 — Scheduler & Recovery
+
+Implemented explicit Moscow schedules, automatic draw preparation and
+chronological startup/periodic recovery.
+
+Done:
+
+- Weekly runs Sunday 20:00 MSK and closes sales at 19:55;
+- Daily schedule generation uses confirmed 02:22 and 18:00 slots;
+- the first draw is the nearest future slot and is never backfilled before the
+  system's first start;
+- after each Weekly settlement the next numbered draw is prepared;
+- startup reconciliation repeatedly settles overdue Weekly draws oldest first;
+- APScheduler invokes the same idempotent reconciliation every configured
+  interval.
+
+System behavior:
+
+- downtime does not discard a draw or change its official `scheduled_at`;
+- `executed_at` records delayed technical execution;
+- repeated scheduler processes cannot create a second pending draw because the
+  lottery counter row is locked;
+- repeated settlement returns the completed result without a second payout;
+- Daily payout/settlement remains disabled until its payout model is decided.
+
+Technical:
+
+- migration: no schema change after `0001_domain_model`;
+- dependency: APScheduler 3.11;
+- tests cover Weekly/Daily boundaries, cutoff, draw numbering, duplicate
+  preparation and chronological multi-draw recovery.
+- Ruff and formatting passed;
+- strict mypy passed for 26 source files;
+- pytest: 51 passed;
+- Alembic head and offline PostgreSQL upgrade generation passed;
+- live `alembic check` was not run because no local PostgreSQL is installed and
+  the project must not connect to the configured VPS during development.
+
 ## [0.3.0] - 2026-08-14
 
 ### Milestone 2 — Weekly Core

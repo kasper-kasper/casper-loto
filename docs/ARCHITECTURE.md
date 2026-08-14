@@ -59,22 +59,15 @@ so Telegram failure cannot roll back a completed business transaction.
 No game rule is changed here; these are implementation hazards to resolve in
 later milestones:
 
-1. **Reserve ownership is ambiguous.** The specification allows a per-lottery or
-   system reserve. This affects constraints, ledger ownership and insolvency
-   handling and needs an owner decision before implementation.
-2. **Integer division remainder is unspecified.** Equal jackpot/distribution
-   splits can leave indivisible CAS. A deterministic remainder rule is required.
-3. **Insufficient reserve behavior is unspecified.** Guaranteed Weekly payouts
-   must always occur, but behavior when both fund and reserve are insufficient is
-   not defined. The implementation must not silently create CAS.
-4. **Admin “set balance” is not direct mutation.** It must become a delta ledger
+1. **Admin “set balance” is not direct mutation.** It must become a delta ledger
    transaction plus audit record under one database transaction.
-5. **Draw recovery and schedule changes interact.** Editing schedules must never
+2. **Draw recovery and schedule changes interact.** Editing schedules must never
    rewrite already prepared or completed official draws; effective-date rules
    should be defined before schedule editing is built.
-6. **Notifications are not part of settlement atomicity.** A durable retry/outbox
+3. **Notifications are not part of settlement atomicity.** A durable retry/outbox
    boundary is needed to prevent duplicate messages without risking duplicate
    payouts.
 
-The undefined Daily payout model and second daily time are deliberately not
-implemented.
+Per-lottery reserves, deterministic whole-CAS remainder allocation and atomic
+retry on insufficient reserve are now resolved. Daily slots are 02:22 and 18:00
+Europe/Moscow; its payout model and sales cutoff remain deliberately undefined.

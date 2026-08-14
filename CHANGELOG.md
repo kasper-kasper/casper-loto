@@ -4,6 +4,17 @@ All notable changes follow Keep a Changelog and Semantic Versioning principles.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-14
+
+### Added
+
+- Weekly schedule at Sunday 20:00 Europe/Moscow with a 19:55 sales cutoff.
+- Automatic preparation and independent numbering of the next draw.
+- Startup and periodic reconciliation of missed Weekly draws.
+- Chronological recovery of several missed draws after downtime.
+- Confirmed Daily schedule slots at 02:22 and 18:00 Europe/Moscow.
+- APScheduler runtime integrated with backend application lifespan.
+
 ## [0.3.0] - 2026-08-14
 
 ### Added

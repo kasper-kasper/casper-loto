@@ -4,7 +4,7 @@ Unresolved requirements are kept here instead of being guessed in code.
 
 | ID | Decision | Status | Notes |
 |---|---|---|---|
-| OD-001 | Second Daily Lottery draw time | Open | Keep the second slot disabled/null. |
+| OD-001 | Second Daily Lottery draw time | Resolved 2026-08-14 | The confirmed second slot is 18:00 Europe/Moscow. |
 | OD-002 | Weekly ticket price | Open | Must be configurable in Admin. |
 | OD-003 | Daily ticket price | Open | Must be configurable in Admin. |
 | OD-004 | Weekly base jackpot | Open | Must be configured by the owner. |

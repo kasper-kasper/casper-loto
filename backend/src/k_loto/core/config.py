@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     app_port: int = Field(default=8000, ge=1, le=65535)
     log_level: str = "INFO"
     database_url: PostgresDsn
+    scheduler_enabled: bool = True
+    scheduler_interval_seconds: int = Field(default=30, ge=5, le=3600)
 
     @property
     def docs_enabled(self) -> bool:
