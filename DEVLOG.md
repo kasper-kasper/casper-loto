@@ -1,5 +1,60 @@
 # Development log
 
+## [0.9.0] - 2026-08-15
+
+### Telegram Bot Gameplay
+
+Promoted the aiogram bot from notification adapter to the primary complete
+player interface while keeping all business rules in application/domain layers.
+
+Done:
+
+- `/start` now binds identity and opens the live K-Loto gameplay dashboard;
+- added balance, Weekly/Daily cards, jackpot, next draw and active-ticket count;
+- added Weekly 5/20 inline picker with strict five-number selection;
+- added `SystemRandom` random pick, clear, cart and atomic checkout controls;
+- identical combinations are preserved as separate tickets;
+- the configurable bot cart supports 20 tickets by default;
+- each transient cart gets one stable checkout identity for safe callback retries;
+- checkout calls the existing locked `WeeklyTicketPurchaseService` and durable
+  purchase notification outbox;
+- added active tickets, settled history, global results, rules and player
+  spend/win/net/match statistics;
+- Daily remains visible but blocked until OD-006 and OD-012 are resolved;
+- added `/menu` and registered Telegram command descriptions;
+- preserved the frozen Mini App compatibility code without using it in the menu;
+- documented the final always-on HTTPS Admin/API/bot/Web deployment topology.
+
+System behavior:
+
+- a player can select numbers and buy one or many Weekly tickets entirely in
+  Telegram without a domain or Mini App;
+- backend remains the source of truth for balance, price, draw and settlement;
+- repeated Telegram checkout delivery returns the existing purchase instead of
+  charging twice;
+- unpaid cart state may be lost on bot restart, but no ticket or CAS exists until
+  atomic checkout commits;
+- purchased tickets, ledger history, results and notifications remain durable;
+- Admin will later be an ordinary persistent website, not an owner-run local
+  development process.
+
+Technical:
+
+- version: 0.9.0;
+- migration: no schema change after `0002_notification_outbox`;
+- backend: 41 typed source files, 95 pytest tests;
+- frontend regression: 8 frozen Mini App + 4 Admin Vitest tests;
+- Telegram transport batch limit: `BOT_MAX_TICKETS_PER_PURCHASE` (default 20);
+- no production/VPS connection or deployment was attempted.
+
+Known:
+
+- the unpaid Telegram picker/cart uses in-memory FSM state for the planned
+  single bot replica; shared state is needed only if bot replicas are added;
+- Daily purchase remains intentionally unavailable;
+- next stage is the simple player Web client, followed by one owner-authorized
+  permanent deployment of backend, bot, Web and Admin.
+
 ## [0.8.0] - 2026-08-15
 
 ### Milestone 6 — Web Admin Panel

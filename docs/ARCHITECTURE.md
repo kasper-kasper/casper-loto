@@ -41,6 +41,16 @@ HttpOnly SameSite session and a per-session CSRF token. Administrator mutations
 call backend use cases that lock accounts and write ledger plus audit records in
 one transaction. Draw endpoints are read-only, including for administrators.
 
+Telegram bot gameplay is a stateful transport adapter over the existing query
+and Weekly purchase services. Only the unpaid picker/cart lives in aiogram
+memory; tickets, checkout idempotency, CAS and notifications remain durable in
+PostgreSQL. One polling replica is planned for the first permanent deployment.
+
+The deployment target serves Admin and the future player Web build as ordinary
+HTTPS sites through a reverse proxy. Static assets, API, bot and scheduler start
+automatically with the server; an owner opens the Admin URL and signs in without
+running local commands. Local Vite/PowerShell workflows remain development-only.
+
 ## Planned backend modules
 
 - `identity`: users and external identities without Telegram coupling.

@@ -1,15 +1,37 @@
-# Telegram bot and notification delivery
+# Telegram gameplay bot
 
-The player bot is an aiogram 3.x adapter. It contains no lottery mathematics or
-CAS mutation logic.
+The aiogram 3.x bot is the primary player interface and contains no lottery
+mathematics or direct CAS mutations.
 
-## User binding
+## Player interface
 
 `/start` upserts a user by positive Telegram ID and creates the user's zero-CAS
 balance if missing. Repeated `/start` updates the display identity without
-creating another user or balance. The response explains that ticket purchases
-will be available only through the Mini App; the bot exposes no purchase
-buttons.
+creating another user or balance. It opens a server-authoritative gameplay menu:
+
+- balance and current Weekly/Daily cards;
+- Weekly 5/20 number picker and cryptographically secure random pick;
+- a multi-ticket cart with identical combinations allowed;
+- atomic checkout through `WeeklyTicketPurchaseService`;
+- active tickets and settled ticket history;
+- recent immutable draw results;
+- player spend/win/net and match statistics;
+- approved Weekly rules.
+
+The Telegram cart is transient conversation state and creates no ticket or CAS
+movement before checkout. A configured transport limit
+`BOT_MAX_TICKETS_PER_PURCHASE` defaults to 20 and can be changed without changing
+lottery economics. Every cart receives a stable checkout identity, so repeated
+callback delivery reaches the existing idempotent purchase use case.
+
+Daily appears in the lottery selector but cannot be purchased until its payout
+model and cutoff are approved. The preserved Mini App is not launched from the
+new main menu and remains frozen without deleting its code.
+
+## Commands
+
+- `/start` — bind identity and open K-Loto;
+- `/menu` — discard transient picker state and return to the main menu.
 
 ## Durable notifications
 
@@ -26,6 +48,14 @@ error codes are stored.
 
 PostgreSQL protects event identity and payload from updates or deletion and
 makes sent events terminal. Telegram itself does not support an idempotency key,
-so a crash in the narrow interval after Telegram accepts the message and before
+so a crash in the narrow interval after Telegram accepts a message and before
 `SENT` is committed can cause a repeated message. It cannot duplicate a ticket,
 payout or draw settlement.
+
+## Process model
+
+The personal deployment runs one bot polling process with automatic restart.
+The in-progress picker/cart uses aiogram memory storage; a bot restart may clear
+an unpaid cart, but purchased tickets and CAS history are unaffected. A future
+multi-replica bot would replace this adapter state with shared storage without
+changing domain services.

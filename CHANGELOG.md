@@ -4,6 +4,29 @@ All notable changes follow Keep a Changelog and Semantic Versioning principles.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-08-15
+
+### Added
+
+- Complete Telegram bot gameplay menu with balance, lotteries and rules.
+- Weekly 5/20 inline number picker, secure random pick and multi-ticket cart.
+- Atomic Telegram checkout with duplicate-combination support and idempotency.
+- Active tickets, settled history, recent draw archive and player statistics.
+- Configurable Telegram purchase batch limit.
+- Permanent deployment plan for always-on API, bot, user Web and Admin site.
+
+### Changed
+
+- Telegram bot is now the primary player interface; the Mini App remains frozen.
+- Admin production target is an ordinary continuously available HTTPS website,
+  while local start commands remain development-only.
+
+### Security
+
+- Telegram prices, draw assignment, balances and payouts remain server-authoritative.
+- Repeated checkout callbacks use one stable idempotency identity and cannot
+  create a second financial operation.
+
 ## [0.8.0] - 2026-08-15
 
 ### Added

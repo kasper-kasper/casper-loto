@@ -4,6 +4,10 @@ Milestone 6 provides a separate React/TypeScript interface at
 <http://127.0.0.1:5174>. It is not embedded in Telegram and contains no lottery
 or CAS business logic.
 
+The local `5174` workflow is development-only. In the final deployment the
+compiled Admin client will be served continuously by the HTTPS reverse proxy;
+the owner will open its normal URL and log in without starting any process.
+
 ## Capabilities
 
 - operational dashboard: version, uptime, database reachability, configured bot,

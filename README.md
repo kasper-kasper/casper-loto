@@ -6,7 +6,7 @@ balances, tickets and audit records are designed as multi-user entities from
 the beginning. No real money, payments, donations, cryptocurrency or cash-out
 are part of this project.
 
-Current version: **0.8.0 — Milestone 6 Web Admin Panel**.
+Current version: **0.9.0 — Telegram Bot Gameplay**.
 
 ## Architecture
 
@@ -47,6 +47,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md),
 [docs/SCHEDULER.md](docs/SCHEDULER.md),
 [docs/TELEGRAM_BOT.md](docs/TELEGRAM_BOT.md),
 [docs/ADMIN_PANEL.md](docs/ADMIN_PANEL.md) and
+[docs/DEPLOYMENT_PLAN.md](docs/DEPLOYMENT_PLAN.md),
 [docs/OPEN_DECISIONS.md](docs/OPEN_DECISIONS.md). Beginner-friendly browser and
 tunnel setup is in [docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md).
 
@@ -136,10 +137,12 @@ have focused tests. `scripts/check.ps1` runs both frontend test/build pipelines.
 
 ## Bot, frontend and admin
 
-The aiogram bot currently implements `/start`, Telegram identity binding and
-durable purchase/result notifications. Full gameplay in the bot is the next
-planned milestone, followed by the simple user Web version. The existing Mini
-App remains available but is frozen.
+The aiogram bot is now the primary gameplay interface. It implements `/start`
+and `/menu`, server-authoritative balance, Weekly 5/20 selection, random pick,
+multi-ticket checkout, active/history tickets, results, player statistics and
+durable purchase/result notifications. Daily remains read-only until its open
+economics and cutoff decisions are resolved. The existing Mini App remains
+available but frozen; the next client milestone is the simple user Web version.
 
 Configure and run the independent Admin Panel:
 
@@ -150,6 +153,11 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start_admin.ps1
 
 Open `http://127.0.0.1:5174`. Balance and reserve changes always produce ledger
 and audit records; completed draws have no edit API.
+
+For the later permanent deployment, Admin will be served as a continuously
+available HTTPS site: open its address and sign in, without manually starting
+local processes. Backend, bot, player Web and Admin will be deployed together
+only after the player Web milestone and an explicit owner command.
 
 ## Secrets
 

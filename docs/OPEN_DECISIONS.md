@@ -16,7 +16,8 @@ Unresolved requirements are kept here instead of being guessed in code.
 | OD-010 | Integer payout remainder allocation | Resolved 2026-08-14 | Allocate one extra CAS by ascending public ticket number until exhausted. |
 | OD-011 | Behavior when reserve cannot cover guaranteed payouts | Resolved 2026-08-14 | Abort atomically and retry after reserve funding; never use jackpot or mint CAS. |
 | OD-012 | Sales cutoff for Daily schedule slots | Open | Weekly cutoff is known; Daily cutoff is not specified. |
-| OD-013 | Primary player interfaces | Resolved 2026-08-15 | Telegram Mini App is frozen and preserved. Active order: Web Admin Panel, full Telegram bot gameplay, then simple user Web version. |
+| OD-013 | Primary player interfaces | Resolved 2026-08-15 | Telegram Mini App is frozen and preserved. Active order: Web Admin Panel, full Telegram bot gameplay, simple user Web version, then one permanent deployment. |
+| OD-014 | Production Admin access | Resolved 2026-08-15 | Admin must be a continuously available ordinary HTTPS site: open address, enter login/password; no manual local process startup by the owner. |
 
 When the owner resolves an item, record the decision in the relevant
 specification/configuration and mark the row `Resolved` with a date.

@@ -1,10 +1,11 @@
 # Telegram player bot
 
-The aiogram 3.x bot is a transport adapter. `/start` idempotently binds the
-Telegram identity to a backend user and displays the CAS balance. Ticket
-purchase controls are intentionally absent. When `MINIAPP_URL` is configured,
-`/start` shows a Telegram Web App launch button and checkout occurs inside the
-authenticated Mini App.
+The aiogram 3.x bot is the primary player interface. `/start` idempotently binds
+the Telegram identity and opens balance, Weekly purchase, ticket history,
+results, statistics and rules. Weekly checkout supports random numbers,
+identical combinations and an atomic multi-ticket cart. Handlers contain no CAS
+or lottery mathematics; they call the same application services as other
+clients.
 
 After a committed ticket purchase or Weekly settlement, the bot delivers a
 durable outbox event. Unique event keys and terminal `SENT` records protect
