@@ -6,7 +6,7 @@ balances, tickets and audit records are designed as multi-user entities from
 the beginning. No real money, payments, donations, cryptocurrency or cash-out
 are part of this project.
 
-Current version: **0.9.0 — Telegram Bot Gameplay**.
+Current version: **0.10.0 — Player Web**.
 
 ## Architecture
 
@@ -32,7 +32,8 @@ k-loto/
 |-- bot/                     # aiogram player bot
 |-- frontend/
 |   |-- miniapp/             # preserved and frozen Telegram Mini App
-|   `-- admin/               # independent Web Admin Panel
+|   |-- admin/               # independent Web Admin Panel
+|   `-- web/                 # ordinary player browser client
 |-- docs/
 |-- infrastructure/
 |-- scripts/
@@ -46,7 +47,8 @@ integers. The domain layer does not depend on Telegram, HTTP or React.
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md),
 [docs/SCHEDULER.md](docs/SCHEDULER.md),
 [docs/TELEGRAM_BOT.md](docs/TELEGRAM_BOT.md),
-[docs/ADMIN_PANEL.md](docs/ADMIN_PANEL.md) and
+[docs/ADMIN_PANEL.md](docs/ADMIN_PANEL.md),
+[docs/WEB_APP.md](docs/WEB_APP.md) and
 [docs/DEPLOYMENT_PLAN.md](docs/DEPLOYMENT_PLAN.md),
 [docs/OPEN_DECISIONS.md](docs/OPEN_DECISIONS.md). Beginner-friendly browser and
 tunnel setup is in [docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md).
@@ -120,7 +122,8 @@ alembic upgrade head
 
 Migration `0001_domain_model` creates the core domain tables and database
 immutability protections. Migration `0002_notification_outbox` adds durable,
-immutable Telegram notification events.
+immutable Telegram notification events. Migration `0003_web_accounts` adds
+one-to-one password credentials for ordinary browser players.
 
 ## Checks and tests
 
@@ -132,8 +135,9 @@ pytest
 ```
 
 Lottery mathematics, settlement/recovery idempotency, Telegram authentication,
-notification dispatch, preserved Mini App behavior and Admin Panel security
-have focused tests. `scripts/check.ps1` runs both frontend test/build pipelines.
+notification dispatch, preserved Mini App behavior, Admin security and player
+Web sessions have focused tests. `scripts/check.ps1` runs all three frontend
+test/build pipelines.
 
 ## Bot, frontend and admin
 
@@ -142,7 +146,17 @@ and `/menu`, server-authoritative balance, Weekly 5/20 selection, random pick,
 multi-ticket checkout, active/history tickets, results, player statistics and
 durable purchase/result notifications. Daily remains read-only until its open
 economics and cutoff decisions are resolved. The existing Mini App remains
-available but frozen; the next client milestone is the simple user Web version.
+available but frozen. The ordinary Web client supports Weekly purchase,
+balance, active tickets, history and results.
+
+Configure an existing Telegram player's Web login and run the local client:
+
+```powershell
+.venv\Scripts\python.exe -m scripts.configure_web_player
+powershell -ExecutionPolicy Bypass -File .\scripts\start_web.ps1
+```
+
+Open `http://127.0.0.1:5175`. See [docs/WEB_APP.md](docs/WEB_APP.md).
 
 Configure and run the independent Admin Panel:
 
@@ -157,7 +171,8 @@ and audit records; completed draws have no edit API.
 For the later permanent deployment, Admin will be served as a continuously
 available HTTPS site: open its address and sign in, without manually starting
 local processes. Backend, bot, player Web and Admin will be deployed together
-only after the player Web milestone and an explicit owner command.
+after Daily is defined and implemented under the owner's current deployment
+authorization.
 
 ## Secrets
 

@@ -67,6 +67,30 @@ class User(TimestampMixin, Base):
     )
 
 
+class WebAccount(TimestampMixin, Base):
+    """Password credential for the ordinary browser client."""
+
+    __tablename__ = "web_accounts"
+    __table_args__ = (
+        CheckConstraint("char_length(username) >= 3", name="username_min_length"),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), primary_key=True, default=uuid4
+    )
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        unique=True,
+    )
+    username: Mapped[str] = mapped_column(String(128), unique=True)
+    password_hash: Mapped[str] = mapped_column(String(255))
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default="true"
+    )
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class Lottery(TimestampMixin, Base):
     __tablename__ = "lotteries"
     __table_args__ = (

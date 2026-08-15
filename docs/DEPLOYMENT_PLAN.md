@@ -1,14 +1,12 @@
 # Permanent deployment plan
 
-Deployment remains a later owner-authorized stage after the simple player Web
-client. This document records the target so local development choices do not
-leak into the owner experience.
+Deployment remains a later stage after Daily rules and code are complete. The
+simple player Web client is ready for this owner-authorized target.
 
 ## Owner experience
 
 - Admin Panel: open its HTTPS address, enter username/password, work normally.
-- Player Web: open its HTTPS address; its final authentication flow will be
-  defined during the Web milestone.
+- Player Web: open its HTTPS address and enter the provisioned login/password.
 - Telegram bot: remains online continuously and restarts automatically.
 - No owner-facing `npm`, `uvicorn`, tunnel or PowerShell command is required for
   ordinary use.

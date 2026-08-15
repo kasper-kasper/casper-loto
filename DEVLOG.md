@@ -1,5 +1,56 @@
 # Development log
 
+## [0.10.0] - 2026-08-15
+
+### Player Web
+
+Delivered the simple ordinary-browser player interface requested before Daily,
+without changing the frozen Telegram Mini App or duplicating domain logic.
+
+Done:
+
+- added one-to-one `web_accounts` credentials linked to existing regular users;
+- added Argon2 password hashing and normalized unique usernames;
+- added signed expiring HttpOnly player sessions with CSRF validation;
+- added authenticated dashboard, ticket, draw-result and Weekly purchase routes;
+- reused `MiniAppQueryService` projections and
+  `WeeklyTicketPurchaseService` transaction/ledger guarantees;
+- added a minimal responsive React client for balance and Weekly 5 of 20;
+- added manual number selection and purchase quantity from 1 to 20;
+- added active tickets, settled history and global completed-draw results;
+- added a secret-safe interactive Web account configurator and local start script;
+- updated architecture, deployment and operator documentation;
+- expanded standard checks to all three frontend clients.
+
+System behavior:
+
+- Telegram and Web logins reach the same player, integer CAS balance, tickets
+  and immutable results;
+- repeated purchase transport delivery remains idempotent and cannot debit the
+  balance twice;
+- identical combinations remain allowed as separate tickets;
+- inactive accounts/users are rejected, and a browser cannot edit balances,
+  prices, draws or settlement data;
+- production cookies become Secure automatically; local Vite uses a same-origin
+  API proxy and does not enable the frozen Mini App development bypass.
+
+Technical:
+
+- version: 0.10.0;
+- migration: `0003_web_accounts` (single Alembic head; offline upgrade SQL passed);
+- backend: 43 typed source files, 101 pytest tests;
+- frontend: 8 frozen Mini App + 4 Admin + 3 player Web Vitest tests;
+- all three frontend typecheck, lint and production builds passed;
+- implementation secret scan passed; `.env` remains ignored;
+- live `alembic check` remains unavailable locally because this machine has no
+  PostgreSQL service; migration-chain and offline DDL checks passed;
+- no VPS connection or deployment was attempted in this release.
+
+Known:
+
+- Daily payouts and cutoff remain owner decisions OD-006 and OD-012;
+- final deployment waits for those rules and the Daily implementation.
+
 ## [0.9.0] - 2026-08-15
 
 ### Telegram Bot Gameplay

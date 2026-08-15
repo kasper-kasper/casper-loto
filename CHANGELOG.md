@@ -4,6 +4,32 @@ All notable changes follow Keep a Changelog and Semantic Versioning principles.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-08-15
+
+### Added
+
+- Ordinary browser player application with Weekly 5/20 gameplay.
+- Password login, current CAS balance, active tickets and settled history.
+- Completed draw result archive and 1-to-20-ticket purchase interface.
+- One-to-one Web accounts for existing players and migration
+  `0003_web_accounts`.
+- Local account configurator and player Web start command.
+
+### Changed
+
+- Standard project checks now validate and build the frozen Mini App, Admin
+  Panel and ordinary player Web client.
+- The permanent deployment plan now has a defined player Web authentication
+  flow.
+
+### Security
+
+- Player passwords use Argon2 hashes and are never returned to the browser.
+- Signed expiring HttpOnly sessions use an independent secret, SameSite/Secure
+  cookie controls and per-session CSRF protection.
+- Weekly purchases remain server-authoritative, atomic and idempotent through
+  the existing application service and immutable ledger.
+
 ## [0.9.0] - 2026-08-15
 
 ### Added

@@ -1,0 +1,38 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, expect, test, vi } from "vitest";
+
+import App from "./App";
+import { webApi } from "./api";
+
+vi.mock("./api", async () => {
+  class ApiError extends Error {}
+  return { ApiError, webApi: { session: vi.fn(), login: vi.fn(), logout: vi.fn(), dashboard: vi.fn(), tickets: vi.fn(), results: vi.fn(), purchase: vi.fn() } };
+});
+
+const session = { display_name: "Игрок", csrf_token: "csrf", expires_at: "2026-08-16T00:00:00Z" };
+const dashboard = { balance: 1000, active_ticket_count: 1, recent_results: [], lotteries: [{ code: "weekly", name: "Weekly", kind: "WEEKLY" as const, numbers_to_pick: 5, max_number: 20, ticket_price: 100, jackpot: 5000, draw_number: 7, scheduled_at: "2026-08-16T17:00:00Z", sales_close_at: "2026-08-16T16:55:00Z", sales_open: true, purchase_available: true }] };
+
+beforeEach(() => { vi.clearAllMocks(); vi.mocked(webApi.session).mockResolvedValue(session); vi.mocked(webApi.dashboard).mockResolvedValue(dashboard); vi.mocked(webApi.tickets).mockResolvedValue([]); vi.mocked(webApi.results).mockResolvedValue([]); });
+
+test("shows balance and Weekly after restoring a session", async () => {
+  render(<App />);
+  expect(await screen.findByText("1 000 CAS")).toBeInTheDocument();
+  expect(screen.getByText("Weekly 5 из 20")).toBeInTheDocument();
+});
+
+test("buys selected numbers with requested quantity", async () => {
+  vi.mocked(webApi.purchase).mockResolvedValue({ ticket_ids: ["1", "2"], total_cost: 200, balance_after: 800 });
+  render(<App />); await screen.findByText("Weekly 5 из 20");
+  for (const value of [1, 2, 3, 4, 5]) fireEvent.click(screen.getByRole("button", { name: String(value) }));
+  fireEvent.change(screen.getByLabelText("Количество"), { target: { value: "2" } });
+  fireEvent.click(screen.getByRole("button", { name: "Купить за 200 CAS" }));
+  await waitFor(() => expect(webApi.purchase).toHaveBeenCalledWith([[1, 2, 3, 4, 5], [1, 2, 3, 4, 5]], expect.any(String)));
+});
+
+test("loads history and draw results", async () => {
+  render(<App />); await screen.findByText("Weekly 5 из 20");
+  fireEvent.click(screen.getByRole("button", { name: "История" }));
+  await waitFor(() => expect(webApi.tickets).toHaveBeenCalledWith("history"));
+  fireEvent.click(screen.getByRole("button", { name: "Результаты" }));
+  await waitFor(() => expect(webApi.results).toHaveBeenCalled());
+});

@@ -57,6 +57,18 @@ class MiniAppDashboard:
     recent_results: tuple[MiniAppTicket, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class MiniAppDrawResult:
+    lottery_code: str
+    lottery_name: str
+    draw_number: int
+    scheduled_at: datetime
+    executed_at: datetime | None
+    winning_numbers: tuple[int, ...]
+    ticket_count: int
+    total_payout: int
+
+
 class MiniAppQueryService:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
@@ -158,4 +170,28 @@ class MiniAppQueryService:
                 ),
             )
             for ticket, draw, lottery in rows
+        )
+
+    async def results(self, *, limit: int = 50) -> tuple[MiniAppDrawResult, ...]:
+        rows = (
+            await self._session.execute(
+                select(Draw, Lottery)
+                .join(Lottery, Lottery.id == Draw.lottery_id)
+                .where(Draw.status == DrawStatus.COMPLETED)
+                .order_by(Draw.scheduled_at.desc())
+                .limit(limit)
+            )
+        ).all()
+        return tuple(
+            MiniAppDrawResult(
+                lottery.code,
+                lottery.name,
+                draw.public_number,
+                draw.scheduled_at,
+                draw.executed_at,
+                tuple(draw.winning_numbers or ()),
+                draw.ticket_count,
+                draw.total_payout,
+            )
+            for draw, lottery in rows
         )

@@ -22,8 +22,8 @@ Telegram, clock, random-number and notification adapters. Transport layers map
 requests and responses only.
 
 The Telegram Mini App adapter is frozen after v0.7.0 and retained without
-removal. The active product clients are now the Telegram bot, a simple future
-user Web client and the separate Web Admin Panel. All share the same application
+removal. The active product clients are now the Telegram bot, the ordinary user
+Web client and the separate Web Admin Panel. All share the same application
 services; no business rule is moved into a client during this transition.
 
 The preserved Mini App sends Telegram `initData` on every request. The backend validates
@@ -41,12 +41,17 @@ HttpOnly SameSite session and a per-session CSRF token. Administrator mutations
 call backend use cases that lock accounts and write ledger plus audit records in
 one transaction. Draw endpoints are read-only, including for administrators.
 
+The player Web client uses one Argon2 credential row per existing regular user.
+Its signed HttpOnly session contains stable account/user identifiers and a CSRF
+token. It calls the same query and Weekly purchase application services as the
+other adapters, so balances, tickets and results are shared with Telegram.
+
 Telegram bot gameplay is a stateful transport adapter over the existing query
 and Weekly purchase services. Only the unpaid picker/cart lives in aiogram
 memory; tickets, checkout idempotency, CAS and notifications remain durable in
 PostgreSQL. One polling replica is planned for the first permanent deployment.
 
-The deployment target serves Admin and the future player Web build as ordinary
+The deployment target serves Admin and the player Web build as ordinary
 HTTPS sites through a reverse proxy. Static assets, API, bot and scheduler start
 automatically with the server; an owner opens the Admin URL and signs in without
 running local commands. Local Vite/PowerShell workflows remain development-only.

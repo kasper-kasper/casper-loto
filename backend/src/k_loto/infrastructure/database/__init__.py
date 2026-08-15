@@ -12,6 +12,7 @@ from k_loto.infrastructure.database.models import (
     NotificationOutbox,
     Ticket,
     User,
+    WebAccount,
 )
 
 __all__ = [
@@ -26,4 +27,5 @@ __all__ = [
     "NotificationOutbox",
     "Ticket",
     "User",
+    "WebAccount",
 ]
