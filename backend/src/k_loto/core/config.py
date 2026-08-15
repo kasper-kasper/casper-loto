@@ -37,6 +37,10 @@ class Settings(BaseSettings):
     miniapp_dev_weekly_ticket_price: int = Field(default=100, gt=0)
     miniapp_dev_weekly_base_jackpot: int = Field(default=10_000, ge=0)
     miniapp_dev_weekly_reserve: int = Field(default=100_000, ge=0)
+    admin_secret: SecretStr | None = None
+    admin_username: str | None = None
+    admin_password_hash: SecretStr | None = None
+    admin_session_max_age_seconds: int = Field(default=28_800, ge=300, le=86_400)
 
     @property
     def docs_enabled(self) -> bool:
@@ -51,6 +55,17 @@ class Settings(BaseSettings):
             and self.miniapp_dev_auth_enabled
             and self.miniapp_dev_session_secret is not None
             and len(self.miniapp_dev_session_secret.get_secret_value()) >= 32
+        )
+
+    @property
+    def admin_auth_available(self) -> bool:
+        """Require a complete credential set before exposing administrator login."""
+        return (
+            self.admin_secret is not None
+            and len(self.admin_secret.get_secret_value()) >= 32
+            and self.admin_username is not None
+            and bool(self.admin_username.strip())
+            and self.admin_password_hash is not None
         )
 
 

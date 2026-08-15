@@ -21,7 +21,12 @@ orchestrate transactions and authorization. Infrastructure implements database,
 Telegram, clock, random-number and notification adapters. Transport layers map
 requests and responses only.
 
-The Mini App sends Telegram `initData` on every request. The backend validates
+The Telegram Mini App adapter is frozen after v0.7.0 and retained without
+removal. The active product clients are now the Telegram bot, a simple future
+user Web client and the separate Web Admin Panel. All share the same application
+services; no business rule is moved into a client during this transition.
+
+The preserved Mini App sends Telegram `initData` on every request. The backend validates
 its HMAC signature and age before binding the Telegram identity. Client values
 for balance, ticket price and draw assignment are display-only and never trusted.
 
@@ -30,6 +35,11 @@ an explicit flag and secret, accepts only loopback client/Host/Origin, and uses
 a short-lived HttpOnly SameSite cookie. `APP_ENV=production` disables it even if
 other flags are accidentally present. Public tunnels run a separate frontend
 mode and the tunnel helper refuses to start while the bypass flag is enabled.
+
+The Admin Panel uses an independent Argon2 credential, a signed short-lived
+HttpOnly SameSite session and a per-session CSRF token. Administrator mutations
+call backend use cases that lock accounts and write ledger plus audit records in
+one transaction. Draw endpoints are read-only, including for administrators.
 
 ## Planned backend modules
 

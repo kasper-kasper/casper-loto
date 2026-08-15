@@ -1,0 +1,124 @@
+export interface AdminSession {
+  username: string;
+  csrf_token: string;
+  expires_at: string;
+}
+
+export interface Player {
+  id: string;
+  display_name: string;
+  username: string | null;
+  telegram_id: number | null;
+  is_active: boolean;
+  balance: number;
+  ticket_count: number;
+  spent: number;
+  won: number;
+  net: number;
+}
+
+export interface Lottery {
+  id: string;
+  code: string;
+  name: string;
+  kind: "WEEKLY" | "DAILY";
+  ticket_price: number | null;
+  base_jackpot: number;
+  current_jackpot: number;
+  distribution_fund: number;
+  reserve: number;
+  schedule: Record<string, unknown>;
+  sales_cutoff_minutes: number | null;
+  is_active: boolean;
+  next_draw_number: number | null;
+  next_draw_at: string | null;
+}
+
+export interface Transaction {
+  id: string;
+  operation_id: string;
+  type: string;
+  account_kind: string;
+  amount: number;
+  balance_before: number;
+  balance_after: number;
+  user_id: string | null;
+  lottery_id: string | null;
+  draw_id: string | null;
+  ticket_id: string | null;
+  created_at: string;
+  details: Record<string, unknown>;
+}
+
+export interface Draw {
+  id: string;
+  lottery_id: string;
+  lottery_code: string;
+  public_number: number;
+  status: string;
+  scheduled_at: string;
+  sales_close_at: string;
+  executed_at: string | null;
+  winning_numbers: number[] | null;
+  ticket_count: number;
+  total_sales: number;
+  total_payout: number;
+  jackpot_opening: number | null;
+  jackpot_closing: number | null;
+  distribution_opening: number | null;
+  distribution_closing: number | null;
+  reserve_used: number;
+  correlation_id: string;
+}
+
+export interface DrawTicket {
+  id: string;
+  public_number: number;
+  user_id: string;
+  numbers: number[];
+  purchase_price: number;
+  matches: number | null;
+  prize_amount: number;
+}
+
+export interface DrawDetail {
+  draw: Draw;
+  tickets: DrawTicket[];
+}
+
+export interface NumberStatistic {
+  number: number;
+  appearances: number;
+  draw_percentage: number;
+  last_appearance: string | null;
+  draws_since_last: number | null;
+}
+
+export interface AuditEntry {
+  id: string;
+  admin_user_id: string;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  old_values: Record<string, unknown> | null;
+  new_values: Record<string, unknown> | null;
+  reason: string | null;
+  created_at: string;
+}
+
+export interface Dashboard {
+  version: string;
+  uptime_seconds: number;
+  database_healthy: boolean;
+  bot_configured: boolean;
+  scheduler_enabled: boolean;
+  counts: {
+    users: number;
+    tickets: number;
+    completed_draws: number;
+    pending_draws: number;
+  };
+  lotteries: Lottery[];
+  recent_draws: Draw[];
+  recent_transactions: Transaction[];
+}

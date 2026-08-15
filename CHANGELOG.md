@@ -4,6 +4,29 @@ All notable changes follow Keep a Changelog and Semantic Versioning principles.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-08-15
+
+### Added
+
+- Separate authenticated Web Admin Panel with operational dashboard.
+- Player financial overview and idempotent balance adjustments through ledger.
+- Lottery price/base-jackpot configuration and reserve ledger adjustments.
+- Filterable immutable CAS ledger, administrator audit and read-only draw archive.
+- Number appearance statistics derived from completed draw history.
+- Argon2 administrator credential setup, signed HttpOnly sessions and CSRF protection.
+
+### Changed
+
+- Telegram Mini App is preserved but frozen; active player UI roadmap is now the
+  full Telegram bot followed by a simple user Web version.
+- Standard frontend checks now cover both the preserved Mini App and Admin Panel.
+
+### Security
+
+- Administrator mutations require an authenticated session, CSRF token,
+  mandatory reason and backend ledger/audit use cases.
+- Completed draws have no administrator mutation endpoint.
+
 ## [0.7.0] - 2026-08-15
 
 ### Added

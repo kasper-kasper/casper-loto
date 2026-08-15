@@ -6,13 +6,17 @@ balances, tickets and audit records are designed as multi-user entities from
 the beginning. No real money, payments, donations, cryptocurrency or cash-out
 are part of this project.
 
-Current version: **0.7.0 — Local Development & Test Mode**.
+Current version: **0.8.0 — Milestone 6 Web Admin Panel**.
 
 ## Architecture
 
 The project is a modular monolith. One backend owns business rules,
-transactions and persistence; the Telegram bot, Mini App and Admin Panel are
+transactions and persistence; the Telegram bot, user Web client and Admin Panel are
 separate adapters or clients.
+
+The Telegram Mini App delivered in v0.6.0 is preserved but frozen. The active
+player-interface roadmap is now: full Telegram bot gameplay, then a simple Web
+version. The Admin Panel is a separate authenticated operational interface.
 
 ```text
 k-loto/
@@ -27,8 +31,8 @@ k-loto/
 |   `-- tests/
 |-- bot/                     # aiogram player bot
 |-- frontend/
-|   |-- miniapp/             # future Telegram Mini App
-|   `-- admin/               # future independent web admin
+|   |-- miniapp/             # preserved and frozen Telegram Mini App
+|   `-- admin/               # independent Web Admin Panel
 |-- docs/
 |-- infrastructure/
 |-- scripts/
@@ -41,7 +45,8 @@ integers. The domain layer does not depend on Telegram, HTTP or React.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md),
 [docs/SCHEDULER.md](docs/SCHEDULER.md),
-[docs/TELEGRAM_BOT.md](docs/TELEGRAM_BOT.md) and
+[docs/TELEGRAM_BOT.md](docs/TELEGRAM_BOT.md),
+[docs/ADMIN_PANEL.md](docs/ADMIN_PANEL.md) and
 [docs/OPEN_DECISIONS.md](docs/OPEN_DECISIONS.md). Beginner-friendly browser and
 tunnel setup is in [docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md).
 
@@ -52,7 +57,7 @@ Requirements:
 - Python 3.12+
 - PostgreSQL 16+
 - Docker Compose (recommended)
-- Node.js 22+ for later frontend milestones
+- Node.js 22+ for web clients
 
 Create local configuration:
 
@@ -126,14 +131,25 @@ pytest
 ```
 
 Lottery mathematics, settlement/recovery idempotency, Telegram authentication,
-notification dispatch and Mini App behavior have focused tests.
+notification dispatch, preserved Mini App behavior and Admin Panel security
+have focused tests. `scripts/check.ps1` runs both frontend test/build pipelines.
 
 ## Bot, frontend and admin
 
-The aiogram bot implements `/start`, Telegram identity binding, a configured
-Mini App launch button and durable purchase/result notifications. Checkout is
-performed by the Mini App through authenticated backend endpoints. Neither
-frontend may determine balances, prices, draw assignment or payouts.
+The aiogram bot currently implements `/start`, Telegram identity binding and
+durable purchase/result notifications. Full gameplay in the bot is the next
+planned milestone, followed by the simple user Web version. The existing Mini
+App remains available but is frozen.
+
+Configure and run the independent Admin Panel:
+
+```powershell
+.venv\Scripts\python.exe -m scripts.configure_admin
+powershell -ExecutionPolicy Bypass -File .\scripts\start_admin.ps1
+```
+
+Open `http://127.0.0.1:5174`. Balance and reserve changes always produce ledger
+and audit records; completed draws have no edit API.
 
 ## Secrets
 

@@ -1,5 +1,11 @@
 # Telegram Mini App
 
+> **Frozen after v0.7.0.** The source and authenticated API remain in the
+> repository, but this client is no longer on the active product roadmap. New
+> player UX work targets the Telegram bot first and a simple user Web client
+> second. Do not remove or silently extend the Mini App without a new owner
+> decision.
+
 ## Scope
 
 Milestone 5 provides a mobile-first React/TypeScript/Vite client with:

@@ -1,15 +1,28 @@
 $ErrorActionPreference = "Stop"
 
-ruff check .
+$repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$toolDirectory = Join-Path $repositoryRoot ".venv\Scripts"
+$ruff = Join-Path $toolDirectory "ruff.exe"
+$mypy = Join-Path $toolDirectory "mypy.exe"
+$pytest = Join-Path $toolDirectory "pytest.exe"
+foreach ($tool in @($ruff, $mypy, $pytest)) {
+    if (-not (Test-Path -LiteralPath $tool)) {
+        throw "Python development environment is missing. Run uv sync --extra dev."
+    }
+}
+
+Push-Location $repositoryRoot
+try {
+& $ruff check .
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-ruff format --check .
+& $ruff format --check .
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-mypy backend/src
+& $mypy backend/src
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-pytest
+& $pytest
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 $npmCommand = Get-Command npm.cmd -ErrorAction SilentlyContinue
@@ -27,16 +40,21 @@ if ($null -eq $npmCommand) {
 $nodeDirectory = Split-Path -Parent $npmPath
 $env:Path = $nodeDirectory + ";" + $env:Path
 
-Push-Location "frontend\miniapp"
-try {
-    & $npmPath run typecheck
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-    & $npmPath run lint
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-    & $npmPath test
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-    & $npmPath run build
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+foreach ($frontend in @("frontend\miniapp", "frontend\admin")) {
+    Push-Location $frontend
+    try {
+        & $npmPath run typecheck
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        & $npmPath run lint
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        & $npmPath test
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        & $npmPath run build
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    } finally {
+        Pop-Location
+    }
+}
 } finally {
     Pop-Location
 }

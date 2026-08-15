@@ -1,5 +1,59 @@
 # Development log
 
+## [0.8.0] - 2026-08-15
+
+### Milestone 6 — Web Admin Panel
+
+Implemented the independent administrative control surface and updated the
+product roadmap after the owner froze Telegram Mini App development.
+
+Done:
+
+- added Argon2 login with signed short-lived HttpOnly SameSite sessions;
+- added per-session CSRF validation to every administrator mutation;
+- added a stable database administrator identity for permanent audit records;
+- added system dashboard, players, lotteries/funds and recent activity queries;
+- balance and reserve target changes use locked, idempotent ledger transactions
+  plus audit records in the same database transaction;
+- ticket price and base jackpot configuration requires a reason and creates an
+  audit record; Weekly price remains divisible by four for integer payouts;
+- added filterable ledger, immutable draw details, ticket/payout archive and
+  calculated number statistics;
+- created the standalone technical dark-theme React/TypeScript Admin Panel;
+- added a credential configurator that writes secrets only to ignored `.env`;
+- expanded the standard check script to both frontend applications;
+- documented the frozen Mini App and the new Bot → user Web roadmap.
+
+System behavior:
+
+- administrators can trace players, funds, draws and every CAS movement;
+- player balance and lottery reserve cannot be overwritten without ledger and
+  audit history;
+- current jackpot/distribution values remain lifecycle-owned and read-only;
+- completed draws remain immutable and expose no write route;
+- number intelligence is rebuilt from immutable draw history, not trusted as a
+  separate source of truth;
+- incomplete administrator credentials disable login safely.
+
+Technical:
+
+- version: 0.8.0;
+- migration: no schema change; existing `admin_audit_log` and ledger are used;
+- backend: 39 typed source files, 87 pytest tests;
+- frontend: 8 Mini App Vitest tests + 4 Admin Vitest tests;
+- security: Argon2, HMAC-SHA256 session, HttpOnly/SameSite cookie, Secure in
+  production, CSRF token, row locks and idempotency keys;
+- browser visual inspection was unavailable because no browser runtime was
+  connected; Admin DOM/component tests and production build passed;
+- local PostgreSQL integration remains unavailable on this machine; no VPS
+  connection was attempted.
+
+Known:
+
+- schedule and payout editing remain locked while Daily cutoff/economics are open;
+- production reverse proxy, rate limiting and deployment remain later work;
+- Telegram Mini App code is intentionally preserved at v0.7.0 and frozen.
+
 ## [0.7.0] - 2026-08-15
 
 ### Local Development & Test Mode
