@@ -4,6 +4,29 @@ All notable changes follow Keep a Changelog and Semantic Versioning principles.
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-08-15
+
+### Added
+
+- Fully playable Daily Lottery 4 of 15 in Telegram and player Web.
+- Daily draws at 02:22 and 18:00 Europe/Moscow with a two-minute cutoff.
+- Daily 40/60 jackpot/distribution contributions and approved prize tiers.
+- Daily settlement, reserve fallback, carryovers, jackpot reset and recovery.
+- Audited Web-login provisioning for players from the Admin Panel.
+
+### Changed
+
+- Scheduler recovery now settles overdue Weekly and Daily draws in one
+  chronological sequence.
+- Player Web and Admin clients are versioned with the Daily release.
+
+### Security
+
+- Daily purchases and settlement use row locks, immutable ledger records,
+  idempotency keys and durable notification events.
+- Guaranteed Daily prizes never consume jackpot; insufficient reserve aborts
+  settlement atomically.
+
 ## [0.10.0] - 2026-08-15
 
 ### Added

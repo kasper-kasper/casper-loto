@@ -110,6 +110,12 @@ def _ledger_entry(
 class WeeklyTicketPurchaseService:
     """Buy one or more Weekly tickets as one atomic database transaction."""
 
+    lottery_kind = LotteryKind.WEEKLY
+    numbers_to_pick = 5
+    max_number = 20
+    quote_purchase = staticmethod(quote_weekly_purchase)
+    lottery_label = "Weekly"
+
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
@@ -138,15 +144,22 @@ class WeeklyTicketPurchaseService:
             lottery = await self._session.scalar(
                 select(Lottery)
                 .where(
-                    Lottery.kind == LotteryKind.WEEKLY,
+                    Lottery.kind == self.lottery_kind,
                     Lottery.is_active.is_(True),
                 )
                 .with_for_update()
             )
             if lottery is None or lottery.ticket_price is None:
-                raise ConfigurationError("Active Weekly lottery is not configured.")
-            if lottery.numbers_to_pick != 5 or lottery.max_number != 20:
-                raise ConfigurationError("Weekly lottery must use the 5/20 format.")
+                raise ConfigurationError(
+                    f"Active {self.lottery_label} lottery is not configured."
+                )
+            if (
+                lottery.numbers_to_pick != self.numbers_to_pick
+                or lottery.max_number != self.max_number
+            ):
+                raise ConfigurationError(
+                    f"{self.lottery_label} lottery format is invalid."
+                )
 
             existing_after_lock = await self._session.scalar(
                 select(LedgerTransaction).where(
@@ -175,14 +188,14 @@ class WeeklyTicketPurchaseService:
                     .limit(1)
                 )
                 schedule_base = latest.scheduled_at if latest is not None else timestamp
-                scheduled_at = next_draw_at(LotteryKind.WEEKLY, schedule_base)
+                scheduled_at = next_draw_at(self.lottery_kind, schedule_base)
                 draw = Draw(
                     id=uuid4(),
                     lottery_id=lottery.id,
                     public_number=lottery.next_draw_number,
                     status=DrawStatus.SCHEDULED,
                     scheduled_at=scheduled_at,
-                    sales_close_at=sales_close_at(LotteryKind.WEEKLY, scheduled_at),
+                    sales_close_at=sales_close_at(self.lottery_kind, scheduled_at),
                     correlation_id=uuid4(),
                     ticket_count=0,
                     total_sales=0,
@@ -197,7 +210,7 @@ class WeeklyTicketPurchaseService:
             )
             if balance is None:
                 raise ConfigurationError("User balance account is missing.")
-            quote = quote_weekly_purchase(
+            quote = self.quote_purchase(
                 combinations, lottery.ticket_price, balance.amount
             )
 
@@ -212,7 +225,9 @@ class WeeklyTicketPurchaseService:
                 .with_for_update()
             )
             if jackpot is None or distribution is None:
-                raise ConfigurationError("Weekly fund accounts are missing.")
+                raise ConfigurationError(
+                    f"{self.lottery_label} fund accounts are missing."
+                )
 
             operation_id = uuid4()
             ticket_ids: list[UUID] = []
@@ -333,6 +348,12 @@ class WeeklyTicketPurchaseService:
 class WeeklySettlementService:
     """Atomically draw and settle a Weekly draw with row-level locks."""
 
+    lottery_kind = LotteryKind.WEEKLY
+    numbers_to_pick = 5
+    max_number = 20
+    calculate_settlement = staticmethod(calculate_weekly_settlement)
+    lottery_label = "Weekly"
+
     def __init__(
         self,
         session: AsyncSession,
@@ -366,8 +387,10 @@ class WeeklySettlementService:
             lottery = await self._session.scalar(
                 select(Lottery).where(Lottery.id == draw.lottery_id).with_for_update()
             )
-            if lottery is None or lottery.kind != LotteryKind.WEEKLY:
-                raise ConfigurationError("Draw is not attached to a Weekly lottery.")
+            if lottery is None or lottery.kind != self.lottery_kind:
+                raise ConfigurationError(
+                    f"Draw is not attached to a {self.lottery_label} lottery."
+                )
             jackpot = await self._session.scalar(
                 select(JackpotAccount)
                 .where(JackpotAccount.lottery_id == lottery.id)
@@ -384,7 +407,9 @@ class WeeklySettlementService:
                 .with_for_update()
             )
             if jackpot is None or distribution is None or reserve is None:
-                raise ConfigurationError("Weekly settlement accounts are missing.")
+                raise ConfigurationError(
+                    f"{self.lottery_label} settlement accounts are missing."
+                )
 
             ticket_models = list(
                 (
@@ -396,8 +421,8 @@ class WeeklySettlementService:
                     )
                 ).all()
             )
-            winning = self._number_generator.draw(20, 5)
-            plan = calculate_weekly_settlement(
+            winning = self._number_generator.draw(self.max_number, self.numbers_to_pick)
+            plan = self.calculate_settlement(
                 [
                     SettlementTicket(
                         id=ticket.id,
@@ -446,7 +471,7 @@ class WeeklySettlementService:
                 balance.version += 1
                 transaction_type = (
                     TransactionType.JACKPOT_PAYOUT
-                    if payout.matches == 5
+                    if payout.matches == self.numbers_to_pick
                     else TransactionType.PRIZE_PAYOUT
                 )
                 ledger_entries.append(

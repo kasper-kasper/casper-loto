@@ -52,10 +52,11 @@ class WeeklySettlementPlan:
     jackpot_closing: int
     jackpot_reset_credit: int
     total_payout: int
+    jackpot_match_count: int = 5
 
     @property
     def jackpot_won(self) -> bool:
-        return any(item.matches == 5 for item in self.payouts)
+        return any(item.matches == self.jackpot_match_count for item in self.payouts)
 
 
 class SystemRandomNumberGenerator:

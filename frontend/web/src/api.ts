@@ -44,9 +44,13 @@ export const webApi = {
   tickets: (state: "active" | "history") =>
     request<{ tickets: Ticket[] }>(`/tickets?state=${state}`).then((value) => value.tickets),
   results: () => request<{ draws: DrawResult[] }>("/results").then((value) => value.draws),
-  purchase: (combinations: number[][], idempotencyKey: string) =>
+  purchase: (
+    kind: "weekly" | "daily",
+    combinations: number[][],
+    idempotencyKey: string,
+  ) =>
     request<{ ticket_ids: string[]; total_cost: number; balance_after: number }>(
-      "/weekly/purchases",
+      `/${kind}/purchases`,
       {
         method: "POST",
         body: JSON.stringify({ combinations, idempotency_key: idempotencyKey }),

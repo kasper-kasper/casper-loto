@@ -29,6 +29,7 @@ from k_loto.api.routes.miniapp import (
     _dashboard_response,
     _ticket_response,
 )
+from k_loto.application.daily import DailyTicketPurchaseService
 from k_loto.application.miniapp import MiniAppQueryService
 from k_loto.application.weekly import WeeklyTicketPurchaseService
 from k_loto.core.config import Settings, get_settings
@@ -283,6 +284,44 @@ async def purchase(
     except ConfigurationError as error:
         raise HTTPException(
             status_code=503, detail="Weekly is not configured."
+        ) from error
+    return PurchaseResponse(
+        operation_id=result.operation_id,
+        draw_id=result.draw_id,
+        ticket_ids=list(result.ticket_ids),
+        total_cost=result.total_cost,
+        balance_after=result.balance_after,
+        already_processed=result.already_processed,
+    )
+
+
+@router.post(
+    "/daily/purchases",
+    response_model=PurchaseResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def purchase_daily(
+    payload: PurchaseRequest,
+    player: Annotated[CurrentWebPlayer, Depends(web_player_with_csrf)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> PurchaseResponse:
+    try:
+        result = await DailyTicketPurchaseService(session).purchase(
+            user_id=player.user_id,
+            combinations=[list(value) for value in payload.combinations],
+            idempotency_key=payload.idempotency_key,
+        )
+    except InsufficientBalance as error:
+        raise HTTPException(
+            status_code=402, detail="Insufficient CAS balance."
+        ) from error
+    except InvalidTicket as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    except NoAvailableDraw as error:
+        raise HTTPException(status_code=409, detail="No Daily draw is open.") from error
+    except ConfigurationError as error:
+        raise HTTPException(
+            status_code=503, detail="Daily is not configured."
         ) from error
     return PurchaseResponse(
         operation_id=result.operation_id,

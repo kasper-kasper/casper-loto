@@ -81,6 +81,16 @@ export const adminApi = {
         }),
       },
     ),
+  configureWebAccount: (
+    userId: string,
+    username: string,
+    password: string,
+    reason: string,
+  ) =>
+    request<{ username: string }>(`/players/${userId}/web-account`, {
+      method: "PUT",
+      body: JSON.stringify({ username, password, reason }),
+    }),
   configureLottery: (
     lotteryId: string,
     ticketPrice: number,

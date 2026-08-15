@@ -50,11 +50,7 @@ def lottery_menu_markup() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="Weekly 5 из 20", callback_data="game:weekly")],
-            [
-                InlineKeyboardButton(
-                    text="Daily 4 из 15 · скоро", callback_data="game:daily"
-                )
-            ],
+            [InlineKeyboardButton(text="Daily 4 из 15", callback_data="game:daily")],
             [InlineKeyboardButton(text="← Главное меню", callback_data="bot:home")],
         ]
     )
@@ -118,6 +114,46 @@ def weekly_picker_markup(
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
+def daily_picker_markup(
+    selected: tuple[int, ...], cart_size: int
+) -> InlineKeyboardMarkup:
+    selected_set = set(selected)
+    rows: list[list[InlineKeyboardButton]] = []
+    for start in range(1, 16, 5):
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=f"✓ {number:02d}"
+                    if number in selected_set
+                    else f"{number:02d}",
+                    callback_data=f"pick:{number}",
+                )
+                for number in range(start, start + 5)
+            ]
+        )
+    rows.extend(
+        [
+            [
+                InlineKeyboardButton(text="🎲 Случайные", callback_data="pick:random"),
+                InlineKeyboardButton(text="Очистить", callback_data="pick:clear"),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="＋ Добавить в корзину", callback_data="pick:add"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text=f"✅ Купить ({cart_size + (1 if len(selected) == 4 else 0)})",
+                    callback_data="pick:checkout",
+                )
+            ],
+            [InlineKeyboardButton(text="← Отмена", callback_data="bot:buy")],
+        ]
+    )
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
 def toggle_weekly_number(selected: tuple[int, ...], number: int) -> tuple[int, ...]:
     if number < 1 or number > 20:
         raise ValueError("Weekly number must be between 1 and 20.")
@@ -136,11 +172,39 @@ def random_weekly_numbers(rng: SystemRandom | None = None) -> tuple[int, ...]:
     return tuple(sorted(generator.sample(range(1, 21), 5)))
 
 
+def toggle_daily_number(selected: tuple[int, ...], number: int) -> tuple[int, ...]:
+    if number < 1 or number > 15:
+        raise ValueError("Daily number must be between 1 and 15.")
+    values = set(selected)
+    if number in values:
+        values.remove(number)
+    elif len(values) >= 4:
+        raise ValueError("Daily ticket already contains four numbers.")
+    else:
+        values.add(number)
+    return tuple(sorted(values))
+
+
+def random_daily_numbers(rng: SystemRandom | None = None) -> tuple[int, ...]:
+    generator = rng or SystemRandom()
+    return tuple(sorted(generator.sample(range(1, 16), 4)))
+
+
 def add_weekly_to_cart(
     cart: tuple[tuple[int, ...], ...], selected: tuple[int, ...], *, maximum: int
 ) -> tuple[tuple[int, ...], ...]:
     if len(selected) != 5:
         raise ValueError("Select exactly five numbers before adding a ticket.")
+    if len(cart) >= maximum:
+        raise ValueError(f"One Telegram purchase supports up to {maximum} tickets.")
+    return (*cart, tuple(sorted(selected)))
+
+
+def add_daily_to_cart(
+    cart: tuple[tuple[int, ...], ...], selected: tuple[int, ...], *, maximum: int
+) -> tuple[tuple[int, ...], ...]:
+    if len(selected) != 4:
+        raise ValueError("Select exactly four numbers before adding a ticket.")
     if len(cart) >= maximum:
         raise ValueError(f"One Telegram purchase supports up to {maximum} tickets.")
     return (*cart, tuple(sorted(selected)))
@@ -178,13 +242,19 @@ def format_home(home: BotHome) -> str:
 
 
 def format_picker(
-    *, selected: tuple[int, ...], cart: tuple[tuple[int, ...], ...], price: int
+    *,
+    selected: tuple[int, ...],
+    cart: tuple[tuple[int, ...], ...],
+    price: int,
+    lottery_name: str = "Weekly",
+    numbers_to_pick: int = 5,
+    max_number: int = 20,
 ) -> str:
     selection = " · ".join(map(str, selected)) if selected else "—"
     lines = [
-        "🎟 Weekly 5 из 20",
+        f"🎟 {lottery_name} {numbers_to_pick} из {max_number}",
         "",
-        f"Выбрано: {selection} ({len(selected)}/5)",
+        f"Выбрано: {selection} ({len(selected)}/{numbers_to_pick})",
         f"В корзине: {len(cart)} бил.",
         f"Цена одного билета: {format_cas(price)} CAS",
     ]
@@ -277,7 +347,10 @@ def rules_text() -> str:
         "5/5 — доля jackpot\n\n"
         "Продажи Weekly закрываются в воскресенье в 19:55 MSK, тираж "
         "проходит в 20:00 MSK. После cutoff покупка относится к следующему "
-        "тиражу. Daily пока недоступна до утверждения экономики."
+        "тиражу.\n\n"
+        "Daily 4 из 15: 0/4 и 1/4 — 0 CAS; 2/4 — 50% цены; "
+        "3/4 — 300% цены; 4/4 — доля jackpot. Тиражи в 02:22 и "
+        "18:00 MSK, продажи закрываются за 2 минуты."
     )
 
 

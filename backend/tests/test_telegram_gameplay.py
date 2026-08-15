@@ -31,7 +31,9 @@ from k_loto.infrastructure.database.models import (
     User,
 )
 from k_loto.infrastructure.telegram_game_ui import (
+    add_daily_to_cart,
     add_weekly_to_cart,
+    daily_picker_markup,
     format_draws,
     format_home,
     format_picker,
@@ -41,6 +43,7 @@ from k_loto.infrastructure.telegram_game_ui import (
     main_menu_markup,
     rules_text,
     telegram_checkout_idempotency_key,
+    toggle_daily_number,
     toggle_weekly_number,
     weekly_picker_markup,
 )
@@ -126,6 +129,18 @@ def test_weekly_picker_selects_exactly_five_unique_numbers() -> None:
         toggle_weekly_number((), 21)
 
 
+def test_daily_picker_selects_four_of_fifteen_and_supports_cart() -> None:
+    selected: tuple[int, ...] = ()
+    for number in (15, 1, 7, 4):
+        selected = toggle_daily_number(selected, number)
+    assert selected == (1, 4, 7, 15)
+    assert add_daily_to_cart((), selected, maximum=2) == (selected,)
+    callbacks = callback_values(daily_picker_markup(selected, 0))
+    assert {f"pick:{value}" for value in range(1, 16)}.issubset(callbacks)
+    with pytest.raises(ValueError):
+        toggle_daily_number(selected, 2)
+
+
 def test_weekly_cart_allows_identical_tickets_and_enforces_transport_limit() -> None:
     ticket = (1, 2, 3, 4, 5)
     cart = add_weekly_to_cart((), ticket, maximum=2)
@@ -207,7 +222,8 @@ def test_gameplay_formatters_show_server_values_and_rules() -> None:
     assert "Переходящий jackpot: 10 600 CAS" in format_draws((draw,))
     assert "Итог: -300 CAS" in format_statistics(stats)
     assert "19:55 MSK" in rules_text()
-    assert "Daily пока недоступна" in rules_text()
+    assert "Daily 4 из 15" in rules_text()
+    assert "за 2 минуты" in rules_text()
 
 
 async def test_home_projection_uses_database_balance_funds_and_next_draw() -> None:

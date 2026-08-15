@@ -155,9 +155,7 @@ class TelegramGameplayQueryService:
                     draw.public_number if draw else None,
                     draw.scheduled_at if draw else None,
                     draw.sales_close_at if draw else None,
-                    lottery.code == "weekly"
-                    and lottery.ticket_price is not None
-                    and draw is not None,
+                    lottery.ticket_price is not None and draw is not None,
                 )
             )
         return BotHome(player, active_count or 0, tuple(cards))

@@ -8,6 +8,7 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from k_loto.application.daily import DailySettlementService
 from k_loto.application.weekly import WeeklySettlementService
 from k_loto.domain.enums import DrawStatus, LotteryKind
 from k_loto.domain.schedules import next_draw_at, sales_close_at
@@ -95,13 +96,12 @@ class DrawRecoveryService:
                 ).all()
             )
 
-    async def _next_due_weekly(self, now: datetime) -> UUID | None:
+    async def _next_due_draw(self, now: datetime) -> UUID | None:
         async with self._session_factory() as session:
             draw_id = await session.scalar(
                 select(Draw.id)
                 .join(Lottery, Lottery.id == Draw.lottery_id)
                 .where(
-                    Lottery.kind == LotteryKind.WEEKLY,
                     Draw.status != DrawStatus.COMPLETED,
                     Draw.scheduled_at <= now,
                 )
@@ -119,6 +119,17 @@ class DrawRecoveryService:
             raise LookupError("Settled draw disappeared from business history.")
         return lottery_id
 
+    async def _lottery_kind_for_draw(self, draw_id: UUID) -> LotteryKind:
+        async with self._session_factory() as session:
+            kind = await session.scalar(
+                select(Lottery.kind)
+                .join(Draw, Draw.lottery_id == Lottery.id)
+                .where(Draw.id == draw_id)
+            )
+        if kind is None:
+            raise LookupError("Draw lottery disappeared from business history.")
+        return kind
+
     async def reconcile(self, *, now: datetime | None = None) -> RecoveryReport:
         timestamp = now or datetime.now(UTC)
         prepared: list[UUID] = []
@@ -132,11 +143,15 @@ class DrawRecoveryService:
                 if created:
                     prepared.append(draw.id)
 
-        while due_draw_id := await self._next_due_weekly(timestamp):
+        while due_draw_id := await self._next_due_draw(timestamp):
+            kind = await self._lottery_kind_for_draw(due_draw_id)
             async with self._session_factory() as session:
-                result = await WeeklySettlementService(session).settle(
-                    due_draw_id, now=timestamp
+                service = (
+                    WeeklySettlementService(session)
+                    if kind == LotteryKind.WEEKLY
+                    else DailySettlementService(session)
                 )
+                result = await service.settle(due_draw_id, now=timestamp)
             if not result.already_completed:
                 settled.append(due_draw_id)
 

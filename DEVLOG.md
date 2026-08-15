@@ -1,5 +1,46 @@
 # Development log
 
+## [0.11.0] - 2026-08-15
+
+### Daily Lottery 4/15
+
+Implemented the owner-approved Daily economics, scheduling, recovery and player
+interfaces without changing Weekly rules or the frozen Mini App frontend.
+
+Done:
+
+- implemented strict Daily 4-of-15 ticket validation and secure RNG support;
+- split every purchase into 40% jackpot and 60% distribution ledger credits;
+- implemented 0/4 and 1/4 zero payout, 2/4 half-price payout, 3/4 triple-price
+  payout and per-ticket sharing of the full jackpot at 4/4;
+- used distribution then per-lottery reserve for guaranteed payout shortfall;
+- preserved unused distribution and unwon jackpot carryovers;
+- reset a won jackpot to the Admin-configured base amount through ledger;
+- enabled both 02:22 and 18:00 MSK slots with a two-minute cutoff;
+- generalized chronological recovery to Weekly and Daily draws;
+- enabled Daily multi-ticket checkout in Telegram and ordinary Web;
+- added Daily rules to bot help and all relevant documentation;
+- added audited Admin provisioning of player Web credentials;
+- recorded OD-006 and OD-012 as resolved.
+
+System behavior:
+
+- Weekly and Daily retain independent draw/ticket numbering and fund accounts;
+- identical Daily combinations are separate tickets;
+- empty Daily draws complete and carry both pools;
+- repeated purchase or settlement invocation cannot debit or pay twice;
+- insufficient reserve leaves the whole draw unsettled for safe later retry;
+- price, base jackpot and reserve stay owner-controlled in Admin.
+
+Technical:
+
+- version: 0.11.0;
+- migration: no schema change after `0003_web_accounts`;
+- backend: 45 typed source files, 124 pytest tests;
+- frontend: 8 frozen Mini App + 4 Admin + 4 player Web Vitest tests;
+- Ruff, formatting, mypy and all frontend typecheck/lint/build checks passed;
+- no VPS deployment was included in this release commit.
+
 ## [0.10.0] - 2026-08-15
 
 ### Player Web

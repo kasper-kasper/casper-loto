@@ -27,7 +27,9 @@ from k_loto.infrastructure.database.models import (
     LotteryReserve,
     Ticket,
     User,
+    WebAccount,
 )
+from k_loto.infrastructure.web_auth import hash_web_password, normalize_web_username
 
 ADMIN_NAMESPACE = UUID("8c48cd74-45ee-46eb-bf5b-e11944f87e3d")
 
@@ -171,6 +173,58 @@ class AdminMutationService:
         self._session = session
         self._admin_user_id = admin_user_id
 
+    async def configure_web_account(
+        self,
+        user_id: UUID,
+        *,
+        username: str,
+        password: str,
+        reason: str,
+    ) -> str:
+        normalized = normalize_web_username(username)
+        encoded = hash_web_password(password)
+        if not reason.strip() or len(reason) > 512:
+            raise ValueError("A reason of 1 to 512 characters is required.")
+        async with self._session.begin():
+            user = await self._session.scalar(
+                select(User).where(User.id == user_id).with_for_update()
+            )
+            if user is None or user.is_admin:
+                raise LookupError("Player does not exist.")
+            account = await self._session.scalar(
+                select(WebAccount)
+                .where(WebAccount.user_id == user_id)
+                .with_for_update()
+            )
+            old_values = (
+                {"username": account.username, "is_active": account.is_active}
+                if account is not None
+                else None
+            )
+            if account is None:
+                account = WebAccount(
+                    user_id=user_id,
+                    username=normalized,
+                    password_hash=encoded,
+                    is_active=True,
+                )
+                self._session.add(account)
+                action = AuditAction.CREATE
+            else:
+                account.username = normalized
+                account.password_hash = encoded
+                account.is_active = True
+                action = AuditAction.UPDATE
+            self._audit(
+                action,
+                "web_account",
+                user_id,
+                old_values,
+                {"username": normalized, "is_active": True},
+                reason,
+            )
+        return normalized
+
     async def set_user_balance(
         self,
         user_id: UUID,
@@ -311,13 +365,41 @@ class AdminMutationService:
                 raise LookupError("Lottery or jackpot account does not exist.")
             if lottery.kind == LotteryKind.WEEKLY and ticket_price % 4:
                 raise ValueError("Weekly ticket price must be divisible by 4 CAS.")
+            if lottery.kind == LotteryKind.DAILY and ticket_price % 10:
+                raise ValueError("Daily ticket price must be divisible by 10 CAS.")
             old_values = {
                 "ticket_price": lottery.ticket_price,
                 "base_jackpot": jackpot.base_amount,
             }
+            initialize_jackpot = (
+                jackpot.balance == 0 and jackpot.base_amount == 0 and base_jackpot > 0
+            )
             lottery.ticket_price = ticket_price
             jackpot.base_amount = base_jackpot
             jackpot.version += 1
+            if initialize_jackpot:
+                jackpot.balance = base_jackpot
+                operation_id = uuid4()
+                self._session.add(
+                    LedgerTransaction(
+                        id=uuid4(),
+                        operation_id=operation_id,
+                        idempotency_key=(
+                            f"admin-jackpot-initialize:{lottery.id}:{base_jackpot}"
+                        ),
+                        account_kind=LedgerAccountKind.JACKPOT,
+                        account_id=jackpot.id,
+                        type=TransactionType.SYSTEM_ADJUSTMENT,
+                        amount=base_jackpot,
+                        balance_before=0,
+                        balance_after=base_jackpot,
+                        lottery_id=lottery.id,
+                        details={
+                            "reason": reason,
+                            "admin_user_id": str(self._admin_user_id),
+                        },
+                    )
+                )
             self._audit(
                 AuditAction.UPDATE,
                 "lottery_configuration",

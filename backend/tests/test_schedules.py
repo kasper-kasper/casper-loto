@@ -1,6 +1,6 @@
 """Milestone 3 schedule preparation and recovery tests."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from typing import Any, cast
 from unittest.mock import AsyncMock
@@ -88,6 +88,13 @@ def test_weekly_schedule_is_strictly_next_after_exact_draw_time() -> None:
 )
 def test_daily_confirmed_slots(after: datetime, expected: datetime) -> None:
     assert next_daily_draw(after).astimezone(MOSCOW) == expected
+
+
+def test_daily_sales_close_two_minutes_before_both_slots() -> None:
+    for scheduled in (local(2026, 8, 14, 2, 22), local(2026, 8, 14, 18, 0)):
+        assert sales_close_at(LotteryKind.DAILY, scheduled.astimezone(UTC)).astimezone(
+            MOSCOW
+        ) == scheduled - timedelta(minutes=2)
 
 
 def test_schedule_rejects_naive_server_time() -> None:
@@ -197,11 +204,14 @@ async def test_recovery_processes_multiple_missed_draws_chronologically(
     )
     monkeypatch.setattr(
         service,
-        "_next_due_weekly",
+        "_next_due_draw",
         AsyncMock(side_effect=[draw_ids[0], draw_ids[1], None]),
     )
     monkeypatch.setattr(
         service, "_lottery_id_for_draw", AsyncMock(return_value=lottery_id)
+    )
+    monkeypatch.setattr(
+        service, "_lottery_kind_for_draw", AsyncMock(return_value=LotteryKind.WEEKLY)
     )
     settled: list[UUID] = []
     prepared = iter([UUID(int=20), UUID(int=21), UUID(int=22)])

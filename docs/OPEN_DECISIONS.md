@@ -9,13 +9,13 @@ Unresolved requirements are kept here instead of being guessed in code.
 | OD-003 | Daily ticket price | Open | Must be configurable in Admin. |
 | OD-004 | Weekly base jackpot | Open | Must be configured by the owner. |
 | OD-005 | Daily base jackpot | Open | Must be configured by the owner. |
-| OD-006 | Daily Lottery payout model | Open | Do not copy Weekly economics. |
+| OD-006 | Daily Lottery payout model | Resolved 2026-08-15 | 0/4 and 1/4 pay 0; 2/4 pays 50% of ticket price; 3/4 pays 300%; 4/4 splits jackpot. Sales contribute 40% jackpot and 60% distribution. Distribution shortfall uses reserve; carryovers apply; won jackpot resets to configured base. |
 | OD-007 | Cart TTL | Open | Must be short and configurable. Mini App persistence remains disabled until a value is supplied; the in-memory cart still works for the open session. |
 | OD-008 | Final visual design | Open | Current visual references are directional only. |
 | OD-009 | Reserve scope | Resolved 2026-08-14 | Per-lottery reserves, matching the Milestone 1 requirement. |
 | OD-010 | Integer payout remainder allocation | Resolved 2026-08-14 | Allocate one extra CAS by ascending public ticket number until exhausted. |
 | OD-011 | Behavior when reserve cannot cover guaranteed payouts | Resolved 2026-08-14 | Abort atomically and retry after reserve funding; never use jackpot or mint CAS. |
-| OD-012 | Sales cutoff for Daily schedule slots | Open | Weekly cutoff is known; Daily cutoff is not specified. |
+| OD-012 | Sales cutoff for Daily schedule slots | Resolved 2026-08-15 | Both 02:22 and 18:00 Europe/Moscow slots close sales 2 minutes before draw. |
 | OD-013 | Primary player interfaces | Resolved 2026-08-15 | Telegram Mini App is frozen and preserved. Active order: Web Admin Panel, full Telegram bot gameplay, simple user Web version, then one permanent deployment. |
 | OD-014 | Production Admin access | Resolved 2026-08-15 | Admin must be a continuously available ordinary HTTPS site: open address, enter login/password; no manual local process startup by the owner. |
 

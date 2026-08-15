@@ -87,3 +87,4 @@ def test_web_routes_are_registered() -> None:
     assert "/api/v1/web/tickets" in paths
     assert "/api/v1/web/results" in paths
     assert "/api/v1/web/weekly/purchases" in paths
+    assert "/api/v1/web/daily/purchases" in paths

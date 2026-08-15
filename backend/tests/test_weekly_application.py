@@ -8,6 +8,7 @@ from uuid import UUID
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from k_loto.application.daily import DailySettlementService, DailyTicketPurchaseService
 from k_loto.application.weekly import (
     WeeklySettlementService,
     WeeklyTicketPurchaseService,
@@ -84,6 +85,12 @@ class FixedGenerator:
         self.calls += 1
         assert (population_size, numbers_to_pick) == (20, 5)
         return (1, 2, 3, 4, 5)
+
+
+class FixedDailyGenerator:
+    def draw(self, population_size: int, numbers_to_pick: int) -> tuple[int, ...]:
+        assert (population_size, numbers_to_pick) == (15, 4)
+        return (1, 2, 3, 4)
 
 
 def build_purchase_accounts(now: datetime):
@@ -167,6 +174,63 @@ async def test_multi_ticket_purchase_updates_all_accounts_and_numbering() -> Non
     assert len(notifications) == 1
     assert notifications[0].type == NotificationType.TICKET_PURCHASED
     assert len(notifications[0].payload["tickets"]) == 2
+
+
+async def test_daily_purchase_uses_40_60_split_and_independent_numbering() -> None:
+    now = datetime(2026, 8, 14, 12, tzinfo=UTC)
+    user_id, lottery, draw, balance, jackpot, distribution = build_purchase_accounts(
+        now
+    )
+    lottery.code = "daily"
+    lottery.name = "Daily 4/15"
+    lottery.kind = LotteryKind.DAILY
+    lottery.numbers_to_pick = 4
+    lottery.max_number = 15
+    lottery.sales_cutoff_minutes = 2
+    lottery.next_ticket_number = 50
+    fake = FakeSession(
+        scalar_values=[None, lottery, None, draw, balance, jackpot, distribution]
+    )
+
+    result = await DailyTicketPurchaseService(cast(AsyncSession, fake)).purchase(
+        user_id=user_id,
+        combinations=[[1, 2, 3, 4], [1, 2, 3, 4]],
+        idempotency_key="daily-checkout",
+        now=now,
+    )
+
+    tickets = [item for item in fake.added if isinstance(item, Ticket)]
+    assert [item.public_number for item in tickets] == [50, 51]
+    assert jackpot.balance == 2_080
+    assert distribution.balance == 420
+    assert balance.amount == 800
+    assert result.total_cost == 200
+
+
+async def test_empty_daily_draw_settlement_is_completed_idempotently() -> None:
+    now = datetime(2026, 8, 14, 12, tzinfo=UTC)
+    _, lottery, draw, _, jackpot, distribution = build_purchase_accounts(now)
+    lottery.code = "daily"
+    lottery.name = "Daily 4/15"
+    lottery.kind = LotteryKind.DAILY
+    lottery.numbers_to_pick = 4
+    lottery.max_number = 15
+    draw.scheduled_at = now
+    reserve = LotteryReserve(
+        id=UUID(int=700), lottery_id=lottery.id, balance=1_000, version=1
+    )
+    fake = FakeSession(
+        scalar_values=[draw, lottery, jackpot, distribution, reserve],
+        scalar_collections=[[], []],
+    )
+
+    result = await DailySettlementService(
+        cast(AsyncSession, fake), FixedDailyGenerator()
+    ).settle(draw.id, now=now)
+
+    assert result.winning_numbers == (1, 2, 3, 4)
+    assert draw.status == DrawStatus.COMPLETED
+    assert draw.total_payout == 0
 
 
 async def test_duplicate_purchase_idempotency_key_returns_original_result() -> None:

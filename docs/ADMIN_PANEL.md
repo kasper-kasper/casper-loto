@@ -24,8 +24,8 @@ the owner will open its normal URL and log in without starting any process.
   last appearance, calculated from completed draw history;
 - permanent administrator audit history.
 
-Schedule and payout-configuration editing is deliberately unavailable while
-Daily cutoff/payout decisions remain open. Current jackpot and distribution
+Schedule editing remains deliberately unavailable without effective-date rules.
+Daily price and base jackpot are configurable. Current jackpot and distribution
 balances are lifecycle-owned and cannot be silently overwritten. Completed
 draws have no mutation endpoint.
 

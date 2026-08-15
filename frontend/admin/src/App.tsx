@@ -108,6 +108,8 @@ function PlayerCard({ player, onSaved }: { player: Player; onSaved: () => Promis
   const [amount, setAmount] = useState(String(player.balance));
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const [webUsername, setWebUsername] = useState("");
+  const [webPassword, setWebPassword] = useState("");
   const save = async () => {
     setBusy(true);
     try {
@@ -116,10 +118,19 @@ function PlayerCard({ player, onSaved }: { player: Player; onSaved: () => Promis
       await onSaved();
     } finally { setBusy(false); }
   };
+  const saveWeb = async () => {
+    setBusy(true);
+    try {
+      await adminApi.configureWebAccount(player.id, webUsername, webPassword, reason);
+      setWebPassword("");
+      await onSaved();
+    } finally { setBusy(false); }
+  };
   return <article className="player-card">
     <div className="player-head"><div className="avatar">{player.display_name.slice(0, 1)}</div><div><h3>{player.display_name}</h3><small>@{player.username ?? "no_username"} · TG {player.telegram_id ?? "—"}</small></div><Status active={player.is_active}>{player.is_active ? "ACTIVE" : "DISABLED"}</Status></div>
     <div className="player-stats"><span><small>BALANCE</small><b>{cas(player.balance)}</b></span><span><small>TICKETS</small><b>{player.ticket_count}</b></span><span><small>SPENT</small><b>{cas(player.spent)}</b></span><span><small>WON</small><b>{cas(player.won)}</b></span><span><small>NET</small><b className={player.net >= 0 ? "positive" : "negative"}>{cas(player.net)}</b></span></div>
     <div className="adjust"><label>New balance<input min="0" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} /></label><label>Mandatory reason<input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Why is this adjustment needed?" /></label><button disabled={busy || !reason.trim()} onClick={() => void save()}>SET VIA LEDGER</button></div>
+    <div className="adjust"><label>Web username<input value={webUsername} onChange={(e) => setWebUsername(e.target.value)} /></label><label>New Web password<input type="password" value={webPassword} onChange={(e) => setWebPassword(e.target.value)} /></label><button disabled={busy || !reason.trim() || webUsername.length < 3 || webPassword.length < 12} onClick={() => void saveWeb()}>SET WEB ACCESS</button></div>
   </article>;
 }
 

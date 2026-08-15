@@ -1,21 +1,21 @@
 # Player Web application
 
 The ordinary browser client is a small alternative to Telegram gameplay. It
-uses the same player, balance, Weekly draws, purchased tickets and immutable
+uses the same player, balance, Weekly/Daily draws, purchased tickets and immutable
 results as the bot. The preserved Telegram Mini App is not involved.
 
 ## Features
 
 - username/password login;
-- current integer CAS balance and Weekly draw information;
-- manual 5-of-20 selection and purchase of 1 to 20 tickets;
+- current integer CAS balance and Weekly/Daily draw information;
+- Weekly 5-of-20 or Daily 4-of-15 selection and purchase of 1 to 20 tickets;
 - identical combinations in one purchase;
 - active tickets and settled ticket history;
 - completed draw result archive;
 - logout and automatic session restoration.
 
 Price, balance, draw assignment and purchase result are authoritative backend
-values. Purchases use the existing transactional Weekly service and a unique
+values. Purchases use the matching transactional lottery service and a unique
 idempotency key. The browser cannot write balances or draw results.
 
 ## Security

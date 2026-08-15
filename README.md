@@ -6,7 +6,7 @@ balances, tickets and audit records are designed as multi-user entities from
 the beginning. No real money, payments, donations, cryptocurrency or cash-out
 are part of this project.
 
-Current version: **0.10.0 — Player Web**.
+Current version: **0.11.0 — Daily Lottery 4/15**.
 
 ## Architecture
 
@@ -46,6 +46,7 @@ integers. The domain layer does not depend on Telegram, HTTP or React.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md),
 [docs/SCHEDULER.md](docs/SCHEDULER.md),
+[docs/DAILY_CORE.md](docs/DAILY_CORE.md),
 [docs/TELEGRAM_BOT.md](docs/TELEGRAM_BOT.md),
 [docs/ADMIN_PANEL.md](docs/ADMIN_PANEL.md),
 [docs/WEB_APP.md](docs/WEB_APP.md) and
@@ -144,10 +145,9 @@ test/build pipelines.
 The aiogram bot is now the primary gameplay interface. It implements `/start`
 and `/menu`, server-authoritative balance, Weekly 5/20 selection, random pick,
 multi-ticket checkout, active/history tickets, results, player statistics and
-durable purchase/result notifications. Daily remains read-only until its open
-economics and cutoff decisions are resolved. The existing Mini App remains
-available but frozen. The ordinary Web client supports Weekly purchase,
-balance, active tickets, history and results.
+durable purchase/result notifications. Daily 4/15 is available in Telegram and
+the ordinary Web client with two daily slots, a two-minute cutoff and the
+approved payout model. The existing Mini App remains preserved and frozen.
 
 Configure an existing Telegram player's Web login and run the local client:
 

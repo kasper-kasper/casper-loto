@@ -20,6 +20,7 @@ from aiogram.types import (
 )
 
 from k_loto.application.bot_gameplay import TelegramGameplayQueryService
+from k_loto.application.daily import DailyTicketPurchaseService
 from k_loto.application.identity import TelegramIdentityService
 from k_loto.application.notifications import NotificationDispatcher
 from k_loto.application.weekly import WeeklyTicketPurchaseService
@@ -33,8 +34,10 @@ from k_loto.domain.errors import (
 from k_loto.infrastructure.database.session import session_factory
 from k_loto.infrastructure.notification_repository import SqlNotificationRepository
 from k_loto.infrastructure.telegram_game_ui import (
+    add_daily_to_cart,
     add_weekly_to_cart,
     back_markup,
+    daily_picker_markup,
     format_draws,
     format_home,
     format_picker,
@@ -42,10 +45,12 @@ from k_loto.infrastructure.telegram_game_ui import (
     format_tickets,
     lottery_menu_markup,
     main_menu_markup,
+    random_daily_numbers,
     random_weekly_numbers,
     rules_text,
     telegram_checkout_idempotency_key,
     ticket_tabs_markup,
+    toggle_daily_number,
     toggle_weekly_number,
     weekly_picker_markup,
 )
@@ -141,28 +146,24 @@ async def buy_menu(callback: CallbackQuery, state: FSMContext) -> None:
     await state.clear()
     await message.edit_text(
         "🎟 Выберите лотерею\n\n"
-        "Weekly доступна для покупки. Daily отображается, но останется "
-        "закрытой до утверждения payout model и cutoff.",
+        "Weekly и Daily доступны после настройки цены и фондов в Admin.",
         reply_markup=lottery_menu_markup(),
     )
 
 
-@router.callback_query(F.data == "game:daily")
-async def daily_unavailable(callback: CallbackQuery) -> None:
-    await callback.answer(
-        "Daily пока недоступна: экономика и cutoff не утверждены.", show_alert=True
-    )
-
-
-async def _registered_weekly_price(telegram_id: int) -> int:
+async def _registered_lottery_price(telegram_id: int, code: str) -> int:
     async with session_factory() as session:
         home = await TelegramGameplayQueryService(session).home(
             telegram_id, now=datetime.now(UTC)
         )
-    weekly = next((item for item in home.lotteries if item.code == "weekly"), None)
-    if weekly is None or weekly.ticket_price is None or not weekly.purchase_available:
-        raise ConfigurationError("Weekly purchase is not currently available.")
-    return weekly.ticket_price
+    lottery = next((item for item in home.lotteries if item.code == code), None)
+    if (
+        lottery is None
+        or lottery.ticket_price is None
+        or not lottery.purchase_available
+    ):
+        raise ConfigurationError(f"{code} purchase is not currently available.")
+    return lottery.ticket_price
 
 
 async def _render_picker(message: Message, state: FSMContext, telegram_id: int) -> None:
@@ -171,17 +172,31 @@ async def _render_picker(message: Message, state: FSMContext, telegram_id: int) 
     cart = tuple(
         tuple(int(number) for number in values) for values in data.get("cart", [])
     )
+    code = str(data.get("lottery_code", "weekly"))
+    daily = code == "daily"
     try:
-        price = await _registered_weekly_price(telegram_id)
+        price = await _registered_lottery_price(telegram_id, code)
     except (ConfigurationError, LookupError):
         await state.clear()
         await message.edit_text(
-            "Weekly сейчас недоступна для покупки.", reply_markup=back_markup()
+            f"{code.title()} сейчас недоступна для покупки.",
+            reply_markup=back_markup(),
         )
         return
     await message.edit_text(
-        format_picker(selected=selected, cart=cart, price=price),
-        reply_markup=weekly_picker_markup(selected, len(cart)),
+        format_picker(
+            selected=selected,
+            cart=cart,
+            price=price,
+            lottery_name=code.title(),
+            numbers_to_pick=4 if daily else 5,
+            max_number=15 if daily else 20,
+        ),
+        reply_markup=(
+            daily_picker_markup(selected, len(cart))
+            if daily
+            else weekly_picker_markup(selected, len(cart))
+        ),
     )
 
 
@@ -191,7 +206,31 @@ async def weekly_start(callback: CallbackQuery, state: FSMContext) -> None:
     if message is None:
         return
     await state.set_state(GameplayState.weekly_picker)
-    await state.set_data({"selected": [], "cart": [], "checkout_key": str(uuid4())})
+    await state.set_data(
+        {
+            "lottery_code": "weekly",
+            "selected": [],
+            "cart": [],
+            "checkout_key": str(uuid4()),
+        }
+    )
+    await _render_picker(message, state, callback.from_user.id)
+
+
+@router.callback_query(F.data == "game:daily")
+async def daily_start(callback: CallbackQuery, state: FSMContext) -> None:
+    message = await _callback_message(callback)
+    if message is None:
+        return
+    await state.set_state(GameplayState.weekly_picker)
+    await state.set_data(
+        {
+            "lottery_code": "daily",
+            "selected": [],
+            "cart": [],
+            "checkout_key": str(uuid4()),
+        }
+    )
     await _render_picker(message, state, callback.from_user.id)
 
 
@@ -206,22 +245,27 @@ async def weekly_action(callback: CallbackQuery, state: FSMContext) -> None:
     cart = tuple(
         tuple(int(number) for number in values) for values in data.get("cart", [])
     )
+    code = str(data.get("lottery_code", "weekly"))
+    daily = code == "daily"
     try:
         if action.isdigit():
-            selected = toggle_weekly_number(selected, int(action))
+            selected = (
+                toggle_daily_number(selected, int(action))
+                if daily
+                else toggle_weekly_number(selected, int(action))
+            )
         elif action == "random":
-            selected = random_weekly_numbers()
+            selected = random_daily_numbers() if daily else random_weekly_numbers()
         elif action == "clear":
             selected = ()
         elif action == "add":
-            cart = add_weekly_to_cart(
-                cart,
-                selected,
-                maximum=get_settings().bot_max_tickets_per_purchase,
+            add_to_cart = add_daily_to_cart if daily else add_weekly_to_cart
+            cart = add_to_cart(
+                cart, selected, maximum=get_settings().bot_max_tickets_per_purchase
             )
             selected = ()
         elif action == "checkout":
-            await _checkout_weekly(callback, message, state, selected, cart, data)
+            await _checkout_lottery(callback, message, state, selected, cart, data)
             return
         else:
             return
@@ -235,7 +279,7 @@ async def weekly_action(callback: CallbackQuery, state: FSMContext) -> None:
     await _render_picker(message, state, callback.from_user.id)
 
 
-async def _checkout_weekly(
+async def _checkout_lottery(
     callback: CallbackQuery,
     message: Message,
     state: FSMContext,
@@ -243,12 +287,15 @@ async def _checkout_weekly(
     cart: tuple[tuple[int, ...], ...],
     data: dict[str, object],
 ) -> None:
+    code = str(data.get("lottery_code", "weekly"))
+    numbers_to_pick = 4 if code == "daily" else 5
     combinations: list[list[int] | tuple[int, ...]] = list(cart)
-    if len(selected) == 5:
+    if len(selected) == numbers_to_pick:
         combinations.append(selected)
     if not combinations:
         await callback.answer(
-            "Выберите 5 чисел или добавьте билет в корзину.", show_alert=True
+            f"Выберите {numbers_to_pick} чисел или добавьте билет в корзину.",
+            show_alert=True,
         )
         return
     maximum = get_settings().bot_max_tickets_per_purchase
@@ -265,11 +312,16 @@ async def _checkout_weekly(
                 callback.from_user.id
             )
         async with session_factory() as purchase_session:
-            result = await WeeklyTicketPurchaseService(purchase_session).purchase(
+            purchase_service = (
+                DailyTicketPurchaseService(purchase_session)
+                if code == "daily"
+                else WeeklyTicketPurchaseService(purchase_session)
+            )
+            result = await purchase_service.purchase(
                 user_id=player.id,
                 combinations=combinations,
                 idempotency_key=telegram_checkout_idempotency_key(
-                    callback.from_user.id, checkout_key
+                    callback.from_user.id, f"{code}:{checkout_key}"
                 ),
                 now=datetime.now(UTC),
             )

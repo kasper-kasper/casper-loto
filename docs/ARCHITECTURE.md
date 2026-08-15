@@ -107,5 +107,5 @@ later milestones:
    exactly-once and unaffected.
 
 Per-lottery reserves, deterministic whole-CAS remainder allocation and atomic
-retry on insufficient reserve are now resolved. Daily slots are 02:22 and 18:00
-Europe/Moscow; its payout model and sales cutoff remain deliberately undefined.
+retry on insufficient reserve are resolved. Daily slots are 02:22 and 18:00
+Europe/Moscow with a two-minute cutoff and the model in `DAILY_CORE.md`.

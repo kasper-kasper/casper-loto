@@ -10,6 +10,7 @@ WEEKLY_DRAW_TIME = time(20, 0)
 WEEKLY_WEEKDAY = 6
 WEEKLY_CUTOFF = timedelta(minutes=5)
 DAILY_DRAW_TIMES = (time(2, 22), time(18, 0))
+DAILY_CUTOFF = timedelta(minutes=2)
 
 
 def _aware(value: datetime) -> datetime:
@@ -59,5 +60,6 @@ def sales_close_at(kind: LotteryKind, scheduled_at: datetime) -> datetime:
     _aware(scheduled_at)
     if kind == LotteryKind.WEEKLY:
         return scheduled_at - WEEKLY_CUTOFF
-    # Daily sales are not implemented; cutoff remains an open business decision.
-    return scheduled_at
+    if kind == LotteryKind.DAILY:
+        return scheduled_at - DAILY_CUTOFF
+    raise ValueError(f"Unsupported lottery kind: {kind}")

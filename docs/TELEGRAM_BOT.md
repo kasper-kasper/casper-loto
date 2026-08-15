@@ -10,13 +10,13 @@ balance if missing. Repeated `/start` updates the display identity without
 creating another user or balance. It opens a server-authoritative gameplay menu:
 
 - balance and current Weekly/Daily cards;
-- Weekly 5/20 number picker and cryptographically secure random pick;
+- Weekly 5/20 and Daily 4/15 pickers with cryptographically secure random pick;
 - a multi-ticket cart with identical combinations allowed;
-- atomic checkout through `WeeklyTicketPurchaseService`;
+- atomic checkout through the matching Weekly or Daily purchase service;
 - active tickets and settled ticket history;
 - recent immutable draw results;
 - player spend/win/net and match statistics;
-- approved Weekly rules.
+- approved Weekly and Daily rules.
 
 The Telegram cart is transient conversation state and creates no ticket or CAS
 movement before checkout. A configured transport limit
@@ -24,9 +24,10 @@ movement before checkout. A configured transport limit
 lottery economics. Every cart receives a stable checkout identity, so repeated
 callback delivery reaches the existing idempotent purchase use case.
 
-Daily appears in the lottery selector but cannot be purchased until its payout
-model and cutoff are approved. The preserved Mini App is not launched from the
-new main menu and remains frozen without deleting its code.
+Daily is purchasable when its Admin-configured price and funds are ready. It
+uses 40/60 fund contributions, fixed 2/4 and 3/4 payouts, jackpot 4/4 and a
+two-minute cutoff. The preserved Mini App is not launched from the new main menu
+and remains frozen without deleting its code.
 
 ## Commands
 
@@ -36,7 +37,7 @@ new main menu and remains frozen without deleting its code.
 ## Durable notifications
 
 Ticket checkout inserts one purchase event for the whole multi-ticket order in
-the same transaction as the tickets and ledger. Weekly settlement inserts one
+the same transaction as the tickets and ledger. Draw settlement inserts one
 result event per participating user, including losing results. If the business
 transaction rolls back, its notification rolls back too.
 

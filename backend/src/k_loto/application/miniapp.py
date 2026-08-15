@@ -109,11 +109,7 @@ class MiniAppQueryService:
                 .limit(1)
             )
             sales_open = draw is not None and draw.sales_close_at > timestamp
-            purchase_available = (
-                lottery.kind == LotteryKind.WEEKLY
-                and lottery.ticket_price is not None
-                and sales_open
-            )
+            purchase_available = lottery.ticket_price is not None and sales_open
             lotteries.append(
                 MiniAppLottery(
                     code=lottery.code,
