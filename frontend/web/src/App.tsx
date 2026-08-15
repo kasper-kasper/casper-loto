@@ -73,6 +73,16 @@ export default function App() {
     if (view === "active" || view === "history") void webApi.tickets(view).then(setTickets);
     if (view === "results") void webApi.results().then(setResults);
   }, [session, view]);
+  useEffect(() => {
+    if (!session) return;
+    const update = () => void refresh();
+    const timer = window.setInterval(update, 15_000);
+    window.addEventListener("focus", update);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", update);
+    };
+  }, [session, refresh]);
 
   if (checking) return <main className="center">Загрузка…</main>;
   if (!session) return <Login hint={loginHint} onLogin={(value) => { setSession(value); void refresh(); }} />;
@@ -90,7 +100,7 @@ export default function App() {
   };
   const logout = async () => { await webApi.logout(); setSession(null); setDashboard(null); };
 
-  return <main className="shell"><header><div><h1>K-Loto</h1><small>{session.display_name}</small></div><div className="balance">Баланс <b>{cas(dashboard?.balance ?? 0)}</b></div><button className="plain" onClick={() => void logout()}>Выйти</button></header><nav>{(["weekly", "daily", "active", "history", "results"] as View[]).map((item) => <button className={view === item ? "current" : ""} key={item} onClick={() => { setView(item); setSelected([]); }}>{({ weekly: "Weekly", daily: "Daily", active: `Активные (${dashboard?.active_ticket_count ?? 0})`, history: "История", results: "Результаты" })[item]}</button>)}</nav>{notice && <p className="notice">{notice}</p>}
+  return <main className="shell"><header><div><h1>K-Loto</h1><small>{session.display_name}</small></div><div className="balance">Баланс <b>{cas(dashboard?.balance ?? 0)}</b></div><button className="plain" onClick={() => void logout()}>Выйти</button></header><nav>{(["weekly", "daily", "active", "history", "results"] as View[]).map((item) => <button className={view === item ? "current" : ""} key={item} onClick={() => { setView(item); setSelected([]); }}>{({ weekly: "Weekly", daily: "Daily", active: `Активные (${dashboard?.active_ticket_count ?? 0})`, history: "История", results: "Результаты" })[item]}</button>)}</nav><div className="jackpots">{dashboard?.lotteries.map((item) => <button key={item.code} onClick={() => setView(item.kind.toLowerCase() as View)}><strong>{item.name}</strong><span>Текущий джекпот <b>{cas(item.jackpot)}</b></span></button>)}<button className="refresh" onClick={() => void refresh()}>↻ Обновить</button></div>{notice && <p className="notice">{notice}</p>}
     {(view === "weekly" || view === "daily") && <section><h2>{lottery ? `${lottery.name}: ${lottery.numbers_to_pick} из ${lottery.max_number}` : view}</h2>{lottery ? <><div className="summary"><span>Тираж №{lottery.draw_number ?? "—"}<small>{date(lottery.scheduled_at)} MSK</small></span><span>Билет <b>{cas(lottery.ticket_price ?? 0)}</b></span><span>Джекпот <b>{cas(lottery.jackpot)}</b></span></div><p>Выберите ровно {lottery.numbers_to_pick} числа:</p><div className="picker">{Array.from({ length: lottery.max_number }, (_, index) => index + 1).map((value) => <button aria-pressed={selected.includes(value)} key={value} onClick={() => toggle(value)}>{value}</button>)}</div><div className="purchase"><label>Количество<input type="number" min="1" max="20" value={quantity} onChange={(event) => setQuantity(Math.max(1, Math.min(20, Number(event.target.value))))} /></label><button disabled={!lottery.purchase_available || selected.length !== lottery.numbers_to_pick || busy} onClick={() => void buy()}>{busy ? "Покупаем…" : `Купить за ${cas((lottery.ticket_price ?? 0) * quantity)}`}</button></div>{!lottery.purchase_available && <p>Продажи для ближайшего тиража закрыты или лотерея ещё не настроена.</p>}</> : <p>Лотерея пока не настроена.</p>}</section>}
     {(view === "active" || view === "history") && <section><h2>{view === "active" ? "Активные билеты" : "История билетов"}</h2>{tickets.length ? tickets.map((ticket) => <TicketCard key={ticket.id} ticket={ticket} />) : <p className="empty">Здесь пока пусто.</p>}</section>}
     {view === "results" && <section><h2>Результаты тиражей</h2>{results.length ? results.map((draw) => <article key={`${draw.lottery_code}-${draw.draw_number}`}><div className="row"><strong>{draw.lottery_name}, тираж №{draw.draw_number}</strong><span>{date(draw.scheduled_at)} MSK</span></div><Numbers values={draw.winning_numbers} /><p>Билетов: {draw.ticket_count} · выплачено: {cas(draw.total_payout)}</p></article>) : <p className="empty">Завершённых тиражей пока нет.</p>}</section>}

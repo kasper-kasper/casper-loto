@@ -9,6 +9,7 @@ results as the bot. The preserved Telegram Mini App is not involved.
 - one-click login from the player's private Telegram bot chat;
 - optional username/password fallback;
 - current integer CAS balance and Weekly/Daily draw information;
+- always-visible current Weekly/Daily jackpots with automatic refresh;
 - Weekly 5-of-20 or Daily 4-of-15 selection and purchase of 1 to 20 tickets;
 - identical combinations in one purchase;
 - active tickets and settled ticket history;

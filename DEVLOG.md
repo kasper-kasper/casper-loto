@@ -1,5 +1,41 @@
 # Development log
 
+## [0.13.1] - 2026-08-15
+
+### Web purchase transaction fix
+
+Fixed the Web-only purchase failure reported after production login and made
+current jackpots continuously visible.
+
+Done:
+
+- traced the 500 response to an already-open SQLAlchemy transaction created by
+  the authentication dependency;
+- assigned Weekly and Daily purchase services a fresh uncached database session;
+- preserved the service-owned atomic transaction, row locks, ledger and
+  idempotency boundaries;
+- added a regression test that verifies both purchase routes cannot reuse the
+  authentication session;
+- added persistent current-jackpot cards for Weekly and Daily;
+- refresh balance/jackpots every 15 seconds, on browser focus and manually;
+- translated balance, closed-sales and missing-configuration purchase errors.
+
+System behavior:
+
+- a Telegram-authenticated Web player can buy without a nested-transaction 500;
+- the exact application service still performs the entire financial operation;
+- a failed purchase does not create a ticket or CAS ledger movement;
+- current jackpot values remain visible outside an individual lottery tab and
+  update without reloading the whole page.
+
+Technical:
+
+- version: 0.13.1;
+- migration: no schema change after `0005_telegram_web_login`;
+- backend: 46 typed source files, 131 pytest tests;
+- frontend: 8 frozen Mini App + 4 Admin + 5 player Web Vitest tests;
+- production deployment requires a new explicit owner command.
+
 ## [0.13.0] - 2026-08-15
 
 ### One-click Telegram Web login

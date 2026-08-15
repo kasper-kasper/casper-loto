@@ -4,6 +4,20 @@ All notable changes follow Keep a Changelog and Semantic Versioning principles.
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-08-15
+
+### Changed
+
+- Weekly and Daily current jackpots are always visible in the player Web header.
+- Jackpot and balance information refresh automatically every 15 seconds, when
+  the browser regains focus and by an explicit refresh button.
+- Web purchase failures now return clear Russian explanations.
+
+### Fixed
+
+- Fixed Web purchases failing after authentication because the authentication
+  query and protected financial operation shared one SQLAlchemy transaction.
+
 ## [0.13.0] - 2026-08-15
 
 ### Added

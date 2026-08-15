@@ -309,7 +309,7 @@ async def results(
 async def purchase(
     payload: PurchaseRequest,
     player: Annotated[CurrentWebPlayer, Depends(web_player_with_csrf)],
-    session: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[AsyncSession, Depends(get_db_session, use_cache=False)],
 ) -> PurchaseResponse:
     try:
         result = await WeeklyTicketPurchaseService(session).purchase(
@@ -319,17 +319,17 @@ async def purchase(
         )
     except InsufficientBalance as error:
         raise HTTPException(
-            status_code=402, detail="Insufficient CAS balance."
+            status_code=402, detail="Недостаточно CAS для покупки."
         ) from error
     except InvalidTicket as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     except NoAvailableDraw as error:
         raise HTTPException(
-            status_code=409, detail="No Weekly draw is open."
+            status_code=409, detail="Продажи Weekly сейчас закрыты."
         ) from error
     except ConfigurationError as error:
         raise HTTPException(
-            status_code=503, detail="Weekly is not configured."
+            status_code=503, detail="Weekly ещё не настроена администратором."
         ) from error
     return PurchaseResponse(
         operation_id=result.operation_id,
@@ -349,7 +349,7 @@ async def purchase(
 async def purchase_daily(
     payload: PurchaseRequest,
     player: Annotated[CurrentWebPlayer, Depends(web_player_with_csrf)],
-    session: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[AsyncSession, Depends(get_db_session, use_cache=False)],
 ) -> PurchaseResponse:
     try:
         result = await DailyTicketPurchaseService(session).purchase(
@@ -359,15 +359,17 @@ async def purchase_daily(
         )
     except InsufficientBalance as error:
         raise HTTPException(
-            status_code=402, detail="Insufficient CAS balance."
+            status_code=402, detail="Недостаточно CAS для покупки."
         ) from error
     except InvalidTicket as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     except NoAvailableDraw as error:
-        raise HTTPException(status_code=409, detail="No Daily draw is open.") from error
+        raise HTTPException(
+            status_code=409, detail="Продажи Daily сейчас закрыты."
+        ) from error
     except ConfigurationError as error:
         raise HTTPException(
-            status_code=503, detail="Daily is not configured."
+            status_code=503, detail="Daily ещё не настроена администратором."
         ) from error
     return PurchaseResponse(
         operation_id=result.operation_id,

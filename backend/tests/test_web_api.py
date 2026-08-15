@@ -7,6 +7,7 @@ import pytest
 from fastapi import HTTPException
 
 from k_loto.api.routes.web import CurrentWebPlayer, web_player_with_csrf
+from k_loto.api.routes.web import router as web_router
 from k_loto.core.config import Settings
 from k_loto.infrastructure.web_auth import (
     InvalidWebSession,
@@ -108,3 +109,20 @@ def test_web_routes_are_registered() -> None:
     assert "/api/v1/web/results" in paths
     assert "/api/v1/web/weekly/purchases" in paths
     assert "/api/v1/web/daily/purchases" in paths
+
+
+def test_web_purchases_use_a_fresh_financial_transaction_session() -> None:
+    purchase_routes = [
+        route
+        for route in web_router.routes
+        if getattr(route, "path", "").endswith("/purchases")
+    ]
+
+    assert len(purchase_routes) == 2
+    for route in purchase_routes:
+        session_dependency = next(
+            dependency
+            for dependency in route.dependant.dependencies
+            if dependency.name == "session"
+        )
+        assert session_dependency.use_cache is False

@@ -26,6 +26,8 @@ test("shows balance and Weekly after restoring a session", async () => {
   render(<App />);
   expect(await screen.findByText("1 000 CAS")).toBeInTheDocument();
   expect(screen.getByText("Weekly: 5 из 20")).toBeInTheDocument();
+  expect(screen.getByText("Текущий джекпот")).toBeInTheDocument();
+  expect(screen.getAllByText("5 000 CAS").length).toBeGreaterThanOrEqual(1);
 });
 
 test("buys selected numbers with requested quantity", async () => {
