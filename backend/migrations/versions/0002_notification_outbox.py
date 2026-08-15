@@ -92,6 +92,10 @@ def upgrade() -> None:
             RETURN NEW;
         END;
         $$ LANGUAGE plpgsql;
+        """
+    )
+    op.execute(
+        """
         CREATE TRIGGER trg_notification_event_immutable
         BEFORE UPDATE OR DELETE ON notification_outbox
         FOR EACH ROW EXECUTE FUNCTION protect_notification_event();

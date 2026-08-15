@@ -1,0 +1,91 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?required}
+      POSTGRES_USER: ${POSTGRES_USER:?required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      APP_ENV: production
+      APP_HOST: 0.0.0.0
+      APP_PORT: 8000
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: ${DATABASE_URL:?required}
+      LOTTERY_BOT_TOKEN: ${LOTTERY_BOT_TOKEN:?required}
+      SCHEDULER_ENABLED: "true"
+      SCHEDULER_INTERVAL_SECONDS: ${SCHEDULER_INTERVAL_SECONDS:-30}
+      ADMIN_SECRET: ${ADMIN_SECRET:?required}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:?required}
+      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH:?required}
+      ADMIN_SESSION_MAX_AGE_SECONDS: ${ADMIN_SESSION_MAX_AGE_SECONDS:-28800}
+      WEB_SESSION_SECRET: ${WEB_SESSION_SECRET:?required}
+      WEB_SESSION_MAX_AGE_SECONDS: ${WEB_SESSION_MAX_AGE_SECONDS:-28800}
+    command: ["sh", "-c", "alembic upgrade head && python -m scripts.bootstrap_production && uvicorn k_loto.main:app --host 0.0.0.0 --port 8000"]
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  bot:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      APP_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?required}
+      LOTTERY_BOT_TOKEN: ${LOTTERY_BOT_TOKEN:?required}
+      BOT_OUTBOX_INTERVAL_SECONDS: ${BOT_OUTBOX_INTERVAL_SECONDS:-2}
+      BOT_MAX_TICKETS_PER_PURCHASE: ${BOT_MAX_TICKETS_PER_PURCHASE:-20}
+      SCHEDULER_ENABLED: "false"
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    command: ["python", "-m", "bot"]
+    depends_on:
+      db:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  gateway:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    environment:
+      WEB_HOST: ${WEB_HOST:?required}
+      ADMIN_HOST: ${ADMIN_HOST:?required}
+    ports:
+      - "80:80"
+      - "9443:9443"
+      - "9443:9443/udp"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  backups:
+  caddy_data:
+  caddy_config:

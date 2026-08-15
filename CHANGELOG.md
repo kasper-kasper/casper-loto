@@ -4,6 +4,31 @@ All notable changes follow Keep a Changelog and Semantic Versioning principles.
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-08-15
+
+### Added
+
+- Permanent HTTPS player Web and Admin sites on the owner-authorized VPS.
+- Always-on API, scheduler, recovery worker, Telegram bot and PostgreSQL stack.
+- Idempotent production bootstrap for Weekly/Daily lotteries and their next draws.
+- Daily compressed PostgreSQL backups with 14-day retention.
+- Production operation and first-player setup documentation.
+
+### Changed
+
+- Database check-constraint names now match SQLAlchemy metadata through migration
+  `0004_constraint_names`.
+- PostgreSQL trigger creation in the initial migrations is compatible with the
+  asyncpg prepared-statement execution model.
+
+### Security
+
+- PostgreSQL remains private to the Docker network; HTTPS certificates renew
+  automatically through Caddy.
+- Production credentials exist only in the ignored owner `.env` and the
+  permission-restricted VPS environment file.
+- Existing VPS VPN services and their ports remain untouched.
+
 ## [0.11.0] - 2026-08-15
 
 ### Added

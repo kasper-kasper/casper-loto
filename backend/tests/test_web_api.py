@@ -55,11 +55,14 @@ def test_web_credentials_are_normalized_and_argon2_hashed() -> None:
 
 
 def test_web_auth_requires_a_long_independent_secret() -> None:
-    base = {"database_url": "postgresql+asyncpg://test:test@localhost/test"}
+    base = {
+        "database_url": "postgresql+asyncpg://test:test@localhost/test",
+        "web_session_secret": None,
+    }
 
     assert not Settings(**base).web_auth_available
-    assert not Settings(**base, web_session_secret="short").web_auth_available
-    assert Settings(**base, web_session_secret="w" * 48).web_auth_available
+    assert not Settings(**{**base, "web_session_secret": "short"}).web_auth_available
+    assert Settings(**{**base, "web_session_secret": "w" * 48}).web_auth_available
 
 
 async def test_web_mutations_require_matching_csrf() -> None:

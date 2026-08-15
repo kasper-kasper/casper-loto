@@ -6,7 +6,7 @@ balances, tickets and audit records are designed as multi-user entities from
 the beginning. No real money, payments, donations, cryptocurrency or cash-out
 are part of this project.
 
-Current version: **0.11.0 — Daily Lottery 4/15**.
+Current version: **0.12.0 — Production Deployment**.
 
 ## Architecture
 
@@ -51,6 +51,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md),
 [docs/ADMIN_PANEL.md](docs/ADMIN_PANEL.md),
 [docs/WEB_APP.md](docs/WEB_APP.md) and
 [docs/DEPLOYMENT_PLAN.md](docs/DEPLOYMENT_PLAN.md),
+[docs/PRODUCTION.md](docs/PRODUCTION.md),
 [docs/OPEN_DECISIONS.md](docs/OPEN_DECISIONS.md). Beginner-friendly browser and
 tunnel setup is in [docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md).
 
@@ -168,11 +169,10 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start_admin.ps1
 Open `http://127.0.0.1:5174`. Balance and reserve changes always produce ledger
 and audit records; completed draws have no edit API.
 
-For the later permanent deployment, Admin will be served as a continuously
-available HTTPS site: open its address and sign in, without manually starting
-local processes. Backend, bot, player Web and Admin will be deployed together
-after Daily is defined and implemented under the owner's current deployment
-authorization.
+Production Admin and player Web are continuously available HTTPS sites: open
+their addresses and sign in without manually starting local processes. Backend,
+scheduler, bot, database, player Web and Admin run together on the authorized
+VPS; see [docs/PRODUCTION.md](docs/PRODUCTION.md).
 
 ## Secrets
 

@@ -334,6 +334,10 @@ def upgrade() -> None:
             RETURN NEW;
         END;
         $$ LANGUAGE plpgsql;
+        """
+    )
+    op.execute(
+        """
         CREATE TRIGGER trg_completed_draw_immutable
         BEFORE UPDATE OR DELETE ON draws
         FOR EACH ROW EXECUTE FUNCTION prevent_completed_draw_mutation();
@@ -361,6 +365,10 @@ def upgrade() -> None:
             RETURN NEW;
         END;
         $$ LANGUAGE plpgsql;
+        """
+    )
+    op.execute(
+        """
         CREATE TRIGGER trg_ticket_history_immutable
         BEFORE UPDATE OR DELETE ON tickets
         FOR EACH ROW EXECUTE FUNCTION protect_ticket_history();
@@ -373,6 +381,10 @@ def upgrade() -> None:
             RAISE EXCEPTION 'ledger transactions are immutable';
         END;
         $$ LANGUAGE plpgsql;
+        """
+    )
+    op.execute(
+        """
         CREATE TRIGGER trg_ledger_immutable
         BEFORE UPDATE OR DELETE ON ledger_transactions
         FOR EACH ROW EXECUTE FUNCTION prevent_ledger_mutation();

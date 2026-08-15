@@ -1,0 +1,29 @@
+{$WEB_HOST} {
+    encode zstd gzip
+    handle /health {
+        reverse_proxy api:8000
+    }
+    handle /api/* {
+        reverse_proxy api:8000
+    }
+    handle {
+        root * /srv/web
+        try_files {path} /index.html
+        file_server
+    }
+}
+
+{$ADMIN_HOST} {
+    encode zstd gzip
+    handle /health {
+        reverse_proxy api:8000
+    }
+    handle /api/* {
+        reverse_proxy api:8000
+    }
+    handle {
+        root * /srv/admin
+        try_files {path} /index.html
+        file_server
+    }
+}

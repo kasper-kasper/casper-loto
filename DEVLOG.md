@@ -1,5 +1,50 @@
 # Development log
 
+## [0.12.0] - 2026-08-15
+
+### Production deployment
+
+Deployed the complete K-Loto backend, scheduler, Telegram bot, player Web and
+Admin Panel to the owner-authorized VPS without changing existing VPN services.
+
+Done:
+
+- added a production Docker Compose stack with private PostgreSQL storage;
+- built static player Web and Admin clients behind a Caddy HTTPS gateway;
+- configured free `sslip.io` hostnames and automatic TLS on port 9443;
+- enabled API startup recovery and continuous draw scheduling;
+- enabled one persistent Telegram polling bot and notification outbox worker;
+- added idempotent Weekly/Daily bootstrap with one future draw per lottery;
+- added a compressed database backup script, private backup volume and daily
+  cron execution with 14-day retention;
+- stored runtime credentials only in ignored/restricted environment files;
+- added Admin-based Web credential provisioning for a Telegram-bound player;
+- fixed asyncpg compatibility in the initial trigger migrations;
+- aligned historical check-constraint names with current metadata.
+
+System behavior:
+
+- backend, scheduler, bot, player Web and Admin restart automatically after a
+  process or VPS restart;
+- Weekly and both Daily slots are available from the same persistent database;
+- the owner can credit a player, configure prices/base jackpots/reserves and
+  create a browser login from Admin;
+- the player can buy from Telegram or the ordinary browser site;
+- HTTPS, database storage and backups no longer depend on the owner's computer;
+- the existing VPN continues using its original ports unchanged.
+
+Technical:
+
+- version: 0.12.0;
+- migration: `0004_constraint_names` (single live head);
+- backend: 45 typed source files, 126 pytest tests;
+- frontend: 8 frozen Mini App + 4 Admin + 4 player Web Vitest tests;
+- Ruff, formatting, mypy, frontend typecheck/lint/build and secret scan passed;
+- live `alembic check`: no new upgrade operations detected;
+- live HTTPS/Web/Admin/API/bot/database checks passed;
+- API, bot and gateway restart counts after verification: zero;
+- an initial non-empty database backup was successfully created.
+
 ## [0.11.0] - 2026-08-15
 
 ### Daily Lottery 4/15

@@ -14,7 +14,7 @@ def test_application_metadata() -> None:
     app = create_app()
 
     assert app.title == "K-Loto API"
-    assert app.version == "0.11.0"
+    assert app.version == "0.12.0"
 
 
 def test_health_route_is_registered() -> None:

@@ -1,7 +1,8 @@
 # Permanent deployment plan
 
-Deployment remains a later stage after Daily rules and code are complete. The
-simple player Web client is ready for this owner-authorized target.
+The owner-authorized production deployment was completed in v0.12.0. Operational
+details are in `PRODUCTION.md`; this file retains the release topology and
+rollback policy.
 
 ## Owner experience
 
@@ -29,11 +30,11 @@ private service network
    `-- PostgreSQL (not publicly exposed)
 ```
 
-The reverse proxy will own TLS and route same-origin API requests. Admin
+The reverse proxy owns TLS and routes same-origin API requests. Admin
 credentials, Telegram tokens and database credentials stay in a server-side
 secret environment and never enter JavaScript bundles. Services use automatic
-restart and health checks; migrations run as an explicit release step before
-new application processes become active.
+restart and health checks; migrations run before new application processes
+become active.
 
 ## Release sequence
 

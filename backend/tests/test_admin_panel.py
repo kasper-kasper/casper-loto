@@ -1,6 +1,7 @@
 """Milestone 6 administrator security, ledger and statistics tests."""
 
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any, cast
 from uuid import UUID
 
@@ -27,6 +28,8 @@ from k_loto.infrastructure.database.models import (
     LedgerTransaction,
     Lottery,
     LotteryReserve,
+    User,
+    WebAccount,
 )
 from k_loto.main import create_app
 
@@ -101,20 +104,29 @@ def test_argon2_password_verification() -> None:
 
 
 def test_incomplete_admin_configuration_is_disabled() -> None:
-    base = {"database_url": "postgresql+asyncpg://test:test@localhost/test"}
+    base = {
+        "database_url": "postgresql+asyncpg://test:test@localhost/test",
+        "admin_secret": None,
+        "admin_username": None,
+        "admin_password_hash": None,
+    }
 
     assert not Settings(**base).admin_auth_available
     assert not Settings(
-        **base,
-        admin_secret="short",
-        admin_username="owner",
-        admin_password_hash="hash",
+        **{
+            **base,
+            "admin_secret": "short",
+            "admin_username": "owner",
+            "admin_password_hash": "hash",
+        }
     ).admin_auth_available
     assert Settings(
-        **base,
-        admin_secret="s" * 48,
-        admin_username="owner",
-        admin_password_hash="hash",
+        **{
+            **base,
+            "admin_secret": "s" * 48,
+            "admin_username": "owner",
+            "admin_password_hash": "hash",
+        }
     ).admin_auth_available
 
 
@@ -166,6 +178,37 @@ async def test_balance_adjustment_is_ledgered_audited_and_idempotent() -> None:
     )
     assert retry.already_processed
     assert retry_fake.added == []
+
+
+async def test_web_account_provisioning_is_audited_without_password_data() -> None:
+    user_id = UUID(int=11)
+    user = User(
+        id=user_id,
+        telegram_id=6073224376,
+        username="Player",
+        display_name="Test Player",
+        is_active=True,
+        is_admin=False,
+    )
+    fake = FakeSession(scalar_values=[user, None])
+
+    username = await AdminMutationService(
+        cast(AsyncSession, fake), UUID(int=20)
+    ).configure_web_account(
+        user_id,
+        username="  Browser.Player  ",
+        password="a long browser password",
+        reason="Enable browser access",
+    )
+
+    account = next(item for item in fake.added if isinstance(item, WebAccount))
+    audit = next(item for item in fake.added if isinstance(item, AdminAuditLog))
+    assert username == "browser.player"
+    assert account.username == username
+    assert account.password_hash != "a long browser password"
+    assert audit.old_values is None
+    assert audit.new_values == {"username": username, "is_active": True}
+    assert "password" not in repr(audit.new_values).lower()
 
 
 async def test_reserve_adjustment_is_ledgered_and_never_negative() -> None:
@@ -265,6 +308,7 @@ def test_admin_routes_cover_milestone_and_completed_draws_have_no_mutation() -> 
         "/api/v1/admin/dashboard",
         "/api/v1/admin/players",
         "/api/v1/admin/players/{user_id}/balance-adjustments",
+        "/api/v1/admin/players/{user_id}/web-account",
         "/api/v1/admin/lotteries",
         "/api/v1/admin/lotteries/{lottery_id}/configuration",
         "/api/v1/admin/lotteries/{lottery_id}/reserve-adjustments",
@@ -276,3 +320,11 @@ def test_admin_routes_cover_milestone_and_completed_draws_have_no_mutation() -> 
     }
     assert required.issubset(paths)
     assert set(paths["/api/v1/admin/draws/{draw_id}"]) == {"get"}
+
+
+def test_postgresql_trigger_migrations_are_asyncpg_compatible() -> None:
+    """asyncpg rejects a function and trigger combined in one prepared statement."""
+    migrations = Path(__file__).parents[1] / "migrations" / "versions"
+    for filename in ("0001_domain_model.py", "0002_notification_outbox.py"):
+        source = (migrations / filename).read_text(encoding="utf-8")
+        assert "$$ LANGUAGE plpgsql;\n        CREATE TRIGGER" not in source

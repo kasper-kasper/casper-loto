@@ -2,6 +2,7 @@
 
 import asyncio
 from logging.config import fileConfig
+from typing import Any
 
 from alembic import context
 from sqlalchemy import pool
@@ -20,6 +21,28 @@ if config.config_file_name is not None:
 config.set_main_option("sqlalchemy.url", str(get_settings().database_url))
 target_metadata = Base.metadata
 
+_ENUM_CHECK_CONSTRAINTS = {
+    "ck_admin_audit_log_audit_action",
+    "ck_draws_draw_status",
+    "ck_ledger_transactions_ledger_account_kind",
+    "ck_ledger_transactions_transaction_type",
+    "ck_lotteries_lottery_kind",
+    "ck_notification_outbox_notification_status",
+    "ck_notification_outbox_notification_type",
+    "ck_tickets_ticket_status",
+}
+
+
+def include_object(
+    _object: Any,
+    name: str | None,
+    type_: str,
+    _reflected: bool,
+    _compare_to: Any,
+) -> bool:
+    """Ignore SQLAlchemy Enum checks that the check-constraint plugin misdiffs."""
+    return not (type_ == "check_constraint" and name in _ENUM_CHECK_CONSTRAINTS)
+
 
 def run_migrations_offline() -> None:
     """Run migrations without a live database connection."""
@@ -29,6 +52,7 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         compare_type=True,
+        include_object=include_object,
     )
 
     with context.begin_transaction():
@@ -41,6 +65,7 @@ def do_run_migrations(connection: Connection) -> None:
         connection=connection,
         target_metadata=target_metadata,
         compare_type=True,
+        include_object=include_object,
     )
 
     with context.begin_transaction():
