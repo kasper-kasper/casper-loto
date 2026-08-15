@@ -38,6 +38,11 @@ export const webApi = {
       method: "POST",
       body: JSON.stringify({ username, password }),
     }).then(rememberSession),
+  telegramLogin: (token: string) =>
+    request<WebSession>("/auth/telegram", {
+      method: "POST",
+      body: JSON.stringify({ token }),
+    }).then(rememberSession),
   session: () => request<WebSession>("/auth/session").then(rememberSession),
   logout: () => request<void>("/auth/logout", { method: "POST" }).finally(() => { csrfToken = ""; }),
   dashboard: () => request<Dashboard>("/dashboard"),

@@ -13,8 +13,8 @@ function Numbers({ values, winning }: { values: number[]; winning?: number[] | n
   return <div className="numbers">{values.map((value) => <span className={winning?.includes(value) ? "hit" : ""} key={value}>{value}</span>)}</div>;
 }
 
-function Login({ onLogin }: { onLogin: (value: WebSession) => void }) {
-  const [error, setError] = useState("");
+function Login({ onLogin, hint }: { onLogin: (value: WebSession) => void; hint: string }) {
+  const [error, setError] = useState(hint);
   const [busy, setBusy] = useState(false);
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault(); setBusy(true); setError("");
@@ -23,7 +23,7 @@ function Login({ onLogin }: { onLogin: (value: WebSession) => void }) {
     catch (reason) { setError(reason instanceof Error ? reason.message : "Вход не выполнен."); }
     finally { setBusy(false); }
   };
-  return <main className="login"><form onSubmit={(event) => void submit(event)}><h1>K-Loto</h1><p>Вход в игровую Web-версию</p><label>Логин<input name="username" autoComplete="username" required /></label><label>Пароль<input name="password" type="password" autoComplete="current-password" required /></label>{error && <p className="error">{error}</p>}<button disabled={busy}>{busy ? "Входим…" : "Войти"}</button></form></main>;
+  return <main className="login"><form onSubmit={(event) => void submit(event)}><h1>K-Loto</h1><p>Самый простой вход: откройте бота и нажмите «🌐 Открыть Web-версию».</p><p>Логин и пароль — запасной способ.</p><label>Логин<input name="username" autoComplete="username" required /></label><label>Пароль<input name="password" type="password" autoComplete="current-password" required /></label>{error && <p className="error">{error}</p>}<button disabled={busy}>{busy ? "Входим…" : "Войти"}</button></form></main>;
 }
 
 function TicketCard({ ticket }: { ticket: Ticket }) {
@@ -41,15 +41,31 @@ export default function App() {
   const [quantity, setQuantity] = useState(1);
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
+  const [loginHint, setLoginHint] = useState("");
 
   const refresh = useCallback(async () => setDashboard(await webApi.dashboard()), []);
   useEffect(() => {
-    webApi.session()
+    const prefix = "#telegram-login=";
+    const oneTimeToken = window.location.hash.startsWith(prefix)
+      ? window.location.hash.slice(prefix.length)
+      : "";
+    if (oneTimeToken) {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+    const authentication = oneTimeToken
+      ? webApi.telegramLogin(oneTimeToken)
+      : webApi.session();
+    authentication
       .then(async (value) => {
         setSession(value);
         setDashboard(await webApi.dashboard());
       })
-      .catch(() => setSession(null))
+      .catch((reason) => {
+        setSession(null);
+        if (oneTimeToken) {
+          setLoginHint(reason instanceof Error ? reason.message : "Ссылка входа не сработала. Получите новую в боте.");
+        }
+      })
       .finally(() => setChecking(false));
   }, []);
   useEffect(() => {
@@ -59,7 +75,7 @@ export default function App() {
   }, [session, view]);
 
   if (checking) return <main className="center">Загрузка…</main>;
-  if (!session) return <Login onLogin={(value) => { setSession(value); void refresh(); }} />;
+  if (!session) return <Login hint={loginHint} onLogin={(value) => { setSession(value); void refresh(); }} />;
   const lottery = dashboard?.lotteries.find((item) => item.kind === view.toUpperCase());
   const toggle = (value: number) => setSelected((current) => current.includes(value) ? current.filter((item) => item !== value) : current.length < (lottery?.numbers_to_pick ?? 0) ? [...current, value].sort((a, b) => a - b) : current);
   const buy = async () => {

@@ -44,6 +44,8 @@ class Settings(BaseSettings):
     admin_session_max_age_seconds: int = Field(default=28_800, ge=300, le=86_400)
     web_session_secret: SecretStr | None = None
     web_session_max_age_seconds: int = Field(default=28_800, ge=300, le=86_400)
+    web_public_url: HttpUrl | None = None
+    web_login_token_max_age_seconds: int = Field(default=300, ge=60, le=900)
 
     @property
     def docs_enabled(self) -> bool:

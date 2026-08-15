@@ -6,7 +6,7 @@ balances, tickets and audit records are designed as multi-user entities from
 the beginning. No real money, payments, donations, cryptocurrency or cash-out
 are part of this project.
 
-Current version: **0.12.0 — Production Deployment**.
+Current version: **0.13.0 — One-click Telegram Web Login**.
 
 ## Architecture
 

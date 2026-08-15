@@ -23,6 +23,7 @@ from k_loto.application.bot_gameplay import TelegramGameplayQueryService
 from k_loto.application.daily import DailyTicketPurchaseService
 from k_loto.application.identity import TelegramIdentityService
 from k_loto.application.notifications import NotificationDispatcher
+from k_loto.application.web_login import TelegramWebLoginService
 from k_loto.application.weekly import WeeklyTicketPurchaseService
 from k_loto.core.config import get_settings
 from k_loto.domain.errors import (
@@ -52,6 +53,7 @@ from k_loto.infrastructure.telegram_game_ui import (
     ticket_tabs_markup,
     toggle_daily_number,
     toggle_weekly_number,
+    web_login_markup,
     weekly_picker_markup,
 )
 from k_loto.infrastructure.telegram_messages import BotNotificationFormatter, format_cas
@@ -127,6 +129,39 @@ async def start(message: Message, state: FSMContext) -> None:
 @router.message(Command("menu"))
 async def menu_command(message: Message, state: FSMContext) -> None:
     await start(message, state)
+
+
+async def _send_web_login(message: Message, telegram_id: int) -> None:
+    settings = get_settings()
+    if settings.web_public_url is None:
+        await message.answer("Web-версия пока не настроена.")
+        return
+    async with session_factory() as session:
+        issued = await TelegramWebLoginService(session).issue(
+            telegram_id,
+            max_age_seconds=settings.web_login_token_max_age_seconds,
+        )
+    base_url = str(settings.web_public_url).rstrip("/")
+    url = f"{base_url}/#telegram-login={issued.token}"
+    await message.answer(
+        "Нажмите кнопку — Web откроется уже под вашим Telegram-аккаунтом. "
+        "Ссылка одноразовая и действует 5 минут.",
+        reply_markup=web_login_markup(url),
+    )
+
+
+@router.message(Command("web"))
+async def web_command(message: Message) -> None:
+    telegram_id = await _bind_player(message)
+    if telegram_id is not None:
+        await _send_web_login(message, telegram_id)
+
+
+@router.callback_query(F.data == "bot:web")
+async def web_callback(callback: CallbackQuery) -> None:
+    message = await _callback_message(callback)
+    if message is not None:
+        await _send_web_login(message, callback.from_user.id)
 
 
 @router.callback_query(F.data == "bot:home")
@@ -444,6 +479,7 @@ async def run_bot() -> None:
         [
             BotCommand(command="start", description="Открыть K-Loto"),
             BotCommand(command="menu", description="Главное игровое меню"),
+            BotCommand(command="web", description="Открыть Web без пароля"),
         ]
     )
     dispatcher = Dispatcher()

@@ -44,6 +44,22 @@ def test_web_session_rejects_tampering_and_expiry() -> None:
         validate_web_session(token, "w" * 48, now=now + timedelta(seconds=2))
 
 
+def test_web_session_can_be_issued_directly_from_telegram_identity() -> None:
+    now = datetime(2026, 8, 15, 12, tzinfo=UTC)
+    token, issued = issue_web_session(
+        None,
+        UUID(int=2),
+        "w" * 48,
+        now=now,
+    )
+
+    validated = validate_web_session(token, "w" * 48, now=now)
+
+    assert issued.account_id is None
+    assert validated.account_id is None
+    assert validated.user_id == UUID(int=2)
+
+
 def test_web_credentials_are_normalized_and_argon2_hashed() -> None:
     encoded = hash_web_password("a strong player password")
 
@@ -84,6 +100,7 @@ def test_web_routes_are_registered() -> None:
     paths = create_app().openapi()["paths"]
 
     assert "/api/v1/web/auth/login" in paths
+    assert "/api/v1/web/auth/telegram" in paths
     assert "/api/v1/web/auth/session" in paths
     assert "/api/v1/web/auth/logout" in paths
     assert "/api/v1/web/dashboard" in paths

@@ -6,13 +6,21 @@ import { webApi } from "./api";
 
 vi.mock("./api", async () => {
   class ApiError extends Error {}
-  return { ApiError, webApi: { session: vi.fn(), login: vi.fn(), logout: vi.fn(), dashboard: vi.fn(), tickets: vi.fn(), results: vi.fn(), purchase: vi.fn() } };
+  return { ApiError, webApi: { session: vi.fn(), login: vi.fn(), telegramLogin: vi.fn(), logout: vi.fn(), dashboard: vi.fn(), tickets: vi.fn(), results: vi.fn(), purchase: vi.fn() } };
 });
 
 const session = { display_name: "Игрок", csrf_token: "csrf", expires_at: "2026-08-16T00:00:00Z" };
 const dashboard = { balance: 1000, active_ticket_count: 1, recent_results: [], lotteries: [{ code: "weekly", name: "Weekly", kind: "WEEKLY" as const, numbers_to_pick: 5, max_number: 20, ticket_price: 100, jackpot: 5000, draw_number: 7, scheduled_at: "2026-08-16T17:00:00Z", sales_close_at: "2026-08-16T16:55:00Z", sales_open: true, purchase_available: true }] };
 
-beforeEach(() => { vi.clearAllMocks(); vi.mocked(webApi.session).mockResolvedValue(session); vi.mocked(webApi.dashboard).mockResolvedValue(dashboard); vi.mocked(webApi.tickets).mockResolvedValue([]); vi.mocked(webApi.results).mockResolvedValue([]); });
+beforeEach(() => { window.history.replaceState(null, "", "/"); vi.clearAllMocks(); vi.mocked(webApi.session).mockResolvedValue(session); vi.mocked(webApi.telegramLogin).mockResolvedValue(session); vi.mocked(webApi.dashboard).mockResolvedValue(dashboard); vi.mocked(webApi.tickets).mockResolvedValue([]); vi.mocked(webApi.results).mockResolvedValue([]); });
+
+test("exchanges a Telegram one-time link without asking for a password", async () => {
+  window.location.hash = "telegram-login=abcdefghijklmnopqrstuvwxyz123456";
+  render(<App />);
+  expect(await screen.findByText("1 000 CAS")).toBeInTheDocument();
+  expect(webApi.telegramLogin).toHaveBeenCalledWith("abcdefghijklmnopqrstuvwxyz123456");
+  expect(window.location.hash).toBe("");
+});
 
 test("shows balance and Weekly after restoring a session", async () => {
   render(<App />);

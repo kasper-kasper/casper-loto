@@ -31,6 +31,7 @@ from k_loto.api.routes.miniapp import (
 )
 from k_loto.application.daily import DailyTicketPurchaseService
 from k_loto.application.miniapp import MiniAppQueryService
+from k_loto.application.web_login import TelegramWebLoginService
 from k_loto.application.weekly import WeeklyTicketPurchaseService
 from k_loto.core.config import Settings, get_settings
 from k_loto.domain.errors import (
@@ -57,6 +58,10 @@ router = APIRouter(prefix="/api/v1/web", tags=["web"])
 class LoginRequest(BaseModel):
     username: str = Field(min_length=3, max_length=128)
     password: str = Field(min_length=1, max_length=256)
+
+
+class TelegramLoginRequest(BaseModel):
+    token: str = Field(min_length=32, max_length=128)
 
 
 class SessionResponse(BaseModel):
@@ -107,22 +112,31 @@ async def current_web_player(
         web_session = validate_web_session(token, _secret(settings))
     except InvalidWebSession as error:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED) from error
-    row = (
-        await session.execute(
-            select(WebAccount, User)
-            .join(User, User.id == WebAccount.user_id)
-            .where(
-                WebAccount.id == web_session.account_id,
-                WebAccount.user_id == web_session.user_id,
-                WebAccount.is_active.is_(True),
+    if web_session.account_id is None:
+        user = await session.scalar(
+            select(User).where(
+                User.id == web_session.user_id,
                 User.is_active.is_(True),
                 User.is_admin.is_(False),
             )
         )
-    ).one_or_none()
-    if row is None:
+    else:
+        row = (
+            await session.execute(
+                select(WebAccount, User)
+                .join(User, User.id == WebAccount.user_id)
+                .where(
+                    WebAccount.id == web_session.account_id,
+                    WebAccount.user_id == web_session.user_id,
+                    WebAccount.is_active.is_(True),
+                    User.is_active.is_(True),
+                    User.is_admin.is_(False),
+                )
+            )
+        ).one_or_none()
+        user = row[1] if row is not None else None
+    if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-    _account, user = row
     return CurrentWebPlayer(user.id, user.display_name, web_session)
 
 
@@ -135,6 +149,26 @@ async def web_player_with_csrf(
             status_code=status.HTTP_403_FORBIDDEN, detail="Invalid CSRF token."
         )
     return player
+
+
+def _set_session_cookie(response: Response, token: str, settings: Settings) -> None:
+    response.set_cookie(
+        WEB_COOKIE,
+        token,
+        max_age=settings.web_session_max_age_seconds,
+        httponly=True,
+        secure=settings.app_env == "production",
+        samesite="strict",
+        path="/api/v1/web",
+    )
+
+
+def _session_response(display_name: str, issued: WebSession) -> SessionResponse:
+    return SessionResponse(
+        display_name=display_name,
+        csrf_token=issued.csrf_token,
+        expires_at=issued.expires_at,
+    )
 
 
 @router.post("/auth/login", response_model=SessionResponse)
@@ -175,20 +209,32 @@ async def login(
     )
     account.last_login_at = datetime.now(UTC)
     await session.commit()
-    response.set_cookie(
-        WEB_COOKIE,
-        token,
-        max_age=settings.web_session_max_age_seconds,
-        httponly=True,
-        secure=settings.app_env == "production",
-        samesite="strict",
-        path="/api/v1/web",
+    _set_session_cookie(response, token, settings)
+    return _session_response(user.display_name, issued)
+
+
+@router.post("/auth/telegram", response_model=SessionResponse)
+async def telegram_login(
+    payload: TelegramLoginRequest,
+    response: Response,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> SessionResponse:
+    """Exchange a one-time token delivered in a private bot chat for a cookie."""
+    user = await TelegramWebLoginService(session).consume(payload.token)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Ссылка устарела или уже использована. Получите новую в боте.",
+        )
+    token, issued = issue_web_session(
+        None,
+        user.id,
+        _secret(settings),
+        max_age_seconds=settings.web_session_max_age_seconds,
     )
-    return SessionResponse(
-        display_name=user.display_name,
-        csrf_token=issued.csrf_token,
-        expires_at=issued.expires_at,
-    )
+    _set_session_cookie(response, token, settings)
+    return _session_response(user.display_name, issued)
 
 
 @router.get("/auth/session", response_model=SessionResponse)

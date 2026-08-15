@@ -1,5 +1,48 @@
 # Development log
 
+## [0.13.0] - 2026-08-15
+
+### One-click Telegram Web login
+
+Removed the unnecessary owner/player credential setup from the normal Web
+entry path while preserving password login as a fallback.
+
+Done:
+
+- added **🌐 Открыть Web-версию** to the Telegram main menu;
+- added `/web` as a direct command;
+- issue a separate one-time link for the currently bound Telegram identity;
+- exchange the link for the existing signed HttpOnly Web session;
+- allow Web sessions to use the stable player identity without a password row;
+- consume tokens transactionally under a database row lock;
+- remove the raw token from browser history before the API exchange;
+- added expired/reused token handling and a clear retry message;
+- retained Admin-created Argon2 Web credentials as an optional fallback;
+- updated production configuration and owner/player documentation.
+
+System behavior:
+
+- each Telegram account enters Web under its own K-Loto user in two button taps;
+- opening a link from another Telegram account switches the browser session;
+- no Web username or password is required for the normal flow;
+- a link works once and expires after five minutes;
+- balance, active tickets and history are the same in bot and Web.
+
+Technical:
+
+- version: 0.13.0;
+- migration: `0005_telegram_web_login`;
+- backend: 46 typed source files, 130 pytest tests;
+- frontend: 8 frozen Mini App + 4 Admin + 5 player Web Vitest tests;
+- Ruff, formatting, mypy and all frontend typecheck/lint/build checks passed;
+- Alembic single-head and offline upgrade SQL checks passed;
+- production backup completed before migration;
+- live migration head: `0005_telegram_web_login`;
+- live `alembic check`: no new upgrade operations detected;
+- production exchange verified: first login 200, session restore 200, reuse 401;
+- Telegram command registration verified: `/start`, `/menu`, `/web`;
+- API, bot and gateway restart counts after verification: zero.
+
 ## [0.12.0] - 2026-08-15
 
 ### Production deployment

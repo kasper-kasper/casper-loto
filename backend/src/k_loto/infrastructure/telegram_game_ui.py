@@ -22,6 +22,11 @@ def main_menu_markup() -> InlineKeyboardMarkup:
         inline_keyboard=[
             [InlineKeyboardButton(text="🎟 Купить билет", callback_data="bot:buy")],
             [
+                InlineKeyboardButton(
+                    text="🌐 Открыть Web-версию", callback_data="bot:web"
+                )
+            ],
+            [
                 InlineKeyboardButton(text="💰 Баланс", callback_data="bot:balance"),
                 InlineKeyboardButton(
                     text="🎫 Мои билеты", callback_data="bot:tickets:active"
@@ -34,6 +39,15 @@ def main_menu_markup() -> InlineKeyboardMarkup:
                 ),
             ],
             [InlineKeyboardButton(text="ℹ️ Правила", callback_data="bot:rules")],
+        ]
+    )
+
+
+def web_login_markup(url: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🌐 Войти и играть", url=url)],
+            [InlineKeyboardButton(text="← Главное меню", callback_data="bot:home")],
         ]
     )
 

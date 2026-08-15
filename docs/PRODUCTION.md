@@ -30,8 +30,11 @@ backup before schema migration once business data exists.
 1. Player sends `/start` to the production Telegram bot.
 2. Owner signs into Admin, opens Players and credits CAS with a mandatory reason.
 3. Owner configures Weekly/Daily price, base jackpot and reserve as needed.
-4. Optional: owner creates that player's Web login in the same Players card.
-5. Player buys through Telegram or signs into the player Web site.
+4. Player presses **🌐 Открыть Web-версию** in the bot and follows the one-time
+   login button. No Web password or Admin provisioning is required.
+5. Player buys through Telegram or the already authenticated player Web site.
+
+Admin may still create a username/password in the Players card as a fallback.
 
 The initial Admin password exists only in the owner's ignored `.env` under
 `ADMIN_INITIAL_PASSWORD`. It is never committed or sent to DevLog.

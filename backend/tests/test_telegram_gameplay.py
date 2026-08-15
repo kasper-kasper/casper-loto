@@ -45,6 +45,7 @@ from k_loto.infrastructure.telegram_game_ui import (
     telegram_checkout_idempotency_key,
     toggle_daily_number,
     toggle_weekly_number,
+    web_login_markup,
     weekly_picker_markup,
 )
 
@@ -103,12 +104,17 @@ def callback_values(markup: Any) -> set[str]:
 def test_main_menu_exposes_complete_gameplay_navigation() -> None:
     assert callback_values(main_menu_markup()) == {
         "bot:buy",
+        "bot:web",
         "bot:balance",
         "bot:tickets:active",
         "bot:results",
         "bot:statistics",
         "bot:rules",
     }
+    login_button = web_login_markup("https://play.example/#telegram-login=token")
+    assert login_button.inline_keyboard[0][0].url == (
+        "https://play.example/#telegram-login=token"
+    )
     assert callback_values(lottery_menu_markup()) == {
         "game:weekly",
         "game:daily",

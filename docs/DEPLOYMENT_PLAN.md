@@ -7,7 +7,8 @@ rollback policy.
 ## Owner experience
 
 - Admin Panel: open its HTTPS address, enter username/password, work normally.
-- Player Web: open its HTTPS address and enter the provisioned login/password.
+- Player Web: press the one-click Web button in the private bot chat; an optional
+  provisioned login/password remains a fallback.
 - Telegram bot: remains online continuously and restarts automatically.
 - No owner-facing `npm`, `uvicorn`, tunnel or PowerShell command is required for
   ordinary use.

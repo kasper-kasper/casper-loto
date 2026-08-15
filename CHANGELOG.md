@@ -4,6 +4,27 @@ All notable changes follow Keep a Changelog and Semantic Versioning principles.
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-08-15
+
+### Added
+
+- One-click player Web login directly from each Telegram account.
+- `/web` bot command and a permanent Web button in the main bot menu.
+- Five-minute one-time login tokens with migration
+  `0005_telegram_web_login`.
+
+### Changed
+
+- Manual Web username/password provisioning is now an optional fallback instead
+  of a required setup step.
+- The player Web login page now points users to the simpler Telegram flow.
+
+### Security
+
+- Only SHA-256 token hashes are stored in PostgreSQL.
+- Raw one-time tokens use URL fragments, do not enter server request URLs and
+  are atomically invalidated after the first successful exchange.
+
 ## [0.12.0] - 2026-08-15
 
 ### Added

@@ -41,10 +41,13 @@ HttpOnly SameSite session and a per-session CSRF token. Administrator mutations
 call backend use cases that lock accounts and write ledger plus audit records in
 one transaction. Draw endpoints are read-only, including for administrators.
 
-The player Web client uses one Argon2 credential row per existing regular user.
-Its signed HttpOnly session contains stable account/user identifiers and a CSRF
-token. It calls the same query and Weekly purchase application services as the
-other adapters, so balances, tickets and results are shared with Telegram.
+The player Web client primarily exchanges a short-lived one-time token delivered
+in the player's private bot chat. The database stores only its hash and consumes
+it under a row lock. The raw token stays in the browser URL fragment and is
+removed before API access. Optional Argon2 credentials remain as a fallback.
+The signed HttpOnly session contains a stable user identity and CSRF token. It
+calls the same query and purchase services as the other adapters, so balances,
+tickets and results are shared with Telegram.
 
 Telegram bot gameplay is a stateful transport adapter over the existing query
 and Weekly purchase services. Only the unpaid picker/cart lives in aiogram

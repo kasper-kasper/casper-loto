@@ -13,6 +13,7 @@ from k_loto.infrastructure.database.models import (
     Ticket,
     User,
     WebAccount,
+    WebLoginToken,
 )
 
 __all__ = [
@@ -28,4 +29,5 @@ __all__ = [
     "Ticket",
     "User",
     "WebAccount",
+    "WebLoginToken",
 ]

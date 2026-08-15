@@ -91,6 +91,29 @@ class WebAccount(TimestampMixin, Base):
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class WebLoginToken(Base):
+    """Short-lived one-time browser login issued to a Telegram player."""
+
+    __tablename__ = "web_login_tokens"
+    __table_args__ = (
+        CheckConstraint("char_length(token_hash) = 64", name="token_hash_length"),
+        Index("ix_web_login_tokens_expires_at", "expires_at"),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), primary_key=True, default=uuid4
+    )
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT")
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class Lottery(TimestampMixin, Base):
     __tablename__ = "lotteries"
     __table_args__ = (

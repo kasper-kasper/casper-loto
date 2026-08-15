@@ -6,7 +6,8 @@ results as the bot. The preserved Telegram Mini App is not involved.
 
 ## Features
 
-- username/password login;
+- one-click login from the player's private Telegram bot chat;
+- optional username/password fallback;
 - current integer CAS balance and Weekly/Daily draw information;
 - Weekly 5-of-20 or Daily 4-of-15 selection and purchase of 1 to 20 tickets;
 - identical combinations in one purchase;
@@ -20,12 +21,25 @@ idempotency key. The browser cannot write balances or draw results.
 
 ## Security
 
-Every Web account belongs to exactly one regular `users` row. Passwords are
-stored as Argon2 hashes. Authentication creates a signed, expiring HttpOnly,
-SameSite cookie; production cookies are Secure. State-changing requests also
-need the per-session CSRF token. `WEB_SESSION_SECRET` must be a separate random
-secret of at least 32 characters and stays only in `.env` or the server secret
-environment.
+The primary login flow issues a five-minute one-time token to the already bound
+Telegram player. Only its SHA-256 hash is stored; the raw value travels in a URL
+fragment, so it is not sent in HTTP request URLs or access logs. Atomic
+consumption prevents a second use. The resulting signed, expiring HttpOnly
+SameSite cookie is independent of Telegram. Production cookies are Secure and
+state-changing requests also need the per-session CSRF token.
+
+Password login remains an optional fallback. Every password Web account belongs
+to one regular `users` row and uses an Argon2 hash. `WEB_SESSION_SECRET` remains
+separate and private.
+
+## Production login
+
+1. Send `/start` or `/web` to the K-Loto bot.
+2. Press **🌐 Открыть Web-версию**, then **🌐 Войти и играть**.
+3. The player site opens under that exact Telegram account without a password.
+
+Opening a link from another Telegram account switches the browser session to
+that account. An unused link expires after five minutes.
 
 ## Local start
 
