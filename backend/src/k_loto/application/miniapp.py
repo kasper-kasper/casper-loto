@@ -78,6 +78,38 @@ class MiniAppDrawResult:
 
 
 @dataclass(frozen=True, slots=True)
+class MiniAppLiveTicket:
+    public_number: int
+    numbers: tuple[int, ...]
+    matches: int | None
+    prize_amount: int
+
+
+@dataclass(frozen=True, slots=True)
+class MiniAppLiveDraw:
+    lottery_code: str
+    lottery_name: str
+    lottery_kind: LotteryKind
+    draw_number: int
+    scheduled_at: datetime
+    status: DrawStatus
+    winning_numbers: tuple[int, ...] | None
+    jackpot: int
+    player_ticket_count: int
+    player_winning_ticket_count: int
+    player_best_matches: int | None
+    player_total_prize: int
+    highlighted_tickets: tuple[MiniAppLiveTicket, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class MiniAppLiveFeed:
+    server_time: datetime
+    latest_completed: MiniAppLiveDraw | None
+    next_scheduled: MiniAppLiveDraw | None
+
+
+@dataclass(frozen=True, slots=True)
 class PlayerActivity:
     type: TransactionType
     amount: int
@@ -214,6 +246,107 @@ class MiniAppQueryService:
                 draw.total_payout,
             )
             for draw, lottery in rows
+        )
+
+    async def live(
+        self, user_id: UUID, *, now: datetime | None = None
+    ) -> MiniAppLiveFeed:
+        """Return immutable draw facts and a server clock for visual playback."""
+        timestamp = now or datetime.now(UTC)
+        latest_row = (
+            await self._session.execute(
+                select(Draw, Lottery, JackpotAccount.balance)
+                .join(Lottery, Lottery.id == Draw.lottery_id)
+                .outerjoin(JackpotAccount, JackpotAccount.lottery_id == Lottery.id)
+                .where(Draw.status == DrawStatus.COMPLETED)
+                .order_by(Draw.scheduled_at.desc())
+                .limit(1)
+            )
+        ).first()
+        next_row = (
+            await self._session.execute(
+                select(Draw, Lottery, JackpotAccount.balance)
+                .join(Lottery, Lottery.id == Draw.lottery_id)
+                .outerjoin(JackpotAccount, JackpotAccount.lottery_id == Lottery.id)
+                .where(Draw.status == DrawStatus.SCHEDULED)
+                .order_by(Draw.scheduled_at, Draw.public_number)
+                .limit(1)
+            )
+        ).first()
+        return MiniAppLiveFeed(
+            server_time=timestamp,
+            latest_completed=(
+                await self._live_draw(
+                    user_id, latest_row[0], latest_row[1], latest_row[2]
+                )
+                if latest_row
+                else None
+            ),
+            next_scheduled=(
+                await self._live_draw(user_id, next_row[0], next_row[1], next_row[2])
+                if next_row
+                else None
+            ),
+        )
+
+    async def _live_draw(
+        self,
+        user_id: UUID,
+        draw: Draw,
+        lottery: Lottery,
+        jackpot: int | None,
+    ) -> MiniAppLiveDraw:
+        aggregate = (
+            await self._session.execute(
+                select(
+                    func.count(Ticket.id),
+                    func.count(Ticket.id).filter(Ticket.prize_amount > 0),
+                    func.max(Ticket.matches),
+                    func.coalesce(func.sum(Ticket.prize_amount), 0),
+                ).where(Ticket.user_id == user_id, Ticket.draw_id == draw.id)
+            )
+        ).one()
+        highlighted: tuple[MiniAppLiveTicket, ...] = ()
+        if draw.status == DrawStatus.COMPLETED and aggregate[0]:
+            tickets = (
+                await self._session.execute(
+                    select(Ticket)
+                    .where(Ticket.user_id == user_id, Ticket.draw_id == draw.id)
+                    .order_by(
+                        Ticket.prize_amount.desc(),
+                        Ticket.matches.desc().nullslast(),
+                        Ticket.public_number,
+                    )
+                    .limit(3)
+                )
+            ).scalars()
+            highlighted = tuple(
+                MiniAppLiveTicket(
+                    public_number=ticket.public_number,
+                    numbers=tuple(ticket.numbers),
+                    matches=ticket.matches,
+                    prize_amount=ticket.prize_amount,
+                )
+                for ticket in tickets
+            )
+        return MiniAppLiveDraw(
+            lottery_code=lottery.code,
+            lottery_name=draw_display_name(
+                lottery.code, lottery.name, draw.scheduled_at
+            ),
+            lottery_kind=lottery.kind,
+            draw_number=draw.public_number,
+            scheduled_at=draw.scheduled_at,
+            status=draw.status,
+            winning_numbers=(
+                tuple(draw.winning_numbers) if draw.winning_numbers else None
+            ),
+            jackpot=jackpot or 0,
+            player_ticket_count=int(aggregate[0]),
+            player_winning_ticket_count=int(aggregate[1]),
+            player_best_matches=aggregate[2],
+            player_total_prize=int(aggregate[3]),
+            highlighted_tickets=highlighted,
         )
 
     async def activity(

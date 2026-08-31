@@ -1,6 +1,6 @@
 # K-Loto
 
-Current version: **0.17.0 — Polished Telegram Mini App**.
+Current version: **0.18.0 — Server-synchronised draw broadcast**.
 
 K-Loto is a multi-user lottery platform with integer CAS accounting, an
 immutable transaction ledger, recoverable draw scheduling and four independent

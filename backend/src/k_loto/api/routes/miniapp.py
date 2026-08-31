@@ -17,6 +17,8 @@ from k_loto.application.daily import DailyTicketPurchaseService
 from k_loto.application.dev_mode import DevBootstrapConfig, DevBootstrapService
 from k_loto.application.miniapp import (
     MiniAppDashboard,
+    MiniAppLiveDraw,
+    MiniAppLiveFeed,
     MiniAppLottery,
     MiniAppQueryService,
     MiniAppTicket,
@@ -81,6 +83,35 @@ class DashboardResponse(BaseModel):
 
 class TicketListResponse(BaseModel):
     tickets: list[TicketResponse]
+
+
+class LiveTicketResponse(BaseModel):
+    public_number: int
+    numbers: list[int]
+    matches: int | None
+    prize_amount: int
+
+
+class LiveDrawResponse(BaseModel):
+    lottery_code: str
+    lottery_name: str
+    lottery_kind: LotteryKind
+    draw_number: int
+    scheduled_at: datetime
+    status: str
+    winning_numbers: list[int] | None
+    jackpot: int
+    player_ticket_count: int
+    player_winning_ticket_count: int
+    player_best_matches: int | None
+    player_total_prize: int
+    highlighted_tickets: list[LiveTicketResponse]
+
+
+class LiveFeedResponse(BaseModel):
+    server_time: datetime
+    latest_completed: LiveDrawResponse | None
+    next_scheduled: LiveDrawResponse | None
 
 
 class PurchaseRequest(BaseModel):
@@ -206,12 +237,60 @@ def _dashboard_response(item: MiniAppDashboard) -> DashboardResponse:
     )
 
 
+def _live_draw_response(item: MiniAppLiveDraw) -> LiveDrawResponse:
+    return LiveDrawResponse(
+        lottery_code=item.lottery_code,
+        lottery_name=item.lottery_name,
+        lottery_kind=item.lottery_kind,
+        draw_number=item.draw_number,
+        scheduled_at=item.scheduled_at,
+        status=item.status.value,
+        winning_numbers=(list(item.winning_numbers) if item.winning_numbers else None),
+        jackpot=item.jackpot,
+        player_ticket_count=item.player_ticket_count,
+        player_winning_ticket_count=item.player_winning_ticket_count,
+        player_best_matches=item.player_best_matches,
+        player_total_prize=item.player_total_prize,
+        highlighted_tickets=[
+            LiveTicketResponse(
+                public_number=ticket.public_number,
+                numbers=list(ticket.numbers),
+                matches=ticket.matches,
+                prize_amount=ticket.prize_amount,
+            )
+            for ticket in item.highlighted_tickets
+        ],
+    )
+
+
+def _live_response(item: MiniAppLiveFeed) -> LiveFeedResponse:
+    return LiveFeedResponse(
+        server_time=item.server_time,
+        latest_completed=(
+            _live_draw_response(item.latest_completed)
+            if item.latest_completed
+            else None
+        ),
+        next_scheduled=(
+            _live_draw_response(item.next_scheduled) if item.next_scheduled else None
+        ),
+    )
+
+
 @router.get("/dashboard", response_model=DashboardResponse)
 async def dashboard(
     user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> DashboardResponse:
     return _dashboard_response(await MiniAppQueryService(session).dashboard(user.id))
+
+
+@router.get("/live", response_model=LiveFeedResponse)
+async def live(
+    user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> LiveFeedResponse:
+    return _live_response(await MiniAppQueryService(session).live(user.id))
 
 
 @router.get("/tickets", response_model=TicketListResponse)

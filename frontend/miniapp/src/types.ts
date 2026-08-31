@@ -38,6 +38,35 @@ export interface Dashboard {
   recent_results: Ticket[];
 }
 
+export interface LiveTicket {
+  public_number: number;
+  numbers: number[];
+  matches: number | null;
+  prize_amount: number;
+}
+
+export interface LiveDraw {
+  lottery_code: string;
+  lottery_name: string;
+  lottery_kind: LotteryKind;
+  draw_number: number;
+  scheduled_at: string;
+  status: "SCHEDULED" | "COMPLETED";
+  winning_numbers: number[] | null;
+  jackpot: number;
+  player_ticket_count: number;
+  player_winning_ticket_count: number;
+  player_best_matches: number | null;
+  player_total_prize: number;
+  highlighted_tickets: LiveTicket[];
+}
+
+export interface LiveFeed {
+  server_time: string;
+  latest_completed: LiveDraw | null;
+  next_scheduled: LiveDraw | null;
+}
+
 export interface PurchaseResult {
   operation_id: string;
   draw_id: string;

@@ -17,6 +17,14 @@ or purchased tickets. Versioned CHANGELOG and DEVLOG history is exposed there
 through authenticated, read-only endpoints. Telegram journal delivery is
 retired; Telegram remains a player entry and notification adapter.
 
+The Mini App live-draw adapter is deliberately read-only. It polls a compact
+projection containing server time, the latest immutable result, the nearest
+scheduled draw and an aggregated player outcome. Visual reveal timing is a
+client presentation concern; RNG, settlement, recovery and draw state remain in
+the existing domain/application services. At most three representative player
+tickets are returned, so a player with thousands of tickets does not create an
+unbounded live response.
+
 The scheduler calculates official times in `Europe/Moscow`, stores UTC, settles
 missed draws chronologically and relies on row locks and constraints for
 idempotency. Each active lottery maintains its own next draw. Completed draws

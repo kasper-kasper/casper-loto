@@ -22,6 +22,10 @@ export function errorHaptic(): void {
   window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred("error");
 }
 
+export function liveStartHaptic(): void {
+  window.Telegram?.WebApp?.HapticFeedback?.impactOccurred("light");
+}
+
 declare global {
   interface Window {
     Telegram?: { WebApp?: TelegramWebApp };

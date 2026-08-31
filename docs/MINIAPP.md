@@ -14,12 +14,32 @@ Milestone 5 provides a mobile-first React/TypeScript/Vite client with:
 - active tickets, completed ticket history and recent results;
 - polished mobile navigation, loading and result states with optional Telegram
   haptic feedback;
+- a permanent server-synchronised **Эфир** screen for waiting, sequentially
+  revealing the immutable result and showing the personal outcome;
 - responsive layout from 320px with Telegram/iPhone safe-area support.
 
-The v0.17.0 visual system uses layered navy surfaces, restrained blue and
+The v0.18.0 visual system uses layered navy surfaces, restrained blue and
 burgundy depth, and gold only for jackpots, money, wins and primary actions.
 Decorative lottery balls are intentionally not used. Functional number choices
 are rounded tiles.
+
+## Эфир
+
+`GET /api/v1/miniapp/live` is an authenticated read-only projection. It returns
+the server clock, the latest completed draw, the next scheduled draw and a
+bounded personal summary. It never generates numbers and never starts or
+settles a draw. The existing scheduler and cryptographically secure backend RNG
+remain the only source of the immutable result.
+
+The client derives the visual phase from the server-time offset and the official
+UTC `scheduled_at`: waiting, short start, two-second sequential reveal and final
+result. Opening late or returning from the background triggers a fresh sync and
+resumes the correct phase without replaying a completed draw. Polling is active
+only while the screen is open; no WebSocket or streaming infrastructure is used.
+
+The screen uses a low-cost CSS grid and one blurred ambient glow. Number reveal
+uses only opacity, blur and transform. Reduced-motion preferences, 320px layouts
+and Telegram/iPhone safe areas are preserved.
 
 ## Authentication and API
 

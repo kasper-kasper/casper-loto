@@ -10,6 +10,8 @@ describe("mobile layout contract", () => {
     expect(styles).toContain("overflow-x: hidden");
     expect(styles).toContain("@media (max-width: 359px)");
     expect(styles).toContain("grid-template-columns: repeat(5, 1fr)");
+    expect(styles).toContain("grid-template-columns: repeat(4, 1fr)");
+    expect(styles).toContain(".live-stage { position: relative; display: grid; min-width: 0;");
   });
 
   it("keeps content and navigation inside iPhone safe areas", () => {

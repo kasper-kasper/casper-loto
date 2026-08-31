@@ -11,6 +11,7 @@ vi.mock("./api", () => ({
     devSession: vi.fn(),
     devRefill: vi.fn(),
     dashboard: vi.fn(),
+    live: vi.fn(),
     tickets: vi.fn(),
     purchase: vi.fn(),
   },
@@ -56,6 +57,7 @@ beforeEach(() => {
   vi.mocked(miniAppApi.devSession).mockResolvedValue({ mode: "local-development" });
   vi.mocked(miniAppApi.devRefill).mockResolvedValue({ balance: 105_000 });
   vi.mocked(miniAppApi.dashboard).mockResolvedValue(dashboard);
+  vi.mocked(miniAppApi.live).mockResolvedValue({ server_time: new Date().toISOString(), latest_completed: null, next_scheduled: null });
   vi.mocked(miniAppApi.tickets).mockResolvedValue([]);
   vi.mocked(miniAppApi.purchase).mockResolvedValue({
     operation_id: "operation",
@@ -95,6 +97,14 @@ it("renders server-authoritative balance and lottery states", async () => {
   expect(screen.getByText("10 000 CAS")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /Выбрать числа.*100 CAS/ })).toBeEnabled();
   expect(screen.getByRole("button", { name: "Скоро откроется" })).toBeDisabled();
+});
+
+it("opens the permanent live tab and requests the server clock", async () => {
+  render(<App initData="signed" />);
+  fireEvent.click(await screen.findByRole("button", { name: "Эфир" }));
+
+  expect(await screen.findByText("Расписание готовится")).toBeInTheDocument();
+  expect(miniAppApi.live).toHaveBeenCalledWith("signed");
 });
 
 it("selects five numbers, adds a ticket and buys the cart atomically", async () => {

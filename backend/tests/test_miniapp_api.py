@@ -8,6 +8,13 @@ from urllib.parse import urlencode
 
 import pytest
 
+from k_loto.api.routes.miniapp import _live_response
+from k_loto.application.miniapp import (
+    MiniAppLiveDraw,
+    MiniAppLiveFeed,
+    MiniAppLiveTicket,
+)
+from k_loto.domain.enums import DrawStatus, LotteryKind
 from k_loto.infrastructure.telegram_auth import (
     InvalidTelegramInitData,
     validate_init_data,
@@ -95,9 +102,37 @@ def test_miniapp_routes_are_registered() -> None:
     paths = create_app().openapi()["paths"]
 
     assert "/api/v1/miniapp/dashboard" in paths
+    assert "/api/v1/miniapp/live" in paths
     assert "/api/v1/miniapp/tickets" in paths
     assert "/api/v1/miniapp/weekly/purchases" in paths
     assert "/api/v1/miniapp/daily/purchases" in paths
     assert "/api/v1/miniapp/lotteries/{lottery_code}/purchases" in paths
     assert "/api/v1/miniapp/dev/session" in paths
     assert "/api/v1/miniapp/dev/refill" in paths
+
+
+def test_live_response_exposes_server_clock_and_personal_result() -> None:
+    scheduled = datetime(2026, 8, 31, 9, tzinfo=UTC)
+    draw = MiniAppLiveDraw(
+        lottery_code="pss",
+        lottery_name="ПСС-Лото",
+        lottery_kind=LotteryKind.DAILY,
+        draw_number=812,
+        scheduled_at=scheduled,
+        status=DrawStatus.COMPLETED,
+        winning_numbers=(2, 5, 9, 14),
+        jackpot=24_000_000,
+        player_ticket_count=2,
+        player_winning_ticket_count=1,
+        player_best_matches=3,
+        player_total_prize=120_000,
+        highlighted_tickets=(MiniAppLiveTicket(50465, (2, 5, 9, 11), 3, 120_000),),
+    )
+
+    response = _live_response(MiniAppLiveFeed(scheduled, draw, None))
+
+    assert response.server_time == scheduled
+    assert response.latest_completed is not None
+    assert response.latest_completed.winning_numbers == [2, 5, 9, 14]
+    assert response.latest_completed.player_total_prize == 120_000
+    assert response.latest_completed.highlighted_tickets[0].public_number == 50465

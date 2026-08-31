@@ -1,4 +1,4 @@
-import type { Dashboard, PurchaseResult, Ticket } from "./types";
+import type { Dashboard, LiveFeed, PurchaseResult, Ticket } from "./types";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "";
 
@@ -40,6 +40,8 @@ export const miniAppApi = {
     }),
   dashboard: (initData: string) =>
     request<Dashboard>("/api/v1/miniapp/dashboard", initData),
+  live: (initData: string) =>
+    request<LiveFeed>("/api/v1/miniapp/live", initData),
   tickets: async (initData: string, state: "active" | "history") => {
     const response = await request<{ tickets: Ticket[] }>(
       `/api/v1/miniapp/tickets?state=${state}`,

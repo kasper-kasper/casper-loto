@@ -13,11 +13,12 @@ import {
   StatusBadge,
 } from "./components";
 import { countdown, formatCas, formatDraw, formatMoscow } from "./format";
+import { LiveView } from "./LiveView";
 import { randomCombination } from "./random";
 import { errorHaptic, selectionHaptic, successHaptic } from "./telegram";
-import type { CartTicket, Dashboard, Lottery, Ticket } from "./types";
+import type { CartTicket, Dashboard, LiveFeed, Lottery, Ticket } from "./types";
 
-type View = "home" | "tickets" | "cart";
+type View = "home" | "live" | "tickets" | "cart";
 type TicketView = "active" | "history";
 
 interface AppProps {
@@ -43,11 +44,13 @@ function TicketCard({ ticket, index = 0 }: { ticket: Ticket; index?: number }) {
   </article>;
 }
 
-function NextDraw({ lottery, now }: { lottery: Lottery; now: number }) {
+function NextDraw({ lottery, now, onLive }: { lottery: Lottery; now: number; onLive: () => void }) {
+  const startsIn = lottery.scheduled_at ? new Date(lottery.scheduled_at).getTime() - now : Infinity;
   return <section className="next-draw">
     <div className="next-draw-accent"><span>Ближайший тираж</span><i /></div>
     <div className="next-draw-main"><div><strong>{lottery.name}</strong><small>{lottery.draw_number ? `Тираж #${formatDraw(lottery.draw_number)}` : "Расписание готовится"}</small></div><div className="countdown"><span>До старта</span><strong>{countdown(lottery.scheduled_at, now)}</strong></div></div>
     {lottery.scheduled_at && <time>{formatMoscow(lottery.scheduled_at)} МСК</time>}
+    {startsIn <= 5 * 60_000 && startsIn > -60_000 && <button className="live-cta" onClick={onLive} type="button"><i /> Смотреть эфир</button>}
   </section>;
 }
 
@@ -91,8 +94,9 @@ function NumberPicker({ lottery, purchasing, success, onClose, onBuy, onAdd }: {
 }
 
 function BottomNavigation({ view, activeTickets, cartCount, onChange }: { view: View; activeTickets: number; cartCount: number; onChange: (view: View) => void }) {
-  const items: { id: View; label: string; icon: "home" | "ticket" | "cart"; count: number }[] = [
+  const items: { id: View; label: string; icon: "home" | "live" | "ticket" | "cart"; count: number }[] = [
     { id: "home", label: "Главная", icon: "home", count: 0 },
+    { id: "live", label: "Эфир", icon: "live", count: 0 },
     { id: "tickets", label: "Билеты", icon: "ticket", count: activeTickets },
     { id: "cart", label: "Корзина", icon: "cart", count: cartCount },
   ];
@@ -105,19 +109,31 @@ export default function App({ initData, localDev = false }: AppProps) {
   const [view, setView] = useState<View>("home");
   const [ticketView, setTicketView] = useState<TicketView>("active");
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
+  const [liveFeed, setLiveFeed] = useState<LiveFeed | null>(null);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [cart, setCart] = useState<CartTicket[]>(() => loadCart(cartTtl));
   const [pickerLottery, setPickerLottery] = useState<Lottery | null>(null);
   const [loading, setLoading] = useState(authenticated);
   const [ticketsLoading, setTicketsLoading] = useState(false);
+  const [liveLoading, setLiveLoading] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [serverOffset, setServerOffset] = useState(0);
 
   const refreshDashboard = useCallback(async () => {
     if (authenticated) setDashboard(await miniAppApi.dashboard(initData));
+  }, [authenticated, initData]);
+
+  const refreshLive = useCallback(async () => {
+    if (!authenticated) return;
+    const requestedAt = Date.now();
+    const feed = await miniAppApi.live(initData);
+    const receivedAt = Date.now();
+    setServerOffset(new Date(feed.server_time).getTime() - (requestedAt + receivedAt) / 2);
+    setLiveFeed(feed);
   }, [authenticated, initData]);
 
   useEffect(() => {
@@ -139,9 +155,26 @@ export default function App({ initData, localDev = false }: AppProps) {
     if (view !== "tickets" || !authenticated) return;
     miniAppApi.tickets(initData, ticketView).then(setTickets).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Не удалось загрузить билеты.")).finally(() => setTicketsLoading(false));
   }, [authenticated, initData, ticketView, view]);
+  useEffect(() => {
+    if (view !== "live" || !authenticated) return;
+    const initial = window.setTimeout(() => {
+      void refreshLive().catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Не удалось подключиться к эфиру.")).finally(() => setLiveLoading(false));
+    }, 0);
+    const timer = window.setInterval(() => void refreshLive().catch(() => undefined), 2_000);
+    const resync = () => { if (document.visibilityState === "visible") void refreshLive().catch(() => undefined); };
+    document.addEventListener("visibilitychange", resync);
+    return () => { window.clearTimeout(initial); window.clearInterval(timer); document.removeEventListener("visibilitychange", resync); };
+  }, [authenticated, refreshLive, view]);
 
   const nearestLottery = useMemo(() => dashboard?.lotteries.filter((item) => item.scheduled_at).sort((left, right) => new Date(left.scheduled_at ?? 0).getTime() - new Date(right.scheduled_at ?? 0).getTime())[0] ?? null, [dashboard]);
   const firstAvailable = dashboard?.lotteries.find((item) => item.purchase_available) ?? null;
+  const serverNow = now + serverOffset;
+
+  const openLottery = (lotteryCode: string) => {
+    const lottery = dashboard?.lotteries.find((item) => item.code === lotteryCode && item.purchase_available);
+    if (lottery) setPickerLottery(lottery);
+    else { setNotice("Продажи на этот тираж закрыты — выберите доступную лотерею."); setView("home"); }
+  };
 
   const addToCart = (lottery: Lottery, numbers: number[]) => {
     setCart((current) => [...current, { id: crypto.randomUUID(), lotteryCode: lottery.code, lotteryName: lottery.name, price: lottery.ticket_price ?? 0, numbers: [...numbers] }]);
@@ -196,11 +229,15 @@ export default function App({ initData, localDev = false }: AppProps) {
 
     {view === "home" && <section className="view-content" key="home">
       <div className="hero-copy"><span className="eyebrow">Ваш следующий шанс</span><h1>Выберите числа.<br /><em>Остальное — за удачей.</em></h1><p>Честные тиражи по расписанию. Ваши билеты всегда под рукой.</p></div>
-      {nearestLottery && <NextDraw lottery={nearestLottery} now={now} />}
+      {nearestLottery && <NextDraw lottery={nearestLottery} now={now} onLive={() => { setLiveLoading(true); setView("live"); }} />}
       <div className="section-heading"><div><span className="eyebrow">Игровая коллекция</span><h2>Лотереи</h2></div><span className="section-count">{dashboard.lotteries.length} игры</span></div>
       <div className="lottery-list">{dashboard.lotteries.map((lottery, index) => <LotteryCard key={lottery.code} lottery={lottery} now={now} index={index} onPlay={() => setPickerLottery(lottery)} />)}</div>
       <div className="section-heading"><div><span className="eyebrow">Недавнее</span><h2>Последние результаты</h2></div><button className="text-button" onClick={() => { setTicketsLoading(true); setView("tickets"); setTicketView("history"); }} type="button">Смотреть все <span>→</span></button></div>
       {dashboard.recent_results.length ? dashboard.recent_results.map((ticket, index) => <TicketCard index={index} key={ticket.id} ticket={ticket} />) : <EmptyState title="История пока пуста" text="Результаты сыгранных билетов появятся здесь после первого тиража." />}
+    </section>}
+
+    {view === "live" && <section className="view-content live-view" key="live">
+      <LiveView feed={liveFeed} now={serverNow} loading={liveLoading} onPlay={openLottery} onTickets={() => { setTicketsLoading(true); setView("tickets"); }} />
     </section>}
 
     {view === "tickets" && <section className="view-content" key="tickets">
@@ -215,6 +252,6 @@ export default function App({ initData, localDev = false }: AppProps) {
       {cart.length ? <><div className="cart-list">{cart.map((ticket, index) => <article className="cart-ticket" key={ticket.id} style={{ "--item-index": index } as CSSProperties}><div className="cart-ticket-head"><div><span className="eyebrow">{ticket.lotteryName}</span><strong>Комбинация {index + 1}</strong></div><button className="remove-button" onClick={() => { selectionHaptic(); setCart((current) => current.filter((item) => item.id !== ticket.id)); }} type="button" aria-label={`Удалить билет ${index + 1}`}><Icon name="close" /></button></div><NumberSet values={ticket.numbers} /><div className="cart-ticket-price"><span>Стоимость</span><strong>{formatCas(ticket.price)}</strong></div></article>)}</div><div className="cart-total"><div><span>К оплате</span><small>{cart.length} бил.</small></div><strong>{formatCas(cart.reduce((sum, item) => sum + item.price, 0))}</strong></div><button className="secondary-button" disabled={!firstAvailable || purchasing} onClick={() => firstAvailable && setPickerLottery(firstAvailable)} type="button">Добавить комбинацию</button><PrimaryButton loading={purchasing} success={purchaseSuccess} onClick={() => void purchaseCart()}>{purchaseSuccess ? "Билеты куплены" : purchasing ? "Оформляем покупку…" : "Купить всё"}</PrimaryButton></> : <EmptyState title="Корзина пока пуста" text="Выберите лотерею, отметьте числа и сохраните комбинацию перед покупкой." action={{ label: "Выбрать лотерею", onClick: () => setView("home") }} />}
     </section>}
 
-    <BottomNavigation view={view} activeTickets={dashboard.active_ticket_count} cartCount={cart.length} onChange={(target) => { if (target === "tickets") setTicketsLoading(true); setView(target); }} />
+    <BottomNavigation view={view} activeTickets={dashboard.active_ticket_count} cartCount={cart.length} onChange={(target) => { if (target === "tickets") setTicketsLoading(true); if (target === "live") setLiveLoading(true); setView(target); }} />
   </main>;
 }
