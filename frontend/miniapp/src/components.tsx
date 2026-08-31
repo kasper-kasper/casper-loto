@@ -3,7 +3,7 @@ import type { CSSProperties, ReactNode } from "react";
 
 import { formatCas } from "./format";
 
-export type IconName = "home" | "ticket" | "cart" | "live" | "arrow" | "spark" | "close";
+export type IconName = "home" | "ticket" | "cart" | "live" | "arrow" | "spark" | "repeat" | "close";
 
 export function Icon({ name }: { name: IconName }) {
   const paths: Record<IconName, ReactNode> = {
@@ -13,6 +13,7 @@ export function Icon({ name }: { name: IconName }) {
     live: <><path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7" /><path d="M5.5 5.5a9 9 0 0 0 0 13M18.5 5.5a9 9 0 0 1 0 13" /><path d="M12 10v4" /></>,
     arrow: <><path d="m14.5 5-7 7 7 7" /></>,
     spark: <><path d="M12 2.5c.5 4.6 2.9 7 7.5 7.5-4.6.5-7 2.9-7.5 7.5-.5-4.6-2.9-7-7.5-7.5 4.6-.5 7-2.9 7.5-7.5Z" /><path d="M19 16.5c.2 1.8 1.2 2.8 3 3-1.8.2-2.8 1.2-3 3-.2-1.8-1.2-2.8-3-3 1.8-.2 2.8-1.2 3-3Z" /></>,
+    repeat: <><path d="M18 7h-9a5 5 0 0 0-5 5v1" /><path d="m15 4 3 3-3 3M6 17h9a5 5 0 0 0 5-5v-1" /><path d="m9 20-3-3 3-3" /></>,
     close: <><path d="m6 6 12 12M18 6 6 18" /></>,
   };
   return <svg aria-hidden="true" className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>;

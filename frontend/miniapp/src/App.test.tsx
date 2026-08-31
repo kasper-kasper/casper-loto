@@ -18,6 +18,7 @@ vi.mock("./api", () => ({
 }));
 
 const dashboard: Dashboard = {
+  server_time: "2026-08-15T12:00:00Z",
   balance: 5_000,
   active_ticket_count: 0,
   lotteries: [
@@ -34,6 +35,7 @@ const dashboard: Dashboard = {
       sales_close_at: "2026-08-16T16:55:00Z",
       sales_open: true,
       purchase_available: true,
+      player_ticket_count: 2,
     },
     {
       code: "pll",
@@ -48,12 +50,14 @@ const dashboard: Dashboard = {
       sales_close_at: "2026-08-15T15:00:00Z",
       sales_open: false,
       purchase_available: false,
+      player_ticket_count: 0,
     },
   ],
   recent_results: [],
 };
 
 beforeEach(() => {
+  vi.clearAllMocks();
   vi.mocked(miniAppApi.devSession).mockResolvedValue({ mode: "local-development" });
   vi.mocked(miniAppApi.devRefill).mockResolvedValue({ balance: 105_000 });
   vi.mocked(miniAppApi.dashboard).mockResolvedValue(dashboard);
@@ -94,9 +98,23 @@ it("renders server-authoritative balance and lottery states", async () => {
   render(<App initData="signed" />);
 
   expect(await screen.findByText("5 000 CAS")).toBeInTheDocument();
-  expect(screen.getByText("10 000 CAS")).toBeInTheDocument();
+  expect(screen.getAllByText("10 000 CAS").length).toBeGreaterThan(0);
   expect(screen.getByRole("button", { name: /Выбрать числа.*100 CAS/ })).toBeEnabled();
-  expect(screen.getByRole("button", { name: "Скоро откроется" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: /Проверить продажи.*—/ })).toBeDisabled();
+});
+
+it("refreshes a stale sales state before opening the number picker", async () => {
+  const stale: Dashboard = {
+    ...dashboard,
+    lotteries: dashboard.lotteries.map((lottery) => lottery.code === "weekly" ? { ...lottery, purchase_available: false, sales_open: false } : lottery),
+  };
+  vi.mocked(miniAppApi.dashboard).mockResolvedValueOnce(stale).mockResolvedValue(dashboard);
+  render(<App initData="signed" />);
+
+  fireEvent.click(await screen.findByRole("button", { name: /Проверить продажи.*100 CAS/ }));
+
+  expect(await screen.findByRole("button", { name: "Случайные числа" })).toBeInTheDocument();
+  expect(miniAppApi.dashboard).toHaveBeenCalledTimes(2);
 });
 
 it("opens the permanent live tab and requests the server clock", async () => {
@@ -111,6 +129,7 @@ it("selects five numbers, adds a ticket and buys the cart atomically", async () 
   render(<App initData="signed" />);
   fireEvent.click(await screen.findByRole("button", { name: /Выбрать числа.*100 CAS/ }));
 
+  await waitFor(() => expect(document.querySelector(".number-grid")).not.toBeNull());
   const grid = document.querySelector(".number-grid");
   expect(grid).not.toBeNull();
   for (const number of [1, 2, 3, 4, 5]) {
@@ -119,7 +138,7 @@ it("selects five numbers, adds a ticket and buys the cart atomically", async () 
   fireEvent.click(screen.getByRole("button", { name: "В корзину" }));
 
   expect(screen.getByText("1 комбинация")).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Купить всё" }));
+  fireEvent.click(screen.getByRole("button", { name: "Купить 1 бил." }));
 
   await waitFor(() =>
     expect(miniAppApi.purchase).toHaveBeenCalledWith(
@@ -129,6 +148,21 @@ it("selects five numbers, adds a ticket and buys the cart atomically", async () 
       "00000000-0000-4000-8000-000000000001",
     ),
   );
+});
+
+it("builds a large cart and sends one hundred tickets as a bounded batch", async () => {
+  render(<App initData="signed" />);
+  fireEvent.click(await screen.findByRole("button", { name: /Выбрать числа.*100 CAS/ }));
+  fireEvent.click(await screen.findByRole("button", { name: "+50" }));
+  expect(await screen.findByText("50 комбинаций")).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "Добавить комбинацию" }));
+  fireEvent.click(await screen.findByRole("button", { name: "+50" }));
+  expect(await screen.findByText("100 комбинаций")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Купить 100 бил." }));
+
+  await waitFor(() => expect(miniAppApi.purchase).toHaveBeenCalledOnce());
+  expect(vi.mocked(miniAppApi.purchase).mock.calls[0][2]).toHaveLength(100);
 });
 
 it("shows a designed cart empty state without implementation details", async () => {

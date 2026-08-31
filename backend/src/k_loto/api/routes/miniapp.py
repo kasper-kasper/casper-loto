@@ -23,7 +23,10 @@ from k_loto.application.miniapp import (
     MiniAppQueryService,
     MiniAppTicket,
 )
-from k_loto.application.weekly import WeeklyTicketPurchaseService
+from k_loto.application.weekly import (
+    MAX_TICKETS_PER_PURCHASE,
+    WeeklyTicketPurchaseService,
+)
 from k_loto.core.config import Settings, get_settings
 from k_loto.domain.enums import LotteryKind, TicketStatus
 from k_loto.domain.errors import (
@@ -57,6 +60,7 @@ class LotteryResponse(BaseModel):
     sales_close_at: datetime | None
     sales_open: bool
     purchase_available: bool
+    player_ticket_count: int
 
 
 class TicketResponse(BaseModel):
@@ -75,6 +79,7 @@ class TicketResponse(BaseModel):
 
 
 class DashboardResponse(BaseModel):
+    server_time: datetime
     balance: int
     active_ticket_count: int
     lotteries: list[LotteryResponse]
@@ -115,7 +120,9 @@ class LiveFeedResponse(BaseModel):
 
 
 class PurchaseRequest(BaseModel):
-    combinations: list[list[int]] = Field(min_length=1)
+    combinations: list[list[int]] = Field(
+        min_length=1, max_length=MAX_TICKETS_PER_PURCHASE
+    )
     idempotency_key: str = Field(min_length=1, max_length=100)
 
 
@@ -208,6 +215,7 @@ def _lottery_response(item: MiniAppLottery) -> LotteryResponse:
         sales_close_at=item.sales_close_at,
         sales_open=item.sales_open,
         purchase_available=item.purchase_available,
+        player_ticket_count=item.player_ticket_count,
     )
 
 
@@ -230,6 +238,7 @@ def _ticket_response(item: MiniAppTicket) -> TicketResponse:
 
 def _dashboard_response(item: MiniAppDashboard) -> DashboardResponse:
     return DashboardResponse(
+        server_time=item.server_time,
         balance=item.balance,
         active_ticket_count=item.active_ticket_count,
         lotteries=[_lottery_response(value) for value in item.lotteries],

@@ -16,9 +16,13 @@ Milestone 5 provides a mobile-first React/TypeScript/Vite client with:
   haptic feedback;
 - a permanent server-synchronised **Эфир** screen for waiting, sequentially
   revealing the immutable result and showing the personal outcome;
+- fresh sales-state checks before every number picker, background dashboard
+  refresh and explicit cutoff time presentation;
+- a cart of up to 1,000 tickets with idempotent 100-ticket server batches,
+  visible progress and preservation of unpurchased combinations after failure;
 - responsive layout from 320px with Telegram/iPhone safe-area support.
 
-The v0.18.0 visual system uses layered navy surfaces, restrained blue and
+The v0.19.0 visual system uses layered navy surfaces, restrained blue and
 burgundy depth, and gold only for jackpots, money, wins and primary actions.
 Decorative lottery balls are intentionally not used. Functional number choices
 are rounded tiles.
@@ -40,6 +44,20 @@ only while the screen is open; no WebSocket or streaming infrastructure is used.
 The screen uses a low-cost CSS grid and one blurred ambient glow. Number reveal
 uses only opacity, blur and transform. Reduced-motion preferences, 320px layouts
 and Telegram/iPhone safe areas are preserved.
+
+The waiting state remains honest but visually active: a low-cost signal line,
+result placeholders, a dedicated final-minute transition and server-synced
+progress lead into the existing sequential reveal. No fake number or outcome is
+ever displayed.
+
+## Purchase limits and recovery
+
+The application service rejects a purchase containing more than 100 tickets,
+so the limit also applies when the HTTP API is bypassed. The Mini App can hold
+up to 1,000 tickets and checks out grouped 100-ticket batches. Each batch owns a
+stable idempotency key reused for one safe transient retry. Successfully bought
+batches disappear from the cart immediately; any unprocessed tickets remain if
+a later batch fails.
 
 ## Authentication and API
 

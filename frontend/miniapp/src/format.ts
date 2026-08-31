@@ -16,6 +16,14 @@ export function formatMoscow(value: string): string {
   }).format(new Date(value));
 }
 
+export function formatMoscowTime(value: string): string {
+  return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "Europe/Moscow",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
 export function countdown(value: string | null, now: number): string {
   if (!value) return "Расписание готовится";
   const seconds = Math.max(0, Math.floor((new Date(value).getTime() - now) / 1000));

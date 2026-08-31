@@ -20,7 +20,7 @@ from k_loto.domain.enums import (
     NotificationType,
     TransactionType,
 )
-from k_loto.domain.errors import InvalidStateTransition
+from k_loto.domain.errors import InvalidStateTransition, InvalidTicket
 from k_loto.infrastructure.database.models import (
     Balance,
     DistributionFund,
@@ -137,6 +137,19 @@ def build_purchase_accounts(now: datetime):
         id=UUID(int=600), lottery_id=lottery_id, balance=300, version=1
     )
     return user_id, lottery, draw, balance, jackpot, distribution
+
+
+async def test_purchase_rejects_more_than_one_hundred_tickets_before_database() -> None:
+    service = WeeklyTicketPurchaseService(
+        cast(AsyncSession, FakeSession(scalar_values=[]))
+    )
+
+    with pytest.raises(InvalidTicket, match="1 to 100"):
+        await service.purchase(
+            user_id=UUID(int=1),
+            combinations=[[1, 2, 3, 4, 5]] * 101,
+            idempotency_key="too-many",
+        )
 
 
 async def test_multi_ticket_purchase_updates_all_accounts_and_numbering() -> None:

@@ -22,6 +22,7 @@ from k_loto.domain.enums import (
 from k_loto.domain.errors import (
     ConfigurationError,
     InvalidStateTransition,
+    InvalidTicket,
     NoAvailableDraw,
 )
 from k_loto.domain.lotteries import draw_display_name
@@ -44,6 +45,8 @@ from k_loto.infrastructure.database.models import (
     Ticket,
     User,
 )
+
+MAX_TICKETS_PER_PURCHASE = 100
 
 
 @dataclass(frozen=True, slots=True)
@@ -139,6 +142,10 @@ class WeeklyTicketPurchaseService:
     ) -> PurchaseResult:
         if not idempotency_key or len(idempotency_key) > 100:
             raise ValueError("idempotency_key must contain 1 to 100 characters.")
+        if not 1 <= len(combinations) <= MAX_TICKETS_PER_PURCHASE:
+            raise InvalidTicket(
+                f"A purchase must contain 1 to {MAX_TICKETS_PER_PURCHASE} tickets."
+            )
         timestamp = now or datetime.now(UTC)
         user_ledger_key = f"purchase:{idempotency_key}:user"
 

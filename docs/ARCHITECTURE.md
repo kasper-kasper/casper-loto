@@ -25,6 +25,18 @@ the existing domain/application services. At most three representative player
 tickets are returned, so a player with thousands of tickets does not create an
 unbounded live response.
 
+Player sales state is treated as volatile. The Mini App dashboard carries a
+server timestamp and per-draw player ticket counts, refreshes periodically and
+on visibility restoration, and performs one fresh read immediately before the
+number picker opens. Cached or stale UI state can therefore never be the final
+authority for displaying a closed-sale message; the transactional purchase
+service still makes the authoritative cutoff decision.
+
+High-volume Mini App checkout is bounded at both layers: 1,000 client-side cart
+entries and 100 tickets per application-service purchase. Large carts are
+processed as idempotent batches, preserving ledger atomicity within each batch
+and retaining unprocessed entries after a partial failure.
+
 The scheduler calculates official times in `Europe/Moscow`, stores UTC, settles
 missed draws chronologically and relies on row locks and constraints for
 idempotency. Each active lottery maintains its own next draw. Completed draws

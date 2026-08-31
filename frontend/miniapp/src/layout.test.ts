@@ -24,5 +24,8 @@ describe("mobile layout contract", () => {
   it("honours reduced-motion preferences", () => {
     expect(styles).toContain("@media (prefers-reduced-motion: reduce)");
     expect(styles).toContain("transition-duration: .01ms !important");
+    expect(styles).toContain("@keyframes live-signal");
+    expect(styles).toContain("@keyframes live-slot-settle");
+    expect(styles).toContain(".live-stage.final-minute");
   });
 });

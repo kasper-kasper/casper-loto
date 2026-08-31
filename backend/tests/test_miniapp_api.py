@@ -7,8 +7,9 @@ from hashlib import sha256
 from urllib.parse import urlencode
 
 import pytest
+from pydantic import ValidationError
 
-from k_loto.api.routes.miniapp import _live_response
+from k_loto.api.routes.miniapp import PurchaseRequest, _live_response
 from k_loto.application.miniapp import (
     MiniAppLiveDraw,
     MiniAppLiveFeed,
@@ -136,3 +137,11 @@ def test_live_response_exposes_server_clock_and_personal_result() -> None:
     assert response.latest_completed.winning_numbers == [2, 5, 9, 14]
     assert response.latest_completed.player_total_prize == 120_000
     assert response.latest_completed.highlighted_tickets[0].public_number == 50465
+
+
+def test_miniapp_rejects_more_than_one_hundred_tickets_per_request() -> None:
+    with pytest.raises(ValidationError):
+        PurchaseRequest(
+            combinations=[[1, 2, 3, 4, 5]] * 101,
+            idempotency_key="too-many",
+        )

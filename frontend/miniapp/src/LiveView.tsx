@@ -32,23 +32,28 @@ export function LiveView({ feed, now, loading, onPlay, onTickets }: LiveViewProp
 
   const winner = draw.player_total_prize > 0;
   const canBuy = state.nextDraw?.lottery_code ?? (state.phase === "waiting" ? draw.lottery_code : null);
-  return <section className={`live-stage phase-${state.phase}`}>
+  const startsIn = Math.max(0, new Date(draw.scheduled_at).getTime() - now);
+  const finalMinute = state.phase === "waiting" && startsIn <= 60_000;
+  const finalMinuteProgress = finalMinute ? Math.max(0, Math.min(100, ((60_000 - startsIn) / 60_000) * 100)) : 0;
+  const resultSize = draw.lottery_kind === "WEEKLY" ? 5 : 4;
+  return <section className={`live-stage phase-${state.phase} ${finalMinute ? "final-minute" : ""}`}>
     <div className="live-grid" aria-hidden="true" />
     <div className="live-ambient" aria-hidden="true" />
     <header className="live-heading"><span className="live-label"><i /> {state.phase === "waiting" ? "СКОРО В ЭФИРЕ" : state.phase === "result" ? "ТИРАЖ ЗАВЕРШЁН" : "ЭФИР"}</span><span>Тираж #{formatDraw(draw.draw_number)}</span></header>
     <div className="live-identity"><span>{draw.lottery_kind === "WEEKLY" ? "WEEKLY" : "DAILY"}</span><h1>{draw.lottery_name}</h1><time>{formatMoscow(draw.scheduled_at)} МСК</time></div>
 
     {state.phase === "waiting" && <>
-      <div className="live-countdown"><span>До начала тиража</span><strong>{countdown(draw.scheduled_at, now)}</strong><small>Время синхронизировано с сервером</small></div>
+      <div className="live-countdown"><span>{finalMinute ? "Тираж начнётся через" : "До начала тиража"}</span><strong>{countdown(draw.scheduled_at, now)}</strong><small><i /> Синхронизировано с сервером</small><div className="live-signal" aria-hidden="true"><i /><span /></div>{finalMinute && <div className="last-minute-progress"><span style={{ width: `${finalMinuteProgress}%` }} /></div>}</div>
+      <div className="result-preview"><span>{finalMinute ? "Готовим экран результата" : "Здесь появятся выпавшие числа"}</span><div>{Array.from({ length: resultSize }, (_, index) => <i key={index}>{index + 1}</i>)}</div></div>
       <div className="live-facts"><div><span>Джекпот</span><strong>{formatCas(draw.jackpot)}</strong></div><div><span>Ваши билеты</span><strong>{draw.player_ticket_count}</strong></div></div>
     </>}
 
-    {state.phase === "starting" && <div className="live-start"><span>Тираж начинается</span><strong>Результат фиксируется на сервере</strong><i /></div>}
+    {state.phase === "starting" && <div className="live-start"><span>Тираж начинается</span><strong>Сервер готовит результат</strong><p>Оставайтесь на экране — числа появятся автоматически.</p><i /></div>}
 
     {state.phase === "revealing" && <div className="live-reveal" aria-live="polite">
       <span>Выпадает число</span>
       <strong key={state.currentNumber}>{state.currentNumber}</strong>
-      <div className="live-sequence">{draw.winning_numbers?.map((number, index) => <i className={index < state.revealedNumbers.length ? "shown" : ""} key={`${number}-${index}`}>{index < state.revealedNumbers.length ? number : "·"}</i>)}</div>
+      <div className="live-sequence">{draw.winning_numbers?.map((number, index) => <i className={index < state.revealedNumbers.length ? `shown ${index === state.revealedNumbers.length - 1 ? "recent" : ""}` : ""} key={`${number}-${index}`}>{index < state.revealedNumbers.length ? number : "·"}</i>)}</div>
     </div>}
 
     {state.phase === "result" && <div className={`live-result ${winner ? "winner" : "neutral"}`}>

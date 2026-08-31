@@ -17,12 +17,19 @@ async function request<T>(path: string, initData: string, init?: RequestInit): P
   if (initData) headers.set("X-Telegram-Init-Data", initData);
   const response = await fetch(`${API_BASE}${path}`, {
     ...init,
+    cache: init?.method && init.method !== "GET" ? init.cache : "no-store",
     credentials: "include",
     headers,
   });
   if (!response.ok) {
     const payload = (await response.json().catch(() => ({}))) as { detail?: string };
-    throw new ApiError(payload.detail ?? "Не удалось выполнить запрос.", response.status);
+    const translated: Record<number, string> = {
+      402: "Недостаточно CAS для этой покупки.",
+      409: "Продажи на выбранный тираж завершены. Обновите расписание и выберите следующий.",
+      422: "Комбинация или количество билетов не прошли проверку.",
+      503: "Лотерея временно недоступна. Попробуйте ещё раз немного позже.",
+    };
+    throw new ApiError(translated[response.status] ?? payload.detail ?? "Не удалось выполнить запрос.", response.status);
   }
   return (await response.json()) as T;
 }

@@ -1,6 +1,16 @@
 import type { CartTicket } from "./types";
 
 const STORAGE_KEY = "k-loto:cart:v2";
+export const CART_MAX_TICKETS = 1_000;
+export const PURCHASE_BATCH_SIZE = 100;
+
+export function batchItems<T>(items: T[], size = PURCHASE_BATCH_SIZE): T[][] {
+  const batches: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    batches.push(items.slice(index, index + size));
+  }
+  return batches;
+}
 
 interface StoredCart {
   expiresAt: number;
@@ -22,7 +32,7 @@ export function loadCart(ttlSeconds: number | null, now = Date.now()): CartTicke
       localStorage.removeItem(STORAGE_KEY);
       return [];
     }
-    return value.tickets;
+    return value.tickets.slice(0, CART_MAX_TICKETS);
   } catch {
     localStorage.removeItem(STORAGE_KEY);
     return [];

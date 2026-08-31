@@ -39,6 +39,7 @@ class MiniAppLottery:
     sales_close_at: datetime | None
     sales_open: bool
     purchase_available: bool
+    player_ticket_count: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,6 +60,7 @@ class MiniAppTicket:
 
 @dataclass(frozen=True, slots=True)
 class MiniAppDashboard:
+    server_time: datetime
     balance: int
     active_ticket_count: int
     lotteries: tuple[MiniAppLottery, ...]
@@ -160,6 +162,18 @@ class MiniAppQueryService:
             )
             sales_open = draw is not None and draw.sales_close_at > timestamp
             purchase_available = lottery.ticket_price is not None and sales_open
+            player_ticket_count = 0
+            if draw is not None:
+                player_ticket_count = int(
+                    await self._session.scalar(
+                        select(func.count(Ticket.id)).where(
+                            Ticket.user_id == user_id,
+                            Ticket.draw_id == draw.id,
+                            Ticket.status == TicketStatus.PURCHASED,
+                        )
+                    )
+                    or 0
+                )
             lotteries.append(
                 MiniAppLottery(
                     code=lottery.code,
@@ -178,10 +192,12 @@ class MiniAppQueryService:
                     sales_close_at=draw.sales_close_at if draw else None,
                     sales_open=sales_open,
                     purchase_available=purchase_available,
+                    player_ticket_count=player_ticket_count,
                 )
             )
         recent_results = await self.tickets(user_id, active=False, limit=3)
         return MiniAppDashboard(
+            server_time=timestamp,
             balance=balance,
             active_ticket_count=active_count or 0,
             lotteries=tuple(lotteries),

@@ -14,6 +14,7 @@ export interface Lottery {
   sales_close_at: string | null;
   sales_open: boolean;
   purchase_available: boolean;
+  player_ticket_count: number;
 }
 
 export interface Ticket {
@@ -32,6 +33,7 @@ export interface Ticket {
 }
 
 export interface Dashboard {
+  server_time: string;
   balance: number;
   active_ticket_count: number;
   lotteries: Lottery[];
