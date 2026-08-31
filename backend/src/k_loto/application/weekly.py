@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from k_loto.application.ports import SecureNumberGenerator
@@ -46,7 +46,8 @@ from k_loto.infrastructure.database.models import (
     User,
 )
 
-MAX_TICKETS_PER_PURCHASE = 100
+MAX_TICKETS_PER_PURCHASE = 1000
+MULTI_DRAW_COUNTS = (1, 5)
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,6 +57,8 @@ class PurchaseResult:
     ticket_ids: tuple[UUID, ...]
     total_cost: int
     balance_after: int
+    draw_ids: tuple[UUID, ...] = ()
+    draw_count: int = 1
     already_processed: bool = False
 
 
@@ -69,12 +72,18 @@ class SettlementResult:
 
 def _existing_purchase_result(existing: LedgerTransaction) -> PurchaseResult:
     ticket_ids = tuple(UUID(value) for value in existing.details["ticket_ids"])
+    draw_ids = tuple(
+        UUID(value)
+        for value in existing.details.get("draw_ids", [existing.details["draw_id"]])
+    )
     return PurchaseResult(
         operation_id=existing.operation_id,
         draw_id=UUID(existing.details["draw_id"]),
         ticket_ids=ticket_ids,
         total_cost=-existing.amount,
         balance_after=existing.balance_after,
+        draw_ids=draw_ids,
+        draw_count=len(draw_ids),
         already_processed=True,
     )
 
@@ -138,10 +147,15 @@ class WeeklyTicketPurchaseService:
         user_id: UUID,
         combinations: list[list[int] | tuple[int, ...]],
         idempotency_key: str,
+        draw_count: int = 1,
         now: datetime | None = None,
     ) -> PurchaseResult:
         if not idempotency_key or len(idempotency_key) > 100:
             raise ValueError("idempotency_key must contain 1 to 100 characters.")
+        if draw_count not in MULTI_DRAW_COUNTS:
+            raise InvalidTicket("A purchase can cover either 1 or 5 draws.")
+        if self._target_draw_id is not None and draw_count != 1:
+            raise InvalidTicket("A selected draw purchase cannot span multiple draws.")
         if not 1 <= len(combinations) <= MAX_TICKETS_PER_PURCHASE:
             raise InvalidTicket(
                 f"A purchase must contain 1 to {MAX_TICKETS_PER_PURCHASE} tickets."
@@ -187,6 +201,12 @@ class WeeklyTicketPurchaseService:
             if existing_after_lock is not None:
                 return _existing_purchase_result(existing_after_lock)
 
+            if len(combinations) > lottery.max_tickets_per_purchase:
+                raise InvalidTicket(
+                    f"This lottery accepts at most {lottery.max_tickets_per_purchase} "
+                    "tickets in one purchase."
+                )
+
             draw_query = select(Draw).where(
                 Draw.lottery_id == lottery.id,
                 Draw.status == DrawStatus.SCHEDULED,
@@ -195,8 +215,15 @@ class WeeklyTicketPurchaseService:
             if self._target_draw_id is not None:
                 draw_query = draw_query.where(Draw.id == self._target_draw_id)
             else:
-                draw_query = draw_query.order_by(Draw.scheduled_at).limit(1)
-            draw = await self._session.scalar(draw_query.with_for_update())
+                draw_query = draw_query.order_by(Draw.scheduled_at).limit(draw_count)
+            if draw_count == 1:
+                one_draw = await self._session.scalar(draw_query.with_for_update())
+                draws = [one_draw] if one_draw is not None else []
+            else:
+                draws = list(
+                    (await self._session.scalars(draw_query.with_for_update())).all()
+                )
+            draw = draws[0] if draws else None
             if draw is None and self._target_draw_id is not None:
                 raise NoAvailableDraw(
                     "The selected draw is no longer available for ticket sales."
@@ -231,14 +258,70 @@ class WeeklyTicketPurchaseService:
                 )
                 lottery.next_draw_number += 1
                 self._session.add(draw)
+                draws.append(draw)
+
+            if draw_count > 1:
+                latest = await self._session.scalar(
+                    select(Draw)
+                    .where(Draw.lottery_id == lottery.id)
+                    .order_by(Draw.scheduled_at.desc())
+                    .limit(1)
+                )
+                schedule_base = (
+                    latest.scheduled_at if latest is not None else draw.scheduled_at
+                )
+                while len(draws) < draw_count:
+                    scheduled_at = next_draw_at(
+                        self.lottery_kind, schedule_base, lottery.schedule
+                    )
+                    future_draw = Draw(
+                        id=uuid4(),
+                        lottery_id=lottery.id,
+                        public_number=lottery.next_draw_number,
+                        status=DrawStatus.SCHEDULED,
+                        scheduled_at=scheduled_at,
+                        sales_close_at=sales_close_at(
+                            self.lottery_kind,
+                            scheduled_at,
+                            lottery.sales_cutoff_minutes,
+                        ),
+                        correlation_id=uuid4(),
+                        ticket_count=0,
+                        total_sales=0,
+                        total_payout=0,
+                        reserve_used=0,
+                    )
+                    lottery.next_draw_number += 1
+                    self._session.add(future_draw)
+                    draws.append(future_draw)
+                    schedule_base = scheduled_at
+
+            for target_draw in draws[:draw_count]:
+                existing_count = int(
+                    await self._session.scalar(
+                        select(func.count(Ticket.id)).where(
+                            Ticket.user_id == user_id,
+                            Ticket.draw_id == target_draw.id,
+                        )
+                    )
+                    or 0
+                )
+                if (
+                    existing_count + len(combinations)
+                    > lottery.max_tickets_per_user_per_draw
+                ):
+                    raise InvalidTicket(
+                        "The per-player ticket limit for this draw would be exceeded."
+                    )
 
             balance = await self._session.scalar(
                 select(Balance).where(Balance.user_id == user_id).with_for_update()
             )
             if balance is None:
                 raise ConfigurationError("User balance account is missing.")
+            expanded_combinations = combinations * draw_count
             quote = self.quote_purchase(
-                combinations, lottery.ticket_price, balance.amount
+                expanded_combinations, lottery.ticket_price, balance.amount
             )
 
             jackpot = await self._session.scalar(
@@ -260,32 +343,38 @@ class WeeklyTicketPurchaseService:
             ticket_ids: list[UUID] = []
             ticket_payloads: list[dict[str, Any]] = []
             first_number = lottery.next_ticket_number
-            for offset, combination in enumerate(quote.combinations):
-                ticket_id = uuid4()
-                ticket_ids.append(ticket_id)
-                ticket_payloads.append(
-                    {
-                        "public_number": first_number + offset,
-                        "numbers": list(combination),
-                    }
-                )
-                self._session.add(
-                    Ticket(
-                        id=ticket_id,
-                        public_number=first_number + offset,
-                        lottery_id=lottery.id,
-                        draw_id=draw.id,
-                        user_id=user_id,
-                        numbers=list(combination),
-                        purchase_price=lottery.ticket_price,
-                        purchased_at=timestamp,
-                        status=TicketStatus.PURCHASED,
-                        prize_amount=0,
+            offset = 0
+            for target_draw in draws[:draw_count]:
+                for combination in combinations:
+                    normalized = tuple(sorted(combination))
+                    ticket_id = uuid4()
+                    ticket_ids.append(ticket_id)
+                    if len(ticket_payloads) < 20:
+                        ticket_payloads.append(
+                            {
+                                "public_number": first_number + offset,
+                                "numbers": list(normalized),
+                                "draw_number": target_draw.public_number,
+                            }
+                        )
+                    self._session.add(
+                        Ticket(
+                            id=ticket_id,
+                            public_number=first_number + offset,
+                            lottery_id=lottery.id,
+                            draw_id=target_draw.id,
+                            user_id=user_id,
+                            numbers=list(normalized),
+                            purchase_price=lottery.ticket_price,
+                            purchased_at=timestamp,
+                            status=TicketStatus.PURCHASED,
+                            prize_amount=0,
+                        )
                     )
-                )
+                    offset += 1
+                target_draw.ticket_count += len(combinations)
+                target_draw.total_sales += len(combinations) * lottery.ticket_price
             lottery.next_ticket_number += len(ticket_ids)
-            draw.ticket_count += len(ticket_ids)
-            draw.total_sales += quote.total_cost
 
             balance_before = balance.amount
             balance.amount -= quote.total_cost
@@ -298,6 +387,9 @@ class WeeklyTicketPurchaseService:
             distribution.version += 1
             shared_details = {
                 "draw_id": str(draw.id),
+                "draw_ids": [str(value.id) for value in draws[:draw_count]],
+                "draw_count": draw_count,
+                "combinations_per_draw": len(combinations),
                 "ticket_ids": [str(value) for value in ticket_ids],
                 "ticket_count": len(ticket_ids),
             }
@@ -356,8 +448,10 @@ class WeeklyTicketPurchaseService:
                             lottery.code, lottery.name, draw.scheduled_at
                         ),
                         "draw_number": draw.public_number,
+                        "draw_count": draw_count,
                         "scheduled_at": draw.scheduled_at.isoformat(),
                         "tickets": ticket_payloads,
+                        "tickets_truncated": len(ticket_ids) > len(ticket_payloads),
                         "total_cost": quote.total_cost,
                         "balance_after": balance.amount,
                         "prize_fund": jackpot.balance,
@@ -373,6 +467,8 @@ class WeeklyTicketPurchaseService:
             ticket_ids=tuple(ticket_ids),
             total_cost=quote.total_cost,
             balance_after=balance.amount,
+            draw_ids=tuple(value.id for value in draws[:draw_count]),
+            draw_count=draw_count,
         )
 
 

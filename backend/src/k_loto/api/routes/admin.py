@@ -33,6 +33,8 @@ from k_loto.domain.enums import (
     DrawStatus,
     LedgerAccountKind,
     LotteryKind,
+    NotificationStatus,
+    NotificationType,
     TransactionType,
 )
 from k_loto.infrastructure.admin_auth import (
@@ -77,6 +79,9 @@ class AdjustmentResponse(BaseModel):
 class LotteryConfigurationRequest(BaseModel):
     ticket_price: int = Field(gt=0)
     base_jackpot: int = Field(ge=0)
+    sales_cutoff_minutes: int | None = Field(default=None, ge=0, le=1440)
+    max_tickets_per_purchase: int | None = Field(default=None, ge=1, le=1000)
+    max_tickets_per_user_per_draw: int | None = Field(default=None, ge=1, le=100_000)
     reason: str = Field(min_length=1, max_length=512)
 
 
@@ -105,6 +110,8 @@ class LotteryResponse(ApiModel):
     reserve: int
     schedule: dict[str, Any]
     sales_cutoff_minutes: int | None
+    max_tickets_per_purchase: int
+    max_tickets_per_user_per_draw: int
     is_active: bool
     next_draw_number: int | None
     next_draw_at: datetime | None
@@ -193,12 +200,26 @@ class DashboardResponse(BaseModel):
     lotteries: list[LotteryResponse]
     recent_draws: list[DrawResponse]
     recent_transactions: list[TransactionResponse]
+    operations: dict[str, Any]
 
 
 class ReleaseNoteResponse(BaseModel):
     version: str
     date: str | None
     content: str
+
+
+class NotificationResponse(ApiModel):
+    id: UUID
+    event_key: str
+    user_id: UUID
+    type: NotificationType
+    status: NotificationStatus
+    attempts: int
+    available_at: datetime
+    sent_at: datetime | None
+    last_error: str | None
+    created_at: datetime
 
 
 class CurrentAdmin:
@@ -340,7 +361,21 @@ async def dashboard(
         recent_transactions=[
             TransactionResponse.model_validate(item) for item in transactions
         ],
+        operations=await service.operational_status(),
     )
+
+
+@router.get("/notifications", response_model=list[NotificationResponse])
+async def notifications(
+    _admin: Annotated[CurrentAdmin, Depends(get_current_admin)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    notification_status: Annotated[NotificationStatus | None, Query()] = None,
+    user_id: Annotated[UUID | None, Query()] = None,
+) -> list[NotificationResponse]:
+    items = await AdminQueryService(session).notifications(
+        status=notification_status, user_id=user_id
+    )
+    return [NotificationResponse.model_validate(item) for item in items]
 
 
 @router.get("/players", response_model=list[PlayerResponse])
@@ -413,6 +448,9 @@ async def configure_lottery(
             lottery_id,
             ticket_price=payload.ticket_price,
             base_jackpot=payload.base_jackpot,
+            sales_cutoff_minutes=payload.sales_cutoff_minutes,
+            max_tickets_per_purchase=payload.max_tickets_per_purchase,
+            max_tickets_per_user_per_draw=payload.max_tickets_per_user_per_draw,
             reason=payload.reason,
         )
     except LookupError as error:

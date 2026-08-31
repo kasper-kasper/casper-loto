@@ -1,7 +1,7 @@
 """Administrator read models and audited mutation use cases."""
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4, uuid5
 
@@ -14,6 +14,8 @@ from k_loto.domain.enums import (
     DrawStatus,
     LedgerAccountKind,
     LotteryKind,
+    NotificationStatus,
+    NotificationType,
     TransactionType,
 )
 from k_loto.domain.lotteries import draw_display_name
@@ -26,6 +28,8 @@ from k_loto.infrastructure.database.models import (
     LedgerTransaction,
     Lottery,
     LotteryReserve,
+    NotificationOutbox,
+    SchedulerHeartbeat,
     Ticket,
     User,
 )
@@ -66,6 +70,8 @@ class AdminLottery:
     reserve: int
     schedule: dict[str, Any]
     sales_cutoff_minutes: int | None
+    max_tickets_per_purchase: int
+    max_tickets_per_user_per_draw: int
     is_active: bool
     next_draw_number: int | None
     next_draw_at: datetime | None
@@ -141,6 +147,20 @@ class AdminAuditEntry:
     old_values: dict[str, Any] | None
     new_values: dict[str, Any] | None
     reason: str | None
+    created_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class AdminNotification:
+    id: UUID
+    event_key: str
+    user_id: UUID
+    type: NotificationType
+    status: NotificationStatus
+    attempts: int
+    available_at: datetime
+    sent_at: datetime | None
+    last_error: str | None
     created_at: datetime
 
 
@@ -294,6 +314,9 @@ class AdminMutationService:
         *,
         ticket_price: int,
         base_jackpot: int,
+        sales_cutoff_minutes: int | None = None,
+        max_tickets_per_purchase: int | None = None,
+        max_tickets_per_user_per_draw: int | None = None,
         reason: str,
     ) -> AdminLottery:
         if ticket_price <= 0 or base_jackpot < 0:
@@ -318,11 +341,39 @@ class AdminMutationService:
             old_values = {
                 "ticket_price": lottery.ticket_price,
                 "base_jackpot": jackpot.base_amount,
+                "sales_cutoff_minutes": lottery.sales_cutoff_minutes,
+                "max_tickets_per_purchase": lottery.max_tickets_per_purchase,
+                "max_tickets_per_user_per_draw": (
+                    lottery.max_tickets_per_user_per_draw
+                ),
             }
+            next_purchase_limit = (
+                max_tickets_per_purchase
+                if max_tickets_per_purchase is not None
+                else (lottery.max_tickets_per_purchase or 1000)
+            )
+            next_player_limit = (
+                max_tickets_per_user_per_draw
+                if max_tickets_per_user_per_draw is not None
+                else (lottery.max_tickets_per_user_per_draw or 5000)
+            )
+            if not 1 <= next_purchase_limit <= 1000:
+                raise ValueError("Purchase limit must be between 1 and 1000.")
+            if not next_purchase_limit <= next_player_limit <= 100_000:
+                raise ValueError("Player draw limit is outside its valid range.")
+            if (
+                sales_cutoff_minutes is not None
+                and not 0 <= sales_cutoff_minutes <= 1440
+            ):
+                raise ValueError("Sales cutoff is outside its valid range.")
             initialize_jackpot = (
                 jackpot.balance == 0 and jackpot.base_amount == 0 and base_jackpot > 0
             )
             lottery.ticket_price = ticket_price
+            if sales_cutoff_minutes is not None:
+                lottery.sales_cutoff_minutes = sales_cutoff_minutes
+            lottery.max_tickets_per_purchase = next_purchase_limit
+            lottery.max_tickets_per_user_per_draw = next_player_limit
             jackpot.base_amount = base_jackpot
             jackpot.version += 1
             if initialize_jackpot:
@@ -353,7 +404,13 @@ class AdminMutationService:
                 "lottery_configuration",
                 lottery.id,
                 old_values,
-                {"ticket_price": ticket_price, "base_jackpot": base_jackpot},
+                {
+                    "ticket_price": ticket_price,
+                    "base_jackpot": base_jackpot,
+                    "sales_cutoff_minutes": lottery.sales_cutoff_minutes,
+                    "max_tickets_per_purchase": next_purchase_limit,
+                    "max_tickets_per_user_per_draw": next_player_limit,
+                },
                 reason,
             )
         return await AdminQueryService(self._session).lottery(lottery_id)
@@ -508,6 +565,8 @@ class AdminQueryService:
             reserve.balance if reserve else 0,
             lottery.schedule,
             lottery.sales_cutoff_minutes,
+            lottery.max_tickets_per_purchase,
+            lottery.max_tickets_per_user_per_draw,
             lottery.is_active,
             next_draw.public_number if next_draw else None,
             next_draw.scheduled_at if next_draw else None,
@@ -725,3 +784,105 @@ class AdminQueryService:
             "completed_draws": completed or 0,
             "pending_draws": pending or 0,
         }
+
+    async def operational_status(self) -> dict[str, Any]:
+        """Return a cheap, read-only control-room projection for the owner."""
+        now = datetime.now(UTC)
+        heartbeat = await self._session.get(SchedulerHeartbeat, 1)
+        next_rows = (
+            await self._session.execute(
+                select(
+                    Draw,
+                    Lottery,
+                    func.count(Ticket.id),
+                    func.count(func.distinct(Ticket.user_id)),
+                )
+                .join(Lottery, Lottery.id == Draw.lottery_id)
+                .outerjoin(Ticket, Ticket.draw_id == Draw.id)
+                .where(Draw.status != DrawStatus.COMPLETED)
+                .group_by(Draw.id, Lottery.id)
+                .order_by(Draw.scheduled_at)
+                .limit(8)
+            )
+        ).all()
+        notification_rows = (
+            await self._session.execute(
+                select(
+                    NotificationOutbox.status, func.count(NotificationOutbox.id)
+                ).group_by(NotificationOutbox.status)
+            )
+        ).all()
+        stuck_count = int(
+            await self._session.scalar(
+                select(func.count(Draw.id)).where(
+                    Draw.status != DrawStatus.COMPLETED,
+                    Draw.scheduled_at < now - timedelta(minutes=5),
+                )
+            )
+            or 0
+        )
+        return {
+            "scheduler": {
+                "last_started_at": heartbeat.last_started_at if heartbeat else None,
+                "last_succeeded_at": (
+                    heartbeat.last_succeeded_at if heartbeat else None
+                ),
+                "last_failed_at": heartbeat.last_failed_at if heartbeat else None,
+                "last_error": heartbeat.last_error if heartbeat else None,
+                "settled_count": heartbeat.settled_count if heartbeat else 0,
+                "prepared_count": heartbeat.prepared_count if heartbeat else 0,
+            },
+            "stuck_draw_count": stuck_count,
+            "notifications": {
+                status.value: int(count) for status, count in notification_rows
+            },
+            "next_draws": [
+                {
+                    "id": str(draw.id),
+                    "lottery_name": draw_display_name(
+                        lottery.code, lottery.name, draw.scheduled_at
+                    ),
+                    "draw_number": draw.public_number,
+                    "scheduled_at": draw.scheduled_at,
+                    "sales_close_at": draw.sales_close_at,
+                    "status": draw.status.value,
+                    "ticket_count": int(ticket_count),
+                    "participant_count": int(participant_count),
+                    "total_sales": draw.total_sales,
+                }
+                for draw, lottery, ticket_count, participant_count in next_rows
+            ],
+        }
+
+    async def notifications(
+        self,
+        *,
+        status: NotificationStatus | None = None,
+        user_id: UUID | None = None,
+        limit: int = 200,
+    ) -> tuple[AdminNotification, ...]:
+        statement = select(NotificationOutbox)
+        if status is not None:
+            statement = statement.where(NotificationOutbox.status == status)
+        if user_id is not None:
+            statement = statement.where(NotificationOutbox.user_id == user_id)
+        rows = (
+            await self._session.scalars(
+                statement.order_by(NotificationOutbox.created_at.desc()).limit(limit)
+            )
+        ).all()
+        return tuple(
+            AdminNotification(
+                row.id,
+                row.event_key,
+                row.user_id,
+                row.type,
+                row.status,
+                row.attempts,
+                row.available_at,
+                row.sent_at,
+                row.last_error,
+                row.created_at,
+            )
+            for row in rows
+        )

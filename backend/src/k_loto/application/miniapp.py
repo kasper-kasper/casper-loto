@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +15,7 @@ from k_loto.domain.enums import (
     TicketStatus,
     TransactionType,
 )
+from k_loto.domain.live_timeline import draw_timeline, sales_status
 from k_loto.domain.lotteries import draw_display_code, draw_display_name
 from k_loto.infrastructure.database.models import (
     Balance,
@@ -40,6 +42,9 @@ class MiniAppLottery:
     sales_open: bool
     purchase_available: bool
     player_ticket_count: int
+    sales_status: str
+    max_tickets_per_purchase: int
+    max_tickets_per_user_per_draw: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +70,7 @@ class MiniAppDashboard:
     active_ticket_count: int
     lotteries: tuple[MiniAppLottery, ...]
     recent_results: tuple[MiniAppTicket, ...]
+    monthly_total_payout: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -102,6 +108,11 @@ class MiniAppLiveDraw:
     player_best_matches: int | None
     player_total_prize: int
     highlighted_tickets: tuple[MiniAppLiveTicket, ...]
+    sales_close_at: datetime
+    sales_status: str
+    live_starts_at: datetime
+    reveal_at: tuple[datetime, ...]
+    live_ends_at: datetime
 
 
 @dataclass(frozen=True, slots=True)
@@ -155,8 +166,7 @@ class MiniAppQueryService:
                 select(Draw)
                 .where(
                     Draw.lottery_id == lottery.id,
-                    Draw.status == DrawStatus.SCHEDULED,
-                    Draw.sales_close_at > timestamp,
+                    Draw.status != DrawStatus.COMPLETED,
                 )
                 .order_by(Draw.scheduled_at)
                 .limit(1)
@@ -175,6 +185,11 @@ class MiniAppQueryService:
                     )
                     or 0
                 )
+            timeline = (
+                draw_timeline(draw.scheduled_at, lottery.numbers_to_pick)
+                if draw is not None
+                else None
+            )
             lotteries.append(
                 MiniAppLottery(
                     code=lottery.code,
@@ -194,27 +209,65 @@ class MiniAppQueryService:
                     sales_open=sales_open,
                     purchase_available=purchase_available,
                     player_ticket_count=player_ticket_count,
+                    sales_status=(
+                        sales_status(
+                            now=timestamp,
+                            status=draw.status,
+                            sales_close_at=draw.sales_close_at,
+                            timeline=timeline,
+                        )
+                        if draw is not None and timeline is not None
+                        else "CLOSED"
+                    ),
+                    max_tickets_per_purchase=lottery.max_tickets_per_purchase,
+                    max_tickets_per_user_per_draw=lottery.max_tickets_per_user_per_draw,
                 )
             )
         recent_results = await self.tickets(user_id, active=False, limit=3)
+        moscow_now = timestamp.astimezone(ZoneInfo("Europe/Moscow"))
+        month_start_local = moscow_now.replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        )
+        month_start = month_start_local.astimezone(UTC)
+        monthly_total_payout = int(
+            await self._session.scalar(
+                select(func.coalesce(func.sum(Draw.total_payout), 0)).where(
+                    Draw.status == DrawStatus.COMPLETED,
+                    Draw.executed_at >= month_start,
+                )
+            )
+            or 0
+        )
         return MiniAppDashboard(
             server_time=timestamp,
             balance=balance,
             active_ticket_count=active_count or 0,
             lotteries=tuple(lotteries),
             recent_results=recent_results,
+            monthly_total_payout=monthly_total_payout,
         )
 
     async def tickets(
-        self, user_id: UUID, *, active: bool, limit: int = 100
+        self,
+        user_id: UUID,
+        *,
+        active: bool,
+        limit: int = 100,
+        lottery_code: str | None = None,
+        wins_only: bool = False,
     ) -> tuple[MiniAppTicket, ...]:
         status = TicketStatus.PURCHASED if active else TicketStatus.SETTLED
+        filters = [Ticket.user_id == user_id, Ticket.status == status]
+        if lottery_code:
+            filters.append(Lottery.code == lottery_code)
+        if wins_only:
+            filters.append(Ticket.prize_amount > 0)
         rows = (
             await self._session.execute(
                 select(Ticket, Draw, Lottery)
                 .join(Draw, Draw.id == Ticket.draw_id)
                 .join(Lottery, Lottery.id == Ticket.lottery_id)
-                .where(Ticket.user_id == user_id, Ticket.status == status)
+                .where(*filters)
                 .order_by(Draw.scheduled_at.desc(), Ticket.public_number.desc())
                 .limit(limit)
             )
@@ -361,6 +414,7 @@ class MiniAppQueryService:
                 )
                 for ticket in tickets
             )
+        timeline = draw_timeline(draw.scheduled_at, lottery.numbers_to_pick)
         return MiniAppLiveDraw(
             lottery_code=draw_display_code(lottery.code, draw.scheduled_at),
             lottery_name=draw_display_name(
@@ -379,6 +433,16 @@ class MiniAppQueryService:
             player_best_matches=aggregate[2],
             player_total_prize=int(aggregate[3]),
             highlighted_tickets=highlighted,
+            sales_close_at=draw.sales_close_at,
+            sales_status=sales_status(
+                now=datetime.now(UTC),
+                status=draw.status,
+                sales_close_at=draw.sales_close_at,
+                timeline=timeline,
+            ),
+            live_starts_at=timeline.starts_at,
+            reveal_at=timeline.reveal_at,
+            live_ends_at=timeline.ends_at,
         )
 
     async def activity(

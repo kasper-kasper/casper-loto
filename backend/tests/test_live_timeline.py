@@ -1,0 +1,69 @@
+"""Authoritative live timeline and sales presentation states."""
+
+from datetime import UTC, datetime, timedelta
+
+from k_loto.domain.enums import DrawStatus
+from k_loto.domain.live_timeline import draw_timeline, sales_status
+
+
+def test_timeline_assigns_stable_reveal_moments() -> None:
+    starts_at = datetime(2026, 9, 1, 9, tzinfo=UTC)
+    timeline = draw_timeline(starts_at, 4)
+
+    assert timeline.starts_at == starts_at
+    assert timeline.reveal_at == tuple(
+        starts_at + timedelta(seconds=1 + index * 2) for index in range(4)
+    )
+    assert timeline.ends_at == starts_at + timedelta(seconds=9)
+
+
+def test_sales_status_covers_owner_visible_lifecycle() -> None:
+    starts_at = datetime(2026, 9, 1, 9, tzinfo=UTC)
+    timeline = draw_timeline(starts_at, 4)
+    cutoff = starts_at - timedelta(minutes=2)
+
+    assert (
+        sales_status(
+            now=cutoff - timedelta(minutes=6),
+            status=DrawStatus.SCHEDULED,
+            sales_close_at=cutoff,
+            timeline=timeline,
+        )
+        == "OPEN"
+    )
+    assert (
+        sales_status(
+            now=cutoff - timedelta(minutes=1),
+            status=DrawStatus.SCHEDULED,
+            sales_close_at=cutoff,
+            timeline=timeline,
+        )
+        == "CLOSING_SOON"
+    )
+    assert (
+        sales_status(
+            now=cutoff,
+            status=DrawStatus.SCHEDULED,
+            sales_close_at=cutoff,
+            timeline=timeline,
+        )
+        == "CLOSED"
+    )
+    assert (
+        sales_status(
+            now=starts_at,
+            status=DrawStatus.DRAWING,
+            sales_close_at=cutoff,
+            timeline=timeline,
+        )
+        == "DRAWING"
+    )
+    assert (
+        sales_status(
+            now=starts_at,
+            status=DrawStatus.COMPLETED,
+            sales_close_at=cutoff,
+            timeline=timeline,
+        )
+        == "COMPLETED"
+    )

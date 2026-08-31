@@ -2,7 +2,7 @@
 
 import hmac
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 from urllib.parse import urlencode
 
@@ -128,6 +128,13 @@ def test_live_response_exposes_server_clock_and_personal_result() -> None:
         player_best_matches=3,
         player_total_prize=120_000,
         highlighted_tickets=(MiniAppLiveTicket(50465, (2, 5, 9, 11), 3, 120_000),),
+        sales_close_at=scheduled - timedelta(minutes=2),
+        sales_status="COMPLETED",
+        live_starts_at=scheduled,
+        reveal_at=tuple(
+            scheduled + timedelta(seconds=1 + index * 2) for index in range(4)
+        ),
+        live_ends_at=scheduled + timedelta(seconds=9),
     )
 
     response = _live_response(MiniAppLiveFeed(scheduled, draw, None, (draw,)))
@@ -140,9 +147,9 @@ def test_live_response_exposes_server_clock_and_personal_result() -> None:
     assert response.recent_completed[0].draw_number == 812
 
 
-def test_miniapp_rejects_more_than_one_hundred_tickets_per_request() -> None:
+def test_miniapp_rejects_more_than_one_thousand_tickets_per_request() -> None:
     with pytest.raises(ValidationError):
         PurchaseRequest(
-            combinations=[[1, 2, 3, 4, 5]] * 101,
+            combinations=[[1, 2, 3, 4, 5]] * 1001,
             idempotency_key="too-many",
         )

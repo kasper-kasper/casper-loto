@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     lottery_bot_token: SecretStr | None = None
     bot_outbox_interval_seconds: int = Field(default=2, ge=1, le=60)
     bot_max_tickets_per_purchase: int = Field(default=50, ge=1, le=100)
+    miniapp_purchase_requests_per_minute: int = Field(default=10, ge=1, le=120)
     telegram_init_data_max_age_seconds: int = Field(default=3600, ge=60, le=86400)
     miniapp_url: HttpUrl | None = None
     miniapp_dev_auth_enabled: bool = False

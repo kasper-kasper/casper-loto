@@ -108,6 +108,8 @@ def build_purchase_accounts(now: datetime):
         timezone="Europe/Moscow",
         schedule={},
         sales_cutoff_minutes=5,
+        max_tickets_per_purchase=1000,
+        max_tickets_per_user_per_draw=5000,
         is_active=True,
         next_draw_number=2,
         next_ticket_number=11,
@@ -139,15 +141,15 @@ def build_purchase_accounts(now: datetime):
     return user_id, lottery, draw, balance, jackpot, distribution
 
 
-async def test_purchase_rejects_more_than_one_hundred_tickets_before_database() -> None:
+async def test_purchase_rejects_more_than_limit_before_database() -> None:
     service = WeeklyTicketPurchaseService(
         cast(AsyncSession, FakeSession(scalar_values=[]))
     )
 
-    with pytest.raises(InvalidTicket, match="1 to 100"):
+    with pytest.raises(InvalidTicket, match="1 to 1000"):
         await service.purchase(
             user_id=UUID(int=1),
-            combinations=[[1, 2, 3, 4, 5]] * 101,
+            combinations=[[1, 2, 3, 4, 5]] * 1001,
             idempotency_key="too-many",
         )
 
@@ -158,7 +160,7 @@ async def test_multi_ticket_purchase_updates_all_accounts_and_numbering() -> Non
         now
     )
     fake = FakeSession(
-        scalar_values=[None, lottery, None, draw, balance, jackpot, distribution]
+        scalar_values=[None, lottery, None, draw, 0, balance, jackpot, distribution]
     )
     service = WeeklyTicketPurchaseService(cast(AsyncSession, fake))
 
@@ -189,6 +191,50 @@ async def test_multi_ticket_purchase_updates_all_accounts_and_numbering() -> Non
     assert len(notifications[0].payload["tickets"]) == 2
 
 
+async def test_five_draw_purchase_is_prepaid_and_created_atomically() -> None:
+    now = datetime(2026, 8, 14, 17, tzinfo=UTC)
+    user_id, lottery, draw, balance, jackpot, distribution = build_purchase_accounts(
+        now
+    )
+    fake = FakeSession(
+        scalar_values=[
+            None,
+            lottery,
+            None,
+            draw,
+            0,
+            0,
+            0,
+            0,
+            0,
+            balance,
+            jackpot,
+            distribution,
+        ],
+        scalar_collections=[[draw]],
+    )
+
+    result = await WeeklyTicketPurchaseService(cast(AsyncSession, fake)).purchase(
+        user_id=user_id,
+        combinations=[[1, 2, 3, 4, 5]],
+        idempotency_key="five-draws",
+        draw_count=5,
+        now=now,
+    )
+
+    created_draws = [item for item in fake.added if isinstance(item, Draw)]
+    created_tickets = [item for item in fake.added if isinstance(item, Ticket)]
+    assert len(created_draws) == 4
+    assert len(created_tickets) == 5
+    assert len({ticket.draw_id for ticket in created_tickets}) == 5
+    assert result.draw_count == 5
+    assert len(result.draw_ids) == 5
+    assert result.total_cost == 500
+    assert balance.amount == 500
+    assert jackpot.balance == 2_250
+    assert distribution.balance == 550
+
+
 async def test_daily_purchase_uses_40_60_split_and_independent_numbering() -> None:
     now = datetime(2026, 8, 14, 12, tzinfo=UTC)
     user_id, lottery, draw, balance, jackpot, distribution = build_purchase_accounts(
@@ -204,7 +250,7 @@ async def test_daily_purchase_uses_40_60_split_and_independent_numbering() -> No
     draw.scheduled_at = datetime(2026, 8, 14, 15, tzinfo=UTC)
     draw.sales_close_at = datetime(2026, 8, 14, 14, 58, tzinfo=UTC)
     fake = FakeSession(
-        scalar_values=[None, lottery, None, draw, balance, jackpot, distribution]
+        scalar_values=[None, lottery, None, draw, 0, balance, jackpot, distribution]
     )
 
     result = await DailyTicketPurchaseService(cast(AsyncSession, fake)).purchase(
@@ -294,6 +340,7 @@ async def test_purchase_after_cutoff_creates_and_uses_next_weekly_draw() -> None
             None,
             None,
             closing_draw,
+            0,
             balance,
             jackpot,
             distribution,
