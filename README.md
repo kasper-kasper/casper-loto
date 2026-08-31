@@ -1,6 +1,6 @@
 # K-Loto
 
-Current version: **0.15.0 — Mini App First**.
+Current version: **0.16.0 — Admin Project Journals**.
 
 K-Loto is a multi-user lottery platform with integer CAS accounting, an
 immutable transaction ledger, recoverable draw scheduling and four independent
@@ -27,7 +27,7 @@ Telegram player receives one idempotent result message and a purchase button.
 - `frontend/miniapp/` — primary premium blue/red/gold player interface;
 - `frontend/admin/` — separate administrator website;
 - `infrastructure/` — HTTPS gateway configuration;
-- `scripts/` — checks, backups, bootstrap and DevLog tooling;
+- `scripts/` — checks, backups, bootstrap and local operations;
 - `docs/` — architecture, rules and operations.
 
 ## Local checks

@@ -13,7 +13,9 @@ switch is enabled. The ordinary username/password player Web adapter is retired.
 
 The Admin Panel is a separate HTTPS application with signed sessions, CSRF
 protection and audited mutations. Administrators cannot mutate completed draws
-or purchased tickets.
+or purchased tickets. Versioned CHANGELOG and DEVLOG history is exposed there
+through authenticated, read-only endpoints. Telegram journal delivery is
+retired; Telegram remains a player entry and notification adapter.
 
 The scheduler calculates official times in `Europe/Moscow`, stores UTC, settles
 missed draws chronologically and relies on row locks and constraints for

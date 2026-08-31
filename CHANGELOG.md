@@ -2,6 +2,22 @@
 
 All notable changes follow Keep a Changelog and Semantic Versioning principles.
 
+## [0.16.0] - 2026-08-31
+
+### Added
+
+- A protected **Development** area in Web Admin with separate CHANGELOG and
+  DEVLOG tabs.
+- The complete existing release history is now available from the Admin Panel.
+
+### Changed
+
+- Project release journals are delivered through the authenticated Admin site.
+
+### Removed
+
+- Telegram DevLog/ChangeLog delivery and its token/chat configuration tooling.
+
 ## [0.15.0] - 2026-08-31
 
 ### Changed

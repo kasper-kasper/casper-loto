@@ -11,6 +11,7 @@ vi.mock("./api", () => ({
     login: vi.fn(), session: vi.fn(), logout: vi.fn(), dashboard: vi.fn(),
     players: vi.fn(), lotteries: vi.fn(), draws: vi.fn(), draw: vi.fn(),
     transactions: vi.fn(), statistics: vi.fn(), audit: vi.fn(),
+    releaseNotes: vi.fn(),
     setBalance: vi.fn(), configureLottery: vi.fn(), setReserve: vi.fn(),
   },
 }));
@@ -31,6 +32,9 @@ beforeEach(() => {
   vi.mocked(adminApi.transactions).mockResolvedValue([]);
   vi.mocked(adminApi.statistics).mockResolvedValue([]);
   vi.mocked(adminApi.audit).mockResolvedValue([]);
+  vi.mocked(adminApi.releaseNotes).mockImplementation(async (kind) => [{
+    version: "0.15.0", date: "2026-08-31", content: kind === "changelog" ? "Публичное изменение" : "Техническое изменение",
+  }]);
   vi.mocked(adminApi.setBalance).mockResolvedValue({ amount: 9_000, already_processed: false });
   vi.mocked(adminApi.configureLottery).mockResolvedValue(lottery);
   vi.mocked(adminApi.setReserve).mockResolvedValue({ amount: 100_000, already_processed: false });
@@ -73,9 +77,20 @@ it("exposes immutable archive, ledger, statistics and audit navigation", async (
   render(<App />);
   await screen.findByText("БАЗА ДАННЫХ РАБОТАЕТ");
 
-  for (const label of ["Архив тиражей", "Журнал CAS", "Статистика чисел", "Аудит действий"]) {
+  for (const label of ["Архив тиражей", "Журнал CAS", "Статистика чисел", "Аудит действий", "Разработка"]) {
     expect(screen.getByRole("button", { name: new RegExp(label) })).toBeInTheDocument();
   }
+});
+
+it("shows complete changelog and devlog in separate protected tabs", async () => {
+  render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /Разработка/ }));
+
+  expect(await screen.findByText("Публичное изменение")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("tab", { name: "DEVLOG" }));
+  expect(screen.getByText("Техническое изменение")).toBeInTheDocument();
+  expect(adminApi.releaseNotes).toHaveBeenCalledWith("changelog");
+  expect(adminApi.releaseNotes).toHaveBeenCalledWith("devlog");
 });
 
 it("saves lottery price, jackpot and reserve with one action", async () => {

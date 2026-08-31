@@ -123,3 +123,9 @@ export interface Dashboard {
   recent_draws: Draw[];
   recent_transactions: Transaction[];
 }
+
+export interface ReleaseNote {
+  version: string;
+  date: string | null;
+  content: string;
+}

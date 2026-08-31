@@ -1,5 +1,33 @@
 # Development log
 
+## [0.16.0] - 2026-08-31
+
+### Admin project journals
+
+Сделано:
+
+- added authenticated, read-only Admin API access to the versioned
+  `CHANGELOG.md` and `DEVLOG.md` sources;
+- added a **Development** Admin section with separate CHANGELOG and DEVLOG tabs;
+- included all historical version sections without copying or rewriting them;
+- removed Telegram journal discovery/sending scripts and public configuration
+  placeholders.
+
+Теперь система работает так:
+
+- the owner reads product and technical history in the permanent Admin site;
+- journal content remains version-controlled and cannot be edited through the
+  browser;
+- Telegram is used only for the player bot and lottery notifications, not
+  development reports.
+
+Технически:
+
+- migration: no schema change after `0010_independent_daily`;
+- security: fixed journal allowlist, authenticated endpoint and text-only UI;
+- tests: recorded by the release checks;
+- commit: recorded by the release commit.
+
 ## [0.15.0] - 2026-08-31
 
 ### Mini App first entry flow

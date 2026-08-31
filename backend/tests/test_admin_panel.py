@@ -340,6 +340,7 @@ def test_admin_routes_cover_milestone_and_completed_draws_have_no_mutation() -> 
         "/api/v1/admin/draws/{draw_id}",
         "/api/v1/admin/lotteries/{lottery_id}/number-statistics",
         "/api/v1/admin/audit",
+        "/api/v1/admin/release-notes/{kind}",
     }
     assert required.issubset(paths)
     assert set(paths["/api/v1/admin/draws/{draw_id}"]) == {"get"}

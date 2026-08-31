@@ -23,6 +23,8 @@ the owner will open its normal URL and log in without starting any process.
 - per-lottery number appearances, percentages, last appearance and draws since
   last appearance, calculated from completed draw history;
 - permanent administrator audit history.
+- protected project history with separate read-only CHANGELOG and DEVLOG tabs,
+  including all previous versions.
 
 Schedule editing remains deliberately unavailable without effective-date rules.
 Daily price and base jackpot are configurable. Current jackpot and distribution
@@ -72,3 +74,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start_admin.ps1
 
 Rate limiting and production reverse-proxy policy remain deployment work and do
 not weaken the current authentication boundary.
+
+Project journals remain version-controlled Markdown files. The Admin API uses
+a fixed file allowlist and never accepts a filesystem path from the browser.
+They are rendered as text, so journal content cannot inject executable HTML.

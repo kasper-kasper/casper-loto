@@ -8,6 +8,7 @@ import type {
   NumberStatistic,
   Player,
   Transaction,
+  ReleaseNote,
 } from "./types";
 
 export class ApiError extends Error {
@@ -112,6 +113,8 @@ export const adminApi = {
   statistics: (lotteryId: string) =>
     request<NumberStatistic[]>(`/lotteries/${lotteryId}/number-statistics`),
   audit: () => request<AuditEntry[]>("/audit"),
+  releaseNotes: (kind: "changelog" | "devlog") =>
+    request<ReleaseNote[]>(`/release-notes/${kind}`),
   setBalance: (userId: string, targetAmount: number, reason: string) =>
     request<{ amount: number; already_processed: boolean }>(
       `/players/${userId}/balance-adjustments`,

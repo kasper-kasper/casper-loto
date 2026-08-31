@@ -11,10 +11,11 @@ import type {
   Lottery,
   NumberStatistic,
   Player,
+  ReleaseNote,
   Transaction,
 } from "./types";
 
-type View = "dashboard" | "players" | "lotteries" | "draws" | "ledger" | "statistics" | "audit";
+type View = "dashboard" | "players" | "lotteries" | "draws" | "ledger" | "statistics" | "audit" | "development";
 
 const navigation: { id: View; label: string; code: string }[] = [
   { id: "dashboard", label: "Обзор", code: "01" },
@@ -24,6 +25,7 @@ const navigation: { id: View; label: string; code: string }[] = [
   { id: "ledger", label: "Журнал CAS", code: "05" },
   { id: "statistics", label: "Статистика чисел", code: "06" },
   { id: "audit", label: "Аудит действий", code: "07" },
+  { id: "development", label: "Разработка", code: "08" },
 ];
 
 const drawStatuses: Record<string, string> = { PENDING: "Ожидает", RUNNING: "Выполняется", COMPLETED: "Завершён", FAILED: "Ошибка" };
@@ -198,6 +200,22 @@ function DrawDetailPanel({ detail, onClose }: { detail: DrawDetail; onClose: () 
   return <div className="drawer"><button aria-label="Закрыть" className="close" onClick={onClose}>×</button><small>НЕИЗМЕНЯЕМАЯ ЗАПИСЬ ТИРАЖА</small><h2>{draw.lottery_name} №{drawNumber(draw.public_number)}</h2><div className="winning">{draw.winning_numbers?.map((n) => <i key={n}>{n}</i>) ?? "НЕТ РЕЗУЛЬТАТА"}</div><dl className="detail-list"><dt>Статус</dt><dd>{translated(draw.status, drawStatuses)}</dd><dt>По расписанию</dt><dd>{date(draw.scheduled_at)}</dd><dt>Проведён</dt><dd>{date(draw.executed_at)}</dd><dt>Продажи</dt><dd>{cas(draw.total_sales)}</dd><dt>Выплачено</dt><dd>{cas(draw.total_payout)}</dd><dt>Использовано из резерва</dt><dd>{cas(draw.reserve_used)}</dd><dt>Код связи</dt><dd><code>{draw.correlation_id}</code></dd></dl><h3>Билеты ({detail.tickets.length})</h3>{detail.tickets.map((ticket) => <div className="ticket-row" key={ticket.id}><b>№{drawNumber(ticket.public_number)}</b><span>{ticket.numbers.join(" · ")}</span><span>совпадений: {ticket.matches ?? "—"}</span><strong>{cas(ticket.prize_amount)}</strong></div>)}</div>;
 }
 
+function DevelopmentView({ changelog, devlog }: { changelog: ReleaseNote[]; devlog: ReleaseNote[] }) {
+  const [kind, setKind] = useState<"changelog" | "devlog">("changelog");
+  const notes = kind === "changelog" ? changelog : devlog;
+  return <section className="release-journal">
+    <div className="journal-tabs" role="tablist" aria-label="Журналы проекта">
+      <button role="tab" aria-selected={kind === "changelog"} className={kind === "changelog" ? "active" : ""} onClick={() => setKind("changelog")}>CHANGELOG</button>
+      <button role="tab" aria-selected={kind === "devlog"} className={kind === "devlog" ? "active" : ""} onClick={() => setKind("devlog")}>DEVLOG</button>
+    </div>
+    <p className="journal-intro">{kind === "changelog" ? "Официальная история изменений продукта." : "Подробная техническая история разработки."} Старые и новые записи доступны только после входа администратора.</p>
+    <div className="journal-list">{notes.map((note) => <article key={`${kind}-${note.version}`}>
+      <header><span>v{note.version}</span><time>{note.date ?? "без даты"}</time></header>
+      <pre>{note.content}</pre>
+    </article>)}</div>
+  </section>;
+}
+
 export default function App() {
   const [session, setSession] = useState<AdminSession | null>(null);
   const [checking, setChecking] = useState(true);
@@ -212,6 +230,7 @@ export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [statistics, setStatistics] = useState<NumberStatistic[]>([]);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
+  const [releaseNotes, setReleaseNotes] = useState<{ changelog: ReleaseNote[]; devlog: ReleaseNote[] }>({ changelog: [], devlog: [] });
 
   useEffect(() => { adminApi.session().then(setSession).catch(() => setSession(null)).finally(() => setChecking(false)); }, []);
 
@@ -224,6 +243,10 @@ export default function App() {
       if (target === "draws") setDraws(await adminApi.draws());
       if (target === "ledger") setTransactions(await adminApi.transactions());
       if (target === "audit") setAudit(await adminApi.audit());
+      if (target === "development") {
+        const [changelog, devlog] = await Promise.all([adminApi.releaseNotes("changelog"), adminApi.releaseNotes("devlog")]);
+        setReleaseNotes({ changelog, devlog });
+      }
       if (target === "statistics") {
         const available = await adminApi.lotteries();
         setLotteries(available);
@@ -256,6 +279,7 @@ export default function App() {
       {!loading && view === "ledger" && <><TransactionFilters onApply={(query) => void adminApi.transactions(query).then(setTransactions).catch((reason: Error) => setError(reason.message))} /><section className="panel"><header><h2>Неизменяемый журнал CAS</h2><span>ЗАПИСЕЙ: {transactions.length}</span></header><TransactionTable rows={transactions} /></section></>}
       {!loading && view === "statistics" && <StatisticsView lotteries={lotteries} rows={statistics} onLottery={(id) => void adminApi.statistics(id).then(setStatistics)} />}
       {!loading && view === "audit" && <section className="panel"><header><h2>Аудит действий администратора</h2><span>ХРАНИТСЯ ПОСТОЯННО</span></header><div className="audit-list">{audit.map((item) => <article key={item.id}><time>{date(item.created_at)}</time><b>{translated(item.action, auditActions)} · {translated(item.entity_type, entityTypes)}</b><p>{item.reason ?? "Причина не указана"}</p><code>{JSON.stringify(item.old_values)} → {JSON.stringify(item.new_values)}</code></article>)}</div></section>}
+      {!loading && view === "development" && <DevelopmentView changelog={releaseNotes.changelog} devlog={releaseNotes.devlog} />}
     </main>{drawDetail && <DrawDetailPanel detail={drawDetail} onClose={() => setDrawDetail(null)} />}
   </div>;
 }

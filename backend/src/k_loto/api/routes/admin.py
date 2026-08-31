@@ -26,6 +26,7 @@ from k_loto.application.admin import (
     AdminQueryService,
     ensure_admin_user,
 )
+from k_loto.application.release_notes import ReleaseNoteKind, load_release_notes
 from k_loto.core.config import Settings, get_settings
 from k_loto.domain.enums import (
     AuditAction,
@@ -192,6 +193,12 @@ class DashboardResponse(BaseModel):
     lotteries: list[LotteryResponse]
     recent_draws: list[DrawResponse]
     recent_transactions: list[TransactionResponse]
+
+
+class ReleaseNoteResponse(BaseModel):
+    version: str
+    date: str | None
+    content: str
 
 
 class CurrentAdmin:
@@ -532,4 +539,17 @@ async def audit(
     return [
         AuditResponse.model_validate(item)
         for item in await AdminQueryService(session).audit(limit=limit)
+    ]
+
+
+@router.get("/release-notes/{kind}", response_model=list[ReleaseNoteResponse])
+async def release_notes(
+    kind: ReleaseNoteKind,
+    _admin: Annotated[CurrentAdmin, Depends(get_current_admin)],
+) -> list[ReleaseNoteResponse]:
+    """Return the complete versioned project history to an authenticated admin."""
+
+    return [
+        ReleaseNoteResponse.model_validate(item, from_attributes=True)
+        for item in load_release_notes(kind)
     ]

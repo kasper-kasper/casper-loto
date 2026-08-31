@@ -6,7 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY pyproject.toml README.md alembic.ini ./
+COPY pyproject.toml README.md CHANGELOG.md DEVLOG.md alembic.ini ./
 COPY backend ./backend
 COPY bot ./bot
 COPY scripts ./scripts
