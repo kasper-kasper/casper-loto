@@ -188,6 +188,8 @@ async def test_daily_purchase_uses_40_60_split_and_independent_numbering() -> No
     lottery.max_number = 15
     lottery.sales_cutoff_minutes = 2
     lottery.next_ticket_number = 50
+    draw.scheduled_at = datetime(2026, 8, 14, 15, tzinfo=UTC)
+    draw.sales_close_at = datetime(2026, 8, 14, 14, 58, tzinfo=UTC)
     fake = FakeSession(
         scalar_values=[None, lottery, None, draw, balance, jackpot, distribution]
     )
@@ -221,7 +223,7 @@ async def test_empty_daily_draw_settlement_is_completed_idempotently() -> None:
     )
     fake = FakeSession(
         scalar_values=[draw, lottery, jackpot, distribution, reserve],
-        scalar_collections=[[], []],
+        scalar_collections=[[], [], []],
     )
 
     result = await DailySettlementService(
@@ -310,7 +312,7 @@ async def test_empty_draw_settlement_completes_and_uses_secure_generator() -> No
     )
     fake = FakeSession(
         scalar_values=[draw, lottery, jackpot, distribution, reserve],
-        scalar_collections=[[], []],
+        scalar_collections=[[], [], []],
     )
     generator = FixedGenerator()
     service = WeeklySettlementService(cast(AsyncSession, fake), generator)
@@ -365,7 +367,7 @@ async def test_settlement_enqueues_one_result_notification_per_user() -> None:
     )
     fake = FakeSession(
         scalar_values=[draw, lottery, jackpot, distribution, reserve],
-        scalar_collections=[[ticket], [balance]],
+        scalar_collections=[[ticket], [balance], [user_id]],
     )
 
     await WeeklySettlementService(cast(AsyncSession, fake), FixedGenerator()).settle(

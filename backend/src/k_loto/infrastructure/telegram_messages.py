@@ -1,4 +1,4 @@
-"""Owner-approved player notification formatting."""
+"""Friendly player notification formatting kept safely below Telegram limits."""
 
 from datetime import datetime
 from typing import Any
@@ -8,6 +8,7 @@ from k_loto.application.notifications import ClaimedNotification
 from k_loto.domain.enums import NotificationType
 
 MOSCOW = ZoneInfo("Europe/Moscow")
+TICKET_PREVIEW_LIMIT = 12
 
 
 def format_cas(amount: int) -> str:
@@ -15,44 +16,91 @@ def format_cas(amount: int) -> str:
 
 
 def _ticket_lines(tickets: list[dict[str, Any]], *, include_result: bool) -> str:
+    ordered = tickets
+    if include_result:
+        ordered = sorted(
+            tickets,
+            key=lambda ticket: (
+                -int(ticket.get("prize", 0)),
+                -int(ticket.get("matches", 0)),
+            ),
+        )
+    visible = ordered[:TICKET_PREVIEW_LIMIT]
     sections: list[str] = []
-    for ticket in tickets:
+    for ticket in visible:
         number = int(ticket["public_number"])
-        numbers = " • ".join(str(value) for value in ticket["numbers"])
-        lines = [f"Билет {number:04d}", numbers]
+        numbers = " · ".join(str(value) for value in ticket["numbers"])
+        line = f"🎫 №{number:04d}: {numbers}"
         if include_result:
-            lines.append(f"Совпадений: {int(ticket['matches'])}")
-            lines.append(f"Выигрыш: {format_cas(int(ticket['prize']))} CAS")
-        sections.append("\n".join(lines))
-    return "\n\n".join(sections)
+            line += (
+                f"\n   совпало {int(ticket['matches'])} · "
+                f"выигрыш {format_cas(int(ticket['prize']))} CAS"
+            )
+        sections.append(line)
+    hidden = len(ordered) - len(visible)
+    if hidden:
+        sections.append(f"…и ещё {hidden} билетов — все они сохранены в «Моих билетах»")
+    return "\n".join(sections)
+
+
+def _scheduled_line(payload: dict[str, Any]) -> str:
+    raw = payload.get("scheduled_at")
+    if not raw:
+        return ""
+    scheduled = datetime.fromisoformat(str(raw)).astimezone(MOSCOW)
+    return f"🕒 {scheduled:%d.%m.%Y · %H:%M} МСК\n"
 
 
 def format_purchase_message(payload: dict[str, Any]) -> str:
     tickets = list(payload["tickets"])
+    prize_fund = int(payload.get("prize_fund", 0))
     return (
-        "K-Loto\n\n"
-        "Билеты успешно куплены.\n\n"
-        f"Лотерея: {payload['lottery_name']}\n"
-        f"Тираж: {int(payload['draw_number']):04d}\n\n"
+        "🎟 Готово — билеты уже в игре!\n\n"
+        f"🎲 {payload['lottery_name']} · тираж №{int(payload['draw_number']):04d}\n"
+        f"{_scheduled_line(payload)}"
+        f"🎁 Призовой фонд: {format_cas(prize_fund)} CAS\n\n"
         f"{_ticket_lines(tickets, include_result=False)}\n\n"
-        f"Списано: {format_cas(int(payload['total_cost']))} CAS\n"
-        f"Баланс: {format_cas(int(payload['balance_after']))} CAS"
+        f"Куплено: {len(tickets)} бил. · "
+        f"списано {format_cas(int(payload['total_cost']))} CAS\n"
+        f"💰 Осталось на счету: {format_cas(int(payload['balance_after']))} CAS\n\n"
+        "Теперь можно расслабиться — о результате напишу сам 🍀"
     )
 
 
 def format_result_message(payload: dict[str, Any]) -> str:
     scheduled = datetime.fromisoformat(str(payload["scheduled_at"])).astimezone(MOSCOW)
-    winning = " • ".join(str(value) for value in payload["winning_numbers"])
+    winning = " · ".join(str(value) for value in payload["winning_numbers"])
     tickets = list(payload["tickets"])
+    total_prize = int(payload["total_prize"])
+    prize_fund = int(payload.get("prize_fund", 0))
+
+    if total_prize > 0:
+        heading = "🔥 Есть выигрыш! Вот это поворот"
+        ending = f"💸 Твой выигрыш: {format_cas(total_prize)} CAS"
+    elif tickets:
+        heading = "🎲 Тираж сыгран — сверяем числа"
+        ending = "Сегодня без выигрыша, но билеты проверены до последней цифры."
+    else:
+        heading = "🎉 Новый тираж уже в истории"
+        ending = "В этот раз ты смотрел со стороны. Следующий шанс уже ждёт в меню."
+
+    ticket_section = (
+        _ticket_lines(tickets, include_result=True)
+        if tickets
+        else "У тебя не было билетов на этот тираж."
+    )
+    balance = payload.get("balance_after")
+    balance_line = (
+        f"\n💰 Баланс: {format_cas(int(balance))} CAS" if balance is not None else ""
+    )
     return (
-        "K-Loto — результат тиража\n\n"
-        f"Лотерея: {payload['lottery_name']}\n"
-        f"Тираж: {int(payload['draw_number']):04d}\n"
-        f"Дата: {scheduled:%Y-%m-%d %H:%M} MSK\n"
-        f"Выпавшие числа: {winning}\n\n"
-        f"{_ticket_lines(tickets, include_result=True)}\n\n"
-        f"Общий выигрыш: {format_cas(int(payload['total_prize']))} CAS\n"
-        f"Баланс: {format_cas(int(payload['balance_after']))} CAS"
+        f"{heading}\n\n"
+        f"{payload['lottery_name']} · тираж №{int(payload['draw_number']):04d}\n"
+        f"🕒 {scheduled:%d.%m.%Y · %H:%M} МСК\n"
+        f"✨ Выпало: {winning}\n\n"
+        f"{ticket_section}\n\n"
+        f"{ending}{balance_line}\n"
+        f"🎁 Призовой фонд: {format_cas(prize_fund)} CAS"
     )
 
 

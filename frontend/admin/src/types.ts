@@ -54,6 +54,7 @@ export interface Draw {
   id: string;
   lottery_id: string;
   lottery_code: string;
+  lottery_name: string;
   public_number: number;
   status: string;
   scheduled_at: string;

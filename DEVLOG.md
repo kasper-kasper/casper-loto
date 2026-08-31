@@ -1,5 +1,40 @@
 # Development log
 
+## [0.14.0] - 2026-08-31
+
+### Final Telegram player release
+
+Сделано:
+
+- implemented three independent Daily entities and migration
+  `0010_independent_daily` without reassigning tickets or completed draws;
+- added restart-safe post-settlement transfer of legacy Daily funds into PLL
+  with paired immutable ledger records;
+- set PSS and KHAN base/current jackpots to 24,000,000 CAS;
+- upgraded the one-time welcome target to 100,000,000,000 CAS, crediting only
+  the difference for identities that received the earlier grant;
+- completed the Telegram Mini App for all lottery codes with a mixed cart and a
+  premium blue/red/gold responsive theme;
+- removed the ordinary player Web frontend, API, login tooling and Admin
+  credential controls while retaining historical schema records;
+- added exact-lottery buttons to idempotent result/empty-draw notifications;
+- retained Telegram favourites, pagination, next-draw screens and large random
+  ticket batches from the final gameplay refinement.
+
+Теперь система работает так:
+
+- Telegram bot and Mini App share the same player, balance, tickets and funds;
+- PSS/KHAN run immediately; the purchased shared Daily draw settles normally at
+  02:22 MSK and then PLL activates automatically with preserved balances;
+- Admin remains a permanent independent HTTPS site.
+
+Технически:
+
+- migration: `0010_independent_daily` (head);
+- tests: 134 backend + 8 Mini App + 5 Admin passed;
+- checks: Ruff, mypy, frontend typecheck/lint/build passed;
+- commit: recorded by the release commit.
+
 ## [0.13.1] - 2026-08-15
 
 ### Web purchase transaction fix

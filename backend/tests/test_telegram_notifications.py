@@ -13,6 +13,7 @@ from k_loto.application.notifications import (
     NotificationDispatcher,
 )
 from k_loto.domain.enums import NotificationType
+from k_loto.infrastructure.database.models import Balance, LedgerTransaction
 from k_loto.infrastructure.telegram_bot import miniapp_markup
 from k_loto.infrastructure.telegram_messages import (
     BotNotificationFormatter,
@@ -31,8 +32,17 @@ class TransactionContext:
 
 class FakeIdentitySession:
     def __init__(self, user_id: UUID, balance: int) -> None:
-        self._values = iter([user_id, balance])
+        self._values = iter(
+            [
+                user_id,
+                balance,
+                Balance(user_id=user_id, amount=balance, version=1),
+                None,
+                None,
+            ]
+        )
         self.executed = 0
+        self.added: list[Any] = []
 
     def begin(self) -> TransactionContext:
         return TransactionContext()
@@ -42,6 +52,9 @@ class FakeIdentitySession:
 
     async def execute(self, _statement: object) -> None:
         self.executed += 1
+
+    def add(self, value: Any) -> None:
+        self.added.append(value)
 
 
 class FakeRepository:
@@ -68,10 +81,11 @@ class FakeSender:
         self.fail = fail
         self.messages: list[tuple[int, str]] = []
 
-    async def send(self, chat_id: int, text: str) -> None:
+    async def send(self, notification: ClaimedNotification, text: str) -> None:
         if self.fail:
             raise RuntimeError("sensitive transport details")
-        self.messages.append((chat_id, text))
+        assert notification.chat_id is not None
+        self.messages.append((notification.chat_id, text))
 
 
 def purchase_payload() -> dict[str, Any]:
@@ -99,8 +113,11 @@ async def test_telegram_identity_binding_is_idempotent_and_creates_balance() -> 
 
     assert profile.id == user_id
     assert profile.display_name == "K Loto"
-    assert profile.balance == 500
+    assert profile.balance == 100_000_000_500
     assert session.executed == 1
+    grants = [item for item in session.added if isinstance(item, LedgerTransaction)]
+    assert len(grants) == 1
+    assert grants[0].amount == 100_000_000_000
 
 
 async def test_telegram_identity_rejects_invalid_id() -> None:
@@ -118,7 +135,7 @@ def test_miniapp_launch_button_is_only_added_when_url_is_configured() -> None:
 
     assert markup is not None
     button = markup.inline_keyboard[0][0]
-    assert button.text == "Открыть K-Loto"
+    assert button.text == "✨ Открыть K-Loto"
     assert button.web_app is not None
     assert button.web_app.url == "https://example.test/miniapp"
 
@@ -126,11 +143,11 @@ def test_miniapp_launch_button_is_only_added_when_url_is_configured() -> None:
 def test_purchase_message_contains_all_tickets_and_balance() -> None:
     message = format_purchase_message(purchase_payload())
 
-    assert "Билет 0010" in message
-    assert "Билет 0011" in message
-    assert "1 • 2 • 3 • 4 • 5" in message
-    assert "Списано: 200 CAS" in message
-    assert "Баланс: 1 800 CAS" in message
+    assert "№0010" in message
+    assert "№0011" in message
+    assert "1 · 2 · 3 · 4 · 5" in message
+    assert "списано 200 CAS" in message
+    assert "Осталось на счету: 1 800 CAS" in message
 
 
 def test_draw_result_message_contains_each_ticket_result() -> None:
@@ -153,10 +170,10 @@ def test_draw_result_message_contains_each_ticket_result() -> None:
         }
     )
 
-    assert "Дата: 2026-08-16 20:00 MSK" in message
-    assert "Совпадений: 2" in message
-    assert "Выигрыш: 25 CAS" in message
-    assert "Общий выигрыш: 25 CAS" in message
+    assert "16.08.2026 · 20:00 МСК" in message
+    assert "совпало 2" in message
+    assert "выигрыш 25 CAS" in message
+    assert "Твой выигрыш: 25 CAS" in message
 
 
 async def test_dispatcher_sends_claimed_event_only_once() -> None:

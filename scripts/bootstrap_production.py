@@ -18,12 +18,19 @@ from k_loto.infrastructure.database.session import engine, session_factory
 
 
 async def ensure_lottery(
-    code: str, name: str, kind: LotteryKind, pick: int, maximum: int, cutoff: int
+    code: str,
+    name: str,
+    kind: LotteryKind,
+    pick: int,
+    maximum: int,
+    cutoff: int,
+    schedule: dict[str, object],
 ) -> None:
     async with session_factory() as session, session.begin():
         lottery = await session.scalar(
             select(Lottery).where(Lottery.code == code).with_for_update()
         )
+        created = lottery is None
         if lottery is None:
             lottery = Lottery(
                 id=uuid4(),
@@ -34,11 +41,7 @@ async def ensure_lottery(
                 max_number=maximum,
                 ticket_price=None,
                 timezone="Europe/Moscow",
-                schedule=(
-                    {"weekday": "sunday", "time": "20:00"}
-                    if kind == LotteryKind.WEEKLY
-                    else {"slots": ["02:22", "18:00"]}
-                ),
+                schedule=schedule,
                 sales_cutoff_minutes=cutoff,
                 is_active=True,
                 next_draw_number=1,
@@ -47,7 +50,10 @@ async def ensure_lottery(
             session.add(lottery)
             await session.flush()
         lottery.sales_cutoff_minutes = cutoff
-        lottery.is_active = True
+        lottery.name = name
+        lottery.schedule = schedule
+        if created:
+            lottery.is_active = True
         for model in (JackpotAccount, DistributionFund, LotteryReserve):
             account = await session.scalar(
                 select(model).where(model.lottery_id == lottery.id)
@@ -58,15 +64,38 @@ async def ensure_lottery(
                     values["base_amount"] = 0
                 session.add(model(**values))
         lottery_id = lottery.id
-    async with session_factory() as session:
-        await DrawScheduleService(session).ensure_next_draw(
-            lottery_id, reference=datetime.now(UTC)
-        )
+        is_active = lottery.is_active
+    if is_active:
+        async with session_factory() as session:
+            await DrawScheduleService(session).ensure_next_draw(
+                lottery_id, reference=datetime.now(UTC)
+            )
 
 
 async def main() -> None:
-    await ensure_lottery("weekly", "Weekly 5/20", LotteryKind.WEEKLY, 5, 20, 5)
-    await ensure_lottery("daily", "Daily 4/15", LotteryKind.DAILY, 4, 15, 2)
+    await ensure_lottery(
+        "weekly",
+        "ЛСД-лото",
+        LotteryKind.WEEKLY,
+        5,
+        20,
+        5,
+        {"weekday": "sunday", "draw_time": "20:00"},
+    )
+    for code, name, draw_time in (
+        ("pll", "ПЛЛ-лото", "02:22"),
+        ("pss", "ПСС-Лото", "12:00"),
+        ("khan", "ХАН-Лото", "18:00"),
+    ):
+        await ensure_lottery(
+            code,
+            name,
+            LotteryKind.DAILY,
+            4,
+            15,
+            2,
+            {"draw_time": draw_time},
+        )
     await engine.dispose()
 
 

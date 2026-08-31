@@ -40,7 +40,7 @@ if ($null -eq $npmCommand) {
 $nodeDirectory = Split-Path -Parent $npmPath
 $env:Path = $nodeDirectory + ";" + $env:Path
 
-foreach ($frontend in @("frontend\miniapp", "frontend\admin", "frontend\web")) {
+foreach ($frontend in @("frontend\miniapp", "frontend\admin")) {
     Push-Location $frontend
     try {
         & $npmPath run typecheck

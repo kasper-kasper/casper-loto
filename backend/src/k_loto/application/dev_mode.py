@@ -142,7 +142,7 @@ class DevBootstrapService:
             lottery = Lottery(
                 id=uuid4(),
                 code="weekly",
-                name="Weekly 5/20",
+                name="ЛСД-лото",
                 kind=LotteryKind.WEEKLY,
                 numbers_to_pick=5,
                 max_number=20,
@@ -223,27 +223,34 @@ class DevBootstrapService:
                 )
 
     async def _ensure_daily(self, now: datetime) -> None:
-        lottery = await self._session.scalar(
-            select(Lottery).where(Lottery.code == "daily").with_for_update()
-        )
-        if lottery is None:
-            lottery = Lottery(
-                id=uuid4(),
-                code="daily",
-                name="Daily 4/15",
-                kind=LotteryKind.DAILY,
-                numbers_to_pick=4,
-                max_number=15,
-                ticket_price=None,
-                timezone="Europe/Moscow",
-                schedule={"slots": ["02:22", "18:00"]},
-                sales_cutoff_minutes=None,
-                is_active=True,
-                next_draw_number=1,
-                next_ticket_number=1,
+        for code, name, draw_time in (
+            ("pll", "ПЛЛ-лото", "02:22"),
+            ("pss", "ПСС-Лото", "12:00"),
+            ("khan", "ХАН-Лото", "18:00"),
+        ):
+            lottery = await self._session.scalar(
+                select(Lottery).where(Lottery.code == code).with_for_update()
             )
-            self._session.add(lottery)
-        await self._ensure_draw(lottery, now)
+            created = lottery is None
+            if lottery is None:
+                lottery = Lottery(
+                    id=uuid4(),
+                    code=code,
+                    name=name,
+                    kind=LotteryKind.DAILY,
+                    numbers_to_pick=4,
+                    max_number=15,
+                    ticket_price=self._config.weekly_ticket_price,
+                    timezone="Europe/Moscow",
+                    schedule={"draw_time": draw_time},
+                    sales_cutoff_minutes=2,
+                    is_active=True,
+                    next_draw_number=1,
+                    next_ticket_number=1,
+                )
+                self._session.add(lottery)
+            await self._ensure_weekly_accounts(lottery, created=created)
+            await self._ensure_draw(lottery, now)
 
     async def _ensure_draw(self, lottery: Lottery, now: datetime) -> None:
         open_draw = await self._session.scalar(
@@ -265,7 +272,9 @@ class DevBootstrapService:
             .limit(1)
         )
         scheduled_at = next_draw_at(
-            lottery.kind, latest.scheduled_at if latest is not None else now
+            lottery.kind,
+            latest.scheduled_at if latest is not None else now,
+            lottery.schedule,
         )
         self._session.add(
             Draw(
@@ -274,7 +283,9 @@ class DevBootstrapService:
                 public_number=lottery.next_draw_number,
                 status=DrawStatus.SCHEDULED,
                 scheduled_at=scheduled_at,
-                sales_close_at=sales_close_at(lottery.kind, scheduled_at),
+                sales_close_at=sales_close_at(
+                    lottery.kind, scheduled_at, lottery.sales_cutoff_minutes
+                ),
                 correlation_id=uuid4(),
                 ticket_count=0,
                 total_sales=0,

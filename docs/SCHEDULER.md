@@ -6,7 +6,9 @@ timezone-aware UTC timestamps.
 ## Slots
 
 - Weekly: Sunday 20:00 MSK; sales close Sunday 19:55 MSK.
-- Daily: 02:22 and 18:00 MSK; sales close at 02:20 and 17:58 MSK.
+- Unified Daily: ПЛЛ-лото at 02:22 (cutoff 02:20), ПСС-лото at 12:00
+  (cutoff 11:58) and ХАН-лото at 18:00 (cutoff 17:58) MSK. All slots use the
+  same lottery funds and sequential draw numbering.
 
 The first launch prepares only the nearest future draw. It never fabricates
 historical draws from before the system existed.

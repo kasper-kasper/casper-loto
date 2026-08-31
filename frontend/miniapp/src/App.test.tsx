@@ -35,8 +35,8 @@ const dashboard: Dashboard = {
       purchase_available: true,
     },
     {
-      code: "daily",
-      name: "Daily 4/15",
+      code: "pll",
+      name: "ПЛЛ-лото",
       kind: "DAILY",
       numbers_to_pick: 4,
       max_number: 15,
@@ -114,6 +114,7 @@ it("selects five numbers, adds a ticket and buys the cart atomically", async () 
   await waitFor(() =>
     expect(miniAppApi.purchase).toHaveBeenCalledWith(
       "signed",
+      "weekly",
       [[1, 2, 3, 4, 5]],
       "00000000-0000-4000-8000-000000000001",
     ),

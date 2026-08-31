@@ -10,9 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from k_loto.domain.enums import (
     DrawStatus,
     LedgerAccountKind,
+    LotteryKind,
     TicketStatus,
     TransactionType,
 )
+from k_loto.domain.lotteries import draw_display_name
 from k_loto.infrastructure.database.models import (
     Balance,
     Draw,
@@ -44,6 +46,8 @@ class BotLotteryCard:
     scheduled_at: datetime | None
     sales_close_at: datetime | None
     purchase_available: bool
+    draw_id: UUID | None = None
+    selection_key: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -133,7 +137,8 @@ class TelegramGameplayQueryService:
         ).all()
         cards: list[BotLotteryCard] = []
         for lottery, jackpot in rows:
-            draw = await self._session.scalar(
+            draw_limit = 3 if lottery.kind == LotteryKind.DAILY else 1
+            draw_query = (
                 select(Draw)
                 .where(
                     Draw.lottery_id == lottery.id,
@@ -141,28 +146,61 @@ class TelegramGameplayQueryService:
                     Draw.sales_close_at > now,
                 )
                 .order_by(Draw.scheduled_at)
-                .limit(1)
+                .limit(draw_limit)
             )
-            cards.append(
-                BotLotteryCard(
-                    lottery.id,
-                    lottery.code,
-                    lottery.name,
-                    lottery.numbers_to_pick,
-                    lottery.max_number,
-                    lottery.ticket_price,
-                    jackpot or 0,
-                    draw.public_number if draw else None,
-                    draw.scheduled_at if draw else None,
-                    draw.sales_close_at if draw else None,
-                    lottery.ticket_price is not None and draw is not None,
+            draws: list[Draw | None]
+            if lottery.kind == LotteryKind.DAILY:
+                draws = list((await self._session.scalars(draw_query)).all())
+            else:
+                weekly_draw = await self._session.scalar(draw_query)
+                draws = [weekly_draw] if weekly_draw is not None else []
+            if not draws:
+                draws = [None]
+            for draw in draws:
+                cards.append(
+                    BotLotteryCard(
+                        lottery.id,
+                        lottery.code,
+                        (
+                            draw_display_name(
+                                lottery.code, lottery.name, draw.scheduled_at
+                            )
+                            if draw
+                            else lottery.name
+                        ),
+                        lottery.numbers_to_pick,
+                        lottery.max_number,
+                        lottery.ticket_price,
+                        jackpot or 0,
+                        draw.public_number if draw else None,
+                        draw.scheduled_at if draw else None,
+                        draw.sales_close_at if draw else None,
+                        lottery.ticket_price is not None and draw is not None,
+                        draw.id if draw else None,
+                        (
+                            f"{lottery.code}:{draw.id}"
+                            if lottery.kind == LotteryKind.DAILY and draw
+                            else lottery.code
+                        ),
+                    )
                 )
+        cards.sort(
+            key=lambda card: (
+                card.scheduled_at or datetime.max.replace(tzinfo=now.tzinfo)
             )
+        )
         return BotHome(player, active_count or 0, tuple(cards))
 
     async def tickets(
-        self, telegram_id: int, *, active: bool, limit: int = 10
+        self,
+        telegram_id: int,
+        *,
+        active: bool,
+        limit: int = 10,
+        offset: int = 0,
     ) -> tuple[BotTicket, ...]:
+        if limit < 1 or offset < 0:
+            raise ValueError("Ticket page limit and offset are invalid.")
         player = await self.player(telegram_id)
         ticket_status = TicketStatus.PURCHASED if active else TicketStatus.SETTLED
         rows = (
@@ -172,13 +210,14 @@ class TelegramGameplayQueryService:
                 .join(Lottery, Lottery.id == Ticket.lottery_id)
                 .where(Ticket.user_id == player.id, Ticket.status == ticket_status)
                 .order_by(Draw.scheduled_at.desc(), Ticket.public_number.desc())
+                .offset(offset)
                 .limit(limit)
             )
         ).all()
         return tuple(
             BotTicket(
                 ticket.public_number,
-                lottery.name,
+                draw_display_name(lottery.code, lottery.name, draw.scheduled_at),
                 draw.public_number,
                 draw.scheduled_at,
                 tuple(ticket.numbers),
@@ -191,7 +230,7 @@ class TelegramGameplayQueryService:
             for ticket, draw, lottery in rows
         )
 
-    async def recent_draws(self, *, limit: int = 5) -> tuple[BotDraw, ...]:
+    async def recent_draws(self, *, limit: int = 12) -> tuple[BotDraw, ...]:
         rows = (
             await self._session.execute(
                 select(Draw, Lottery)
@@ -203,7 +242,7 @@ class TelegramGameplayQueryService:
         ).all()
         return tuple(
             BotDraw(
-                lottery.name,
+                draw_display_name(lottery.code, lottery.name, draw.scheduled_at),
                 draw.public_number,
                 draw.scheduled_at,
                 draw.executed_at,

@@ -47,9 +47,18 @@ export const miniAppApi = {
     );
     return response.tickets;
   },
-  purchase: (initData: string, combinations: number[][], idempotencyKey: string) =>
-    request<PurchaseResult>("/api/v1/miniapp/weekly/purchases", initData, {
+  purchase: (
+    initData: string,
+    lotteryCode: string,
+    combinations: number[][],
+    idempotencyKey: string,
+  ) =>
+    request<PurchaseResult>(
+      `/api/v1/miniapp/lotteries/${encodeURIComponent(lotteryCode)}/purchases`,
+      initData,
+      {
       method: "POST",
       body: JSON.stringify({ combinations, idempotency_key: idempotencyKey }),
-    }),
+      },
+    ),
 };

@@ -16,6 +16,7 @@ from k_loto.application.bot_gameplay import (
     BotTicket,
     TelegramGameplayQueryService,
 )
+from k_loto.application.favorites import FavoriteNumbers
 from k_loto.domain.enums import (
     DrawStatus,
     LedgerAccountKind,
@@ -34,18 +35,23 @@ from k_loto.infrastructure.telegram_game_ui import (
     add_daily_to_cart,
     add_weekly_to_cart,
     daily_picker_markup,
+    favorite_combinations_markup,
     format_draws,
+    format_favorite_combinations,
     format_home,
+    format_next_draw,
     format_picker,
     format_statistics,
     format_tickets,
     lottery_menu_markup,
     main_menu_markup,
+    next_draw_markup,
+    purchase_complete_markup,
     rules_text,
     telegram_checkout_idempotency_key,
+    ticket_tabs_markup,
     toggle_daily_number,
     toggle_weekly_number,
-    web_login_markup,
     weekly_picker_markup,
 )
 
@@ -104,6 +110,7 @@ def callback_values(markup: Any) -> set[str]:
 def test_main_menu_exposes_complete_gameplay_navigation() -> None:
     assert callback_values(main_menu_markup()) == {
         "bot:buy",
+        "bot:next",
         "bot:web",
         "bot:balance",
         "bot:tickets:active",
@@ -111,15 +118,119 @@ def test_main_menu_exposes_complete_gameplay_navigation() -> None:
         "bot:statistics",
         "bot:rules",
     }
-    login_button = web_login_markup("https://play.example/#telegram-login=token")
-    assert login_button.inline_keyboard[0][0].url == (
-        "https://play.example/#telegram-login=token"
+    now = datetime(2026, 8, 20, 9, 0, tzinfo=UTC)
+    menu_lotteries = (
+        BotLotteryCard(
+            UUID(int=1),
+            "daily",
+            "ПСС-лото",
+            4,
+            15,
+            24_000,
+            24_000_000,
+            12,
+            now,
+            now - timedelta(minutes=2),
+            True,
+        ),
+        BotLotteryCard(
+            UUID(int=2),
+            "weekly",
+            "ЛСД-лото",
+            5,
+            20,
+            100,
+            10_000,
+            7,
+            now + timedelta(days=2),
+            now,
+            True,
+        ),
     )
-    assert callback_values(lottery_menu_markup()) == {
+    assert callback_values(lottery_menu_markup(menu_lotteries)) == {
         "game:weekly",
         "game:daily",
         "bot:home",
     }
+
+
+def test_lottery_menu_offers_three_daily_slots_and_weekly_draw() -> None:
+    now = datetime(2026, 8, 20, 1, 0, tzinfo=UTC)
+    lotteries = tuple(
+        BotLotteryCard(
+            UUID(int=index),
+            "daily",
+            name,
+            4,
+            15,
+            24_000,
+            24_000_000,
+            10 + index,
+            now + timedelta(hours=index),
+            now,
+            True,
+            UUID(int=100 + index),
+            f"daily:{UUID(int=100 + index)}",
+        )
+        for index, name in enumerate(("ПЛЛ-лото", "ПСС-лото", "ХАН-лото"), 1)
+    ) + (
+        BotLotteryCard(
+            UUID(int=9),
+            "weekly",
+            "ЛСД-лото",
+            5,
+            20,
+            100,
+            10_000,
+            7,
+            now + timedelta(days=2),
+            now,
+            True,
+            UUID(int=109),
+            "weekly",
+        ),
+    )
+
+    callbacks = callback_values(lottery_menu_markup(lotteries))
+
+    assert "game:weekly" in callbacks
+    assert len({value for value in callbacks if value.startswith("game:")}) == 4
+
+
+def test_next_draw_and_favorites_have_direct_gameplay_actions() -> None:
+    now = datetime(2026, 8, 20, 9, 0, tzinfo=UTC)
+    draw_id = UUID(int=201)
+    lottery = BotLotteryCard(
+        UUID(int=1),
+        "daily",
+        "ПСС-лото",
+        4,
+        15,
+        24_000,
+        24_000_000,
+        12,
+        now + timedelta(hours=2, minutes=15),
+        now,
+        True,
+        draw_id,
+        f"daily:{draw_id}",
+    )
+    favorite = FavoriteNumbers(UUID(int=301), (1, 4, 7, 15))
+
+    next_text = format_next_draw(lottery, now=now)
+    favorite_text = format_favorite_combinations(
+        lottery=lottery, favorites=(favorite,), page=1
+    )
+    favorite_callbacks = callback_values(
+        favorite_combinations_markup((favorite,), page=1, has_next=False)
+    )
+
+    assert "2 ч. 15 мин." in next_text
+    assert "Призовой фонд: 24 000 000 CAS" in next_text
+    assert f"game:daily:{draw_id}" in callback_values(next_draw_markup(lottery))
+    assert "Любимые комбинации" in favorite_text
+    assert f"fav:use:{favorite.id}" in favorite_callbacks
+    assert f"fav:delete:{favorite.id}" in favorite_callbacks
 
 
 def test_weekly_picker_selects_exactly_five_unique_numbers() -> None:
@@ -128,10 +239,10 @@ def test_weekly_picker_selects_exactly_five_unique_numbers() -> None:
         selected = toggle_weekly_number(selected, number)
 
     assert selected == (1, 5, 7, 12, 20)
-    with pytest.raises(ValueError, match="five"):
+    with pytest.raises(ValueError, match="пять"):
         toggle_weekly_number(selected, 9)
     assert toggle_weekly_number(selected, 7) == (1, 5, 12, 20)
-    with pytest.raises(ValueError, match="between"):
+    with pytest.raises(ValueError, match="от 1 до 20"):
         toggle_weekly_number((), 21)
 
 
@@ -153,9 +264,9 @@ def test_weekly_cart_allows_identical_tickets_and_enforces_transport_limit() -> 
     cart = add_weekly_to_cart(cart, ticket, maximum=2)
 
     assert cart == (ticket, ticket)
-    with pytest.raises(ValueError, match="up to 2"):
+    with pytest.raises(ValueError, match="до 2"):
         add_weekly_to_cart(cart, ticket, maximum=2)
-    with pytest.raises(ValueError, match="exactly five"):
+    with pytest.raises(ValueError, match="пять"):
         add_weekly_to_cart((), (1, 2), maximum=2)
 
 
@@ -170,7 +281,18 @@ def test_picker_keyboard_contains_all_numbers_and_checkout_controls() -> None:
     labels = [button.text for row in markup.inline_keyboard for button in row]
     assert "✓ 01" in labels
     assert "✓ 20" in labels
-    assert "✅ Купить (2)" in labels
+    assert "✅ Купить 2 бил." in labels
+    assert {"pick:auto25", "pick:auto50"}.issubset(callbacks)
+
+
+def test_ticket_history_has_page_navigation_and_purchase_shortcut() -> None:
+    first_page = callback_values(ticket_tabs_markup(True, page=1, has_next=True))
+    middle_page = callback_values(ticket_tabs_markup(True, page=2, has_next=True))
+
+    assert "bot:tickets:active:2" in first_page
+    assert "bot:tickets:active:1" in middle_page
+    assert "bot:tickets:active:3" in middle_page
+    assert "bot:tickets:active:1" in callback_values(purchase_complete_markup())
 
 
 def test_telegram_checkout_idempotency_key_is_stable_and_scoped() -> None:
@@ -224,11 +346,11 @@ def test_gameplay_formatters_show_server_values_and_rules() -> None:
     assert "Корзина" in format_picker(
         selected=(1, 2, 3, 4, 5), cart=((5, 6, 7, 8, 9),), price=100
     )
-    assert "Совпадений: 3" in format_tickets((ticket,), active=False)
-    assert "Переходящий jackpot: 10 600 CAS" in format_draws((draw,))
+    assert "Совпало: 3" in format_tickets((ticket,), active=False)
+    assert "Призовой фонд: 10 600 CAS" in format_draws((draw,))
     assert "Итог: -300 CAS" in format_statistics(stats)
-    assert "19:55 MSK" in rules_text()
-    assert "Daily 4 из 15" in rules_text()
+    assert "за 5 минут" in rules_text()
+    assert "общим призовым фондом" in rules_text()
     assert "за 2 минуты" in rules_text()
 
 

@@ -83,6 +83,17 @@ def test_purchase_split_is_40_percent_jackpot_and_60_distribution() -> None:
     assert quote.distribution_contribution == 120
 
 
+def test_even_daily_price_assigns_rounding_remainder_to_distribution() -> None:
+    quote = quote_daily_purchase([list(WINNING)], 22_222, 30_000)
+
+    assert quote.total_cost == 22_222
+    assert quote.jackpot_contribution == 8_888
+    assert quote.distribution_contribution == 13_334
+
+    plan = settle([ticket(1, (1, 2, 5, 6), price=22_222)], distribution=20_000)
+    assert plan.payouts[0].amount == 11_111
+
+
 def test_daily_price_must_support_all_exact_integer_rules() -> None:
     with pytest.raises(ConfigurationError):
         quote_daily_purchase([list(WINNING)], 45, 500)

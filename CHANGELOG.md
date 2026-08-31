@@ -2,7 +2,33 @@
 
 All notable changes follow Keep a Changelog and Semantic Versioning principles.
 
-## [Unreleased]
+## [0.14.0] - 2026-08-31
+
+### Added
+
+- Independent ПЛЛ-лото, ПСС-Лото and ХАН-Лото with separate draws, ticket
+  numbering and funds at 02:22, 12:00 and 18:00 Moscow time.
+- One-time automatic 100,000,000,000 CAS Telegram welcome allocation.
+- Premium blue/red/gold Telegram Mini App for all four lotteries.
+- Empty-draw broadcasts with current jackpot and a direct purchase button.
+- Telegram favourites, next-draw countdowns, ticket pagination and random
+  batches of 5, 10, 25 or 50 tickets.
+
+### Changed
+
+- ПСС and ХАН start with independent 24,000,000 CAS jackpots; ПЛЛ safely
+  inherits the shared Daily funds after already purchased tickets settle.
+- The Telegram bot and Mini App are now the only player interfaces.
+- Web Admin remains a separate permanent HTTPS site and is fully localized.
+
+### Removed
+
+- Ordinary username/password player Web application and its runtime API.
+
+### Fixed
+
+- Daily selection now remains bound to the exact chosen lottery and draw.
+- Admin saves lottery price, base jackpot and reserve with clear feedback.
 
 ## [0.13.1] - 2026-08-15
 

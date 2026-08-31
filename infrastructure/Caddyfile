@@ -7,7 +7,7 @@
         reverse_proxy api:8000
     }
     handle {
-        root * /srv/web
+        root * /srv/miniapp
         try_files {path} /index.html
         file_server
     }

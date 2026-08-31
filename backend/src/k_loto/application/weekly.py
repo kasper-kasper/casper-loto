@@ -24,6 +24,7 @@ from k_loto.domain.errors import (
     InvalidStateTransition,
     NoAvailableDraw,
 )
+from k_loto.domain.lotteries import draw_display_name
 from k_loto.domain.schedules import next_draw_at, sales_close_at
 from k_loto.domain.weekly import (
     SettlementTicket,
@@ -41,6 +42,7 @@ from k_loto.infrastructure.database.models import (
     LotteryReserve,
     NotificationOutbox,
     Ticket,
+    User,
 )
 
 
@@ -115,9 +117,17 @@ class WeeklyTicketPurchaseService:
     max_number = 20
     quote_purchase = staticmethod(quote_weekly_purchase)
     lottery_label = "Weekly"
+    default_lottery_code = "weekly"
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(
+        self,
+        session: AsyncSession,
+        lottery_code: str | None = None,
+        target_draw_id: UUID | None = None,
+    ) -> None:
         self._session = session
+        self._lottery_code = lottery_code or self.default_lottery_code
+        self._target_draw_id = target_draw_id
 
     async def purchase(
         self,
@@ -145,6 +155,7 @@ class WeeklyTicketPurchaseService:
                 select(Lottery)
                 .where(
                     Lottery.kind == self.lottery_kind,
+                    Lottery.code == self._lottery_code,
                     Lottery.is_active.is_(True),
                 )
                 .with_for_update()
@@ -169,17 +180,20 @@ class WeeklyTicketPurchaseService:
             if existing_after_lock is not None:
                 return _existing_purchase_result(existing_after_lock)
 
-            draw = await self._session.scalar(
-                select(Draw)
-                .where(
-                    Draw.lottery_id == lottery.id,
-                    Draw.status == DrawStatus.SCHEDULED,
-                    Draw.sales_close_at > timestamp,
-                )
-                .order_by(Draw.scheduled_at)
-                .limit(1)
-                .with_for_update()
+            draw_query = select(Draw).where(
+                Draw.lottery_id == lottery.id,
+                Draw.status == DrawStatus.SCHEDULED,
+                Draw.sales_close_at > timestamp,
             )
+            if self._target_draw_id is not None:
+                draw_query = draw_query.where(Draw.id == self._target_draw_id)
+            else:
+                draw_query = draw_query.order_by(Draw.scheduled_at).limit(1)
+            draw = await self._session.scalar(draw_query.with_for_update())
+            if draw is None and self._target_draw_id is not None:
+                raise NoAvailableDraw(
+                    "The selected draw is no longer available for ticket sales."
+                )
             if draw is None:
                 latest = await self._session.scalar(
                     select(Draw)
@@ -188,14 +202,20 @@ class WeeklyTicketPurchaseService:
                     .limit(1)
                 )
                 schedule_base = latest.scheduled_at if latest is not None else timestamp
-                scheduled_at = next_draw_at(self.lottery_kind, schedule_base)
+                scheduled_at = next_draw_at(
+                    self.lottery_kind, schedule_base, lottery.schedule
+                )
                 draw = Draw(
                     id=uuid4(),
                     lottery_id=lottery.id,
                     public_number=lottery.next_draw_number,
                     status=DrawStatus.SCHEDULED,
                     scheduled_at=scheduled_at,
-                    sales_close_at=sales_close_at(self.lottery_kind, scheduled_at),
+                    sales_close_at=sales_close_at(
+                        self.lottery_kind,
+                        scheduled_at,
+                        lottery.sales_cutoff_minutes,
+                    ),
                     correlation_id=uuid4(),
                     ticket_count=0,
                     total_sales=0,
@@ -325,11 +345,15 @@ class WeeklyTicketPurchaseService:
                     type=NotificationType.TICKET_PURCHASED,
                     status=NotificationStatus.PENDING,
                     payload={
-                        "lottery_name": lottery.name,
+                        "lottery_name": draw_display_name(
+                            lottery.code, lottery.name, draw.scheduled_at
+                        ),
                         "draw_number": draw.public_number,
+                        "scheduled_at": draw.scheduled_at.isoformat(),
                         "tickets": ticket_payloads,
                         "total_cost": quote.total_cost,
                         "balance_after": balance.amount,
+                        "prize_fund": jackpot.balance,
                     },
                     attempts=0,
                     available_at=timestamp,
@@ -572,7 +596,18 @@ class WeeklySettlementService:
             draw.distribution_closing = plan.distribution_closing
             draw.reserve_used = plan.reserve_used
             self._session.add_all(ledger_entries)
-            for user_id in sorted(user_ids, key=lambda value: value.int):
+            notification_user_ids = set(
+                (
+                    await self._session.scalars(
+                        select(User.id).where(
+                            User.telegram_id.is_not(None),
+                            User.is_active.is_(True),
+                            User.is_admin.is_(False),
+                        )
+                    )
+                ).all()
+            )
+            for user_id in sorted(notification_user_ids, key=lambda value: value.int):
                 user_tickets = [
                     ticket for ticket in ticket_models if ticket.user_id == user_id
                 ]
@@ -585,7 +620,10 @@ class WeeklySettlementService:
                         type=NotificationType.DRAW_RESULT,
                         status=NotificationStatus.PENDING,
                         payload={
-                            "lottery_name": lottery.name,
+                            "lottery_code": lottery.code,
+                            "lottery_name": draw_display_name(
+                                lottery.code, lottery.name, draw.scheduled_at
+                            ),
                             "draw_number": draw.public_number,
                             "scheduled_at": draw.scheduled_at.isoformat(),
                             "winning_numbers": list(plan.winning_numbers),
@@ -599,7 +637,13 @@ class WeeklySettlementService:
                                 for ticket in user_tickets
                             ],
                             "total_prize": sum(item.amount for item in user_payouts),
-                            "balance_after": balances[user_id].amount,
+                            "prize_fund": plan.jackpot_closing,
+                            "draw_total_payout": plan.total_payout,
+                            "balance_after": (
+                                balances[user_id].amount
+                                if user_id in balances
+                                else None
+                            ),
                         },
                         attempts=0,
                         available_at=timestamp,

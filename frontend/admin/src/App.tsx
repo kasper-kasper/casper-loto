@@ -17,14 +17,43 @@ import type {
 type View = "dashboard" | "players" | "lotteries" | "draws" | "ledger" | "statistics" | "audit";
 
 const navigation: { id: View; label: string; code: string }[] = [
-  { id: "dashboard", label: "Overview", code: "01" },
-  { id: "players", label: "Players", code: "02" },
-  { id: "lotteries", label: "Lotteries", code: "03" },
-  { id: "draws", label: "Draw archive", code: "04" },
-  { id: "ledger", label: "CAS ledger", code: "05" },
-  { id: "statistics", label: "Number intel", code: "06" },
-  { id: "audit", label: "Admin audit", code: "07" },
+  { id: "dashboard", label: "Обзор", code: "01" },
+  { id: "players", label: "Игроки", code: "02" },
+  { id: "lotteries", label: "Лотереи", code: "03" },
+  { id: "draws", label: "Архив тиражей", code: "04" },
+  { id: "ledger", label: "Журнал CAS", code: "05" },
+  { id: "statistics", label: "Статистика чисел", code: "06" },
+  { id: "audit", label: "Аудит действий", code: "07" },
 ];
+
+const drawStatuses: Record<string, string> = { PENDING: "Ожидает", RUNNING: "Выполняется", COMPLETED: "Завершён", FAILED: "Ошибка" };
+const transactionTypes: Record<string, string> = {
+  ADMIN_BALANCE_ADJUSTMENT: "Изменение баланса администратором",
+  TICKET_PURCHASE: "Покупка билета",
+  PRIZE_PAYOUT: "Выплата выигрыша",
+  JACKPOT_PAYOUT: "Выплата джекпота",
+  RESERVE_ADJUSTMENT: "Изменение резерва",
+  SYSTEM_ADJUSTMENT: "Системное начисление",
+};
+const accountKinds: Record<string, string> = {
+  USER_BALANCE: "Баланс игрока", JACKPOT: "Джекпот", DISTRIBUTION: "Фонд распределения", RESERVE: "Резерв",
+};
+const auditActions: Record<string, string> = {
+  BALANCE_ADJUSTED: "Баланс изменён", LOTTERY_CONFIGURED: "Настройки лотереи изменены",
+  RESERVE_ADJUSTED: "Резерв изменён", WEB_ACCOUNT_CONFIGURED: "Web-доступ настроен",
+};
+const entityTypes: Record<string, string> = { USER: "Игрок", LOTTERY: "Лотерея", WEB_ACCOUNT: "Web-аккаунт" };
+
+function translated(value: string, dictionary: Record<string, string>): string {
+  return dictionary[value] ?? value.replaceAll("_", " ").toLocaleLowerCase("ru-RU");
+}
+
+function schedule(value: Record<string, unknown>): string {
+  const weekday = value.weekday === "sunday" ? "воскресенье" : String(value.weekday ?? "");
+  const time = String(value.draw_time ?? "");
+  const slots = Array.isArray(value.slots) ? value.slots.map(String).join(" · ") : "";
+  return [weekday, slots ? `${slots} МСК` : time && `${time} МСК`].filter(Boolean).join(", ") || "не задано";
+}
 
 function cas(value: number | null | undefined): string {
   return `${(value ?? 0).toLocaleString("ru-RU")} CAS`;
@@ -55,7 +84,7 @@ function Login({ onAuthenticated }: { onAuthenticated: (session: AdminSession) =
     try {
       onAuthenticated(await adminApi.login(username, password));
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Authentication failed.");
+      setError(reason instanceof Error ? reason.message : "Не удалось войти.");
     } finally {
       setBusy(false);
     }
@@ -64,15 +93,15 @@ function Login({ onAuthenticated }: { onAuthenticated: (session: AdminSession) =
   return (
     <main className="login-shell">
       <section className="login-card">
-        <div className="brand"><span>K</span><div>K-LOTO<small>CONTROL SYSTEM</small></div></div>
-        <div className="secure-line"><i /> RESTRICTED ADMINISTRATIVE AREA</div>
-        <h1>System access</h1>
-        <p>Authenticate to inspect immutable history and execute audited changes.</p>
+        <div className="brand"><span>K</span><div>K-LOTO<small>СИСТЕМА УПРАВЛЕНИЯ</small></div></div>
+        <div className="secure-line"><i /> ЗАЩИЩЁННАЯ ЗОНА АДМИНИСТРАТОРА</div>
+        <h1>Вход в систему</h1>
+        <p>Войдите, чтобы просматривать историю и выполнять контролируемые изменения.</p>
         <form onSubmit={(event) => void submit(event)}>
-          <label>OPERATOR ID<input autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)} /></label>
-          <label>PASSPHRASE<input autoComplete="current-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></label>
+          <label>ЛОГИН АДМИНИСТРАТОРА<input autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)} /></label>
+          <label>ПАРОЛЬ<input autoComplete="current-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></label>
           {error && <div className="error">{error}</div>}
-          <button className="primary" disabled={busy}>{busy ? "VERIFYING…" : "ENTER CONTROL"}</button>
+          <button className="primary" disabled={busy}>{busy ? "ПРОВЕРЯЕМ…" : "ВОЙТИ"}</button>
         </form>
       </section>
     </main>
@@ -81,26 +110,26 @@ function Login({ onAuthenticated }: { onAuthenticated: (session: AdminSession) =
 
 function DashboardView({ data }: { data: Dashboard }) {
   const metrics = [
-    ["Players", data.counts.users],
-    ["Tickets", data.counts.tickets],
-    ["Completed draws", data.counts.completed_draws],
-    ["Open / recovery", data.counts.pending_draws],
+    ["Игроки", data.counts.users],
+    ["Билеты", data.counts.tickets],
+    ["Завершённые тиражи", data.counts.completed_draws],
+    ["Ожидают / восстановление", data.counts.pending_draws],
   ];
   return <>
     <div className="system-strip">
-      <Status active={data.database_healthy}>DATABASE ONLINE</Status>
-      <Status active={data.scheduler_enabled}>SCHEDULER {data.scheduler_enabled ? "ACTIVE" : "DISABLED"}</Status>
-      <Status active={data.bot_configured}>BOT {data.bot_configured ? "CONFIGURED" : "NOT CONFIGURED"}</Status>
-      <span>v{data.version} · uptime {Math.floor(data.uptime_seconds / 60)}m</span>
+      <Status active={data.database_healthy}>БАЗА ДАННЫХ РАБОТАЕТ</Status>
+      <Status active={data.scheduler_enabled}>ПЛАНИРОВЩИК {data.scheduler_enabled ? "АКТИВЕН" : "ОТКЛЮЧЁН"}</Status>
+      <Status active={data.bot_configured}>БОТ {data.bot_configured ? "НАСТРОЕН" : "НЕ НАСТРОЕН"}</Status>
+      <span>v{data.version} · работает {Math.floor(data.uptime_seconds / 60)} мин.</span>
     </div>
     <section className="metric-grid">{metrics.map(([label, value]) => <article className="metric" key={label}><small>{label}</small><strong>{value}</strong><div className="scan" /></article>)}</section>
     <div className="split">
-      <section className="panel"><header><h2>Funds monitor</h2><span>LIVE STATE</span></header>
-        <div className="fund-list">{data.lotteries.map((lottery) => <article key={lottery.id}><div><b>{lottery.name}</b><small>DRAW {lottery.next_draw_number ? drawNumber(lottery.next_draw_number) : "—"}</small></div><dl><dt>JACKPOT</dt><dd>{cas(lottery.current_jackpot)}</dd><dt>DISTRIBUTION</dt><dd>{cas(lottery.distribution_fund)}</dd><dt>RESERVE</dt><dd>{cas(lottery.reserve)}</dd></dl></article>)}</div>
+      <section className="panel"><header><h2>Контроль фондов</h2><span>ТЕКУЩЕЕ СОСТОЯНИЕ</span></header>
+        <div className="fund-list">{data.lotteries.filter((lottery) => lottery.is_active).map((lottery) => <article key={lottery.id}><div><b>{lottery.name}</b><small>ТИРАЖ {lottery.next_draw_number ? drawNumber(lottery.next_draw_number) : "—"}</small></div><dl><dt>ДЖЕКПОТ</dt><dd>{cas(lottery.current_jackpot)}</dd><dt>РАСПРЕДЕЛЕНИЕ</dt><dd>{cas(lottery.distribution_fund)}</dd><dt>РЕЗЕРВ</dt><dd>{cas(lottery.reserve)}</dd></dl></article>)}</div>
       </section>
-      <section className="panel"><header><h2>Recent draws</h2><span>IMMUTABLE</span></header><DrawTable draws={data.recent_draws} /></section>
+      <section className="panel"><header><h2>Последние тиражи</h2><span>БЕЗ ВОЗМОЖНОСТИ ИЗМЕНЕНИЯ</span></header><DrawTable draws={data.recent_draws} /></section>
     </div>
-    <section className="panel"><header><h2>Latest ledger movements</h2><span>TRACEABLE CAS</span></header><TransactionTable rows={data.recent_transactions} /></section>
+    <section className="panel"><header><h2>Последние операции</h2><span>ПРОВЕРЯЕМЫЙ ЖУРНАЛ CAS</span></header><TransactionTable rows={data.recent_transactions} /></section>
   </>;
 }
 
@@ -108,8 +137,6 @@ function PlayerCard({ player, onSaved }: { player: Player; onSaved: () => Promis
   const [amount, setAmount] = useState(String(player.balance));
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
-  const [webUsername, setWebUsername] = useState("");
-  const [webPassword, setWebPassword] = useState("");
   const save = async () => {
     setBusy(true);
     try {
@@ -118,19 +145,10 @@ function PlayerCard({ player, onSaved }: { player: Player; onSaved: () => Promis
       await onSaved();
     } finally { setBusy(false); }
   };
-  const saveWeb = async () => {
-    setBusy(true);
-    try {
-      await adminApi.configureWebAccount(player.id, webUsername, webPassword, reason);
-      setWebPassword("");
-      await onSaved();
-    } finally { setBusy(false); }
-  };
   return <article className="player-card">
-    <div className="player-head"><div className="avatar">{player.display_name.slice(0, 1)}</div><div><h3>{player.display_name}</h3><small>@{player.username ?? "no_username"} · TG {player.telegram_id ?? "—"}</small></div><Status active={player.is_active}>{player.is_active ? "ACTIVE" : "DISABLED"}</Status></div>
-    <div className="player-stats"><span><small>BALANCE</small><b>{cas(player.balance)}</b></span><span><small>TICKETS</small><b>{player.ticket_count}</b></span><span><small>SPENT</small><b>{cas(player.spent)}</b></span><span><small>WON</small><b>{cas(player.won)}</b></span><span><small>NET</small><b className={player.net >= 0 ? "positive" : "negative"}>{cas(player.net)}</b></span></div>
-    <div className="adjust"><label>New balance<input min="0" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} /></label><label>Mandatory reason<input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Why is this adjustment needed?" /></label><button disabled={busy || !reason.trim()} onClick={() => void save()}>SET VIA LEDGER</button></div>
-    <div className="adjust"><label>Web username<input value={webUsername} onChange={(e) => setWebUsername(e.target.value)} /></label><label>New Web password<input type="password" value={webPassword} onChange={(e) => setWebPassword(e.target.value)} /></label><button disabled={busy || !reason.trim() || webUsername.length < 3 || webPassword.length < 12} onClick={() => void saveWeb()}>SET WEB ACCESS</button></div>
+    <div className="player-head"><div className="avatar">{player.display_name.slice(0, 1)}</div><div><h3>{player.display_name}</h3><small>@{player.username ?? "без_логина"} · TG {player.telegram_id ?? "—"}</small></div><Status active={player.is_active}>{player.is_active ? "АКТИВЕН" : "ОТКЛЮЧЁН"}</Status></div>
+    <div className="player-stats"><span><small>БАЛАНС</small><b>{cas(player.balance)}</b></span><span><small>БИЛЕТЫ</small><b>{player.ticket_count}</b></span><span><small>ПОТРАЧЕНО</small><b>{cas(player.spent)}</b></span><span><small>ВЫИГРАНО</small><b>{cas(player.won)}</b></span><span><small>ИТОГ</small><b className={player.net >= 0 ? "positive" : "negative"}>{cas(player.net)}</b></span></div>
+    <div className="adjust"><label>Новый баланс<input min="0" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} /></label><label>Обязательная причина<input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Почему требуется изменение?" /></label><button disabled={busy || !reason.trim()} onClick={() => void save()}>ИЗМЕНИТЬ ЧЕРЕЗ ЖУРНАЛ</button></div>
   </article>;
 }
 
@@ -139,29 +157,45 @@ function LotteryCard({ lottery, onSaved }: { lottery: Lottery; onSaved: () => Pr
   const [base, setBase] = useState(String(lottery.base_jackpot));
   const [reserve, setReserve] = useState(String(lottery.reserve));
   const [reason, setReason] = useState("");
-  const configure = async () => { await adminApi.configureLottery(lottery.id, Number(price), Number(base), reason); setReason(""); await onSaved(); };
-  const fundReserve = async () => { await adminApi.setReserve(lottery.id, Number(reserve), reason); setReason(""); await onSaved(); };
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const saveAll = async () => {
+    setBusy(true);
+    setMessage("");
+    try {
+      await adminApi.configureLottery(lottery.id, Number(price), Number(base), reason);
+      await adminApi.setReserve(lottery.id, Number(reserve), reason);
+      setReason("");
+      setMessage("Цена билета, джекпот и резерв сохранены.");
+      await onSaved();
+    } catch (saveError) {
+      setMessage(saveError instanceof Error ? saveError.message : "Не удалось сохранить настройки.");
+    } finally {
+      setBusy(false);
+    }
+  };
   return <article className="lottery-card">
-    <header><div><small>{lottery.kind}</small><h2>{lottery.name}</h2></div><Status active={lottery.is_active}>{lottery.is_active ? "ACTIVE" : "INACTIVE"}</Status></header>
-    <div className="fund-matrix"><span><small>CURRENT JACKPOT</small><b>{cas(lottery.current_jackpot)}</b></span><span><small>DISTRIBUTION</small><b>{cas(lottery.distribution_fund)}</b></span><span><small>NEXT DRAW</small><b>{lottery.next_draw_number ? `#${drawNumber(lottery.next_draw_number)}` : "—"}</b><em>{date(lottery.next_draw_at)}</em></span></div>
-    <div className="config-grid"><label>Ticket price, CAS<input type="number" min="1" value={price} onChange={(e) => setPrice(e.target.value)} /></label><label>Base jackpot, CAS<input type="number" min="0" value={base} onChange={(e) => setBase(e.target.value)} /></label><label>Reserve, CAS<input type="number" min="0" value={reserve} onChange={(e) => setReserve(e.target.value)} /></label></div>
-    <label className="reason">Mandatory audit reason<input value={reason} onChange={(e) => setReason(e.target.value)} /></label>
-    <div className="actions"><button disabled={!reason.trim()} onClick={() => void configure()}>SAVE CONFIGURATION</button><button disabled={!reason.trim()} onClick={() => void fundReserve()}>ADJUST RESERVE VIA LEDGER</button></div>
-    <footer>Schedule: <code>{JSON.stringify(lottery.schedule)}</code> · cutoff {lottery.sales_cutoff_minutes ?? "—"} min. Schedule and payout editing are locked pending approved rules.</footer>
+    <header><div><small>{lottery.kind === "WEEKLY" ? "ЕЖЕНЕДЕЛЬНАЯ" : "ЕЖЕДНЕВНАЯ"}</small><h2>{lottery.name}</h2></div><Status active={lottery.is_active}>{lottery.is_active ? "АКТИВНА" : "НЕАКТИВНА"}</Status></header>
+    <div className="fund-matrix"><span><small>ТЕКУЩИЙ ДЖЕКПОТ</small><b>{cas(lottery.current_jackpot)}</b></span><span><small>ФОНД РАСПРЕДЕЛЕНИЯ</small><b>{cas(lottery.distribution_fund)}</b></span><span><small>СЛЕДУЮЩИЙ ТИРАЖ</small><b>{lottery.next_draw_number ? `№${drawNumber(lottery.next_draw_number)}` : "—"}</b><em>{date(lottery.next_draw_at)}</em></span></div>
+    <div className="config-grid"><label>Цена билета, CAS<input type="number" min="1" value={price} onChange={(e) => setPrice(e.target.value)} /></label><label>Базовый джекпот, CAS<input type="number" min="0" value={base} onChange={(e) => setBase(e.target.value)} /></label><label>Резерв, CAS<input type="number" min="0" value={reserve} onChange={(e) => setReserve(e.target.value)} /></label></div>
+    <label className="reason">Обязательная причина для аудита<input value={reason} onChange={(e) => setReason(e.target.value)} /></label>
+    <div className="actions"><button disabled={busy || !reason.trim()} onClick={() => void saveAll()}>{busy ? "СОХРАНЯЕМ…" : "СОХРАНИТЬ ВСЕ НАСТРОЙКИ"}</button></div>
+    {message && <p className={message.includes("сохранены") ? "save-message" : "save-message error"}>{message}</p>}
+    <footer>Расписание: <code>{schedule(lottery.schedule)}</code> · закрытие продаж за {lottery.sales_cutoff_minutes ?? "—"} мин. Изменение расписания и выплат заблокировано до утверждения правил.</footer>
   </article>;
 }
 
 function DrawTable({ draws, onOpen }: { draws: Draw[]; onOpen?: (id: string) => void }) {
-  return <div className="table-wrap"><table><thead><tr><th>Lottery / Draw</th><th>Status</th><th>Schedule</th><th>Numbers</th><th>Tickets</th><th>Sales / Payout</th></tr></thead><tbody>{draws.map((draw) => <tr key={draw.id} onClick={() => onOpen?.(draw.id)} className={onOpen ? "clickable" : ""}><td><b>{draw.lottery_code.toUpperCase()}</b> #{drawNumber(draw.public_number)}</td><td><span className={`tag ${draw.status.toLowerCase()}`}>{draw.status}</span></td><td>{date(draw.scheduled_at)}</td><td><div className="number-line">{draw.winning_numbers?.map((n) => <i key={n}>{n}</i>) ?? "—"}</div></td><td>{draw.ticket_count}</td><td>{cas(draw.total_sales)}<small>{cas(draw.total_payout)}</small></td></tr>)}</tbody></table></div>;
+  return <div className="table-wrap"><table><thead><tr><th>Лотерея / тираж</th><th>Статус</th><th>По расписанию</th><th>Числа</th><th>Билеты</th><th>Продажи / выплаты</th></tr></thead><tbody>{draws.map((draw) => <tr key={draw.id} onClick={() => onOpen?.(draw.id)} className={onOpen ? "clickable" : ""}><td><b>{draw.lottery_name}</b> №{drawNumber(draw.public_number)}</td><td><span className={`tag ${draw.status.toLowerCase()}`}>{translated(draw.status, drawStatuses)}</span></td><td>{date(draw.scheduled_at)}</td><td><div className="number-line">{draw.winning_numbers?.map((n) => <i key={n}>{n}</i>) ?? "—"}</div></td><td>{draw.ticket_count}</td><td>{cas(draw.total_sales)}<small>{cas(draw.total_payout)}</small></td></tr>)}</tbody></table></div>;
 }
 
 function TransactionTable({ rows }: { rows: Transaction[] }) {
-  return <div className="table-wrap"><table><thead><tr><th>Timestamp</th><th>Type</th><th>Account</th><th>Delta</th><th>Before → After</th><th>Trace</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><td>{date(row.created_at)}</td><td><span className="tag">{row.type}</span></td><td>{row.account_kind}</td><td className={row.amount >= 0 ? "positive" : "negative"}>{row.amount > 0 ? "+" : ""}{cas(row.amount)}</td><td>{cas(row.balance_before)} → {cas(row.balance_after)}</td><td><code>{row.operation_id.slice(0, 8)}</code></td></tr>)}</tbody></table></div>;
+  return <div className="table-wrap"><table><thead><tr><th>Время</th><th>Тип операции</th><th>Счёт</th><th>Изменение</th><th>До → После</th><th>Код операции</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><td>{date(row.created_at)}</td><td><span className="tag">{translated(row.type, transactionTypes)}</span></td><td>{translated(row.account_kind, accountKinds)}</td><td className={row.amount >= 0 ? "positive" : "negative"}>{row.amount > 0 ? "+" : ""}{cas(row.amount)}</td><td>{cas(row.balance_before)} → {cas(row.balance_after)}</td><td><code>{row.operation_id.slice(0, 8)}</code></td></tr>)}</tbody></table></div>;
 }
 
 function DrawDetailPanel({ detail, onClose }: { detail: DrawDetail; onClose: () => void }) {
   const draw = detail.draw;
-  return <div className="drawer"><button className="close" onClick={onClose}>×</button><small>IMMUTABLE DRAW RECORD</small><h2>{draw.lottery_code.toUpperCase()} #{drawNumber(draw.public_number)}</h2><div className="winning">{draw.winning_numbers?.map((n) => <i key={n}>{n}</i>) ?? "NO RESULT"}</div><dl className="detail-list"><dt>Status</dt><dd>{draw.status}</dd><dt>Scheduled</dt><dd>{date(draw.scheduled_at)}</dd><dt>Executed</dt><dd>{date(draw.executed_at)}</dd><dt>Sales</dt><dd>{cas(draw.total_sales)}</dd><dt>Payout</dt><dd>{cas(draw.total_payout)}</dd><dt>Reserve used</dt><dd>{cas(draw.reserve_used)}</dd><dt>Correlation</dt><dd><code>{draw.correlation_id}</code></dd></dl><h3>Tickets ({detail.tickets.length})</h3>{detail.tickets.map((ticket) => <div className="ticket-row" key={ticket.id}><b>#{drawNumber(ticket.public_number)}</b><span>{ticket.numbers.join(" · ")}</span><span>{ticket.matches ?? "—"} match</span><strong>{cas(ticket.prize_amount)}</strong></div>)}</div>;
+  return <div className="drawer"><button aria-label="Закрыть" className="close" onClick={onClose}>×</button><small>НЕИЗМЕНЯЕМАЯ ЗАПИСЬ ТИРАЖА</small><h2>{draw.lottery_name} №{drawNumber(draw.public_number)}</h2><div className="winning">{draw.winning_numbers?.map((n) => <i key={n}>{n}</i>) ?? "НЕТ РЕЗУЛЬТАТА"}</div><dl className="detail-list"><dt>Статус</dt><dd>{translated(draw.status, drawStatuses)}</dd><dt>По расписанию</dt><dd>{date(draw.scheduled_at)}</dd><dt>Проведён</dt><dd>{date(draw.executed_at)}</dd><dt>Продажи</dt><dd>{cas(draw.total_sales)}</dd><dt>Выплачено</dt><dd>{cas(draw.total_payout)}</dd><dt>Использовано из резерва</dt><dd>{cas(draw.reserve_used)}</dd><dt>Код связи</dt><dd><code>{draw.correlation_id}</code></dd></dl><h3>Билеты ({detail.tickets.length})</h3>{detail.tickets.map((ticket) => <div className="ticket-row" key={ticket.id}><b>№{drawNumber(ticket.public_number)}</b><span>{ticket.numbers.join(" · ")}</span><span>совпадений: {ticket.matches ?? "—"}</span><strong>{cas(ticket.prize_amount)}</strong></div>)}</div>;
 }
 
 export default function App() {
@@ -197,7 +231,7 @@ export default function App() {
       }
     } catch (reason) {
       if (reason instanceof ApiError && reason.status === 401) setSession(null);
-      setError(reason instanceof Error ? reason.message : "Admin request failed.");
+      setError(reason instanceof Error ? reason.message : "Не удалось выполнить запрос администратора.");
     } finally { setLoading(false); }
   }, []);
 
@@ -207,21 +241,21 @@ export default function App() {
     return () => window.clearTimeout(task);
   }, [session, view, load]);
 
-  if (checking) return <main className="boot">K-LOTO // VERIFYING SESSION</main>;
+  if (checking) return <main className="boot">K-LOTO // ПРОВЕРКА СЕССИИ</main>;
   if (!session) return <Login onAuthenticated={setSession} />;
 
-  const title = navigation.find((item) => item.id === view)?.label ?? "Control";
+  const title = navigation.find((item) => item.id === view)?.label ?? "Управление";
   return <div className="admin-shell">
-    <aside><div className="brand"><span>K</span><div>K-LOTO<small>CONTROL SYSTEM</small></div></div><nav>{navigation.map((item) => <button className={view === item.id ? "active" : ""} key={item.id} onClick={() => setView(item.id)}><small>{item.code}</small>{item.label}</button>)}</nav><div className="operator"><small>AUTHENTICATED OPERATOR</small><b>{session.username}</b><button onClick={() => void adminApi.logout().finally(() => setSession(null))}>TERMINATE SESSION</button></div></aside>
-    <main className="workspace"><header className="topbar"><div><small>K-LOTO / ADMIN / {view.toUpperCase()}</small><h1>{title}</h1></div><span className="utc">UTC {new Date().toISOString().slice(11, 19)}</span></header>
-      {error && <div className="error banner">{error}</div>}{loading && <div className="loading">QUERYING SYSTEM…</div>}
+    <aside><div className="brand"><span>K</span><div>K-LOTO<small>СИСТЕМА УПРАВЛЕНИЯ</small></div></div><nav>{navigation.map((item) => <button className={view === item.id ? "active" : ""} key={item.id} onClick={() => setView(item.id)}><small>{item.code}</small>{item.label}</button>)}</nav><div className="operator"><small>АДМИНИСТРАТОР</small><b>{session.username}</b><button onClick={() => void adminApi.logout().finally(() => setSession(null))}>ЗАВЕРШИТЬ СЕАНС</button></div></aside>
+    <main className="workspace"><header className="topbar"><div><small>K-LOTO / АДМИНИСТРАТОР / {title.toUpperCase()}</small><h1>{title}</h1></div><span className="utc">МСК {new Intl.DateTimeFormat("ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Europe/Moscow" }).format(new Date())}</span></header>
+      {error && <div className="error banner">{error}</div>}{loading && <div className="loading">ЗАГРУЖАЕМ ДАННЫЕ…</div>}
       {!loading && view === "dashboard" && dashboard && <DashboardView data={dashboard} />}
       {!loading && view === "players" && <section className="stack">{players.map((player) => <PlayerCard key={player.id} player={player} onSaved={() => load("players")} />)}</section>}
-      {!loading && view === "lotteries" && <section className="stack">{lotteries.map((lottery) => <LotteryCard key={lottery.id} lottery={lottery} onSaved={() => load("lotteries")} />)}</section>}
-      {!loading && view === "draws" && <section className="panel"><header><h2>Permanent draw archive</h2><span>READ ONLY</span></header><DrawTable draws={draws} onOpen={(id) => void adminApi.draw(id).then(setDrawDetail)} /></section>}
-      {!loading && view === "ledger" && <><TransactionFilters onApply={(query) => void adminApi.transactions(query).then(setTransactions).catch((reason: Error) => setError(reason.message))} /><section className="panel"><header><h2>Immutable CAS ledger</h2><span>{transactions.length} RECORDS</span></header><TransactionTable rows={transactions} /></section></>}
+      {!loading && view === "lotteries" && <section className="stack">{lotteries.filter((lottery) => lottery.is_active).map((lottery) => <LotteryCard key={lottery.id} lottery={lottery} onSaved={() => load("lotteries")} />)}</section>}
+      {!loading && view === "draws" && <section className="panel"><header><h2>Постоянный архив тиражей</h2><span>ТОЛЬКО ПРОСМОТР</span></header><DrawTable draws={draws} onOpen={(id) => void adminApi.draw(id).then(setDrawDetail)} /></section>}
+      {!loading && view === "ledger" && <><TransactionFilters onApply={(query) => void adminApi.transactions(query).then(setTransactions).catch((reason: Error) => setError(reason.message))} /><section className="panel"><header><h2>Неизменяемый журнал CAS</h2><span>ЗАПИСЕЙ: {transactions.length}</span></header><TransactionTable rows={transactions} /></section></>}
       {!loading && view === "statistics" && <StatisticsView lotteries={lotteries} rows={statistics} onLottery={(id) => void adminApi.statistics(id).then(setStatistics)} />}
-      {!loading && view === "audit" && <section className="panel"><header><h2>Administrator audit</h2><span>PERMANENT</span></header><div className="audit-list">{audit.map((item) => <article key={item.id}><time>{date(item.created_at)}</time><b>{item.action} · {item.entity_type}</b><p>{item.reason ?? "No reason"}</p><code>{JSON.stringify(item.old_values)} → {JSON.stringify(item.new_values)}</code></article>)}</div></section>}
+      {!loading && view === "audit" && <section className="panel"><header><h2>Аудит действий администратора</h2><span>ХРАНИТСЯ ПОСТОЯННО</span></header><div className="audit-list">{audit.map((item) => <article key={item.id}><time>{date(item.created_at)}</time><b>{translated(item.action, auditActions)} · {translated(item.entity_type, entityTypes)}</b><p>{item.reason ?? "Причина не указана"}</p><code>{JSON.stringify(item.old_values)} → {JSON.stringify(item.new_values)}</code></article>)}</div></section>}
     </main>{drawDetail && <DrawDetailPanel detail={drawDetail} onClose={() => setDrawDetail(null)} />}
   </div>;
 }
@@ -229,9 +263,10 @@ export default function App() {
 function TransactionFilters({ onApply }: { onApply: (query: string) => void }) {
   const [values, setValues] = useState({ type: "", user_id: "", lottery_id: "", draw_id: "", ticket_id: "", date_from: "", date_to: "" });
   const apply = (event: FormEvent) => { event.preventDefault(); const params = new URLSearchParams(); Object.entries(values).forEach(([key, value]) => { if (value) params.set(key, key.startsWith("date_") ? new Date(value).toISOString() : value); }); onApply(params.toString()); };
-  return <form className="filters" onSubmit={apply}><select aria-label="Transaction type" value={values.type} onChange={(e) => setValues({ ...values, type: e.target.value })}><option value="">All transaction types</option>{["ADMIN_BALANCE_ADJUSTMENT", "TICKET_PURCHASE", "PRIZE_PAYOUT", "JACKPOT_PAYOUT", "RESERVE_ADJUSTMENT", "SYSTEM_ADJUSTMENT"].map((type) => <option key={type}>{type}</option>)}</select>{["user_id", "lottery_id", "draw_id", "ticket_id"].map((key) => <input key={key} placeholder={key} value={values[key as keyof typeof values]} onChange={(e) => setValues({ ...values, [key]: e.target.value })} />)}<input aria-label="From date" type="datetime-local" value={values.date_from} onChange={(e) => setValues({ ...values, date_from: e.target.value })} /><input aria-label="To date" type="datetime-local" value={values.date_to} onChange={(e) => setValues({ ...values, date_to: e.target.value })} /><button>APPLY FILTERS</button></form>;
+  const fields: Record<string, string> = { user_id: "ID игрока", lottery_id: "ID лотереи", draw_id: "ID тиража", ticket_id: "ID билета" };
+  return <form className="filters" onSubmit={apply}><select aria-label="Тип операции" value={values.type} onChange={(e) => setValues({ ...values, type: e.target.value })}><option value="">Все типы операций</option>{Object.keys(transactionTypes).map((type) => <option key={type} value={type}>{transactionTypes[type]}</option>)}</select>{Object.entries(fields).map(([key, label]) => <input key={key} placeholder={label} value={values[key as keyof typeof values]} onChange={(e) => setValues({ ...values, [key]: e.target.value })} />)}<input aria-label="Начальная дата" type="datetime-local" value={values.date_from} onChange={(e) => setValues({ ...values, date_from: e.target.value })} /><input aria-label="Конечная дата" type="datetime-local" value={values.date_to} onChange={(e) => setValues({ ...values, date_to: e.target.value })} /><button>ПРИМЕНИТЬ ФИЛЬТРЫ</button></form>;
 }
 
 function StatisticsView({ lotteries, rows, onLottery }: { lotteries: Lottery[]; rows: NumberStatistic[]; onLottery: (id: string) => void }) {
-  return <section className="panel"><header><h2>Number appearance intelligence</h2><select aria-label="Lottery" onChange={(e) => onLottery(e.target.value)}>{lotteries.map((lottery) => <option value={lottery.id} key={lottery.id}>{lottery.name}</option>)}</select></header><div className="stat-grid">{rows.map((row) => <article key={row.number}><i>{row.number}</i><strong>{row.appearances}</strong><small>appearances</small><div style={{ "--value": `${row.draw_percentage}%` } as CSSProperties}><span /></div><em>{row.draw_percentage}% · since last: {row.draws_since_last ?? "never"}</em></article>)}</div><p className="source-note">Calculated from immutable completed draw history. This view is not a stored source of truth.</p></section>;
+  return <section className="panel"><header><h2>Частота выпадения чисел</h2><select aria-label="Лотерея" onChange={(e) => onLottery(e.target.value)}>{lotteries.map((lottery) => <option value={lottery.id} key={lottery.id}>{lottery.name}</option>)}</select></header><div className="stat-grid">{rows.map((row) => <article key={row.number}><i>{row.number}</i><strong>{row.appearances}</strong><small>выпадений</small><div style={{ "--value": `${row.draw_percentage}%` } as CSSProperties}><span /></div><em>{row.draw_percentage}% · тиражей с последнего: {row.draws_since_last ?? "ещё не выпадало"}</em></article>)}</div><p className="source-note">Рассчитано по неизменяемой истории завершённых тиражей. Этот экран является аналитическим представлением, а не первичным источником данных.</p></section>;
 }

@@ -30,6 +30,7 @@ from k_loto.domain.errors import (
     InvalidTicket,
     NoAvailableDraw,
 )
+from k_loto.domain.lotteries import DAILY_LOTTERY_CODES, PLAYABLE_LOTTERY_CODES
 from k_loto.infrastructure.local_dev_auth import (
     LOCAL_DEV_COOKIE,
     is_loopback_authority,
@@ -298,6 +299,54 @@ async def purchase_daily_tickets(
     except ConfigurationError as error:
         raise HTTPException(
             status_code=503, detail="Daily is not configured."
+        ) from error
+    return PurchaseResponse(
+        operation_id=result.operation_id,
+        draw_id=result.draw_id,
+        ticket_ids=list(result.ticket_ids),
+        total_cost=result.total_cost,
+        balance_after=result.balance_after,
+        already_processed=result.already_processed,
+    )
+
+
+@router.post(
+    "/lotteries/{lottery_code}/purchases",
+    response_model=PurchaseResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def purchase_lottery_tickets(
+    lottery_code: str,
+    request: PurchaseRequest,
+    user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> PurchaseResponse:
+    if lottery_code not in PLAYABLE_LOTTERY_CODES:
+        raise HTTPException(status_code=404, detail="Lottery is not available.")
+    service = (
+        DailyTicketPurchaseService(session, lottery_code=lottery_code)
+        if lottery_code in DAILY_LOTTERY_CODES
+        else WeeklyTicketPurchaseService(session, lottery_code=lottery_code)
+    )
+    try:
+        result = await service.purchase(
+            user_id=user.id,
+            combinations=[list(value) for value in request.combinations],
+            idempotency_key=request.idempotency_key,
+        )
+    except InsufficientBalance as error:
+        raise HTTPException(
+            status_code=402, detail="Insufficient CAS balance."
+        ) from error
+    except InvalidTicket as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    except NoAvailableDraw as error:
+        raise HTTPException(
+            status_code=409, detail="No draw is open for sales."
+        ) from error
+    except ConfigurationError as error:
+        raise HTTPException(
+            status_code=503, detail="Lottery is not configured."
         ) from error
     return PurchaseResponse(
         operation_id=result.operation_id,

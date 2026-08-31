@@ -29,7 +29,7 @@ class NotificationRepository(Protocol):
 
 
 class NotificationSender(Protocol):
-    async def send(self, chat_id: int, text: str) -> None: ...
+    async def send(self, notification: ClaimedNotification, text: str) -> None: ...
 
 
 class NotificationFormatter(Protocol):
@@ -60,7 +60,7 @@ class NotificationDispatcher:
             return True
         try:
             text = self._formatter.format(notification)
-            await self._sender.send(notification.chat_id, text)
+            await self._sender.send(notification, text)
         except Exception:
             await self._repository.mark_failed(
                 notification.id, now, "telegram_send_failed"

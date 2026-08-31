@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from k_loto.application.welcome import WelcomeGrantService
 from k_loto.infrastructure.database.models import Balance, User
 
 
@@ -63,5 +64,8 @@ class TelegramIdentityService:
             )
             if balance is None:
                 raise RuntimeError("Telegram user balance was not created.")
+            grant = await WelcomeGrantService.ensure_in_transaction(
+                self._session, user_id
+            )
 
-        return UserProfile(user_id, clean_name, balance)
+        return UserProfile(user_id, clean_name, grant.balance)

@@ -32,46 +32,63 @@ beforeEach(() => {
   vi.mocked(adminApi.statistics).mockResolvedValue([]);
   vi.mocked(adminApi.audit).mockResolvedValue([]);
   vi.mocked(adminApi.setBalance).mockResolvedValue({ amount: 9_000, already_processed: false });
+  vi.mocked(adminApi.configureLottery).mockResolvedValue(lottery);
+  vi.mocked(adminApi.setReserve).mockResolvedValue({ amount: 100_000, already_processed: false });
 });
 
-it("restores an authenticated session and renders system truth", async () => {
+it("restores an authenticated session and renders Russian system truth", async () => {
   render(<App />);
 
-  expect(await screen.findByText("DATABASE ONLINE")).toBeInTheDocument();
+  expect(await screen.findByText("БАЗА ДАННЫХ РАБОТАЕТ")).toBeInTheDocument();
   expect(screen.getByText("12 000 CAS")).toBeInTheDocument();
-  expect(screen.getByText("v0.8.0 · uptime 2m")).toBeInTheDocument();
+  expect(screen.getByText("v0.8.0 · работает 2 мин.")).toBeInTheDocument();
 });
 
 it("shows login and authenticates when no session exists", async () => {
   vi.mocked(adminApi.session).mockRejectedValueOnce(new Error("unauthorized"));
   render(<App />);
 
-  fireEvent.change(await screen.findByLabelText("OPERATOR ID"), { target: { value: "owner" } });
-  fireEvent.change(screen.getByLabelText("PASSPHRASE"), { target: { value: "password" } });
-  fireEvent.click(screen.getByRole("button", { name: "ENTER CONTROL" }));
+  fireEvent.change(await screen.findByLabelText("ЛОГИН АДМИНИСТРАТОРА"), { target: { value: "owner" } });
+  fireEvent.change(screen.getByLabelText("ПАРОЛЬ"), { target: { value: "password" } });
+  fireEvent.click(screen.getByRole("button", { name: "ВОЙТИ" }));
 
   await waitFor(() => expect(adminApi.login).toHaveBeenCalledWith("owner", "password"));
-  expect(await screen.findByText("DATABASE ONLINE")).toBeInTheDocument();
+  expect(await screen.findByText("БАЗА ДАННЫХ РАБОТАЕТ")).toBeInTheDocument();
 });
 
 it("adjusts a player balance only with a mandatory reason", async () => {
   render(<App />);
-  fireEvent.click(await screen.findByRole("button", { name: /Players/ }));
+  fireEvent.click(await screen.findByRole("button", { name: /Игроки/ }));
 
-  const save = await screen.findByRole("button", { name: "SET VIA LEDGER" });
+  const save = await screen.findByRole("button", { name: "ИЗМЕНИТЬ ЧЕРЕЗ ЖУРНАЛ" });
   expect(save).toBeDisabled();
-  fireEvent.change(screen.getByLabelText("New balance"), { target: { value: "9000" } });
-  fireEvent.change(screen.getByLabelText("Mandatory reason"), { target: { value: "Test allocation" } });
+  fireEvent.change(screen.getByLabelText("Новый баланс"), { target: { value: "9000" } });
+  fireEvent.change(screen.getByLabelText("Обязательная причина"), { target: { value: "Тестовое начисление" } });
   fireEvent.click(save);
 
-  await waitFor(() => expect(adminApi.setBalance).toHaveBeenCalledWith("player", 9000, "Test allocation"));
+  await waitFor(() => expect(adminApi.setBalance).toHaveBeenCalledWith("player", 9000, "Тестовое начисление"));
 });
 
 it("exposes immutable archive, ledger, statistics and audit navigation", async () => {
   render(<App />);
-  await screen.findByText("DATABASE ONLINE");
+  await screen.findByText("БАЗА ДАННЫХ РАБОТАЕТ");
 
-  for (const label of ["Draw archive", "CAS ledger", "Number intel", "Admin audit"]) {
+  for (const label of ["Архив тиражей", "Журнал CAS", "Статистика чисел", "Аудит действий"]) {
     expect(screen.getByRole("button", { name: new RegExp(label) })).toBeInTheDocument();
   }
+});
+
+it("saves lottery price, jackpot and reserve with one action", async () => {
+  render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /Лотереи/ }));
+
+  fireEvent.change(await screen.findByLabelText("Цена билета, CAS"), { target: { value: "22222" } });
+  fireEvent.change(screen.getByLabelText("Базовый джекпот, CAS"), { target: { value: "2811996" } });
+  fireEvent.change(screen.getByLabelText("Резерв, CAS"), { target: { value: "9999999999" } });
+  fireEvent.change(screen.getByLabelText("Обязательная причина для аудита"), { target: { value: "Настройки владельца" } });
+  fireEvent.click(screen.getByRole("button", { name: "СОХРАНИТЬ ВСЕ НАСТРОЙКИ" }));
+
+  await waitFor(() => expect(adminApi.configureLottery).toHaveBeenCalledWith("lottery", 22222, 2811996, "Настройки владельца"));
+  expect(adminApi.setReserve).toHaveBeenCalledWith("lottery", 9999999999, "Настройки владельца");
+  expect(await screen.findByText("Цена билета, джекпот и резерв сохранены.")).toBeInTheDocument();
 });

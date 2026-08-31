@@ -1,0 +1,50 @@
+"""Stable public lottery identities and draw presentation metadata."""
+
+from dataclasses import dataclass
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+from k_loto.domain.enums import LotteryKind
+
+
+@dataclass(frozen=True, slots=True)
+class LotteryDefinition:
+    code: str
+    name: str
+    kind: LotteryKind
+    draw_time: str
+
+
+LOTTERY_DEFINITIONS = (
+    LotteryDefinition("weekly", "ЛСД-лото", LotteryKind.WEEKLY, "20:00"),
+    LotteryDefinition("pll", "ПЛЛ-лото", LotteryKind.DAILY, "02:22"),
+    LotteryDefinition("pss", "ПСС-Лото", LotteryKind.DAILY, "12:00"),
+    LotteryDefinition("khan", "ХАН-Лото", LotteryKind.DAILY, "18:00"),
+)
+
+PLAYABLE_LOTTERY_CODES = frozenset(item.code for item in LOTTERY_DEFINITIONS)
+DAILY_LOTTERY_CODES = frozenset(
+    item.code for item in LOTTERY_DEFINITIONS if item.kind == LotteryKind.DAILY
+)
+
+MOSCOW = ZoneInfo("Europe/Moscow")
+DAILY_SLOT_NAMES = {
+    (2, 22): "ПЛЛ-лото",
+    (12, 0): "ПСС-лото",
+    (18, 0): "ХАН-лото",
+}
+
+
+def daily_draw_name(scheduled_at: datetime) -> str:
+    """Return the immutable public label for a Moscow daily draw slot."""
+    local = scheduled_at.astimezone(MOSCOW)
+    return DAILY_SLOT_NAMES.get((local.hour, local.minute), "Ежедневная лотерея")
+
+
+def draw_display_name(
+    lottery_code: str, lottery_name: str, scheduled_at: datetime
+) -> str:
+    """Present unified Daily draws by their slot name and legacy draws as stored."""
+    if lottery_code == "daily":
+        return daily_draw_name(scheduled_at)
+    return lottery_name

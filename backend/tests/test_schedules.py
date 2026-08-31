@@ -15,6 +15,7 @@ from k_loto.application.weekly import SettlementResult, WeeklySettlementService
 from k_loto.domain.enums import DrawStatus, LotteryKind
 from k_loto.domain.schedules import (
     next_daily_draw,
+    next_draw_at,
     next_weekly_draw,
     sales_close_at,
 )
@@ -32,8 +33,11 @@ class TransactionContext:
 
 
 class FakeSession:
-    def __init__(self, scalar_values: list[Any]) -> None:
+    def __init__(
+        self, scalar_values: list[Any], scalar_rows: list[list[Any]] | None = None
+    ) -> None:
         self.scalar_values = iter(scalar_values)
+        self.scalar_rows = iter(scalar_rows or [])
         self.added: list[Any] = []
 
     def begin(self) -> TransactionContext:
@@ -41,6 +45,9 @@ class FakeSession:
 
     async def scalar(self, _statement: object) -> Any:
         return next(self.scalar_values)
+
+    async def scalars(self, _statement: object) -> Any:
+        return SimpleNamespace(all=lambda: next(self.scalar_rows))
 
     def add(self, item: Any) -> None:
         self.added.append(item)
@@ -82,7 +89,8 @@ def test_weekly_schedule_is_strictly_next_after_exact_draw_time() -> None:
     ("after", "expected"),
     [
         (local(2026, 8, 14, 1, 0), local(2026, 8, 14, 2, 22)),
-        (local(2026, 8, 14, 2, 22), local(2026, 8, 14, 18, 0)),
+        (local(2026, 8, 14, 2, 22), local(2026, 8, 14, 12, 0)),
+        (local(2026, 8, 14, 12, 0), local(2026, 8, 14, 18, 0)),
         (local(2026, 8, 14, 18, 0), local(2026, 8, 15, 2, 22)),
     ],
 )
@@ -90,11 +98,35 @@ def test_daily_confirmed_slots(after: datetime, expected: datetime) -> None:
     assert next_daily_draw(after).astimezone(MOSCOW) == expected
 
 
-def test_daily_sales_close_two_minutes_before_both_slots() -> None:
-    for scheduled in (local(2026, 8, 14, 2, 22), local(2026, 8, 14, 18, 0)):
+def test_daily_sales_close_two_minutes_before_all_slots() -> None:
+    for scheduled in (
+        local(2026, 8, 14, 2, 22),
+        local(2026, 8, 14, 12, 0),
+        local(2026, 8, 14, 18, 0),
+    ):
         assert sales_close_at(LotteryKind.DAILY, scheduled.astimezone(UTC)).astimezone(
             MOSCOW
         ) == scheduled - timedelta(minutes=2)
+
+
+@pytest.mark.parametrize(
+    ("draw_time", "expected"),
+    [
+        ("02:22", local(2026, 8, 15, 2, 22)),
+        ("12:00", local(2026, 8, 15, 12, 0)),
+        ("18:00", local(2026, 8, 14, 18, 0)),
+    ],
+)
+def test_named_daily_lotteries_use_independent_moscow_slots(
+    draw_time: str, expected: datetime
+) -> None:
+    scheduled = next_draw_at(
+        LotteryKind.DAILY,
+        local(2026, 8, 14, 13, 0),
+        {"draw_time": draw_time},
+    )
+
+    assert scheduled.astimezone(MOSCOW) == expected
 
 
 def test_schedule_rejects_naive_server_time() -> None:
@@ -118,6 +150,43 @@ def weekly_lottery() -> Lottery:
         next_draw_number=7,
         next_ticket_number=1,
     )
+
+
+def daily_lottery() -> Lottery:
+    return Lottery(
+        id=UUID(int=101),
+        code="daily",
+        name="Ежедневная лотерея",
+        kind=LotteryKind.DAILY,
+        numbers_to_pick=4,
+        max_number=15,
+        ticket_price=24_000,
+        timezone="Europe/Moscow",
+        schedule={"slots": ["02:22", "12:00", "18:00"]},
+        sales_cutoff_minutes=2,
+        is_active=True,
+        next_draw_number=30,
+        next_ticket_number=1,
+    )
+
+
+async def test_daily_scheduler_keeps_all_three_named_slots_ready() -> None:
+    lottery = daily_lottery()
+    fake = FakeSession([lottery, None], scalar_rows=[[]])
+
+    first, created = await DrawScheduleService(
+        cast(AsyncSession, fake)
+    ).ensure_next_draw(lottery.id, reference=local(2026, 8, 14, 1, 0).astimezone(UTC))
+
+    assert created
+    assert first is fake.added[0]
+    assert [draw.public_number for draw in fake.added] == [30, 31, 32]
+    assert [draw.scheduled_at.astimezone(MOSCOW) for draw in fake.added] == [
+        local(2026, 8, 14, 2, 22),
+        local(2026, 8, 14, 12, 0),
+        local(2026, 8, 14, 18, 0),
+    ]
+    assert lottery.next_draw_number == 33
 
 
 async def test_next_draw_creation_allocates_number_once() -> None:
@@ -200,6 +269,10 @@ async def test_recovery_processes_multiple_missed_draws_chronologically(
         cast(async_sessionmaker[AsyncSession], DummySessionFactory())
     )
     monkeypatch.setattr(
+        "k_loto.application.daily_transition.DailyTransitionService.finalize_if_ready",
+        AsyncMock(return_value=False),
+    )
+    monkeypatch.setattr(
         service, "_active_lottery_ids", AsyncMock(return_value=[lottery_id])
     )
     monkeypatch.setattr(
@@ -210,6 +283,7 @@ async def test_recovery_processes_multiple_missed_draws_chronologically(
     monkeypatch.setattr(
         service, "_lottery_id_for_draw", AsyncMock(return_value=lottery_id)
     )
+    monkeypatch.setattr(service, "_lottery_is_active", AsyncMock(return_value=True))
     monkeypatch.setattr(
         service, "_lottery_kind_for_draw", AsyncMock(return_value=LotteryKind.WEEKLY)
     )

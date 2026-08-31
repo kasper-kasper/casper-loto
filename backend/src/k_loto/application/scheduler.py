@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from k_loto.application.daily import DailySettlementService
+from k_loto.application.daily_transition import DailyTransitionService
 from k_loto.application.weekly import WeeklySettlementService
 from k_loto.domain.enums import DrawStatus, LotteryKind
 from k_loto.domain.schedules import next_draw_at, sales_close_at
@@ -24,7 +25,7 @@ class RecoveryReport:
 
 
 class DrawScheduleService:
-    """Prepare exactly one draw still open for sales under a lottery row lock."""
+    """Keep the required number of future draws ready under a lottery row lock."""
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
@@ -39,7 +40,7 @@ class DrawScheduleService:
             if lottery is None:
                 raise LookupError("Lottery does not exist.")
 
-            pending = await self._session.scalar(
+            pending_query = (
                 select(Draw)
                 .where(
                     Draw.lottery_id == lottery.id,
@@ -47,10 +48,19 @@ class DrawScheduleService:
                     Draw.sales_close_at > reference,
                 )
                 .order_by(Draw.scheduled_at)
-                .limit(1)
             )
-            if pending is not None:
-                return pending, False
+            if lottery.kind == LotteryKind.WEEKLY:
+                pending = await self._session.scalar(pending_query.limit(1))
+                if pending is not None:
+                    return pending, False
+                pending_draws: list[Draw] = []
+                target = 1
+            else:
+                pending_draws = list((await self._session.scalars(pending_query)).all())
+                configured_slots = lottery.schedule.get("slots", [])
+                target = max(len(configured_slots), 1)
+                if len(pending_draws) >= target:
+                    return pending_draws[0], False
 
             latest = await self._session.scalar(
                 select(Draw)
@@ -59,23 +69,32 @@ class DrawScheduleService:
                 .limit(1)
             )
             schedule_base = latest.scheduled_at if latest is not None else reference
-            scheduled_at = next_draw_at(lottery.kind, schedule_base)
-            draw = Draw(
-                id=uuid4(),
-                lottery_id=lottery.id,
-                public_number=lottery.next_draw_number,
-                status=DrawStatus.SCHEDULED,
-                scheduled_at=scheduled_at,
-                sales_close_at=sales_close_at(lottery.kind, scheduled_at),
-                correlation_id=uuid4(),
-                ticket_count=0,
-                total_sales=0,
-                total_payout=0,
-                reserve_used=0,
-            )
-            lottery.next_draw_number += 1
-            self._session.add(draw)
-        return draw, True
+            created: list[Draw] = []
+            while len(pending_draws) < target:
+                scheduled_at = next_draw_at(
+                    lottery.kind, schedule_base, lottery.schedule
+                )
+                draw = Draw(
+                    id=uuid4(),
+                    lottery_id=lottery.id,
+                    public_number=lottery.next_draw_number,
+                    status=DrawStatus.SCHEDULED,
+                    scheduled_at=scheduled_at,
+                    sales_close_at=sales_close_at(
+                        lottery.kind, scheduled_at, lottery.sales_cutoff_minutes
+                    ),
+                    correlation_id=uuid4(),
+                    ticket_count=0,
+                    total_sales=0,
+                    total_payout=0,
+                    reserve_used=0,
+                )
+                lottery.next_draw_number += 1
+                self._session.add(draw)
+                pending_draws.append(draw)
+                created.append(draw)
+                schedule_base = scheduled_at
+        return created[0], True
 
 
 class DrawRecoveryService:
@@ -130,10 +149,20 @@ class DrawRecoveryService:
             raise LookupError("Draw lottery disappeared from business history.")
         return kind
 
+    async def _lottery_is_active(self, lottery_id: UUID) -> bool:
+        async with self._session_factory() as session:
+            active = await session.scalar(
+                select(Lottery.is_active).where(Lottery.id == lottery_id)
+            )
+        return bool(active)
+
     async def reconcile(self, *, now: datetime | None = None) -> RecoveryReport:
         timestamp = now or datetime.now(UTC)
         prepared: list[UUID] = []
         settled: list[UUID] = []
+
+        async with self._session_factory() as session:
+            await DailyTransitionService(session).finalize_if_ready()
 
         for lottery_id in await self._active_lottery_ids():
             async with self._session_factory() as session:
@@ -155,7 +184,12 @@ class DrawRecoveryService:
             if not result.already_completed:
                 settled.append(due_draw_id)
 
+            async with self._session_factory() as session:
+                await DailyTransitionService(session).finalize_if_ready()
+
             lottery_id = await self._lottery_id_for_draw(due_draw_id)
+            if not await self._lottery_is_active(lottery_id):
+                continue
             async with self._session_factory() as session:
                 draw, created = await DrawScheduleService(session).ensure_next_draw(
                     lottery_id, reference=timestamp

@@ -49,5 +49,8 @@ export interface PurchaseResult {
 
 export interface CartTicket {
   id: string;
+  lotteryCode: string;
+  lotteryName: string;
+  price: number;
   numbers: number[];
 }

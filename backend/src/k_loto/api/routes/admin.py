@@ -73,16 +73,6 @@ class AdjustmentResponse(BaseModel):
     already_processed: bool
 
 
-class WebAccountRequest(BaseModel):
-    username: str = Field(min_length=3, max_length=128)
-    password: str = Field(min_length=12, max_length=256)
-    reason: str = Field(min_length=1, max_length=512)
-
-
-class WebAccountResponse(BaseModel):
-    username: str
-
-
 class LotteryConfigurationRequest(BaseModel):
     ticket_price: int = Field(gt=0)
     base_jackpot: int = Field(ge=0)
@@ -139,6 +129,7 @@ class DrawResponse(ApiModel):
     id: UUID
     lottery_id: UUID
     lottery_code: str
+    lottery_name: str
     public_number: int
     status: DrawStatus
     scheduled_at: datetime
@@ -390,31 +381,6 @@ async def adjust_player_balance(
     return AdjustmentResponse(
         amount=result.amount, already_processed=result.already_processed
     )
-
-
-@router.put("/players/{user_id}/web-account", response_model=WebAccountResponse)
-async def configure_player_web_account(
-    user_id: UUID,
-    payload: WebAccountRequest,
-    admin: Annotated[CurrentAdmin, Depends(require_admin_csrf)],
-    session: Annotated[AsyncSession, Depends(get_db_session)],
-) -> WebAccountResponse:
-    try:
-        username = await AdminMutationService(
-            session, admin.user_id
-        ).configure_web_account(
-            user_id,
-            username=payload.username,
-            password=payload.password,
-            reason=payload.reason,
-        )
-    except LookupError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from error
-    except ValueError as error:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(error)
-        ) from error
-    return WebAccountResponse(username=username)
 
 
 @router.get("/lotteries", response_model=list[LotteryResponse])

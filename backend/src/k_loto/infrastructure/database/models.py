@@ -149,6 +149,33 @@ class Lottery(TimestampMixin, Base):
     )
 
 
+class FavoriteCombination(TimestampMixin, Base):
+    """A reusable number selection owned by one player and lottery."""
+
+    __tablename__ = "favorite_combinations"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "lottery_id",
+            "numbers",
+            name="uq_favorite_user_lottery_numbers",
+        ),
+        CheckConstraint("cardinality(numbers) > 0", name="numbers_not_empty"),
+        Index("ix_favorite_user_lottery", "user_id", "lottery_id", "created_at"),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), primary_key=True, default=uuid4
+    )
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT")
+    )
+    lottery_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("lotteries.id", ondelete="RESTRICT")
+    )
+    numbers: Mapped[list[int]] = mapped_column(ARRAY(Integer))
+
+
 class Draw(TimestampMixin, Base):
     __tablename__ = "draws"
     __table_args__ = (

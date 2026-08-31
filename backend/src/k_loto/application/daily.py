@@ -14,6 +14,7 @@ class DailyTicketPurchaseService(WeeklyTicketPurchaseService):
     max_number = 15
     quote_purchase = staticmethod(quote_daily_purchase)
     lottery_label = "Daily"
+    default_lottery_code = "daily"
 
 
 class DailySettlementService(WeeklySettlementService):

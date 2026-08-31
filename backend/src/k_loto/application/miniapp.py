@@ -7,11 +7,19 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from k_loto.domain.enums import DrawStatus, LotteryKind, TicketStatus
+from k_loto.domain.enums import (
+    DrawStatus,
+    LedgerAccountKind,
+    LotteryKind,
+    TicketStatus,
+    TransactionType,
+)
+from k_loto.domain.lotteries import draw_display_name
 from k_loto.infrastructure.database.models import (
     Balance,
     Draw,
     JackpotAccount,
+    LedgerTransaction,
     Lottery,
     Ticket,
 )
@@ -69,6 +77,16 @@ class MiniAppDrawResult:
     total_payout: int
 
 
+@dataclass(frozen=True, slots=True)
+class PlayerActivity:
+    type: TransactionType
+    amount: int
+    balance_after: int
+    lottery_name: str | None
+    created_at: datetime
+    details: dict[str, object]
+
+
 class MiniAppQueryService:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
@@ -113,7 +131,11 @@ class MiniAppQueryService:
             lotteries.append(
                 MiniAppLottery(
                     code=lottery.code,
-                    name=lottery.name,
+                    name=(
+                        draw_display_name(lottery.code, lottery.name, draw.scheduled_at)
+                        if draw
+                        else lottery.name
+                    ),
                     kind=lottery.kind,
                     numbers_to_pick=lottery.numbers_to_pick,
                     max_number=lottery.max_number,
@@ -153,7 +175,9 @@ class MiniAppQueryService:
                 id=ticket.id,
                 public_number=ticket.public_number,
                 lottery_code=lottery.code,
-                lottery_name=lottery.name,
+                lottery_name=draw_display_name(
+                    lottery.code, lottery.name, draw.scheduled_at
+                ),
                 draw_number=draw.public_number,
                 scheduled_at=draw.scheduled_at,
                 numbers=tuple(ticket.numbers),
@@ -181,7 +205,7 @@ class MiniAppQueryService:
         return tuple(
             MiniAppDrawResult(
                 lottery.code,
-                lottery.name,
+                draw_display_name(lottery.code, lottery.name, draw.scheduled_at),
                 draw.public_number,
                 draw.scheduled_at,
                 draw.executed_at,
@@ -190,4 +214,31 @@ class MiniAppQueryService:
                 draw.total_payout,
             )
             for draw, lottery in rows
+        )
+
+    async def activity(
+        self, user_id: UUID, *, limit: int = 100
+    ) -> tuple[PlayerActivity, ...]:
+        rows = (
+            await self._session.execute(
+                select(LedgerTransaction, Lottery.name)
+                .outerjoin(Lottery, Lottery.id == LedgerTransaction.lottery_id)
+                .where(
+                    LedgerTransaction.user_id == user_id,
+                    LedgerTransaction.account_kind == LedgerAccountKind.USER_BALANCE,
+                )
+                .order_by(LedgerTransaction.created_at.desc())
+                .limit(limit)
+            )
+        ).all()
+        return tuple(
+            PlayerActivity(
+                transaction.type,
+                transaction.amount,
+                transaction.balance_after,
+                lottery_name,
+                transaction.created_at,
+                transaction.details,
+            )
+            for transaction, lottery_name in rows
         )

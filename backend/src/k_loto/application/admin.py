@@ -16,6 +16,7 @@ from k_loto.domain.enums import (
     LotteryKind,
     TransactionType,
 )
+from k_loto.domain.lotteries import draw_display_name
 from k_loto.infrastructure.database.models import (
     AdminAuditLog,
     Balance,
@@ -27,9 +28,7 @@ from k_loto.infrastructure.database.models import (
     LotteryReserve,
     Ticket,
     User,
-    WebAccount,
 )
-from k_loto.infrastructure.web_auth import hash_web_password, normalize_web_username
 
 ADMIN_NAMESPACE = UUID("8c48cd74-45ee-46eb-bf5b-e11944f87e3d")
 
@@ -94,6 +93,7 @@ class AdminDraw:
     id: UUID
     lottery_id: UUID
     lottery_code: str
+    lottery_name: str
     public_number: int
     status: DrawStatus
     scheduled_at: datetime
@@ -172,58 +172,6 @@ class AdminMutationService:
     def __init__(self, session: AsyncSession, admin_user_id: UUID) -> None:
         self._session = session
         self._admin_user_id = admin_user_id
-
-    async def configure_web_account(
-        self,
-        user_id: UUID,
-        *,
-        username: str,
-        password: str,
-        reason: str,
-    ) -> str:
-        normalized = normalize_web_username(username)
-        encoded = hash_web_password(password)
-        if not reason.strip() or len(reason) > 512:
-            raise ValueError("A reason of 1 to 512 characters is required.")
-        async with self._session.begin():
-            user = await self._session.scalar(
-                select(User).where(User.id == user_id).with_for_update()
-            )
-            if user is None or user.is_admin:
-                raise LookupError("Player does not exist.")
-            account = await self._session.scalar(
-                select(WebAccount)
-                .where(WebAccount.user_id == user_id)
-                .with_for_update()
-            )
-            old_values = (
-                {"username": account.username, "is_active": account.is_active}
-                if account is not None
-                else None
-            )
-            if account is None:
-                account = WebAccount(
-                    user_id=user_id,
-                    username=normalized,
-                    password_hash=encoded,
-                    is_active=True,
-                )
-                self._session.add(account)
-                action = AuditAction.CREATE
-            else:
-                account.username = normalized
-                account.password_hash = encoded
-                account.is_active = True
-                action = AuditAction.UPDATE
-            self._audit(
-                action,
-                "web_account",
-                user_id,
-                old_values,
-                {"username": normalized, "is_active": True},
-                reason,
-            )
-        return normalized
 
     async def set_user_balance(
         self,
@@ -365,8 +313,8 @@ class AdminMutationService:
                 raise LookupError("Lottery or jackpot account does not exist.")
             if lottery.kind == LotteryKind.WEEKLY and ticket_price % 4:
                 raise ValueError("Weekly ticket price must be divisible by 4 CAS.")
-            if lottery.kind == LotteryKind.DAILY and ticket_price % 10:
-                raise ValueError("Daily ticket price must be divisible by 10 CAS.")
+            if lottery.kind == LotteryKind.DAILY and ticket_price % 2:
+                raise ValueError("Daily ticket price must be even.")
             old_values = {
                 "ticket_price": lottery.ticket_price,
                 "base_jackpot": jackpot.base_amount,
@@ -625,9 +573,7 @@ class AdminQueryService:
         limit: int = 100,
         offset: int = 0,
     ) -> tuple[AdminDraw, ...]:
-        statement = select(Draw, Lottery.code).join(
-            Lottery, Lottery.id == Draw.lottery_id
-        )
+        statement = select(Draw, Lottery).join(Lottery, Lottery.id == Draw.lottery_id)
         if lottery_id:
             statement = statement.where(Draw.lottery_id == lottery_id)
         if status:
@@ -637,21 +583,21 @@ class AdminQueryService:
                 statement.order_by(Draw.scheduled_at.desc()).limit(limit).offset(offset)
             )
         ).all()
-        return tuple(self._draw(draw, code) for draw, code in rows)
+        return tuple(self._draw(draw, lottery) for draw, lottery in rows)
 
     async def draw(
         self, draw_id: UUID
     ) -> tuple[AdminDraw, tuple[AdminDrawTicket, ...]]:
         row = (
             await self._session.execute(
-                select(Draw, Lottery.code)
+                select(Draw, Lottery)
                 .join(Lottery, Lottery.id == Draw.lottery_id)
                 .where(Draw.id == draw_id)
             )
         ).one_or_none()
         if row is None:
             raise LookupError("Draw does not exist.")
-        draw, code = row
+        draw, lottery = row
         tickets = (
             await self._session.scalars(
                 select(Ticket)
@@ -659,7 +605,7 @@ class AdminQueryService:
                 .order_by(Ticket.public_number)
             )
         ).all()
-        return self._draw(draw, code), tuple(
+        return self._draw(draw, lottery), tuple(
             AdminDrawTicket(
                 ticket.id,
                 ticket.public_number,
@@ -673,11 +619,12 @@ class AdminQueryService:
         )
 
     @staticmethod
-    def _draw(draw: Draw, lottery_code: str) -> AdminDraw:
+    def _draw(draw: Draw, lottery: Lottery) -> AdminDraw:
         return AdminDraw(
             draw.id,
             draw.lottery_id,
-            lottery_code,
+            lottery.code,
+            draw_display_name(lottery.code, lottery.name, draw.scheduled_at),
             draw.public_number,
             draw.status,
             draw.scheduled_at,

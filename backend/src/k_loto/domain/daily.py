@@ -39,10 +39,8 @@ def quote_daily_purchase(
 ) -> PurchaseQuote:
     if not combinations:
         raise InvalidTicket("At least one ticket is required.")
-    if ticket_price <= 0 or ticket_price % 10:
-        raise ConfigurationError(
-            "Daily ticket price must be positive and divisible by 10 CAS."
-        )
+    if ticket_price <= 0 or ticket_price % 2:
+        raise ConfigurationError("Daily ticket price must be positive and even.")
     canonical = tuple(validate_daily_combination(item) for item in combinations)
     total_cost = ticket_price * len(canonical)
     if balance < total_cost:
@@ -68,9 +66,9 @@ def calculate_daily_settlement(
     guaranteed: dict[UUID, int] = {}
     for ticket in tickets:
         validate_daily_combination(ticket.numbers)
-        if ticket.purchase_price <= 0 or ticket.purchase_price % 10:
+        if ticket.purchase_price <= 0 or ticket.purchase_price % 2:
             raise ConfigurationError(
-                "Daily ticket price snapshot must be divisible by 10 CAS."
+                "Daily ticket price snapshot must be positive and even."
             )
         match_count = len(set(ticket.numbers).intersection(winning))
         matches[ticket.id] = match_count

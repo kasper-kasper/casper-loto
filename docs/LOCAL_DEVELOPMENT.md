@@ -52,9 +52,9 @@ On first authenticated browser request the backend idempotently creates:
 
 - `Local Test Player`;
 - 100,000 test CAS;
-- Weekly 5/20 at 100 CAS per ticket;
+- ЛСД-лото 5/20 and the unified three-slot Daily 4/15 game at 100 CAS per ticket;
 - 10,000 CAS base jackpot and 100,000 CAS reserve;
-- the next Weekly and Daily draws.
+- the next draw for all four lotteries.
 
 All initial and later `+ TEST CAS` credits are immutable ledger transactions.
 Repeated startup does not duplicate the initial credit or lottery entities.

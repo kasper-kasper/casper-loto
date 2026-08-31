@@ -1,6 +1,6 @@
 import type { CartTicket } from "./types";
 
-const STORAGE_KEY = "k-loto:weekly-cart:v1";
+const STORAGE_KEY = "k-loto:cart:v2";
 
 interface StoredCart {
   expiresAt: number;

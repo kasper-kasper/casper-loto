@@ -25,11 +25,10 @@ from k_loto.infrastructure.database.models import (
     AdminAuditLog,
     Balance,
     Draw,
+    JackpotAccount,
     LedgerTransaction,
     Lottery,
     LotteryReserve,
-    User,
-    WebAccount,
 )
 from k_loto.main import create_app
 
@@ -50,15 +49,25 @@ class ScalarCollection:
         return self._values
 
 
+class RowResult:
+    def __init__(self, value: Any) -> None:
+        self._value = value
+
+    def one_or_none(self) -> Any:
+        return self._value
+
+
 class FakeSession:
     def __init__(
         self,
         *,
         scalar_values: list[Any],
         scalar_collections: list[list[Any]] | None = None,
+        execute_rows: list[Any] | None = None,
     ) -> None:
         self.scalar_values = iter(scalar_values)
         self.scalar_collections = iter(scalar_collections or [])
+        self.execute_rows = iter(execute_rows or [])
         self.added: list[Any] = []
 
     def begin(self) -> TransactionContext:
@@ -69,6 +78,9 @@ class FakeSession:
 
     async def scalars(self, _statement: object) -> ScalarCollection:
         return ScalarCollection(next(self.scalar_collections))
+
+    async def execute(self, _statement: object) -> RowResult:
+        return RowResult(next(self.execute_rows))
 
     def add(self, item: Any) -> None:
         self.added.append(item)
@@ -180,37 +192,6 @@ async def test_balance_adjustment_is_ledgered_audited_and_idempotent() -> None:
     assert retry_fake.added == []
 
 
-async def test_web_account_provisioning_is_audited_without_password_data() -> None:
-    user_id = UUID(int=11)
-    user = User(
-        id=user_id,
-        telegram_id=6073224376,
-        username="Player",
-        display_name="Test Player",
-        is_active=True,
-        is_admin=False,
-    )
-    fake = FakeSession(scalar_values=[user, None])
-
-    username = await AdminMutationService(
-        cast(AsyncSession, fake), UUID(int=20)
-    ).configure_web_account(
-        user_id,
-        username="  Browser.Player  ",
-        password="a long browser password",
-        reason="Enable browser access",
-    )
-
-    account = next(item for item in fake.added if isinstance(item, WebAccount))
-    audit = next(item for item in fake.added if isinstance(item, AdminAuditLog))
-    assert username == "browser.player"
-    assert account.username == username
-    assert account.password_hash != "a long browser password"
-    assert audit.old_values is None
-    assert audit.new_values == {"username": username, "is_active": True}
-    assert "password" not in repr(audit.new_values).lower()
-
-
 async def test_reserve_adjustment_is_ledgered_and_never_negative() -> None:
     lottery_id = UUID(int=30)
     reserve = LotteryReserve(
@@ -237,6 +218,49 @@ async def test_reserve_adjustment_is_ledgered_and_never_negative() -> None:
             reason="Invalid",
             idempotency_key="reserve-2",
         )
+
+
+async def test_daily_configuration_accepts_owner_even_ticket_price() -> None:
+    lottery_id = UUID(int=35)
+    lottery = Lottery(
+        id=lottery_id,
+        code="pll",
+        name="ПЛЛ-лото",
+        kind=LotteryKind.DAILY,
+        numbers_to_pick=4,
+        max_number=15,
+        ticket_price=20_000,
+        timezone="Europe/Moscow",
+        schedule={"draw_time": "02:22"},
+        sales_cutoff_minutes=2,
+        is_active=True,
+        next_draw_number=2,
+        next_ticket_number=1,
+    )
+    jackpot = JackpotAccount(
+        id=UUID(int=36),
+        lottery_id=lottery_id,
+        balance=1_000,
+        base_amount=1_000,
+        version=1,
+    )
+    fake = FakeSession(
+        scalar_values=[lottery, jackpot, None],
+        execute_rows=[(lottery, jackpot, None, None)],
+    )
+
+    result = await AdminMutationService(
+        cast(AsyncSession, fake), UUID(int=20)
+    ).configure_lottery(
+        lottery_id,
+        ticket_price=22_222,
+        base_jackpot=2_811_996,
+        reason="Owner-approved PLL configuration",
+    )
+
+    assert result.ticket_price == 22_222
+    assert result.base_jackpot == 2_811_996
+    assert jackpot.base_amount == 2_811_996
 
 
 async def test_number_statistics_are_derived_from_completed_draw_history() -> None:
@@ -308,7 +332,6 @@ def test_admin_routes_cover_milestone_and_completed_draws_have_no_mutation() -> 
         "/api/v1/admin/dashboard",
         "/api/v1/admin/players",
         "/api/v1/admin/players/{user_id}/balance-adjustments",
-        "/api/v1/admin/players/{user_id}/web-account",
         "/api/v1/admin/lotteries",
         "/api/v1/admin/lotteries/{lottery_id}/configuration",
         "/api/v1/admin/lotteries/{lottery_id}/reserve-adjustments",

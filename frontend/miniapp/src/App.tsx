@@ -140,8 +140,8 @@ function NumberPicker({
           ←
         </button>
         <div>
-          <span className="eyebrow">Weekly · тираж {formatDraw(lottery.draw_number ?? 0)}</span>
-          <h1>Выберите 5 чисел</h1>
+          <span className="eyebrow">{lottery.name} · тираж {formatDraw(lottery.draw_number ?? 0)}</span>
+          <h1>Выберите {lottery.numbers_to_pick} чисел</h1>
         </div>
       </div>
       <div className="selection-meter">
@@ -230,20 +230,31 @@ export default function App({ initData, localDev = false }: AppProps) {
       });
   }, [authenticated, initData, ticketView, view]);
 
-  const addToCart = (numbers: number[]) => {
-    setCart((current) => [...current, { id: crypto.randomUUID(), numbers: [...numbers] }]);
+  const addToCart = (lottery: Lottery, numbers: number[]) => {
+    setCart((current) => [...current, {
+      id: crypto.randomUUID(),
+      lotteryCode: lottery.code,
+      lotteryName: lottery.name,
+      price: lottery.ticket_price ?? 0,
+      numbers: [...numbers],
+    }]);
     setNotice("Билет добавлен в корзину.");
     setPickerLottery(null);
     setView("cart");
   };
 
-  const purchase = async (combinations: number[][]) => {
+  const purchase = async (lotteryCode: string, combinations: number[][]) => {
     if (purchasing || combinations.length === 0) return;
     setPurchasing(true);
     setError(null);
     try {
-      const result = await miniAppApi.purchase(initData, combinations, crypto.randomUUID());
-      setCart([]);
+      const result = await miniAppApi.purchase(
+        initData,
+        lotteryCode,
+        combinations,
+        crypto.randomUUID(),
+      );
+      setCart((current) => current.filter((item) => item.lotteryCode !== lotteryCode));
       setPickerLottery(null);
       setNotice(
         `${result.ticket_ids.length === 1 ? "Билет куплен" : "Билеты куплены"}. Списано ${formatCas(result.total_cost)}.`,
@@ -256,6 +267,16 @@ export default function App({ initData, localDev = false }: AppProps) {
       setError(message);
     } finally {
       setPurchasing(false);
+    }
+  };
+
+  const purchaseCart = async () => {
+    const groups = new Map<string, number[][]>();
+    for (const item of cart) {
+      groups.set(item.lotteryCode, [...(groups.get(item.lotteryCode) ?? []), item.numbers]);
+    }
+    for (const [lotteryCode, combinations] of groups) {
+      await purchase(lotteryCode, combinations);
     }
   };
 
@@ -290,15 +311,15 @@ export default function App({ initData, localDev = false }: AppProps) {
     return <main className="centered-message"><h1>Нет связи с K-Loto</h1><p>{error}</p></main>;
   }
 
-  const weekly = dashboard.lotteries.find((item) => item.kind === "WEEKLY") ?? null;
+  const firstAvailable = dashboard.lotteries.find((item) => item.purchase_available) ?? null;
 
   if (pickerLottery) {
     return (
       <main className="app-shell">
         <NumberPicker
           lottery={pickerLottery}
-          onAdd={addToCart}
-          onBuy={(numbers) => void purchase([numbers])}
+          onAdd={(numbers) => addToCart(pickerLottery, numbers)}
+          onBuy={(numbers) => void purchase(pickerLottery.code, [numbers])}
           onClose={() => setPickerLottery(null)}
         />
         {purchasing && <div className="blocking-state">Покупаем билет…</div>}
@@ -351,32 +372,32 @@ export default function App({ initData, localDev = false }: AppProps) {
           {tickets.length ? tickets.map((ticket) => <TicketCard key={ticket.id} ticket={ticket} />) : (
             <EmptyState title={ticketView === "active" ? "Нет активных билетов" : "История пуста"} text={ticketView === "active" ? "Выберите пять чисел для ближайшего Weekly-тиража." : "Завершённые билеты появятся после розыгрыша."} />
           )}
-          {ticketView === "active" && weekly?.purchase_available && (
-            <button className="primary-button sticky-action" onClick={() => setPickerLottery(weekly)} type="button">Купить билет</button>
+          {ticketView === "active" && firstAvailable && (
+            <button className="primary-button sticky-action" onClick={() => setPickerLottery(firstAvailable)} type="button">Купить билет</button>
           )}
         </section>
       )}
 
       {view === "cart" && (
         <section className="view-content">
-          <div className="page-title"><span className="eyebrow">Weekly</span><h1>Корзина</h1><p>{cart.length} бил.</p></div>
+          <div className="page-title"><span className="eyebrow">K-Loto</span><h1>Корзина</h1><p>{cart.length} бил.</p></div>
           {cartTtl === null && <p className="config-note">Постоянное хранение включится после настройки TTL владельцем.</p>}
           {cart.length ? (
             <>
               <div className="cart-list">
                 {cart.map((ticket, index) => (
                   <article className="cart-ticket" key={ticket.id}>
-                    <div><span className="eyebrow">Билет {index + 1}</span><Numbers values={ticket.numbers} /></div>
+                    <div><span className="eyebrow">{ticket.lotteryName} · билет {index + 1}</span><Numbers values={ticket.numbers} /></div>
                     <button className="remove-button" onClick={() => setCart((current) => current.filter((item) => item.id !== ticket.id))} type="button" aria-label={`Удалить билет ${index + 1}`}>×</button>
                   </article>
                 ))}
               </div>
-              <div className="cart-total"><span>Итого</span><strong>{formatCas((weekly?.ticket_price ?? 0) * cart.length)}</strong></div>
-              <button className="secondary-button" disabled={!weekly?.purchase_available} onClick={() => weekly && setPickerLottery(weekly)} type="button">Добавить ещё билет</button>
-              <button className="primary-button" disabled={purchasing || !weekly?.purchase_available} onClick={() => void purchase(cart.map((item) => item.numbers))} type="button">{purchasing ? "Покупаем…" : "Купить всё"}</button>
+              <div className="cart-total"><span>Итого</span><strong>{formatCas(cart.reduce((sum, item) => sum + item.price, 0))}</strong></div>
+              <button className="secondary-button" disabled={!firstAvailable} onClick={() => firstAvailable && setPickerLottery(firstAvailable)} type="button">Добавить ещё билет</button>
+              <button className="primary-button" disabled={purchasing} onClick={() => void purchaseCart()} type="button">{purchasing ? "Покупаем…" : "Купить всё"}</button>
             </>
           ) : (
-            <EmptyState title="Корзина пуста" text="Соберите одну или несколько комбинаций Weekly 5 из 20." />
+            <EmptyState title="Корзина пуста" text="Соберите одну или несколько комбинаций в любой открытой лотерее." />
           )}
         </section>
       )}

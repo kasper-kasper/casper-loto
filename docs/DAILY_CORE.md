@@ -1,31 +1,20 @@
-# Daily Core 4/15
+# Daily Lottery 4/15
 
-Daily is a separately configured lottery entity with independent draw and
-ticket numbering. It draws four unique numbers from 1 through 15 at 02:22 and
-18:00 Europe/Moscow. Sales close two minutes before each slot.
+ПЛЛ-лото (`pll`), ПСС-Лото (`pss`) and ХАН-Лото (`khan`) are independent
+lottery entities. Their Moscow times are 02:22, 12:00 and 18:00 respectively;
+sales close two minutes before each draw. Each has independent draw and ticket
+number sequences and independent jackpot, distribution and reserve accounts.
 
-## Purchase
+For each ticket, 40% of price enters jackpot and 60% enters distribution.
+Payouts are 0 for 0/4 and 1/4, 50% of ticket price for 2/4, 300% for 3/4, and
+the entire jackpot split equally among 4/4 tickets. Guaranteed distribution
+payout shortage uses reserve and never jackpot. Remainders carry over. After a
+4/4 win, jackpot resets to that lottery's Admin-configured base.
 
-- ticket price is configured in Admin and must be divisible by 10 CAS;
-- 40% of every purchase credits the Daily jackpot;
-- 60% credits the Daily distribution fund;
-- multi-ticket purchases are atomic and identical combinations are allowed;
-- every CAS movement is recorded in the immutable ledger.
+Identical combinations are allowed as separate tickets. RNG uses
+`secrets.SystemRandom`. Empty draws still complete, carry all funds and generate
+an idempotent Telegram broadcast.
 
-## Settlement
-
-- 0/4 and 1/4: 0 CAS;
-- 2/4: 50% of that ticket's immutable purchase-price snapshot;
-- 3/4: 300% of that ticket's immutable purchase-price snapshot;
-- 4/4: the full current jackpot, divided per winning ticket;
-- whole-CAS remainders go to ascending public ticket numbers;
-- guaranteed 2/4 and 3/4 payouts consume distribution first and then the
-  per-lottery reserve; jackpot is never used for that shortfall;
-- insufficient reserve aborts settlement atomically for later recovery;
-- unused distribution and an unwon jackpot carry forward;
-- after any 4/4 win the jackpot resets to the Admin-configured base jackpot;
-- empty draws complete and preserve both funds.
-
-Settlement uses `secrets.SystemRandom`, row locks, terminal completed state,
-unique ledger/outbox keys and a single database transaction. Scheduler recovery
-processes overdue Weekly and Daily draws globally in chronological order.
+At v0.14.0 PSS and KHAN start with 24,000,000 CAS base/current jackpots and zero
+distribution/reserve. PLL inherits the shared Daily balances after its already
+purchased legacy draw settles. All transfers use paired ledger entries.
