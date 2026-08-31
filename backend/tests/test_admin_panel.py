@@ -397,3 +397,13 @@ def test_postgresql_trigger_migrations_are_asyncpg_compatible() -> None:
     for filename in ("0001_domain_model.py", "0002_notification_outbox.py"):
         source = (migrations / filename).read_text(encoding="utf-8")
         assert "$$ LANGUAGE plpgsql;\n        CREATE TRIGGER" not in source
+
+
+def test_alembic_revision_ids_fit_the_version_table() -> None:
+    migrations = Path(__file__).parents[1] / "migrations" / "versions"
+    for path in migrations.glob("*.py"):
+        source = path.read_text(encoding="utf-8")
+        for line in source.splitlines():
+            if line.startswith("revision: str = "):
+                revision = line.split('"')[1]
+                assert len(revision) <= 32, path.name
