@@ -45,10 +45,12 @@
 - игровая логика: RNG, scheduler, settlement и ledger-правила не изменялись;
 - проверки: Ruff и форматирование — пройдены; mypy — пройден; backend —
   `137 passed`; Mini App — `28 passed`; Admin — `6 passed`; оба production
-  build — собраны; Alembic single-head и secret scan — пройдены; production
-  `alembic check` выполняется перед развёртыванием;
-- deployment: выполняется автоматически после итоговых проверок и backup;
-- коммит: фиксируется коммитом релиза.
+  build — собраны; Alembic single-head, production `alembic check` и secret
+  scan — пройдены;
+- deployment: backup `k-loto-20260831T213310Z.dump` проверен; v0.20.0
+  развёрнута на VPS; API, PostgreSQL, bot и gateway работают, оба HTTPS-сайта
+  отвечают `200`, ошибок запуска API/bot не обнаружено;
+- коммит реализации: `05b7b44`.
 
 ## [0.19.0] - 2026-08-31
 
