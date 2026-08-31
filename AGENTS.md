@@ -2,8 +2,10 @@
 
 These rules apply to every human or AI change in this repository.
 
-1. Work only inside this repository. Do not deploy or connect to a production
-   VPS without an explicit owner command.
+1. Work only inside this repository. After a completed release passes all
+   required checks, back it up and deploy it to the configured production VPS,
+   then verify production health. Skip deployment only when the owner explicitly
+   requests local-only work or deployment is unsafe or blocked.
 2. Never commit secrets. Keep real tokens, passwords and credentials in `.env`;
    redact them from logs and documentation.
 3. Do not invent unresolved business requirements. Record them in

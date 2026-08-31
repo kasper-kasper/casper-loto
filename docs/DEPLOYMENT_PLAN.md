@@ -48,4 +48,5 @@ become active.
 7. retain the previous application artifact for rollback without rolling back
    immutable business data.
 
-No production connection or deployment is authorized by this plan itself.
+Completed, fully checked releases are deployed automatically under `AGENTS.md`.
+The owner can explicitly request local-only work for a particular release.
