@@ -37,7 +37,8 @@
 
 Технически:
 
-- migrations: `0011_operational_limits`, `0012_scheduler_heartbeat`;
+- migrations: `0011_operational_limits`, `0012_scheduler_heartbeat`,
+  `0013_normalize_limit_constraints`;
 - API: `GET /api/v1/miniapp/live/stream`, favorites API, фильтры tickets,
   расширенная bulk/multi-draw purchase и `GET /api/v1/admin/notifications`;
 - зависимости: новые runtime-библиотеки не добавлялись;
@@ -46,6 +47,19 @@
   scan выполняются перед deployment;
 - Telegram DevLog отключён по принятому решению; русские журналы доступны в
   защищённой Admin Panel.
+
+Развёртывание:
+
+- резервная копия `k-loto-20260831T224854Z.dump` проверена перед изменением схемы;
+- v0.21.0 развёрнута на VPS, миграции применены до
+  `0013_normalize_limit_constraints`, production `alembic check` не обнаружил
+  расхождений;
+- API и PostgreSQL healthy, heartbeat планировщика обновляется, бот и gateway
+  запущены без ошибок старта;
+- Mini App и Admin Panel отвечают по HTTPS с кодом `200`, защищённый SSE endpoint
+  без Telegram-авторизации корректно отвечает `401`;
+- коммиты реализации: `07088fc`, `f6fc61e`; документация: `3c33aa0`;
+  исправление имён ограничений production-схемы: `496cb4f`.
 
 ## [0.20.0] - 2026-09-01
 
