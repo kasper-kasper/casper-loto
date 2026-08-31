@@ -2,6 +2,13 @@
 
 All notable changes follow Keep a Changelog and Semantic Versioning principles.
 
+## [0.16.1] - 2026-08-31
+
+### Fixed
+
+- Admin project journals are located correctly inside the installed production
+  backend container.
+
 ## [0.16.0] - 2026-08-31
 
 ### Added

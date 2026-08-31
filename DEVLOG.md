@@ -1,5 +1,26 @@
 # Development log
 
+## [0.16.1] - 2026-08-31
+
+### Production journal path fix
+
+Сделано:
+
+- corrected release-journal discovery to use the backend process working
+  directory in both source and installed-container environments;
+- added a regression test that changes the process directory and loads both
+  allowed journals.
+
+Теперь система работает так:
+
+- authenticated Admin users can open both complete journal tabs in production.
+
+Технически:
+
+- migration: no schema change after `0010_independent_daily`;
+- tests: 133 backend passed after the correction;
+- commit: recorded by the patch release commit.
+
 ## [0.16.0] - 2026-08-31
 
 ### Admin project journals

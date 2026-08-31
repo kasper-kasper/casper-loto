@@ -1,6 +1,6 @@
 # K-Loto
 
-Current version: **0.16.0 — Admin Project Journals**.
+Current version: **0.16.1 — Admin Project Journals**.
 
 K-Loto is a multi-user lottery platform with integer CAS accounting, an
 immutable transaction ledger, recoverable draw scheduling and four independent

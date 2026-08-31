@@ -47,5 +47,5 @@ def load_release_notes(
 ) -> tuple[ReleaseNote, ...]:
     """Load a journal selected from the fixed allowlist at the project root."""
 
-    root = project_root or Path(__file__).resolve().parents[4]
+    root = project_root or Path.cwd()
     return parse_release_notes((root / _FILES[kind]).read_text(encoding="utf-8"))
