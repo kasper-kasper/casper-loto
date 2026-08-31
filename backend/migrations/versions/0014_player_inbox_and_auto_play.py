@@ -45,7 +45,7 @@ def upgrade() -> None:
         "ticket_source", "tickets", "source IN ('MANUAL', 'AUTO_PLAY')"
     )
     op.drop_constraint(
-        "ck_notification_outbox_notification_type",
+        op.f("ck_notification_outbox_notification_type"),
         "notification_outbox",
         type_="check",
     )
@@ -162,7 +162,7 @@ def downgrade() -> None:
     op.drop_table("user_notifications")
     op.drop_table("user_notification_preferences")
     op.drop_constraint(
-        "ck_notification_outbox_notification_type",
+        op.f("ck_notification_outbox_notification_type"),
         "notification_outbox",
         type_="check",
     )
@@ -171,5 +171,5 @@ def downgrade() -> None:
         "notification_outbox",
         "type IN ('TICKET_PURCHASED', 'DRAW_RESULT')",
     )
-    op.drop_constraint("ck_tickets_ticket_source", "tickets", type_="check")
+    op.drop_constraint(op.f("ck_tickets_ticket_source"), "tickets", type_="check")
     op.drop_column("tickets", "source")
