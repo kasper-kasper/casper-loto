@@ -29,7 +29,10 @@ _ENUM_CHECK_CONSTRAINTS = {
     "ck_lotteries_lottery_kind",
     "ck_notification_outbox_notification_status",
     "ck_notification_outbox_notification_type",
+    "ck_tickets_ticket_source",
     "ck_tickets_ticket_status",
+    "ck_user_notifications_ck_user_notifications_in_app_noti_6e06",
+    "ck_user_notifications_in_app_notification_type",
 }
 
 

@@ -36,7 +36,8 @@
 
 Технически:
 
-- migration: `0014_player_inbox_auto_play`;
+- migrations: `0014_player_inbox_auto_play`,
+  `0015_normalize_auto_play_constraint`;
 - API: `GET /api/v1/miniapp/account`, inbox и notification-preferences,
   `PUT /api/v1/admin/players/{user_id}/auto-play`;
 - зависимости: новые runtime-библиотеки не добавлялись;
