@@ -1,21 +1,25 @@
 # Telegram Mini App
 
-> **Frozen after v0.7.0.** The source and authenticated API remain in the
-> repository, but this client is no longer on the active product roadmap. New
-> player UX work targets the Telegram bot first and a simple user Web client
-> second. Do not remove or silently extend the Mini App without a new owner
-> decision.
+Telegram Mini App is the primary player interface. The Telegram bot binds the
+player, delivers durable notifications and opens this signed HTTPS client.
 
 ## Scope
 
 Milestone 5 provides a mobile-first React/TypeScript/Vite client with:
 
-- server-authoritative balance and lottery cards;
-- Weekly 5/20 number picker and Web Crypto random pick;
+- server-authoritative animated balance and independent lottery cards;
+- Weekly 5/20 and Daily 4/15 number pickers with Web Crypto random pick;
 - single-ticket purchase and multi-ticket cart checkout;
 - duplicate combinations as independent cart tickets;
 - active tickets, completed ticket history and recent results;
-- read-only Daily card until Daily economics are approved.
+- polished mobile navigation, loading and result states with optional Telegram
+  haptic feedback;
+- responsive layout from 320px with Telegram/iPhone safe-area support.
+
+The v0.17.0 visual system uses layered navy surfaces, restrained blue and
+burgundy depth, and gold only for jackpots, money, wins and primary actions.
+Decorative lottery balls are intentionally not used. Functional number choices
+are rounded tiles.
 
 ## Authentication and API
 
@@ -46,5 +50,5 @@ npm test
 npm run build
 ```
 
-A deployed HTTPS URL can be configured as `MINIAPP_URL`; `/start` then displays
-the Telegram Web App launch button. Deployment itself remains Milestone 8.
+A deployed HTTPS URL is configured as `MINIAPP_URL`; `/start` and the persistent
+Telegram menu button open the Mini App.

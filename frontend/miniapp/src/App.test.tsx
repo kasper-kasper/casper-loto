@@ -3,7 +3,7 @@ import { vi } from "vitest";
 
 import App from "./App";
 import { miniAppApi } from "./api";
-import type { Dashboard } from "./types";
+import type { Dashboard, Ticket } from "./types";
 
 vi.mock("./api", () => ({
   ApiError: class ApiError extends Error {},
@@ -93,22 +93,22 @@ it("renders server-authoritative balance and lottery states", async () => {
 
   expect(await screen.findByText("5 000 CAS")).toBeInTheDocument();
   expect(screen.getByText("10 000 CAS")).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Купить за 100 CAS" })).toBeEnabled();
-  expect(screen.getByRole("button", { name: "Скоро" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: /Выбрать числа.*100 CAS/ })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "Скоро откроется" })).toBeDisabled();
 });
 
 it("selects five numbers, adds a ticket and buys the cart atomically", async () => {
   render(<App initData="signed" />);
-  fireEvent.click(await screen.findByRole("button", { name: "Купить за 100 CAS" }));
+  fireEvent.click(await screen.findByRole("button", { name: /Выбрать числа.*100 CAS/ }));
 
   const grid = document.querySelector(".number-grid");
   expect(grid).not.toBeNull();
   for (const number of [1, 2, 3, 4, 5]) {
     fireEvent.click(within(grid as HTMLElement).getByRole("button", { name: String(number) }));
   }
-  fireEvent.click(screen.getByRole("button", { name: "Добавить ещё" }));
+  fireEvent.click(screen.getByRole("button", { name: "В корзину" }));
 
-  expect(screen.getByText("1 бил.")).toBeInTheDocument();
+  expect(screen.getByText("1 комбинация")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Купить всё" }));
 
   await waitFor(() =>
@@ -119,4 +119,40 @@ it("selects five numbers, adds a ticket and buys the cart atomically", async () 
       "00000000-0000-4000-8000-000000000001",
     ),
   );
+});
+
+it("shows a designed cart empty state without implementation details", async () => {
+  render(<App initData="signed" />);
+  fireEvent.click(await screen.findByRole("button", { name: "Корзина" }));
+
+  expect(screen.getByText("Корзина пока пуста")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /Выбрать лотерею/ })).toBeInTheDocument();
+  expect(screen.queryByText(/TTL|Постоянное хранение/)).not.toBeInTheDocument();
+});
+
+it("renders losing history as neutral and winning history as rewarded", async () => {
+  const history: Ticket[] = [
+    {
+      id: "loss", public_number: 465, lottery_code: "pll", lottery_name: "ПЛЛ-лото",
+      draw_number: 12, scheduled_at: "2026-08-15T15:00:00Z", numbers: [1, 2, 3, 4],
+      purchase_price: 100, status: "SETTLED", matches: 0, prize_amount: 0,
+      winning_numbers: [5, 6, 7, 8],
+    },
+    {
+      id: "win", public_number: 466, lottery_code: "pll", lottery_name: "ПЛЛ-лото",
+      draw_number: 12, scheduled_at: "2026-08-15T15:00:00Z", numbers: [5, 6, 7, 9],
+      purchase_price: 100, status: "SETTLED", matches: 3, prize_amount: 300,
+      winning_numbers: [5, 6, 7, 8],
+    },
+  ];
+  vi.mocked(miniAppApi.tickets).mockResolvedValue(history);
+  render(<App initData="signed" />);
+  fireEvent.click(await screen.findByRole("button", { name: "Билеты" }));
+  fireEvent.click(await screen.findByRole("button", { name: "История" }));
+
+  expect(await screen.findByText("Без выигрыша")).toBeInTheDocument();
+  const losingTicket = screen.getByText("Билет #0465").closest(".ticket-card");
+  const winningTicket = screen.getByText("Билет #0466").closest(".ticket-card");
+  expect(within(losingTicket as HTMLElement).getByText("0 CAS").closest(".ticket-result")).toHaveClass("loss");
+  expect(within(winningTicket as HTMLElement).getByText("+300 CAS").closest(".ticket-result")).toHaveClass("win");
 });

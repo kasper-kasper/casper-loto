@@ -1,9 +1,20 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 
 import { ApiError, miniAppApi } from "./api";
 import { configuredCartTtl, loadCart, saveCart } from "./cart";
+import {
+  Balance,
+  EmptyState,
+  Icon,
+  NumberSet,
+  PrimaryButton,
+  Skeleton,
+  StatusBadge,
+} from "./components";
 import { countdown, formatCas, formatDraw, formatMoscow } from "./format";
 import { randomCombination } from "./random";
+import { errorHaptic, selectionHaptic, successHaptic } from "./telegram";
 import type { CartTicket, Dashboard, Lottery, Ticket } from "./types";
 
 type View = "home" | "tickets" | "cart";
@@ -14,166 +25,78 @@ interface AppProps {
   localDev?: boolean;
 }
 
-function Numbers({ values, winning }: { values: number[]; winning?: number[] | null }) {
-  return (
-    <div className="number-row" aria-label={`Числа: ${values.join(", ")}`}>
-      {values.map((value) => (
-        <span className={winning?.includes(value) ? "number won" : "number"} key={value}>
-          {value}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-function EmptyState({ title, text }: { title: string; text: string }) {
-  return (
-    <div className="empty-state">
-      <span className="empty-mark">○</span>
-      <strong>{title}</strong>
-      <p>{text}</p>
-    </div>
-  );
-}
-
-function TicketCard({ ticket }: { ticket: Ticket }) {
+function TicketCard({ ticket, index = 0 }: { ticket: Ticket; index?: number }) {
   const complete = ticket.status === "SETTLED";
-  return (
-    <article className="ticket-card">
-      <div className="ticket-meta">
-        <div>
-          <span className="eyebrow">{ticket.lottery_name}</span>
-          <h3>Билет {formatDraw(ticket.public_number)}</h3>
-        </div>
-        <span className={complete ? "status complete" : "status active"}>
-          {complete ? "Завершён" : "Активен"}
-        </span>
-      </div>
-      <Numbers values={ticket.numbers} winning={ticket.winning_numbers} />
-      <div className="ticket-footer">
-        <span>Тираж {formatDraw(ticket.draw_number)}</span>
-        <span>{formatMoscow(ticket.scheduled_at)} MSK</span>
-      </div>
-      {complete && (
-        <div className="ticket-result">
-          <span>Совпадений: {ticket.matches ?? 0}</span>
-          <strong>{formatCas(ticket.prize_amount)}</strong>
-        </div>
-      )}
-    </article>
-  );
+  const winner = complete && ticket.prize_amount > 0;
+  const matches = ticket.matches ?? 0;
+  return <article className={`ticket-card ${winner ? "winner" : ""}`} style={{ "--item-index": index } as CSSProperties}>
+    <div className="ticket-meta">
+      <div><span className="eyebrow">{ticket.lottery_name}</span><h3>Билет #{formatDraw(ticket.public_number)}</h3></div>
+      <StatusBadge active={!complete} />
+    </div>
+    <NumberSet values={ticket.numbers} winning={ticket.winning_numbers} animate={winner} />
+    <div className="ticket-footer"><span>Тираж #{formatDraw(ticket.draw_number)}</span><span>{formatMoscow(ticket.scheduled_at)} МСК</span></div>
+    {complete && <div className={`ticket-result ${winner ? "win" : "loss"}`}>
+      <div><span>{matches > 0 ? `Совпадений: ${matches}` : "Совпадений нет"}</span><small>{winner ? "Выигрыш зачислен" : "Без выигрыша"}</small></div>
+      <strong>{winner ? `+${formatCas(ticket.prize_amount)}` : "0 CAS"}</strong>
+    </div>}
+  </article>;
 }
 
-function LotteryCard({
-  lottery,
-  now,
-  onPlay,
-}: {
-  lottery: Lottery;
-  now: number;
-  onPlay: () => void;
-}) {
+function NextDraw({ lottery, now }: { lottery: Lottery; now: number }) {
+  return <section className="next-draw">
+    <div className="next-draw-accent"><span>Ближайший тираж</span><i /></div>
+    <div className="next-draw-main"><div><strong>{lottery.name}</strong><small>{lottery.draw_number ? `Тираж #${formatDraw(lottery.draw_number)}` : "Расписание готовится"}</small></div><div className="countdown"><span>До старта</span><strong>{countdown(lottery.scheduled_at, now)}</strong></div></div>
+    {lottery.scheduled_at && <time>{formatMoscow(lottery.scheduled_at)} МСК</time>}
+  </section>;
+}
+
+function LotteryCard({ lottery, now, index, onPlay }: { lottery: Lottery; now: number; index: number; onPlay: () => void }) {
   const weekly = lottery.kind === "WEEKLY";
-  return (
-    <article className={`lottery-card ${weekly ? "weekly" : "daily"}`}>
-      <div className="lottery-topline">
-        <span className="lottery-kind">{weekly ? "WEEKLY" : "DAILY"}</span>
-        <span className="draw-label">
-          {lottery.draw_number ? `Тираж ${formatDraw(lottery.draw_number)}` : "Нет тиража"}
-        </span>
-      </div>
-      <h2>{lottery.name}</h2>
-      <p className="lottery-format">
-        {lottery.numbers_to_pick} из {lottery.max_number}
-      </p>
-      <div className="jackpot-block">
-        <span>Джекпот</span>
-        <strong>{formatCas(lottery.jackpot)}</strong>
-      </div>
-      <div className="draw-clock">
-        <span>До тиража</span>
-        <strong>{countdown(lottery.scheduled_at, now)}</strong>
-      </div>
-      <button
-        className="primary-button"
-        disabled={!lottery.purchase_available}
-        onClick={onPlay}
-        type="button"
-      >
-        {lottery.purchase_available
-          ? `Купить за ${formatCas(lottery.ticket_price ?? 0)}`
-          : weekly
-            ? "Продажи закрыты"
-            : "Скоро"}
-      </button>
-    </article>
-  );
+  return <article className={`lottery-card ${weekly ? "weekly" : "daily"}`} style={{ "--item-index": index } as CSSProperties}>
+    <div className="card-pattern" aria-hidden="true"><i /><i /><i /></div>
+    <div className="lottery-topline"><span className="lottery-kind">{weekly ? "WEEKLY" : "DAILY"}<b>{lottery.numbers_to_pick}/{lottery.max_number}</b></span><span className="draw-label">{lottery.draw_number ? `Тираж #${formatDraw(lottery.draw_number)}` : "Нет тиража"}</span></div>
+    <div className="lottery-identity"><h2>{lottery.name}</h2><p>{weekly ? "Главный тираж недели" : "Ежедневный шанс"}</p></div>
+    <div className={`jackpot-block ${lottery.jackpot === 0 ? "zero" : ""}`}><span>Текущий джекпот</span><strong>{formatCas(lottery.jackpot)}</strong></div>
+    <div className="draw-clock"><span>До тиража</span><strong>{countdown(lottery.scheduled_at, now)}</strong></div>
+    <PrimaryButton className="split-button" disabled={!lottery.purchase_available} onClick={onPlay}>
+      {lottery.purchase_available ? <><b>Выбрать числа</b><small>{formatCas(lottery.ticket_price ?? 0)}</small></> : weekly ? "Продажи закрыты" : "Скоро откроется"}
+    </PrimaryButton>
+  </article>;
 }
 
-function NumberPicker({
-  lottery,
-  onClose,
-  onBuy,
-  onAdd,
-}: {
-  lottery: Lottery;
-  onClose: () => void;
-  onBuy: (numbers: number[]) => void;
-  onAdd: (numbers: number[]) => void;
-}) {
+function NumberPicker({ lottery, purchasing, success, onClose, onBuy, onAdd }: { lottery: Lottery; purchasing: boolean; success: boolean; onClose: () => void; onBuy: (numbers: number[]) => void; onAdd: (numbers: number[]) => void }) {
   const [selected, setSelected] = useState<number[]>([]);
   const ready = selected.length === lottery.numbers_to_pick;
   const toggle = (value: number) => {
     setSelected((current) => {
-      if (current.includes(value)) return current.filter((item) => item !== value);
-      if (current.length >= lottery.numbers_to_pick) return current;
-      return [...current, value].sort((left, right) => left - right);
+      if (!current.includes(value) && current.length >= lottery.numbers_to_pick) return current;
+      selectionHaptic();
+      return current.includes(value) ? current.filter((item) => item !== value) : [...current, value].sort((left, right) => left - right);
     });
   };
-  const randomize = () =>
+  const randomize = () => {
+    selectionHaptic();
     setSelected(randomCombination(lottery.max_number, lottery.numbers_to_pick));
+  };
 
-  return (
-    <div className="picker-shell">
-      <div className="picker-heading">
-        <button className="icon-button" onClick={onClose} type="button" aria-label="Закрыть">
-          ←
-        </button>
-        <div>
-          <span className="eyebrow">{lottery.name} · тираж {formatDraw(lottery.draw_number ?? 0)}</span>
-          <h1>Выберите {lottery.numbers_to_pick} чисел</h1>
-        </div>
-      </div>
-      <div className="selection-meter">
-        <span>Выбрано</span>
-        <strong>{selected.length} / {lottery.numbers_to_pick}</strong>
-      </div>
-      <div className="number-grid">
-        {Array.from({ length: lottery.max_number }, (_, index) => index + 1).map((value) => (
-          <button
-            aria-pressed={selected.includes(value)}
-            className={selected.includes(value) ? "pick-number selected" : "pick-number"}
-            key={value}
-            onClick={() => toggle(value)}
-            type="button"
-          >
-            {value}
-          </button>
-        ))}
-      </div>
-      <button className="secondary-button" onClick={randomize} type="button">
-        Случайные числа
-      </button>
-      <div className="picker-actions">
-        <button className="secondary-button" disabled={!ready} onClick={() => onAdd(selected)} type="button">
-          Добавить ещё
-        </button>
-        <button className="primary-button" disabled={!ready} onClick={() => onBuy(selected)} type="button">
-          Купить
-        </button>
-      </div>
-    </div>
-  );
+  return <div className="picker-shell">
+    <div className="picker-heading"><button className="icon-button" onClick={onClose} type="button" aria-label="Закрыть"><Icon name="arrow" /></button><div><span className="eyebrow">{lottery.name} · тираж #{formatDraw(lottery.draw_number ?? 0)}</span><h1>Выберите {lottery.numbers_to_pick} чисел</h1></div></div>
+    <div className="picker-summary"><div><span>Стоимость билета</span><strong>{formatCas(lottery.ticket_price ?? 0)}</strong></div><div className="selection-meter"><span>Выбрано</span><strong>{selected.length}<i>/ {lottery.numbers_to_pick}</i></strong></div></div>
+    <div className="number-grid" aria-label="Выбор чисел">{Array.from({ length: lottery.max_number }, (_, index) => index + 1).map((value) => <button aria-pressed={selected.includes(value)} className={selected.includes(value) ? "pick-number selected" : "pick-number"} key={value} onClick={() => toggle(value)} type="button"><span>{value}</span></button>)}</div>
+    <button className="secondary-button random-button" onClick={randomize} type="button"><Icon name="spark" />Случайные числа</button>
+    <div className="picker-actions"><button className="secondary-button" disabled={!ready || purchasing} onClick={() => onAdd(selected)} type="button">В корзину</button><PrimaryButton disabled={!ready} loading={purchasing} success={success} onClick={() => onBuy(selected)}>{success ? "Билет куплен" : purchasing ? "Оформляем…" : "Купить билет"}</PrimaryButton></div>
+    <p className="picker-note">Комбинация фиксируется после подтверждения покупки.</p>
+  </div>;
+}
+
+function BottomNavigation({ view, activeTickets, cartCount, onChange }: { view: View; activeTickets: number; cartCount: number; onChange: (view: View) => void }) {
+  const items: { id: View; label: string; icon: "home" | "ticket" | "cart"; count: number }[] = [
+    { id: "home", label: "Главная", icon: "home", count: 0 },
+    { id: "tickets", label: "Билеты", icon: "ticket", count: activeTickets },
+    { id: "cart", label: "Корзина", icon: "cart", count: cartCount },
+  ];
+  return <nav className="bottom-nav" aria-label="Основная навигация">{items.map((item) => <button className={view === item.id ? "active" : ""} key={item.id} onClick={() => { selectionHaptic(); onChange(item.id); }} type="button"><i className="nav-indicator" /><span><Icon name={item.icon} />{item.count > 0 && <small>{item.count}</small>}</span><b>{item.label}</b></button>)}</nav>;
 }
 
 export default function App({ initData, localDev = false }: AppProps) {
@@ -186,227 +109,112 @@ export default function App({ initData, localDev = false }: AppProps) {
   const [cart, setCart] = useState<CartTicket[]>(() => loadCart(cartTtl));
   const [pickerLottery, setPickerLottery] = useState<Lottery | null>(null);
   const [loading, setLoading] = useState(authenticated);
+  const [ticketsLoading, setTicketsLoading] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
+  const [purchaseSuccess, setPurchaseSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [now, setNow] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
 
   const refreshDashboard = useCallback(async () => {
-    if (!authenticated) return;
-    const data = await miniAppApi.dashboard(initData);
-    setDashboard(data);
+    if (authenticated) setDashboard(await miniAppApi.dashboard(initData));
   }, [authenticated, initData]);
 
   useEffect(() => {
-    const initial = window.requestAnimationFrame(() => setNow(Date.now()));
-    const timer = window.setInterval(() => setNow(Date.now()), 30_000);
-    return () => {
-      window.cancelAnimationFrame(initial);
-      window.clearInterval(timer);
-    };
+    const timer = window.setInterval(() => setNow(Date.now()), 1_000);
+    return () => window.clearInterval(timer);
   }, []);
-
   useEffect(() => saveCart(cart, cartTtl), [cart, cartTtl]);
-
+  useEffect(() => {
+    if (!notice) return;
+    const timer = window.setTimeout(() => setNotice(null), 4_000);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
   useEffect(() => {
     if (!authenticated) return;
     const prepare = localDev && !initData ? miniAppApi.devSession() : Promise.resolve();
-    prepare
-      .then(() => miniAppApi.dashboard(initData))
-      .then(setDashboard)
-      .catch((reason: unknown) => {
-        setError(reason instanceof Error ? reason.message : "Не удалось загрузить K-Loto.");
-      })
-      .finally(() => setLoading(false));
+    prepare.then(() => miniAppApi.dashboard(initData)).then(setDashboard).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Не удалось загрузить K-Loto.")).finally(() => setLoading(false));
   }, [authenticated, initData, localDev]);
-
   useEffect(() => {
     if (view !== "tickets" || !authenticated) return;
-    miniAppApi
-      .tickets(initData, ticketView)
-      .then(setTickets)
-      .catch((reason: unknown) => {
-        setError(reason instanceof Error ? reason.message : "Не удалось загрузить билеты.");
-      });
+    miniAppApi.tickets(initData, ticketView).then(setTickets).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Не удалось загрузить билеты.")).finally(() => setTicketsLoading(false));
   }, [authenticated, initData, ticketView, view]);
 
+  const nearestLottery = useMemo(() => dashboard?.lotteries.filter((item) => item.scheduled_at).sort((left, right) => new Date(left.scheduled_at ?? 0).getTime() - new Date(right.scheduled_at ?? 0).getTime())[0] ?? null, [dashboard]);
+  const firstAvailable = dashboard?.lotteries.find((item) => item.purchase_available) ?? null;
+
   const addToCart = (lottery: Lottery, numbers: number[]) => {
-    setCart((current) => [...current, {
-      id: crypto.randomUUID(),
-      lotteryCode: lottery.code,
-      lotteryName: lottery.name,
-      price: lottery.ticket_price ?? 0,
-      numbers: [...numbers],
-    }]);
-    setNotice("Билет добавлен в корзину.");
+    setCart((current) => [...current, { id: crypto.randomUUID(), lotteryCode: lottery.code, lotteryName: lottery.name, price: lottery.ticket_price ?? 0, numbers: [...numbers] }]);
+    successHaptic();
+    setNotice("Комбинация добавлена в корзину");
     setPickerLottery(null);
     setView("cart");
   };
 
   const purchase = async (lotteryCode: string, combinations: number[][]) => {
     if (purchasing || combinations.length === 0) return;
-    setPurchasing(true);
-    setError(null);
+    setPurchasing(true); setPurchaseSuccess(false); setError(null);
     try {
-      const result = await miniAppApi.purchase(
-        initData,
-        lotteryCode,
-        combinations,
-        crypto.randomUUID(),
-      );
+      const result = await miniAppApi.purchase(initData, lotteryCode, combinations, crypto.randomUUID());
+      setPurchaseSuccess(true); successHaptic();
       setCart((current) => current.filter((item) => item.lotteryCode !== lotteryCode));
-      setPickerLottery(null);
-      setNotice(
-        `${result.ticket_ids.length === 1 ? "Билет куплен" : "Билеты куплены"}. Списано ${formatCas(result.total_cost)}.`,
-      );
+      setNotice(`${result.ticket_ids.length === 1 ? "Билет куплен" : "Билеты куплены"} · списано ${formatCas(result.total_cost)}`);
       await refreshDashboard();
-      setView("tickets");
-      setTicketView("active");
+      await new Promise((resolve) => window.setTimeout(resolve, 480));
+      setPickerLottery(null); setTicketsLoading(true); setView("tickets"); setTicketView("active");
     } catch (reason) {
-      const message = reason instanceof ApiError ? reason.message : "Покупка не выполнена.";
-      setError(message);
+      errorHaptic();
+      setError(reason instanceof ApiError ? reason.message : "Покупка не выполнена.");
     } finally {
-      setPurchasing(false);
+      setPurchasing(false); setPurchaseSuccess(false);
     }
   };
 
   const purchaseCart = async () => {
     const groups = new Map<string, number[][]>();
-    for (const item of cart) {
-      groups.set(item.lotteryCode, [...(groups.get(item.lotteryCode) ?? []), item.numbers]);
-    }
-    for (const [lotteryCode, combinations] of groups) {
-      await purchase(lotteryCode, combinations);
-    }
+    for (const item of cart) groups.set(item.lotteryCode, [...(groups.get(item.lotteryCode) ?? []), item.numbers]);
+    for (const [lotteryCode, combinations] of groups) await purchase(lotteryCode, combinations);
   };
 
   const refillDevBalance = async () => {
     setError(null);
     try {
       const result = await miniAppApi.devRefill();
-      setDashboard((current) =>
-        current ? { ...current, balance: result.balance } : current,
-      );
-      setNotice("Тестовый баланс пополнен через ledger.");
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Баланс не пополнен.");
-    }
+      setDashboard((current) => current ? { ...current, balance: result.balance } : current);
+      successHaptic(); setNotice("Тестовый баланс пополнен через ledger");
+    } catch (reason) { errorHaptic(); setError(reason instanceof Error ? reason.message : "Баланс не пополнен."); }
   };
 
-  if (!authenticated) {
-    return (
-      <main className="centered-message">
-        <div className="brand-mark">K</div>
-        <h1>Откройте K-Loto в Telegram</h1>
-        <p>Mini App принимает только подписанные данные запуска Telegram.</p>
-      </main>
-    );
-  }
+  if (!authenticated) return <main className="centered-message"><div className="brand-mark">K</div><h1>Откройте K-Loto в Telegram</h1><p>Безопасный вход выполняется автоматически при запуске Mini App.</p></main>;
+  if (loading) return <Skeleton />;
+  if (!dashboard) return <main className="centered-message"><div className="offline-mark">!</div><h1>Нет связи с K-Loto</h1><p>{error}</p></main>;
+  if (pickerLottery) return <main className="app-shell picker-page"><NumberPicker lottery={pickerLottery} purchasing={purchasing} success={purchaseSuccess} onAdd={(numbers) => addToCart(pickerLottery, numbers)} onBuy={(numbers) => void purchase(pickerLottery.code, [numbers])} onClose={() => setPickerLottery(null)} /></main>;
 
-  if (loading) {
-    return <main className="centered-message"><div className="loader" /><p>Загружаем тиражи…</p></main>;
-  }
+  return <main className="app-shell">
+    <header className="app-header"><div className="wordmark"><span>K</span><div>K LOTO<small>ЦИФРОВАЯ ЛОТЕРЕЯ</small></div></div><div className="header-actions">{localDev && <button className="dev-badge" onClick={() => void refillDevBalance()} type="button">+ TEST CAS</button>}<Balance value={dashboard.balance} /></div></header>
+    {(error || notice) && <button className={`toast ${error ? "error" : "success"}`} onClick={() => { setError(null); setNotice(null); }} type="button"><span>{error ? "!" : "✓"}</span>{error ?? notice}<Icon name="close" /></button>}
 
-  if (!dashboard) {
-    return <main className="centered-message"><h1>Нет связи с K-Loto</h1><p>{error}</p></main>;
-  }
+    {view === "home" && <section className="view-content" key="home">
+      <div className="hero-copy"><span className="eyebrow">Ваш следующий шанс</span><h1>Выберите числа.<br /><em>Остальное — за удачей.</em></h1><p>Честные тиражи по расписанию. Ваши билеты всегда под рукой.</p></div>
+      {nearestLottery && <NextDraw lottery={nearestLottery} now={now} />}
+      <div className="section-heading"><div><span className="eyebrow">Игровая коллекция</span><h2>Лотереи</h2></div><span className="section-count">{dashboard.lotteries.length} игры</span></div>
+      <div className="lottery-list">{dashboard.lotteries.map((lottery, index) => <LotteryCard key={lottery.code} lottery={lottery} now={now} index={index} onPlay={() => setPickerLottery(lottery)} />)}</div>
+      <div className="section-heading"><div><span className="eyebrow">Недавнее</span><h2>Последние результаты</h2></div><button className="text-button" onClick={() => { setTicketsLoading(true); setView("tickets"); setTicketView("history"); }} type="button">Смотреть все <span>→</span></button></div>
+      {dashboard.recent_results.length ? dashboard.recent_results.map((ticket, index) => <TicketCard index={index} key={ticket.id} ticket={ticket} />) : <EmptyState title="История пока пуста" text="Результаты сыгранных билетов появятся здесь после первого тиража." />}
+    </section>}
 
-  const firstAvailable = dashboard.lotteries.find((item) => item.purchase_available) ?? null;
+    {view === "tickets" && <section className="view-content" key="tickets">
+      <div className="page-title"><span className="eyebrow">Личный архив</span><h1>Мои билеты</h1><p>Активные комбинации и результаты тиражей.</p></div>
+      <div className={`segmented-control ${ticketView}`}><i /><button className={ticketView === "active" ? "selected" : ""} onClick={() => { selectionHaptic(); setTicketsLoading(true); setTicketView("active"); }} type="button">Активные</button><button className={ticketView === "history" ? "selected" : ""} onClick={() => { selectionHaptic(); setTicketsLoading(true); setTicketView("history"); }} type="button">История</button></div>
+      {ticketsLoading ? <div className="ticket-skeletons"><div className="skeleton ticket-skeleton" /><div className="skeleton ticket-skeleton" /></div> : tickets.length ? tickets.map((ticket, index) => <TicketCard index={index} key={ticket.id} ticket={ticket} />) : <EmptyState title={ticketView === "active" ? "Нет активных билетов" : "История пока пуста"} text={ticketView === "active" ? "Выберите лотерею и соберите свою комбинацию." : "Завершённые билеты появятся после розыгрыша."} action={ticketView === "active" && firstAvailable ? { label: "Выбрать лотерею", onClick: () => setView("home") } : undefined} />}
+      {ticketView === "active" && firstAvailable && !ticketsLoading && tickets.length > 0 && <PrimaryButton className="sticky-action" onClick={() => setPickerLottery(firstAvailable)}>Ещё один билет</PrimaryButton>}
+    </section>}
 
-  if (pickerLottery) {
-    return (
-      <main className="app-shell">
-        <NumberPicker
-          lottery={pickerLottery}
-          onAdd={(numbers) => addToCart(pickerLottery, numbers)}
-          onBuy={(numbers) => void purchase(pickerLottery.code, [numbers])}
-          onClose={() => setPickerLottery(null)}
-        />
-        {purchasing && <div className="blocking-state">Покупаем билет…</div>}
-      </main>
-    );
-  }
+    {view === "cart" && <section className="view-content" key="cart">
+      <div className="page-title cart-title"><span className="eyebrow">Перед покупкой</span><h1>Корзина</h1><p>{cart.length ? `${cart.length} ${cart.length === 1 ? "комбинация" : "комбинации"}` : "Пока без комбинаций"}</p></div>
+      {cart.length ? <><div className="cart-list">{cart.map((ticket, index) => <article className="cart-ticket" key={ticket.id} style={{ "--item-index": index } as CSSProperties}><div className="cart-ticket-head"><div><span className="eyebrow">{ticket.lotteryName}</span><strong>Комбинация {index + 1}</strong></div><button className="remove-button" onClick={() => { selectionHaptic(); setCart((current) => current.filter((item) => item.id !== ticket.id)); }} type="button" aria-label={`Удалить билет ${index + 1}`}><Icon name="close" /></button></div><NumberSet values={ticket.numbers} /><div className="cart-ticket-price"><span>Стоимость</span><strong>{formatCas(ticket.price)}</strong></div></article>)}</div><div className="cart-total"><div><span>К оплате</span><small>{cart.length} бил.</small></div><strong>{formatCas(cart.reduce((sum, item) => sum + item.price, 0))}</strong></div><button className="secondary-button" disabled={!firstAvailable || purchasing} onClick={() => firstAvailable && setPickerLottery(firstAvailable)} type="button">Добавить комбинацию</button><PrimaryButton loading={purchasing} success={purchaseSuccess} onClick={() => void purchaseCart()}>{purchaseSuccess ? "Билеты куплены" : purchasing ? "Оформляем покупку…" : "Купить всё"}</PrimaryButton></> : <EmptyState title="Корзина пока пуста" text="Выберите лотерею, отметьте числа и сохраните комбинацию перед покупкой." action={{ label: "Выбрать лотерею", onClick: () => setView("home") }} />}
+    </section>}
 
-  return (
-    <main className="app-shell">
-      <header className="app-header">
-        <div className="wordmark"><span>K</span> LOTO</div>
-        {localDev && <button className="dev-badge" onClick={() => void refillDevBalance()} type="button">+ TEST CAS</button>}
-        <div className="balance-pill"><small>Баланс</small><strong>{formatCas(dashboard.balance)}</strong></div>
-      </header>
-
-      {(error || notice) && (
-        <button className={error ? "toast error" : "toast"} onClick={() => { setError(null); setNotice(null); }} type="button">
-          {error ?? notice}
-        </button>
-      )}
-
-      {view === "home" && (
-        <section className="view-content">
-          <div className="hero-copy">
-            <span className="eyebrow">Следующий шанс</span>
-            <h1>Выберите числа.<br />Остальное — за удачей.</h1>
-          </div>
-          <div className="lottery-list">
-            {dashboard.lotteries.map((lottery) => (
-              <LotteryCard key={lottery.code} lottery={lottery} now={now} onPlay={() => setPickerLottery(lottery)} />
-            ))}
-          </div>
-          <div className="section-heading">
-            <div><span className="eyebrow">Недавнее</span><h2>Последние результаты</h2></div>
-            <button className="text-button" onClick={() => { setView("tickets"); setTicketView("history"); }} type="button">Все</button>
-          </div>
-          {dashboard.recent_results.length ? dashboard.recent_results.map((ticket) => <TicketCard key={ticket.id} ticket={ticket} />) : (
-            <EmptyState title="История пока пуста" text="Здесь появятся результаты сыгранных билетов." />
-          )}
-        </section>
-      )}
-
-      {view === "tickets" && (
-        <section className="view-content">
-          <div className="page-title"><span className="eyebrow">Мои билеты</span><h1>Тиражи</h1></div>
-          <div className="segmented-control">
-            <button className={ticketView === "active" ? "selected" : ""} onClick={() => setTicketView("active")} type="button">Активные</button>
-            <button className={ticketView === "history" ? "selected" : ""} onClick={() => setTicketView("history")} type="button">История</button>
-          </div>
-          {tickets.length ? tickets.map((ticket) => <TicketCard key={ticket.id} ticket={ticket} />) : (
-            <EmptyState title={ticketView === "active" ? "Нет активных билетов" : "История пуста"} text={ticketView === "active" ? "Выберите пять чисел для ближайшего Weekly-тиража." : "Завершённые билеты появятся после розыгрыша."} />
-          )}
-          {ticketView === "active" && firstAvailable && (
-            <button className="primary-button sticky-action" onClick={() => setPickerLottery(firstAvailable)} type="button">Купить билет</button>
-          )}
-        </section>
-      )}
-
-      {view === "cart" && (
-        <section className="view-content">
-          <div className="page-title"><span className="eyebrow">K-Loto</span><h1>Корзина</h1><p>{cart.length} бил.</p></div>
-          {cartTtl === null && <p className="config-note">Постоянное хранение включится после настройки TTL владельцем.</p>}
-          {cart.length ? (
-            <>
-              <div className="cart-list">
-                {cart.map((ticket, index) => (
-                  <article className="cart-ticket" key={ticket.id}>
-                    <div><span className="eyebrow">{ticket.lotteryName} · билет {index + 1}</span><Numbers values={ticket.numbers} /></div>
-                    <button className="remove-button" onClick={() => setCart((current) => current.filter((item) => item.id !== ticket.id))} type="button" aria-label={`Удалить билет ${index + 1}`}>×</button>
-                  </article>
-                ))}
-              </div>
-              <div className="cart-total"><span>Итого</span><strong>{formatCas(cart.reduce((sum, item) => sum + item.price, 0))}</strong></div>
-              <button className="secondary-button" disabled={!firstAvailable} onClick={() => firstAvailable && setPickerLottery(firstAvailable)} type="button">Добавить ещё билет</button>
-              <button className="primary-button" disabled={purchasing} onClick={() => void purchaseCart()} type="button">{purchasing ? "Покупаем…" : "Купить всё"}</button>
-            </>
-          ) : (
-            <EmptyState title="Корзина пуста" text="Соберите одну или несколько комбинаций в любой открытой лотерее." />
-          )}
-        </section>
-      )}
-
-      <nav className="bottom-nav" aria-label="Основная навигация">
-        <button className={view === "home" ? "active" : ""} onClick={() => setView("home")} type="button"><span>⌂</span>Главная</button>
-        <button className={view === "tickets" ? "active" : ""} onClick={() => setView("tickets")} type="button"><span>▤</span>Билеты<small>{dashboard.active_ticket_count || ""}</small></button>
-        <button className={view === "cart" ? "active" : ""} onClick={() => setView("cart")} type="button"><span>◇</span>Корзина<small>{cart.length || ""}</small></button>
-      </nav>
-    </main>
-  );
+    <BottomNavigation view={view} activeTickets={dashboard.active_ticket_count} cartCount={cart.length} onChange={(target) => { if (target === "tickets") setTicketsLoading(true); setView(target); }} />
+  </main>;
 }

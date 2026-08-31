@@ -23,7 +23,12 @@ function Set-EnvValue([string]$Name, [string]$Value) {
 }
 
 $secretBytes = [byte[]]::new(48)
-[System.Security.Cryptography.RandomNumberGenerator]::Fill($secretBytes)
+$random = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+try {
+    $random.GetBytes($secretBytes)
+} finally {
+    $random.Dispose()
+}
 $secret = [Convert]::ToBase64String($secretBytes).TrimEnd('=').Replace('+', '-').Replace('/', '_')
 
 Set-EnvValue "APP_ENV" "development"

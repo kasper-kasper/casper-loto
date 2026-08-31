@@ -3,6 +3,23 @@ interface TelegramWebApp {
   colorScheme?: "light" | "dark";
   ready(): void;
   expand(): void;
+  HapticFeedback?: {
+    impactOccurred(style: "light" | "medium" | "heavy" | "rigid" | "soft"): void;
+    notificationOccurred(type: "error" | "success" | "warning"): void;
+    selectionChanged(): void;
+  };
+}
+
+export function selectionHaptic(): void {
+  window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
+}
+
+export function successHaptic(): void {
+  window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred("success");
+}
+
+export function errorHaptic(): void {
+  window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred("error");
 }
 
 declare global {
