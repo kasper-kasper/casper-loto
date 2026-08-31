@@ -33,6 +33,11 @@ DAILY_SLOT_NAMES = {
     (12, 0): "ПСС-лото",
     (18, 0): "ХАН-лото",
 }
+DAILY_SLOT_CODES = {
+    (2, 22): "pll",
+    (12, 0): "pss",
+    (18, 0): "khan",
+}
 
 
 def daily_draw_name(scheduled_at: datetime) -> str:
@@ -48,3 +53,11 @@ def draw_display_name(
     if lottery_code == "daily":
         return daily_draw_name(scheduled_at)
     return lottery_name
+
+
+def draw_display_code(lottery_code: str, scheduled_at: datetime) -> str:
+    """Map a preserved shared-Daily draw to its public independent identity."""
+    if lottery_code != "daily":
+        return lottery_code
+    local = scheduled_at.astimezone(MOSCOW)
+    return DAILY_SLOT_CODES.get((local.hour, local.minute), lottery_code)

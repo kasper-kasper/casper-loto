@@ -3,14 +3,15 @@ import type { CSSProperties, ReactNode } from "react";
 
 import { formatCas } from "./format";
 
-export type IconName = "home" | "ticket" | "cart" | "live" | "arrow" | "spark" | "repeat" | "close";
+export type IconName = "home" | "ticket" | "cart" | "live" | "replay" | "arrow" | "spark" | "repeat" | "close";
 
 export function Icon({ name }: { name: IconName }) {
   const paths: Record<IconName, ReactNode> = {
-    home: <><path d="M3.5 10.5 12 3l8.5 7.5" /><path d="M5.5 9.5v10h13v-10M9.5 19.5v-6h5v6" /></>,
-    ticket: <><path d="M4 5.5h16v4a2.5 2.5 0 0 0 0 5v4H4v-4a2.5 2.5 0 0 0 0-5z" /><path d="M9 8.5v7M13 8.5h4M13 12h4M13 15.5h3" /></>,
-    cart: <><path d="M3 4.5h2l2 10h10.5l2-7H6" /><path d="M9 19.5h.01M17 19.5h.01" /></>,
-    live: <><path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7" /><path d="M5.5 5.5a9 9 0 0 0 0 13M18.5 5.5a9 9 0 0 1 0 13" /><path d="M12 10v4" /></>,
+    home: <><path d="M4 12 12 4l8 8-8 8Z" /><path d="M9 12h6M12 9v6" /></>,
+    ticket: <><path d="m5 7 13-2 1 12-13 2Z" /><path d="M9 9.5 10 16M13 9l3-.5M13.5 12l3-.5M14 15l2.5-.5" /></>,
+    cart: <><path d="M5 8h14l-1 11H6Z" /><path d="M8 8c0-2.5 1.3-4 4-4s4 1.5 4 4M9 12h6" /></>,
+    live: <><path d="M4 12h3l2-5 3 10 2-6 2 3h4" /><path d="M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" /></>,
+    replay: <><path d="M6.5 7.5A7 7 0 1 1 5 14" /><path d="M3.5 7.5h3.5V4M10 9l5 3-5 3Z" /></>,
     arrow: <><path d="m14.5 5-7 7 7 7" /></>,
     spark: <><path d="M12 2.5c.5 4.6 2.9 7 7.5 7.5-4.6.5-7 2.9-7.5 7.5-.5-4.6-2.9-7-7.5-7.5 4.6-.5 7-2.9 7.5-7.5Z" /><path d="M19 16.5c.2 1.8 1.2 2.8 3 3-1.8.2-2.8 1.2-3 3-.2-1.8-1.2-2.8-3-3 1.8-.2 2.8-1.2 3-3Z" /></>,
     repeat: <><path d="M18 7h-9a5 5 0 0 0-5 5v1" /><path d="m15 4 3 3-3 3M6 17h9a5 5 0 0 0 5-5v-1" /><path d="m9 20-3-3 3-3" /></>,

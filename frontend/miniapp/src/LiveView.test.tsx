@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { LIVE_REVEAL_INTERVAL_MS, LIVE_REVEAL_LEAD_MS } from "./live";
@@ -14,7 +14,7 @@ const baseDraw: LiveDraw = {
 const resultTime = startsAt + LIVE_REVEAL_LEAD_MS + LIVE_REVEAL_INTERVAL_MS * 4;
 
 function renderResult(draw: LiveDraw) {
-  const feed: LiveFeed = { server_time: new Date(resultTime).toISOString(), latest_completed: draw, next_scheduled: null };
+  const feed: LiveFeed = { server_time: new Date(resultTime).toISOString(), latest_completed: draw, next_scheduled: null, recent_completed: [draw] };
   return render(<LiveView feed={feed} now={resultTime} loading={false} onPlay={vi.fn()} onTickets={vi.fn()} />);
 }
 
@@ -35,5 +35,14 @@ describe("personalised live result", () => {
     renderResult({ ...baseDraw, player_ticket_count: 1, player_winning_ticket_count: 1, player_best_matches: 3, player_total_prize: 120_000, highlighted_tickets: [{ public_number: 50466, numbers: [2, 5, 9, 11], matches: 3, prize_amount: 120_000 }] });
     expect(screen.getAllByText("+120 000 CAS")).toHaveLength(2);
     expect(document.querySelectorAll(".live-ticket .number.won")).toHaveLength(3);
+  });
+
+  it("opens a clearly labelled digital replay from the archive", () => {
+    vi.stubGlobal("scrollTo", vi.fn());
+    renderResult(baseDraw);
+    fireEvent.click(screen.getByRole("button", { name: /ПСС-Лото.*Смотреть/ }));
+    expect(screen.getByText("ПОВТОР ТИРАЖА")).toBeInTheDocument();
+    expect(screen.getByText("Это цифровой повтор сохранённого результата.")).toBeInTheDocument();
+    vi.unstubAllGlobals();
   });
 });

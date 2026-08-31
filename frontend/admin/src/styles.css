@@ -100,3 +100,21 @@ tr.clickable { cursor: pointer; } tr.clickable:hover { background: #10231c; }
 .journal-list time { color: #62776e; font: 500 10px "IBM Plex Mono"; }
 .journal-list pre { margin: 0; padding: 18px; overflow-x: auto; white-space: pre-wrap; color: #b4c7bf; font: 400 11px/1.7 "IBM Plex Mono"; }
 @media (max-width: 1250px) { .metric-grid { grid-template-columns: repeat(2, 1fr); }.split { grid-template-columns: 1fr; }.stat-grid { grid-template-columns: repeat(6, 1fr); } }
+
+/* K-Loto brand shell: deliberately static, dense and animation-free. */
+:root { --green: #efc76e; --line: #1d315d; --panel: #0b1736; --muted: #7785aa; background: #050d27; color: #edf1ff; }
+body { background: radial-gradient(circle at 82% -18%, #1a4385 0, transparent 34%), radial-gradient(circle at 5% 60%, #48152d 0, transparent 28%), #050d27; }
+.login-shell { background-color: #050d27; background-image: linear-gradient(#17295055 1px, transparent 1px), linear-gradient(90deg, #17295055 1px, transparent 1px); }
+.login-card { border-color: #2b477f; background: #091630f2; box-shadow: 0 28px 90px #000a, inset 0 0 50px #3566b418; }
+.secure-line, input, select { border-color: #263d70; background: #071127; color: #edf1ff; }
+input:focus, select:focus { border-color: #d7ad55; box-shadow: 0 0 0 2px #efc76e12; }
+.admin-shell aside { background: #060f23; }
+nav button { color: #8492b7; }
+nav button.active { border-color: #3d568b; background: linear-gradient(90deg, #1d3568, transparent); color: #fff3ce; }
+.metric, .panel, .player-card, .lottery-card, .journal-list article { background: linear-gradient(145deg, #0d1c3d, #08142d); }
+.fund-list article, td, .audit-list article, .ticket-row { border-color: #16294e; }
+.filters, .stat-grid article { border-color: var(--line); background: #08142d; }
+.player-stats { background: #1b315b; }.player-stats span { background: #091630; }
+.drawer { border-color: #304d84; background: #07142d; }
+.status i, .secure-line i { background: #6fd2ad; box-shadow: 0 0 10px #6fd2ad; }
+.number-line i, .winning i { border-radius: 8px; border-color: #5571aa; color: #ffe2a0; }

@@ -7,7 +7,7 @@ player, delivers durable notifications and opens this signed HTTPS client.
 
 Milestone 5 provides a mobile-first React/TypeScript/Vite client with:
 
-- server-authoritative animated balance and independent lottery cards;
+- server-authoritative animated balance and a single focused lottery stage;
 - Weekly 5/20 and Daily 4/15 number pickers with Web Crypto random pick;
 - single-ticket purchase and multi-ticket cart checkout;
 - duplicate combinations as independent cart tickets;
@@ -16,24 +16,30 @@ Milestone 5 provides a mobile-first React/TypeScript/Vite client with:
   haptic feedback;
 - a permanent server-synchronised **Эфир** screen for waiting, sequentially
   revealing the immutable result and showing the personal outcome;
+- a digital replay archive with the latest two completed draws of every
+  lottery, reconstructed from immutable draw facts without video storage;
 - fresh sales-state checks before every number picker, background dashboard
   refresh and explicit cutoff time presentation;
 - a cart of up to 1,000 tickets with idempotent 100-ticket server batches,
   visible progress and preservation of unpurchased combinations after failure;
 - responsive layout from 320px with Telegram/iPhone safe-area support.
 
-The v0.19.0 visual system uses layered navy surfaces, restrained blue and
+The v0.20.0 visual system uses layered navy surfaces, restrained blue and
 burgundy depth, and gold only for jackpots, money, wins and primary actions.
-Decorative lottery balls are intentionally not used. Functional number choices
-are rounded tiles.
+The home screen has one selected lottery stage and a compact schedule switcher
+instead of a wall of product cards. PLL, PSS, KHAN and Weekly retain the same
+interaction model but have distinct night-violet, blue, burgundy and gold
+accents. Decorative lottery balls are intentionally not used. Functional
+number choices are rounded tiles.
 
 ## Эфир
 
 `GET /api/v1/miniapp/live` is an authenticated read-only projection. It returns
-the server clock, the latest completed draw, the next scheduled draw and a
-bounded personal summary. It never generates numbers and never starts or
-settles a draw. The existing scheduler and cryptographically secure backend RNG
-remain the only source of the immutable result.
+the server clock, the latest completed draw, the next scheduled draw, the two
+most recent completed draws per lottery and bounded personal summaries. It
+never generates numbers and never starts or settles a draw. The existing
+scheduler and cryptographically secure backend RNG remain the only source of
+the immutable result.
 
 The client derives the visual phase from the server-time offset and the official
 UTC `scheduled_at`: waiting, short start, two-second sequential reveal and final
@@ -49,6 +55,11 @@ The waiting state remains honest but visually active: a low-cost signal line,
 result placeholders, a dedicated final-minute transition and server-synced
 progress lead into the existing sequential reveal. No fake number or outcome is
 ever displayed.
+
+A replay is clearly marked as `ПОВТОР ТИРАЖА`, uses a calmer accent treatment
+than the live state and animates the original stored sequence on the client.
+There are no recording files, codecs or additional outcome generation. A replay
+can be restarted or closed without affecting the live server timeline.
 
 ## Purchase limits and recovery
 

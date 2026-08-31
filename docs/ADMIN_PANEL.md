@@ -8,6 +8,10 @@ The local `5174` workflow is development-only. In the final deployment the
 compiled Admin client will be served continuously by the HTTPS reverse proxy;
 the owner will open its normal URL and log in without starting any process.
 
+The Admin Panel shares the Mini App's navy, blue, burgundy and gold brand
+tokens, but deliberately remains a dense desktop operations interface. It has
+no decorative or state-transition animations.
+
 ## Capabilities
 
 - operational dashboard: version, uptime, database reachability, configured bot,

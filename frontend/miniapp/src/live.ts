@@ -3,6 +3,8 @@ import type { LiveDraw, LiveFeed } from "./types";
 export const LIVE_REVEAL_LEAD_MS = 1_000;
 export const LIVE_REVEAL_INTERVAL_MS = 2_000;
 export const LIVE_RESULT_HOLD_MS = 90_000;
+export const REPLAY_REVEAL_LEAD_MS = 700;
+export const REPLAY_REVEAL_INTERVAL_MS = 1_250;
 
 export type LivePhase = "idle" | "waiting" | "starting" | "revealing" | "result";
 
@@ -12,6 +14,25 @@ export interface LivePresentation {
   revealedNumbers: number[];
   currentNumber: number | null;
   nextDraw: LiveDraw | null;
+}
+
+export function replayPresentation(draw: LiveDraw, elapsed: number): LivePresentation {
+  const numbers = draw.winning_numbers ?? [];
+  const revealElapsed = elapsed - REPLAY_REVEAL_LEAD_MS;
+  if (revealElapsed < 0) {
+    return { phase: "starting", draw, revealedNumbers: [], currentNumber: null, nextDraw: null };
+  }
+  const currentIndex = Math.floor(revealElapsed / REPLAY_REVEAL_INTERVAL_MS);
+  if (currentIndex < numbers.length) {
+    return {
+      phase: "revealing",
+      draw,
+      revealedNumbers: numbers.slice(0, currentIndex),
+      currentNumber: numbers[currentIndex],
+      nextDraw: null,
+    };
+  }
+  return { phase: "result", draw, revealedNumbers: numbers, currentNumber: null, nextDraw: null };
 }
 
 export function livePresentation(feed: LiveFeed | null, now: number): LivePresentation {

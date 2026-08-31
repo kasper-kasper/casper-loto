@@ -1,11 +1,14 @@
 """Milestone 1 domain model invariants."""
 
+from datetime import UTC, datetime
+
 import pytest
 from sqlalchemy import BigInteger, UniqueConstraint
 
 from k_loto.domain.draw_state import ensure_draw_transition
 from k_loto.domain.enums import DrawStatus
 from k_loto.domain.errors import InvalidStateTransition
+from k_loto.domain.lotteries import draw_display_code
 from k_loto.infrastructure.database.base import Base
 
 
@@ -65,3 +68,10 @@ def test_completed_draw_is_terminal_state() -> None:
 
 def test_recovery_can_retry_failed_draw() -> None:
     ensure_draw_transition(DrawStatus.FAILED, DrawStatus.DRAWING)
+
+
+def test_shared_daily_draw_keeps_its_public_slot_identity() -> None:
+    assert (
+        draw_display_code("daily", datetime(2026, 8, 31, 23, 22, tzinfo=UTC)) == "pll"
+    )
+    assert draw_display_code("daily", datetime(2026, 9, 1, 9, 0, tzinfo=UTC)) == "pss"

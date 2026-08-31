@@ -130,13 +130,14 @@ def test_live_response_exposes_server_clock_and_personal_result() -> None:
         highlighted_tickets=(MiniAppLiveTicket(50465, (2, 5, 9, 11), 3, 120_000),),
     )
 
-    response = _live_response(MiniAppLiveFeed(scheduled, draw, None))
+    response = _live_response(MiniAppLiveFeed(scheduled, draw, None, (draw,)))
 
     assert response.server_time == scheduled
     assert response.latest_completed is not None
     assert response.latest_completed.winning_numbers == [2, 5, 9, 14]
     assert response.latest_completed.player_total_prize == 120_000
     assert response.latest_completed.highlighted_tickets[0].public_number == 50465
+    assert response.recent_completed[0].draw_number == 812
 
 
 def test_miniapp_rejects_more_than_one_hundred_tickets_per_request() -> None:

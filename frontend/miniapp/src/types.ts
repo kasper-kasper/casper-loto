@@ -67,6 +67,7 @@ export interface LiveFeed {
   server_time: string;
   latest_completed: LiveDraw | null;
   next_scheduled: LiveDraw | null;
+  recent_completed: LiveDraw[];
 }
 
 export interface PurchaseResult {

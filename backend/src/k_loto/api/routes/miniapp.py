@@ -117,6 +117,7 @@ class LiveFeedResponse(BaseModel):
     server_time: datetime
     latest_completed: LiveDrawResponse | None
     next_scheduled: LiveDrawResponse | None
+    recent_completed: list[LiveDrawResponse]
 
 
 class PurchaseRequest(BaseModel):
@@ -283,6 +284,7 @@ def _live_response(item: MiniAppLiveFeed) -> LiveFeedResponse:
         next_scheduled=(
             _live_draw_response(item.next_scheduled) if item.next_scheduled else None
         ),
+        recent_completed=[_live_draw_response(draw) for draw in item.recent_completed],
     )
 
 

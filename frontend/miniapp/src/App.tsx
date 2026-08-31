@@ -53,31 +53,32 @@ function TicketCard({ ticket, index = 0 }: { ticket: Ticket; index?: number }) {
   </article>;
 }
 
-function NextDraw({ lottery, now, onLive, onPlay }: { lottery: Lottery; now: number; onLive: () => void; onPlay: () => void }) {
+function TicketGroups({ tickets }: { tickets: Ticket[] }) {
+  const groups = new Map<string, Ticket[]>();
+  for (const ticket of tickets) {
+    const key = `${ticket.lottery_code}:${ticket.draw_number}`;
+    groups.set(key, [...(groups.get(key) ?? []), ticket]);
+  }
+  return <div className="ticket-groups">{Array.from(groups.entries()).map(([key, items]) => {
+    const first = items[0];
+    return <section className={`ticket-draw-group lottery-${first.lottery_code}`} key={key}><header><div><span className="eyebrow">{first.lottery_name}</span><h2>Тираж #{formatDraw(first.draw_number)}</h2></div><div><strong>{items.length}</strong><small>{plural(items.length, "билет", "билета", "билетов")}</small></div></header><div className="ticket-group-list">{items.map((ticket, index) => <TicketCard index={index} key={ticket.id} ticket={ticket} />)}</div></section>;
+  })}</div>;
+}
+
+function NextDraw({ lottery, now, nearest, onLive, onPlay }: { lottery: Lottery; now: number; nearest: boolean; onLive: () => void; onPlay: () => void }) {
   const startsIn = lottery.scheduled_at ? new Date(lottery.scheduled_at).getTime() - now : Infinity;
-  return <section className="next-draw featured-draw">
+  return <section className={`next-draw featured-draw lottery-${lottery.code}`}>
     <div className="featured-mesh" aria-hidden="true" />
-    <div className="next-draw-accent"><span>Ближайший тираж</span><i /></div>
+    <div className="next-draw-accent"><span>{nearest ? "Ближайший тираж" : "Выбранная лотерея"}</span><i /></div>
     <div className="featured-title"><div><small>{lottery.kind} · {lottery.numbers_to_pick}/{lottery.max_number}</small><strong>{lottery.name}</strong><span>{lottery.draw_number ? `Тираж #${formatDraw(lottery.draw_number)}` : "Расписание готовится"}</span></div><div className="featured-jackpot"><span>Джекпот</span><strong>{formatCas(lottery.jackpot)}</strong></div></div>
     <div className="featured-timing"><div className="countdown"><span>До старта</span><strong>{countdown(lottery.scheduled_at, now)}</strong></div><div><span>Ваши билеты</span><strong>{lottery.player_ticket_count}</strong></div></div>
     <div className="featured-meta"><span>{lottery.sales_close_at ? `Продажи до ${formatMoscowTime(lottery.sales_close_at)} МСК` : "Продажи закрыты"}</span>{lottery.scheduled_at && <time>{formatMoscow(lottery.scheduled_at)} МСК</time>}</div>
-    <div className="featured-actions"><button className="live-cta" onClick={onLive} type="button"><i /> {startsIn <= 5 * 60_000 ? "Смотреть эфир" : "Открыть эфир"}</button><PrimaryButton disabled={!lottery.scheduled_at || lottery.ticket_price === null} onClick={onPlay}>{lottery.purchase_available ? "Выбрать числа" : "Проверить продажи"}</PrimaryButton></div>
+    <div className="featured-actions"><button className="live-cta" onClick={onLive} type="button"><Icon name="live" /> {startsIn <= 5 * 60_000 ? "Смотреть эфир" : "Открыть эфир"}</button><PrimaryButton className="split-button" disabled={!lottery.scheduled_at || lottery.ticket_price === null} onClick={onPlay}><b>{lottery.purchase_available ? "Выбрать числа" : "Проверить продажи"}</b><small>{lottery.ticket_price !== null ? formatCas(lottery.ticket_price) : "—"}</small></PrimaryButton></div>
   </section>;
 }
 
-function LotteryCard({ lottery, now, index, onPlay }: { lottery: Lottery; now: number; index: number; onPlay: () => void }) {
-  const weekly = lottery.kind === "WEEKLY";
-  return <article className={`lottery-card compact ${weekly ? "weekly" : "daily"}`} style={{ "--item-index": index } as CSSProperties}>
-    <div className="card-pattern" aria-hidden="true"><i /><i /><i /></div>
-    <div className="lottery-topline"><span className="lottery-kind">{weekly ? "WEEKLY" : "DAILY"}<b>{lottery.numbers_to_pick}/{lottery.max_number}</b></span><span className="draw-label">{lottery.draw_number ? `Тираж #${formatDraw(lottery.draw_number)}` : "Нет тиража"}</span></div>
-    <div className="lottery-identity"><h2>{lottery.name}</h2><p>{weekly ? "Главный тираж недели" : "Ежедневный шанс"}</p></div>
-    <div className={`jackpot-block ${lottery.jackpot === 0 ? "zero" : ""}`}><span>Текущий джекпот</span><strong>{formatCas(lottery.jackpot)}</strong></div>
-    <div className="draw-clock"><div><span>До тиража</span><strong>{countdown(lottery.scheduled_at, now)}</strong></div><div className="card-ticket-count"><span>Ваши</span><strong>{lottery.player_ticket_count}</strong></div></div>
-    <p className="sales-cutoff">{lottery.sales_close_at ? `Продажи открыты до ${formatMoscowTime(lottery.sales_close_at)} МСК` : "Продажи пока недоступны"}</p>
-    <PrimaryButton className="split-button" disabled={!lottery.scheduled_at || lottery.ticket_price === null} onClick={onPlay}>
-      {lottery.purchase_available ? <><b>Выбрать числа</b><small>{formatCas(lottery.ticket_price ?? 0)}</small></> : <><b>Проверить продажи</b><small>{lottery.ticket_price !== null ? formatCas(lottery.ticket_price) : "—"}</small></>}
-    </PrimaryButton>
-  </article>;
+function LotterySwitcher({ lotteries, selected, now, onSelect }: { lotteries: Lottery[]; selected: string; now: number; onSelect: (code: string) => void }) {
+  return <div className="lottery-switcher" aria-label="Расписание лотерей">{lotteries.map((lottery) => <button aria-pressed={selected === lottery.code} className={`lottery-switch lottery-${lottery.code} ${selected === lottery.code ? "selected" : ""}`} key={lottery.code} onClick={() => { selectionHaptic(); onSelect(lottery.code); }} type="button"><span>{lottery.name.replace("-лото", "")}</span><strong>{lottery.scheduled_at ? formatMoscowTime(lottery.scheduled_at) : "—"}</strong><small>{lottery.scheduled_at ? countdown(lottery.scheduled_at, now) : "Нет тиража"}</small><i /></button>)}</div>;
 }
 
 function NumberPicker({ lottery, purchasing, success, initialNumbers = [], cartRemaining, onClose, onBuy, onAdd, onAddMany }: { lottery: Lottery; purchasing: boolean; success: boolean; initialNumbers?: number[]; cartRemaining: number; onClose: () => void; onBuy: (numbers: number[]) => void; onAdd: (numbers: number[]) => void; onAddMany: (combinations: number[][]) => void }) {
@@ -95,10 +96,11 @@ function NumberPicker({ lottery, purchasing, success, initialNumbers = [], cartR
     setSelected(randomCombination(lottery.max_number, lottery.numbers_to_pick));
   };
 
-  return <div className="picker-shell">
+  return <div className={`picker-shell lottery-${lottery.code}`}>
     <div className="picker-heading"><button className="icon-button" onClick={onClose} type="button" aria-label="Закрыть"><Icon name="arrow" /></button><div><span className="eyebrow">{lottery.name} · тираж #{formatDraw(lottery.draw_number ?? 0)}</span><h1>Выберите {lottery.numbers_to_pick} чисел</h1></div></div>
     <div className="picker-summary"><div><span>Стоимость билета</span><strong>{formatCas(lottery.ticket_price ?? 0)}</strong></div><div className="selection-meter"><span>Выбрано</span><strong>{selected.length}<i>/ {lottery.numbers_to_pick}</i></strong></div></div>
     <div className="number-grid" aria-label="Выбор чисел">{Array.from({ length: lottery.max_number }, (_, index) => index + 1).map((value) => <button aria-pressed={selected.includes(value)} className={selected.includes(value) ? "pick-number selected" : "pick-number"} key={value} onClick={() => toggle(value)} type="button"><span>{value}</span></button>)}</div>
+    <div className="selected-combination"><span>Ваш билет</span><div>{Array.from({ length: lottery.numbers_to_pick }, (_, index) => <i className={selected[index] ? "filled" : ""} key={index}>{selected[index] ?? "—"}</i>)}</div></div>
     <button className="secondary-button random-button" onClick={randomize} type="button"><Icon name="spark" />Случайные числа</button>
     <div className="quick-batches"><div><span>Быстрая корзина</span><small>Случайные комбинации</small></div><div>{[5, 10, 25, 50].map((count) => <button disabled={purchasing || cartRemaining < count} key={count} onClick={() => onAddMany(Array.from({ length: count }, () => randomCombination(lottery.max_number, lottery.numbers_to_pick)))} type="button">+{count}</button>)}</div></div>
     <div className="picker-actions"><button className="secondary-button" disabled={!ready || purchasing} onClick={() => onAdd(selected)} type="button">В корзину</button><PrimaryButton disabled={!ready} loading={purchasing} success={success} onClick={() => onBuy(selected)}>{success ? "Билет куплен" : purchasing ? "Оформляем…" : "Купить билет"}</PrimaryButton></div>
@@ -121,6 +123,7 @@ export default function App({ initData, localDev = false }: AppProps) {
   const [cartTtl] = useState(() => configuredCartTtl());
   const [view, setView] = useState<View>("home");
   const [ticketView, setTicketView] = useState<TicketView>("active");
+  const [selectedLotteryCode, setSelectedLotteryCode] = useState<string | null>(null);
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [liveFeed, setLiveFeed] = useState<LiveFeed | null>(null);
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -197,9 +200,14 @@ export default function App({ initData, localDev = false }: AppProps) {
   }, [authenticated, refreshLive, view]);
 
   const nearestLottery = useMemo(() => dashboard?.lotteries.filter((item) => item.scheduled_at).sort((left, right) => new Date(left.scheduled_at ?? 0).getTime() - new Date(right.scheduled_at ?? 0).getTime())[0] ?? null, [dashboard]);
+  const selectedLottery = dashboard?.lotteries.find((item) => item.code === selectedLotteryCode) ?? nearestLottery;
   const firstAvailable = dashboard?.lotteries.find((item) => item.purchase_available) ?? null;
   const repeatTicket = dashboard?.recent_results.find((ticket) => dashboard.lotteries.some((lottery) => lottery.code === ticket.lottery_code && lottery.purchase_available)) ?? null;
-  const cartPreview = cart.slice(0, 50);
+  const cartGroups = useMemo(() => {
+    const groups = new Map<string, CartTicket[]>();
+    for (const ticket of cart) groups.set(ticket.lotteryCode, [...(groups.get(ticket.lotteryCode) ?? []), ticket]);
+    return Array.from(groups.values());
+  }, [cart]);
   const serverNow = now + serverOffset;
 
   const openLottery = async (lotteryCode: string, initialNumbers: number[] = []) => {
@@ -315,13 +323,16 @@ export default function App({ initData, localDev = false }: AppProps) {
     {(error || notice) && <button className={`toast ${error ? "error" : "success"}`} onClick={() => { setError(null); setNotice(null); }} type="button"><span>{error ? "!" : "✓"}</span>{error ?? notice}<Icon name="close" /></button>}
 
     {view === "home" && <section className="view-content" key="home">
-      <div className="hero-copy refreshed"><span className="eyebrow">Сегодня в K-Loto</span><h1>Ваш следующий шанс<br /><em>уже совсем близко.</em></h1><p>Выберите комбинацию — результат и выигрыш появятся здесь автоматически.</p></div>
-      {nearestLottery && <NextDraw lottery={nearestLottery} now={serverNow} onLive={() => { setLiveLoading(true); setView("live"); }} onPlay={() => void openLottery(nearestLottery.code)} />}
-      <div className="quick-actions" aria-label="Быстрые действия"><button onClick={() => { setTicketsLoading(true); setView("tickets"); }} type="button"><Icon name="ticket" /><span><strong>Мои билеты</strong><small>{dashboard.active_ticket_count ? `${dashboard.active_ticket_count} активных` : "Пока нет активных"}</small></span></button>{firstAvailable && <button onClick={() => void openLottery(firstAvailable.code, randomCombination(firstAvailable.max_number, firstAvailable.numbers_to_pick))} type="button"><Icon name="spark" /><span><strong>Случайный билет</strong><small>Комбинация в один тап</small></span></button>}{repeatTicket && <button onClick={() => void openLottery(repeatTicket.lottery_code, repeatTicket.numbers)} type="button"><Icon name="repeat" /><span><strong>Повторить</strong><small>Последняя комбинация</small></span></button>}</div>
-      <div className="section-heading"><div><span className="eyebrow">Игровая коллекция</span><h2>Лотереи</h2></div><span className="section-count">Доступно: {dashboard.lotteries.length}</span></div>
-      <div className="lottery-list">{dashboard.lotteries.map((lottery, index) => <LotteryCard key={lottery.code} lottery={lottery} now={serverNow} index={index} onPlay={() => void openLottery(lottery.code)} />)}</div>
-      <div className="section-heading"><div><span className="eyebrow">Недавнее</span><h2>Последние результаты</h2></div><button className="text-button" onClick={() => { setTicketsLoading(true); setView("tickets"); setTicketView("history"); }} type="button">Смотреть все <span>→</span></button></div>
-      {dashboard.recent_results.length ? dashboard.recent_results.map((ticket, index) => <TicketCard index={index} key={ticket.id} ticket={ticket} />) : <EmptyState title="История пока пуста" text="Результаты сыгранных билетов появятся здесь после первого тиража." />}
+      <div className="hero-copy refreshed"><span className="eyebrow">Сегодня в K-Loto</span><h1>Выберите числа.<br /><em>Остальное — за удачей.</em></h1></div>
+      {selectedLottery && <NextDraw lottery={selectedLottery} nearest={selectedLottery.code === nearestLottery?.code} now={serverNow} onLive={() => { setLiveLoading(true); setView("live"); }} onPlay={() => void openLottery(selectedLottery.code)} />}
+      <LotterySwitcher lotteries={dashboard.lotteries} selected={selectedLottery?.code ?? ""} now={serverNow} onSelect={setSelectedLotteryCode} />
+      <div className="home-action-row" aria-label="Быстрые действия">
+        <button onClick={() => { setTicketsLoading(true); setView("tickets"); }} type="button"><span className="action-symbol"><Icon name="ticket" /></span><span><strong>Мои билеты</strong><small>{dashboard.active_ticket_count ? `${dashboard.active_ticket_count} активных билетов` : "Активных билетов пока нет"}</small></span><b>→</b></button>
+        {firstAvailable && <button onClick={() => void openLottery(firstAvailable.code, randomCombination(firstAvailable.max_number, firstAvailable.numbers_to_pick))} type="button"><span className="action-symbol"><Icon name="spark" /></span><span><strong>Случайная комбинация</strong><small>{firstAvailable.name} · {formatCas(firstAvailable.ticket_price ?? 0)}</small></span><b>→</b></button>}
+      </div>
+      <div className="section-heading compact-heading"><div><span className="eyebrow">Последний результат</span><h2>Недавний тираж</h2></div><button className="text-button" onClick={() => { setLiveLoading(true); setView("live"); }} type="button">Смотреть повтор <span>→</span></button></div>
+      {dashboard.recent_results[0] ? <button className={`home-result lottery-${dashboard.recent_results[0].lottery_code}`} onClick={() => { setLiveLoading(true); setView("live"); }} type="button"><span><strong>{dashboard.recent_results[0].lottery_name}</strong><small>{formatMoscow(dashboard.recent_results[0].scheduled_at)} МСК · тираж #{formatDraw(dashboard.recent_results[0].draw_number)}</small></span><NumberSet values={dashboard.recent_results[0].winning_numbers ?? []} /><b><Icon name="replay" /></b></button> : <div className="home-empty-result"><Icon name="live" /><span><strong>Первый результат ещё впереди</strong><small>После тиража здесь появятся выпавшие числа.</small></span></div>}
+      {repeatTicket && <button className="repeat-combination" onClick={() => void openLottery(repeatTicket.lottery_code, repeatTicket.numbers)} type="button"><Icon name="repeat" /> Повторить последнюю комбинацию</button>}
     </section>}
 
     {view === "live" && <section className="view-content live-view" key="live">
@@ -331,13 +342,13 @@ export default function App({ initData, localDev = false }: AppProps) {
     {view === "tickets" && <section className="view-content" key="tickets">
       <div className="page-title"><span className="eyebrow">Личный архив</span><h1>Мои билеты</h1><p>Активные комбинации и результаты тиражей.</p></div>
       <div className={`segmented-control ${ticketView}`}><i /><button className={ticketView === "active" ? "selected" : ""} onClick={() => { selectionHaptic(); setTicketsLoading(true); setTicketView("active"); }} type="button">Активные</button><button className={ticketView === "history" ? "selected" : ""} onClick={() => { selectionHaptic(); setTicketsLoading(true); setTicketView("history"); }} type="button">История</button></div>
-      {ticketsLoading ? <div className="ticket-skeletons"><div className="skeleton ticket-skeleton" /><div className="skeleton ticket-skeleton" /></div> : tickets.length ? tickets.map((ticket, index) => <TicketCard index={index} key={ticket.id} ticket={ticket} />) : <EmptyState title={ticketView === "active" ? "Нет активных билетов" : "История пока пуста"} text={ticketView === "active" ? "Выберите лотерею и соберите свою комбинацию." : "Завершённые билеты появятся после розыгрыша."} action={ticketView === "active" && firstAvailable ? { label: "Выбрать лотерею", onClick: () => setView("home") } : undefined} />}
+      {ticketsLoading ? <div className="ticket-skeletons"><div className="skeleton ticket-skeleton" /><div className="skeleton ticket-skeleton" /></div> : tickets.length ? <TicketGroups tickets={tickets} /> : <EmptyState title={ticketView === "active" ? "Нет активных билетов" : "История пока пуста"} text={ticketView === "active" ? "Выберите лотерею и соберите свою комбинацию." : "Завершённые билеты появятся после розыгрыша."} action={ticketView === "active" && firstAvailable ? { label: "Выбрать лотерею", onClick: () => setView("home") } : undefined} />}
       {ticketView === "active" && firstAvailable && !ticketsLoading && tickets.length > 0 && <PrimaryButton className="sticky-action" onClick={() => void openLottery(firstAvailable.code)}>Ещё один билет</PrimaryButton>}
     </section>}
 
     {view === "cart" && <section className="view-content" key="cart">
       <div className="page-title cart-title"><span className="eyebrow">Перед покупкой</span><h1>Корзина</h1><p>{cart.length ? `${cart.length} ${plural(cart.length, "комбинация", "комбинации", "комбинаций")}` : "Пока без комбинаций"}</p></div>
-      {cart.length ? <><div className="cart-toolbar"><span>До лимита: {CART_MAX_TICKETS - cart.length}</span><button disabled={purchasing} onClick={() => setCart([])} type="button">Очистить</button></div><div className="cart-list">{cartPreview.map((ticket, index) => <article className="cart-ticket" key={ticket.id} style={{ "--item-index": index } as CSSProperties}><div className="cart-ticket-head"><div><span className="eyebrow">{ticket.lotteryName}</span><strong>Комбинация {index + 1}</strong></div><button className="remove-button" onClick={() => { selectionHaptic(); setCart((current) => current.filter((item) => item.id !== ticket.id)); }} type="button" aria-label={`Удалить билет ${index + 1}`}><Icon name="close" /></button></div><NumberSet values={ticket.numbers} /><div className="cart-ticket-price"><span>Стоимость</span><strong>{formatCas(ticket.price)}</strong></div></article>)}</div>{cart.length > cartPreview.length && <div className="cart-overflow">Ещё {cart.length - cartPreview.length} комбинаций готовы к покупке. Для скорости показаны первые 50.</div>}<div className="cart-total"><div><span>К оплате</span><small>{cart.length} бил.</small></div><strong>{formatCas(cart.reduce((sum, item) => sum + item.price, 0))}</strong></div>{purchaseProgress && <div className="purchase-progress"><div><span>Покупаем билеты</span><strong>{purchaseProgress.done} из {purchaseProgress.total}</strong></div><i><span style={{ width: `${(purchaseProgress.done / purchaseProgress.total) * 100}%` }} /></i></div>}<button className="secondary-button" disabled={!firstAvailable || purchasing || cart.length >= CART_MAX_TICKETS} onClick={() => firstAvailable && void openLottery(firstAvailable.code)} type="button">Добавить комбинацию</button><PrimaryButton loading={purchasing} success={purchaseSuccess} onClick={() => void purchaseCart()}>{purchaseSuccess ? "Билеты куплены" : purchasing ? `Покупаем ${purchaseProgress?.done ?? 0} из ${purchaseProgress?.total ?? cart.length}` : `Купить ${cart.length} бил.`}</PrimaryButton></> : <EmptyState title="Корзина пока пуста" text="Выберите лотерею, отметьте числа и сохраните комбинацию перед покупкой." action={{ label: "Выбрать лотерею", onClick: () => setView("home") }} />}
+      {cart.length ? <><div className="cart-toolbar"><span>До лимита: {CART_MAX_TICKETS - cart.length}</span><button disabled={purchasing} onClick={() => setCart([])} type="button">Очистить</button></div><div className="cart-groups">{cartGroups.map((items) => <section className={`cart-group lottery-${items[0].lotteryCode}`} key={items[0].lotteryCode}><header><div><span className="eyebrow">{items[0].lotteryName}</span><strong>{items.length} {plural(items.length, "билет", "билета", "билетов")}</strong></div><b>{formatCas(items.reduce((sum, item) => sum + item.price, 0))}</b></header><div>{items.slice(0, 5).map((ticket, index) => <article className="cart-combination" key={`${ticket.id}:${index}`}><span>{index + 1}</span><NumberSet values={ticket.numbers} /><button className="remove-button" onClick={() => { selectionHaptic(); setCart((current) => current.filter((item) => item.id !== ticket.id)); }} type="button" aria-label={`Удалить билет ${index + 1}`}><Icon name="close" /></button></article>)}{items.length > 5 && <p>Ещё {items.length - 5} комбинаций подготовлено и будет куплено пакетами.</p>}</div></section>)}</div><div className="cart-total"><div><span>К оплате</span><small>{cart.length} бил.</small></div><strong>{formatCas(cart.reduce((sum, item) => sum + item.price, 0))}</strong></div>{purchaseProgress && <div className="purchase-progress"><div><span>Покупаем билеты</span><strong>{purchaseProgress.done} из {purchaseProgress.total}</strong></div><i><span style={{ width: `${(purchaseProgress.done / purchaseProgress.total) * 100}%` }} /></i></div>}<button className="secondary-button" disabled={!firstAvailable || purchasing || cart.length >= CART_MAX_TICKETS} onClick={() => firstAvailable && void openLottery(firstAvailable.code)} type="button">Добавить комбинацию</button><PrimaryButton loading={purchasing} success={purchaseSuccess} onClick={() => void purchaseCart()}>{purchaseSuccess ? "Билеты куплены" : purchasing ? `Покупаем ${purchaseProgress?.done ?? 0} из ${purchaseProgress?.total ?? cart.length}` : `Купить ${cart.length} бил.`}</PrimaryButton></> : <EmptyState title="Корзина пока пуста" text="Выберите лотерею, отметьте числа и сохраните комбинацию перед покупкой." action={{ label: "Выбрать лотерею", onClick: () => setView("home") }} />}
     </section>}
 
     <BottomNavigation view={view} activeTickets={dashboard.active_ticket_count} cartCount={cart.length} onChange={(target) => { if (target === "tickets") setTicketsLoading(true); if (target === "live") setLiveLoading(true); setView(target); }} />

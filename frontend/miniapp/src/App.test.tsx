@@ -61,7 +61,7 @@ beforeEach(() => {
   vi.mocked(miniAppApi.devSession).mockResolvedValue({ mode: "local-development" });
   vi.mocked(miniAppApi.devRefill).mockResolvedValue({ balance: 105_000 });
   vi.mocked(miniAppApi.dashboard).mockResolvedValue(dashboard);
-  vi.mocked(miniAppApi.live).mockResolvedValue({ server_time: new Date().toISOString(), latest_completed: null, next_scheduled: null });
+  vi.mocked(miniAppApi.live).mockResolvedValue({ server_time: new Date().toISOString(), latest_completed: null, next_scheduled: null, recent_completed: [] });
   vi.mocked(miniAppApi.tickets).mockResolvedValue([]);
   vi.mocked(miniAppApi.purchase).mockResolvedValue({
     operation_id: "operation",
@@ -79,6 +79,10 @@ beforeEach(() => {
 });
 
 afterEach(() => vi.unstubAllGlobals());
+
+async function selectWeekly(): Promise<void> {
+  fireEvent.click(await screen.findByRole("button", { name: /^Weekly 5\/20/ }));
+}
 
 it("requires a signed Telegram launch", () => {
   render(<App initData="" />);
@@ -98,8 +102,10 @@ it("renders server-authoritative balance and lottery states", async () => {
   render(<App initData="signed" />);
 
   expect(await screen.findByText("5 000 CAS")).toBeInTheDocument();
+  await selectWeekly();
   expect(screen.getAllByText("10 000 CAS").length).toBeGreaterThan(0);
   expect(screen.getByRole("button", { name: /Выбрать числа.*100 CAS/ })).toBeEnabled();
+  fireEvent.click(screen.getByRole("button", { name: /^ПЛЛ/ }));
   expect(screen.getByRole("button", { name: /Проверить продажи.*—/ })).toBeDisabled();
 });
 
@@ -111,6 +117,7 @@ it("refreshes a stale sales state before opening the number picker", async () =>
   vi.mocked(miniAppApi.dashboard).mockResolvedValueOnce(stale).mockResolvedValue(dashboard);
   render(<App initData="signed" />);
 
+  await selectWeekly();
   fireEvent.click(await screen.findByRole("button", { name: /Проверить продажи.*100 CAS/ }));
 
   expect(await screen.findByRole("button", { name: "Случайные числа" })).toBeInTheDocument();
@@ -127,6 +134,7 @@ it("opens the permanent live tab and requests the server clock", async () => {
 
 it("selects five numbers, adds a ticket and buys the cart atomically", async () => {
   render(<App initData="signed" />);
+  await selectWeekly();
   fireEvent.click(await screen.findByRole("button", { name: /Выбрать числа.*100 CAS/ }));
 
   await waitFor(() => expect(document.querySelector(".number-grid")).not.toBeNull());
@@ -152,6 +160,7 @@ it("selects five numbers, adds a ticket and buys the cart atomically", async () 
 
 it("builds a large cart and sends one hundred tickets as a bounded batch", async () => {
   render(<App initData="signed" />);
+  await selectWeekly();
   fireEvent.click(await screen.findByRole("button", { name: /Выбрать числа.*100 CAS/ }));
   fireEvent.click(await screen.findByRole("button", { name: "+50" }));
   expect(await screen.findByText("50 комбинаций")).toBeInTheDocument();

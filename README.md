@@ -1,6 +1,6 @@
 # K-Loto
 
-Current version: **0.19.0 — Live experience and reliable bulk checkout**.
+Current version: **0.20.0 — Focused Mini App and digital draw replays**.
 
 K-Loto is a multi-user lottery platform with integer CAS accounting, an
 immutable transaction ledger, recoverable draw scheduling and four independent

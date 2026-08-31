@@ -14,7 +14,7 @@ from k_loto.domain.enums import (
     TicketStatus,
     TransactionType,
 )
-from k_loto.domain.lotteries import draw_display_name
+from k_loto.domain.lotteries import draw_display_code, draw_display_name
 from k_loto.infrastructure.database.models import (
     Balance,
     Draw,
@@ -109,6 +109,7 @@ class MiniAppLiveFeed:
     server_time: datetime
     latest_completed: MiniAppLiveDraw | None
     next_scheduled: MiniAppLiveDraw | None
+    recent_completed: tuple[MiniAppLiveDraw, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -269,16 +270,25 @@ class MiniAppQueryService:
     ) -> MiniAppLiveFeed:
         """Return immutable draw facts and a server clock for visual playback."""
         timestamp = now or datetime.now(UTC)
-        latest_row = (
+        completed_rows = (
             await self._session.execute(
                 select(Draw, Lottery, JackpotAccount.balance)
                 .join(Lottery, Lottery.id == Draw.lottery_id)
                 .outerjoin(JackpotAccount, JackpotAccount.lottery_id == Lottery.id)
                 .where(Draw.status == DrawStatus.COMPLETED)
                 .order_by(Draw.scheduled_at.desc())
-                .limit(1)
+                .limit(50)
             )
-        ).first()
+        ).all()
+        recent_rows: list[tuple[Draw, Lottery, int | None]] = []
+        per_lottery: dict[str, int] = {}
+        for row in completed_rows:
+            lottery_code = draw_display_code(row[1].code, row[0].scheduled_at)
+            if per_lottery.get(lottery_code, 0) >= 2:
+                continue
+            recent_rows.append((row[0], row[1], row[2]))
+            per_lottery[lottery_code] = per_lottery.get(lottery_code, 0) + 1
+        latest_row = recent_rows[0] if recent_rows else None
         next_row = (
             await self._session.execute(
                 select(Draw, Lottery, JackpotAccount.balance)
@@ -302,6 +312,12 @@ class MiniAppQueryService:
                 await self._live_draw(user_id, next_row[0], next_row[1], next_row[2])
                 if next_row
                 else None
+            ),
+            recent_completed=tuple(
+                [
+                    await self._live_draw(user_id, draw, lottery, jackpot)
+                    for draw, lottery, jackpot in recent_rows
+                ]
             ),
         )
 
@@ -346,7 +362,7 @@ class MiniAppQueryService:
                 for ticket in tickets
             )
         return MiniAppLiveDraw(
-            lottery_code=lottery.code,
+            lottery_code=draw_display_code(lottery.code, draw.scheduled_at),
             lottery_name=draw_display_name(
                 lottery.code, lottery.name, draw.scheduled_at
             ),
