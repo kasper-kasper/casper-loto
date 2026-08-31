@@ -5,8 +5,9 @@ services own transactions and idempotency; FastAPI, Telegram, scheduler and Web
 Admin are adapters. PostgreSQL is authoritative. CAS is always an integer and
 every balance/fund movement has an immutable ledger record.
 
-The active player surfaces are the Telegram bot and Telegram Mini App. The Mini
-App authenticates signed Telegram `initData` on every request. A loopback-only
+The Telegram bot is the notification and entry adapter; all active gameplay is
+in the Telegram Mini App. The Mini App authenticates signed Telegram `initData`
+on every request. A loopback-only
 development cookie exists only when `APP_ENV=development` and the explicit dev
 switch is enabled. The ordinary username/password player Web adapter is retired.
 

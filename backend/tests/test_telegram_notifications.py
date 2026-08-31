@@ -14,7 +14,7 @@ from k_loto.application.notifications import (
 )
 from k_loto.domain.enums import NotificationType
 from k_loto.infrastructure.database.models import Balance, LedgerTransaction
-from k_loto.infrastructure.telegram_bot import miniapp_markup
+from k_loto.infrastructure.telegram_bot import miniapp_markup, miniapp_menu_button
 from k_loto.infrastructure.telegram_messages import (
     BotNotificationFormatter,
     format_purchase_message,
@@ -135,9 +135,13 @@ def test_miniapp_launch_button_is_only_added_when_url_is_configured() -> None:
 
     assert markup is not None
     button = markup.inline_keyboard[0][0]
-    assert button.text == "✨ Открыть K-Loto"
+    assert button.text == "🎟 Играть в K-Loto"
     assert button.web_app is not None
     assert button.web_app.url == "https://example.test/miniapp"
+
+    menu_button = miniapp_menu_button("https://example.test/miniapp")
+    assert menu_button.text == "🎟 Играть в K-Loto"
+    assert menu_button.web_app.url == "https://example.test/miniapp"
 
 
 def test_purchase_message_contains_all_tickets_and_balance() -> None:

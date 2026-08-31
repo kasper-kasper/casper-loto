@@ -2,6 +2,16 @@
 
 All notable changes follow Keep a Changelog and Semantic Versioning principles.
 
+## [0.15.0] - 2026-08-31
+
+### Changed
+
+- Telegram bot is now a notification and Mini App entry channel.
+- `/start` immediately offers the Mini App instead of the legacy gameplay menu.
+- A persistent **Играть в K-Loto** button is shown beside the message field.
+- Purchase and result notifications open the Mini App directly.
+- The public bot command list is reduced to the single `/start` entry point.
+
 ## [0.14.0] - 2026-08-31
 
 ### Added

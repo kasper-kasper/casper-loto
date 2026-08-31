@@ -1,5 +1,31 @@
 # Development log
 
+## [0.15.0] - 2026-08-31
+
+### Mini App first entry flow
+
+Сделано:
+
+- converted `/start` into an immediate signed Mini App launch;
+- registered Telegram `MenuButtonWebApp` as the persistent button beside the
+  message field;
+- reduced public commands to `/start`;
+- attached the same Mini App launch button to durable purchase and result
+  notifications;
+- retained dormant legacy callback handlers only so old messages fail safely.
+
+Теперь система работает так:
+
+- the bot binds users, grants welcome CAS and delivers notifications;
+- all current gameplay starts and continues in the Mini App;
+- users always see the main game entry without opening a command list.
+
+Технически:
+
+- migration: no schema change after `0010_independent_daily`;
+- tests: recorded by the release checks;
+- commit: recorded by the release commit.
+
 ## [0.14.0] - 2026-08-31
 
 ### Final Telegram player release
