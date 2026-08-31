@@ -21,6 +21,7 @@ from k_loto.domain.enums import (
 from k_loto.domain.lotteries import draw_display_name
 from k_loto.infrastructure.database.models import (
     AdminAuditLog,
+    AutoPlaySetting,
     Balance,
     DistributionFund,
     Draw,
@@ -32,6 +33,7 @@ from k_loto.infrastructure.database.models import (
     SchedulerHeartbeat,
     Ticket,
     User,
+    UserNotificationPreference,
 )
 
 ADMIN_NAMESPACE = UUID("8c48cd74-45ee-46eb-bf5b-e11944f87e3d")
@@ -55,6 +57,11 @@ class AdminPlayer:
     spent: int
     won: int
     net: int
+    telegram_notifications_enabled: bool
+    auto_play_enabled: bool
+    auto_play_tickets_per_draw: int
+    auto_play_last_succeeded_at: datetime | None
+    auto_play_last_error: str | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -415,6 +422,58 @@ class AdminMutationService:
             )
         return await AdminQueryService(self._session).lottery(lottery_id)
 
+    async def set_auto_play(
+        self,
+        user_id: UUID,
+        *,
+        enabled: bool,
+        tickets_per_draw: int,
+        reason: str,
+    ) -> AutoPlaySetting:
+        if not 1 <= tickets_per_draw <= 5:
+            raise ValueError("Auto-play ticket count must be between 1 and 5.")
+        if not reason.strip() or len(reason) > 512:
+            raise ValueError("A reason of 1 to 512 characters is required.")
+        async with self._session.begin():
+            user = await self._session.scalar(
+                select(User)
+                .where(User.id == user_id, User.is_admin.is_(False))
+                .with_for_update()
+            )
+            if user is None:
+                raise LookupError("Player does not exist.")
+            setting = await self._session.get(
+                AutoPlaySetting, user_id, with_for_update=True
+            )
+            old_values = (
+                {
+                    "enabled": setting.enabled,
+                    "tickets_per_draw": setting.tickets_per_draw,
+                }
+                if setting
+                else None
+            )
+            if setting is None:
+                setting = AutoPlaySetting(
+                    user_id=user_id,
+                    enabled=enabled,
+                    tickets_per_draw=tickets_per_draw,
+                )
+                self._session.add(setting)
+            else:
+                setting.enabled = enabled
+                setting.tickets_per_draw = tickets_per_draw
+                setting.last_error = None
+            self._audit(
+                AuditAction.UPDATE,
+                "auto_play_setting",
+                user_id,
+                old_values,
+                {"enabled": enabled, "tickets_per_draw": tickets_per_draw},
+                reason,
+            )
+        return setting
+
     def _audit(
         self,
         action: AuditAction,
@@ -507,6 +566,8 @@ class AdminQueryService:
             in {TransactionType.PRIZE_PAYOUT, TransactionType.JACKPOT_PAYOUT}
             and item.amount > 0
         )
+        preference = await self._session.get(UserNotificationPreference, user.id)
+        auto_play = await self._session.get(AutoPlaySetting, user.id)
         return AdminPlayer(
             user.id,
             user.display_name,
@@ -518,6 +579,11 @@ class AdminQueryService:
             spent,
             won,
             won - spent,
+            bool(preference and preference.telegram_enabled),
+            bool(auto_play and auto_play.enabled),
+            auto_play.tickets_per_draw if auto_play else 5,
+            auto_play.last_succeeded_at if auto_play else None,
+            auto_play.last_error if auto_play else None,
         )
 
     async def lotteries(self) -> tuple[AdminLottery, ...]:

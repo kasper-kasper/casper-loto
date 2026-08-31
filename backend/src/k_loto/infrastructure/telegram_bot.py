@@ -566,7 +566,7 @@ async def _checkout_lottery(
         f"🎟 Билетов: {len(result.ticket_ids)}\n"
         f"Списано: {format_cas(result.total_cost)} CAS\n"
         f"💰 Баланс: {format_cas(result.balance_after)} CAS\n\n"
-        "Подробности уже летят отдельным сообщением. О результате тоже напишу сам 🍀",
+        "О результате напишу после проведения тиража, если уведомления разрешены 🍀",
         reply_markup=purchase_complete_markup(),
     )
 

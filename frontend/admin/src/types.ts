@@ -15,6 +15,11 @@ export interface Player {
   spent: number;
   won: number;
   net: number;
+  telegram_notifications_enabled: boolean;
+  auto_play_enabled: boolean;
+  auto_play_tickets_per_draw: number;
+  auto_play_last_succeeded_at: string | null;
+  auto_play_last_error: string | null;
 }
 
 export interface Lottery {

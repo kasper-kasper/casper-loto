@@ -24,10 +24,12 @@ from sqlalchemy.orm import Mapped, mapped_column
 from k_loto.domain.enums import (
     AuditAction,
     DrawStatus,
+    InAppNotificationType,
     LedgerAccountKind,
     LotteryKind,
     NotificationStatus,
     NotificationType,
+    TicketSource,
     TicketStatus,
     TransactionType,
 )
@@ -262,6 +264,11 @@ class Ticket(Base):
     )
     numbers: Mapped[list[int]] = mapped_column(ARRAY(Integer))
     purchase_price: Mapped[int] = mapped_column(BigInteger)
+    source: Mapped[TicketSource] = mapped_column(
+        enum_type(TicketSource, "ticket_source"),
+        default=TicketSource.MANUAL,
+        server_default=TicketSource.MANUAL.value,
+    )
     purchased_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -440,6 +447,84 @@ class NotificationOutbox(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
+
+class UserNotificationPreference(TimestampMixin, Base):
+    """Explicit Telegram delivery consent and reminder preferences."""
+
+    __tablename__ = "user_notification_preferences"
+
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        primary_key=True,
+    )
+    telegram_enabled: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false"
+    )
+    draw_results_enabled: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default="true"
+    )
+    inactivity_reminders_enabled: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default="true"
+    )
+    write_access_granted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True)
+    )
+    last_inactivity_reminder_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True)
+    )
+
+
+class UserNotification(Base):
+    """Durable in-app inbox; only its read marker may change."""
+
+    __tablename__ = "user_notifications"
+    __table_args__ = (Index("ix_user_notification_inbox", "user_id", "created_at"),)
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), primary_key=True, default=uuid4
+    )
+    event_key: Mapped[str] = mapped_column(String(180), unique=True)
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT")
+    )
+    type: Mapped[InAppNotificationType] = mapped_column(
+        enum_type(InAppNotificationType, "in_app_notification_type")
+    )
+    title: Mapped[str] = mapped_column(String(160))
+    body: Mapped[str] = mapped_column(String(512))
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class AutoPlaySetting(TimestampMixin, Base):
+    """Recurring auto-entry instruction for all active lotteries."""
+
+    __tablename__ = "auto_play_settings"
+    __table_args__ = (
+        CheckConstraint(
+            "tickets_per_draw BETWEEN 1 AND 5", name="tickets_per_draw_valid"
+        ),
+    )
+
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        primary_key=True,
+    )
+    enabled: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false"
+    )
+    tickets_per_draw: Mapped[int] = mapped_column(
+        Integer, default=5, server_default="5"
+    )
+    last_attempted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_succeeded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_error: Mapped[str | None] = mapped_column(String(128))
 
 
 class SchedulerHeartbeat(Base):

@@ -3,7 +3,7 @@ import { vi } from "vitest";
 
 import App from "./App";
 import { miniAppApi } from "./api";
-import type { Dashboard, Ticket } from "./types";
+import type { Account, Dashboard, Ticket } from "./types";
 
 vi.mock("./api", () => ({
   ApiError: class ApiError extends Error {},
@@ -11,6 +11,10 @@ vi.mock("./api", () => ({
     devSession: vi.fn(),
     devRefill: vi.fn(),
     dashboard: vi.fn(),
+    account: vi.fn(),
+    notifications: vi.fn(),
+    notificationPreferences: vi.fn(),
+    markNotificationsRead: vi.fn(),
     live: vi.fn(),
     liveStream: vi.fn(),
     tickets: vi.fn(),
@@ -66,12 +70,34 @@ const dashboard: Dashboard = {
   recent_results: [],
   monthly_total_payout: 0,
 };
+const account: Account = {
+  display_name: "Test Player",
+  balance: 5_000,
+  ticket_count: 0,
+  active_ticket_count: 0,
+  winning_ticket_count: 0,
+  total_spent: 0,
+  total_won: 0,
+  best_win: 0,
+  unread_notification_count: 0,
+  auto_play_enabled: false,
+  auto_play_tickets_per_draw: 5,
+  notification_preferences: {
+    telegram_enabled: false,
+    draw_results_enabled: true,
+    inactivity_reminders_enabled: true,
+  },
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(miniAppApi.devSession).mockResolvedValue({ mode: "local-development" });
   vi.mocked(miniAppApi.devRefill).mockResolvedValue({ balance: 105_000 });
   vi.mocked(miniAppApi.dashboard).mockResolvedValue(dashboard);
+  vi.mocked(miniAppApi.account).mockResolvedValue(account);
+  vi.mocked(miniAppApi.notifications).mockResolvedValue([]);
+  vi.mocked(miniAppApi.notificationPreferences).mockResolvedValue(account.notification_preferences);
+  vi.mocked(miniAppApi.markNotificationsRead).mockResolvedValue();
   vi.mocked(miniAppApi.live).mockResolvedValue({ server_time: new Date().toISOString(), latest_completed: null, next_scheduled: null, recent_completed: [] });
   vi.mocked(miniAppApi.liveStream).mockImplementation(async () => undefined);
   vi.mocked(miniAppApi.tickets).mockResolvedValue([]);
@@ -219,18 +245,19 @@ it("renders losing history as neutral and winning history as rewarded", async ()
     {
       id: "loss", public_number: 465, lottery_code: "pll", lottery_name: "ПЛЛ-лото",
       draw_number: 12, scheduled_at: "2026-08-15T15:00:00Z", numbers: [1, 2, 3, 4],
-      purchase_price: 100, status: "SETTLED", matches: 0, prize_amount: 0,
+      purchase_price: 100, source: "MANUAL", status: "SETTLED", matches: 0, prize_amount: 0,
       winning_numbers: [5, 6, 7, 8],
     },
     {
       id: "win", public_number: 466, lottery_code: "pll", lottery_name: "ПЛЛ-лото",
       draw_number: 12, scheduled_at: "2026-08-15T15:00:00Z", numbers: [5, 6, 7, 9],
-      purchase_price: 100, status: "SETTLED", matches: 3, prize_amount: 300,
+      purchase_price: 100, source: "MANUAL", status: "SETTLED", matches: 3, prize_amount: 300,
       winning_numbers: [5, 6, 7, 8],
     },
   ];
   vi.mocked(miniAppApi.tickets).mockResolvedValue(history);
   render(<App initData="signed" />);
+  fireEvent.click(await screen.findByRole("button", { name: "Моё" }));
   fireEvent.click(await screen.findByRole("button", { name: "Билеты" }));
   fireEvent.click(await screen.findByRole("button", { name: "История" }));
 

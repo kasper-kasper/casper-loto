@@ -31,6 +31,7 @@ from k_loto.infrastructure.database.models import (
     LotteryReserve,
     NotificationOutbox,
     Ticket,
+    UserNotificationPreference,
 )
 
 
@@ -186,9 +187,7 @@ async def test_multi_ticket_purchase_updates_all_accounts_and_numbering() -> Non
     notifications = [
         item for item in fake.added if isinstance(item, NotificationOutbox)
     ]
-    assert len(notifications) == 1
-    assert notifications[0].type == NotificationType.TICKET_PURCHASED
-    assert len(notifications[0].payload["tickets"]) == 2
+    assert notifications == []
 
 
 async def test_five_draw_purchase_is_prepaid_and_created_atomically() -> None:
@@ -386,6 +385,7 @@ async def test_empty_draw_settlement_completes_and_uses_secure_generator() -> No
     assert distribution.balance == 300
     assert jackpot.balance == 2_000
     assert generator.calls == 1
+    assert not any(isinstance(item, NotificationOutbox) for item in fake.added)
 
 
 async def test_completed_draw_settlement_is_idempotent() -> None:
@@ -425,9 +425,15 @@ async def test_settlement_enqueues_one_result_notification_per_user() -> None:
     reserve = LotteryReserve(
         id=UUID(int=700), lottery_id=lottery.id, balance=1_000, version=1
     )
+    preference = UserNotificationPreference(
+        user_id=user_id,
+        telegram_enabled=True,
+        draw_results_enabled=True,
+        inactivity_reminders_enabled=True,
+    )
     fake = FakeSession(
         scalar_values=[draw, lottery, jackpot, distribution, reserve],
-        scalar_collections=[[ticket], [balance], [user_id]],
+        scalar_collections=[[ticket], [balance], [preference]],
     )
 
     await WeeklySettlementService(cast(AsyncSession, fake), FixedGenerator()).settle(

@@ -5,25 +5,31 @@ from datetime import UTC, datetime
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from k_loto.domain.enums import (
     DrawStatus,
+    InAppNotificationType,
     LedgerAccountKind,
     LotteryKind,
+    TicketSource,
     TicketStatus,
     TransactionType,
 )
 from k_loto.domain.live_timeline import draw_timeline, sales_status
 from k_loto.domain.lotteries import draw_display_code, draw_display_name
 from k_loto.infrastructure.database.models import (
+    AutoPlaySetting,
     Balance,
     Draw,
     JackpotAccount,
     LedgerTransaction,
     Lottery,
     Ticket,
+    User,
+    UserNotification,
+    UserNotificationPreference,
 )
 
 
@@ -57,6 +63,7 @@ class MiniAppTicket:
     scheduled_at: datetime
     numbers: tuple[int, ...]
     purchase_price: int
+    source: TicketSource
     status: TicketStatus
     matches: int | None
     prize_amount: int
@@ -133,9 +140,168 @@ class PlayerActivity:
     details: dict[str, object]
 
 
+@dataclass(frozen=True, slots=True)
+class MiniAppNotificationPreferences:
+    telegram_enabled: bool
+    draw_results_enabled: bool
+    inactivity_reminders_enabled: bool
+
+
+@dataclass(frozen=True, slots=True)
+class MiniAppAccount:
+    display_name: str
+    balance: int
+    ticket_count: int
+    active_ticket_count: int
+    winning_ticket_count: int
+    total_spent: int
+    total_won: int
+    best_win: int
+    unread_notification_count: int
+    auto_play_enabled: bool
+    auto_play_tickets_per_draw: int
+    notification_preferences: MiniAppNotificationPreferences
+
+
+@dataclass(frozen=True, slots=True)
+class MiniAppNotification:
+    id: UUID
+    type: InAppNotificationType
+    title: str
+    body: str
+    payload: dict[str, object]
+    read_at: datetime | None
+    created_at: datetime
+
+
 class MiniAppQueryService:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
+
+    async def account(self, user_id: UUID) -> MiniAppAccount:
+        user = await self._session.get(User, user_id)
+        if user is None:
+            raise LookupError("Player does not exist.")
+        balance = int(
+            await self._session.scalar(
+                select(Balance.amount).where(Balance.user_id == user_id)
+            )
+            or 0
+        )
+        stats = (
+            await self._session.execute(
+                select(
+                    func.count(Ticket.id),
+                    func.count(Ticket.id).filter(
+                        Ticket.status == TicketStatus.PURCHASED
+                    ),
+                    func.count(Ticket.id).filter(Ticket.prize_amount > 0),
+                    func.coalesce(func.sum(Ticket.purchase_price), 0),
+                    func.coalesce(func.sum(Ticket.prize_amount), 0),
+                    func.coalesce(func.max(Ticket.prize_amount), 0),
+                ).where(Ticket.user_id == user_id)
+            )
+        ).one()
+        preference = await self._session.get(UserNotificationPreference, user_id)
+        auto_play = await self._session.get(AutoPlaySetting, user_id)
+        unread = int(
+            await self._session.scalar(
+                select(func.count(UserNotification.id)).where(
+                    UserNotification.user_id == user_id,
+                    UserNotification.read_at.is_(None),
+                )
+            )
+            or 0
+        )
+        return MiniAppAccount(
+            display_name=user.display_name,
+            balance=balance,
+            ticket_count=int(stats[0]),
+            active_ticket_count=int(stats[1]),
+            winning_ticket_count=int(stats[2]),
+            total_spent=int(stats[3]),
+            total_won=int(stats[4]),
+            best_win=int(stats[5]),
+            unread_notification_count=unread,
+            auto_play_enabled=bool(auto_play and auto_play.enabled),
+            auto_play_tickets_per_draw=(auto_play.tickets_per_draw if auto_play else 5),
+            notification_preferences=MiniAppNotificationPreferences(
+                telegram_enabled=bool(preference and preference.telegram_enabled),
+                draw_results_enabled=(
+                    preference.draw_results_enabled if preference else True
+                ),
+                inactivity_reminders_enabled=(
+                    preference.inactivity_reminders_enabled if preference else True
+                ),
+            ),
+        )
+
+    async def notifications(
+        self, user_id: UUID, *, limit: int = 100
+    ) -> tuple[MiniAppNotification, ...]:
+        rows = (
+            await self._session.scalars(
+                select(UserNotification)
+                .where(UserNotification.user_id == user_id)
+                .order_by(UserNotification.created_at.desc())
+                .limit(limit)
+            )
+        ).all()
+        return tuple(
+            MiniAppNotification(
+                item.id,
+                item.type,
+                item.title,
+                item.body,
+                item.payload,
+                item.read_at,
+                item.created_at,
+            )
+            for item in rows
+        )
+
+    async def set_notification_preferences(
+        self,
+        user_id: UUID,
+        *,
+        telegram_enabled: bool,
+        draw_results_enabled: bool,
+        inactivity_reminders_enabled: bool,
+        now: datetime | None = None,
+    ) -> MiniAppNotificationPreferences:
+        timestamp = now or datetime.now(UTC)
+        async with self._session.begin():
+            preference = await self._session.get(
+                UserNotificationPreference, user_id, with_for_update=True
+            )
+            if preference is None:
+                preference = UserNotificationPreference(user_id=user_id)
+                self._session.add(preference)
+            preference.telegram_enabled = telegram_enabled
+            preference.draw_results_enabled = draw_results_enabled
+            preference.inactivity_reminders_enabled = inactivity_reminders_enabled
+            if telegram_enabled and preference.write_access_granted_at is None:
+                preference.write_access_granted_at = timestamp
+        return MiniAppNotificationPreferences(
+            telegram_enabled,
+            draw_results_enabled,
+            inactivity_reminders_enabled,
+        )
+
+    async def mark_notifications_read(
+        self, user_id: UUID, notification_id: UUID | None = None
+    ) -> None:
+        timestamp = datetime.now(UTC)
+        filters = [
+            UserNotification.user_id == user_id,
+            UserNotification.read_at.is_(None),
+        ]
+        if notification_id is not None:
+            filters.append(UserNotification.id == notification_id)
+        async with self._session.begin():
+            await self._session.execute(
+                update(UserNotification).where(*filters).values(read_at=timestamp)
+            )
 
     async def dashboard(
         self, user_id: UUID, *, now: datetime | None = None
@@ -284,6 +450,7 @@ class MiniAppQueryService:
                 scheduled_at=draw.scheduled_at,
                 numbers=tuple(ticket.numbers),
                 purchase_price=ticket.purchase_price,
+                source=ticket.source,
                 status=ticket.status,
                 matches=ticket.matches,
                 prize_amount=ticket.prize_amount,

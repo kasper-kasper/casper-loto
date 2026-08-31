@@ -8,7 +8,11 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from k_loto.application.welcome import WelcomeGrantService
-from k_loto.infrastructure.database.models import Balance, User
+from k_loto.infrastructure.database.models import (
+    Balance,
+    User,
+    UserNotificationPreference,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,6 +62,13 @@ class TelegramIdentityService:
                 insert(Balance)
                 .values(user_id=user_id, amount=0, version=1)
                 .on_conflict_do_nothing(index_elements=[Balance.user_id])
+            )
+            await self._session.execute(
+                insert(UserNotificationPreference)
+                .values(user_id=user_id)
+                .on_conflict_do_nothing(
+                    index_elements=[UserNotificationPreference.user_id]
+                )
             )
             balance = await self._session.scalar(
                 select(Balance.amount).where(Balance.user_id == user_id)

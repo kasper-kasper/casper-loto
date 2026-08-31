@@ -29,6 +29,7 @@ export interface Ticket {
   scheduled_at: string;
   numbers: number[];
   purchase_price: number;
+  source: "MANUAL" | "AUTO_PLAY";
   status: TicketStatus;
   matches: number | null;
   prize_amount: number;
@@ -102,4 +103,35 @@ export interface CartTicket {
 export interface Favorite {
   id: string;
   numbers: number[];
+}
+
+export interface NotificationPreferences {
+  telegram_enabled: boolean;
+  draw_results_enabled: boolean;
+  inactivity_reminders_enabled: boolean;
+}
+
+export interface Account {
+  display_name: string;
+  balance: number;
+  ticket_count: number;
+  active_ticket_count: number;
+  winning_ticket_count: number;
+  total_spent: number;
+  total_won: number;
+  best_win: number;
+  unread_notification_count: number;
+  auto_play_enabled: boolean;
+  auto_play_tickets_per_draw: number;
+  notification_preferences: NotificationPreferences;
+}
+
+export interface UserNotification {
+  id: string;
+  type: "WIN" | "DRAW_INVITATION";
+  title: string;
+  body: string;
+  payload: Record<string, unknown>;
+  read_at: string | null;
+  created_at: string;
 }

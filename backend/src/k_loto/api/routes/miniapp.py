@@ -33,7 +33,12 @@ from k_loto.application.weekly import (
     WeeklyTicketPurchaseService,
 )
 from k_loto.core.config import Settings, get_settings
-from k_loto.domain.enums import LotteryKind, TicketStatus
+from k_loto.domain.enums import (
+    InAppNotificationType,
+    LotteryKind,
+    TicketSource,
+    TicketStatus,
+)
 from k_loto.domain.errors import (
     ConfigurationError,
     InsufficientBalance,
@@ -83,6 +88,7 @@ class TicketResponse(BaseModel):
     scheduled_at: datetime
     numbers: list[int]
     purchase_price: int
+    source: TicketSource
     status: TicketStatus
     matches: int | None
     prize_amount: int
@@ -96,6 +102,45 @@ class DashboardResponse(BaseModel):
     lotteries: list[LotteryResponse]
     recent_results: list[TicketResponse]
     monthly_total_payout: int
+
+
+class NotificationPreferencesResponse(BaseModel):
+    telegram_enabled: bool
+    draw_results_enabled: bool
+    inactivity_reminders_enabled: bool
+
+
+class NotificationPreferencesRequest(NotificationPreferencesResponse):
+    pass
+
+
+class AccountResponse(BaseModel):
+    display_name: str
+    balance: int
+    ticket_count: int
+    active_ticket_count: int
+    winning_ticket_count: int
+    total_spent: int
+    total_won: int
+    best_win: int
+    unread_notification_count: int
+    auto_play_enabled: bool
+    auto_play_tickets_per_draw: int
+    notification_preferences: NotificationPreferencesResponse
+
+
+class UserNotificationResponse(BaseModel):
+    id: UUID
+    type: InAppNotificationType
+    title: str
+    body: str
+    payload: dict[str, object]
+    read_at: datetime | None
+    created_at: datetime
+
+
+class ReadNotificationsRequest(BaseModel):
+    notification_id: UUID | None = None
 
 
 class TicketListResponse(BaseModel):
@@ -262,6 +307,7 @@ def _ticket_response(item: MiniAppTicket) -> TicketResponse:
         scheduled_at=item.scheduled_at,
         numbers=list(item.numbers),
         purchase_price=item.purchase_price,
+        source=item.source,
         status=item.status,
         matches=item.matches,
         prize_amount=item.prize_amount,
@@ -332,6 +378,83 @@ async def dashboard(
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> DashboardResponse:
     return _dashboard_response(await MiniAppQueryService(session).dashboard(user.id))
+
+
+@router.get("/account", response_model=AccountResponse)
+async def account(
+    user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> AccountResponse:
+    item = await MiniAppQueryService(session).account(user.id)
+    return AccountResponse(
+        display_name=item.display_name,
+        balance=item.balance,
+        ticket_count=item.ticket_count,
+        active_ticket_count=item.active_ticket_count,
+        winning_ticket_count=item.winning_ticket_count,
+        total_spent=item.total_spent,
+        total_won=item.total_won,
+        best_win=item.best_win,
+        unread_notification_count=item.unread_notification_count,
+        auto_play_enabled=item.auto_play_enabled,
+        auto_play_tickets_per_draw=item.auto_play_tickets_per_draw,
+        notification_preferences=NotificationPreferencesResponse(
+            telegram_enabled=item.notification_preferences.telegram_enabled,
+            draw_results_enabled=item.notification_preferences.draw_results_enabled,
+            inactivity_reminders_enabled=(
+                item.notification_preferences.inactivity_reminders_enabled
+            ),
+        ),
+    )
+
+
+@router.get("/notifications", response_model=list[UserNotificationResponse])
+async def user_notifications(
+    user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> list[UserNotificationResponse]:
+    return [
+        UserNotificationResponse(
+            id=item.id,
+            type=item.type,
+            title=item.title,
+            body=item.body,
+            payload=item.payload,
+            read_at=item.read_at,
+            created_at=item.created_at,
+        )
+        for item in await MiniAppQueryService(session).notifications(user.id)
+    ]
+
+
+@router.put("/notification-preferences", response_model=NotificationPreferencesResponse)
+async def update_notification_preferences(
+    payload: NotificationPreferencesRequest,
+    user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> NotificationPreferencesResponse:
+    item = await MiniAppQueryService(session).set_notification_preferences(
+        user.id,
+        telegram_enabled=payload.telegram_enabled,
+        draw_results_enabled=payload.draw_results_enabled,
+        inactivity_reminders_enabled=payload.inactivity_reminders_enabled,
+    )
+    return NotificationPreferencesResponse(
+        telegram_enabled=item.telegram_enabled,
+        draw_results_enabled=item.draw_results_enabled,
+        inactivity_reminders_enabled=item.inactivity_reminders_enabled,
+    )
+
+
+@router.post("/notifications/read", status_code=status.HTTP_204_NO_CONTENT)
+async def mark_user_notifications_read(
+    payload: ReadNotificationsRequest,
+    user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> None:
+    await MiniAppQueryService(session).mark_notifications_read(
+        user.id, payload.notification_id
+    )
 
 
 @router.get("/live", response_model=LiveFeedResponse)

@@ -76,6 +76,12 @@ class AdjustmentResponse(BaseModel):
     already_processed: bool
 
 
+class AutoPlayRequest(BaseModel):
+    enabled: bool
+    tickets_per_draw: int = Field(default=5, ge=1, le=5)
+    reason: str = Field(min_length=1, max_length=512)
+
+
 class LotteryConfigurationRequest(BaseModel):
     ticket_price: int = Field(gt=0)
     base_jackpot: int = Field(ge=0)
@@ -96,6 +102,11 @@ class PlayerResponse(ApiModel):
     spent: int
     won: int
     net: int
+    telegram_notifications_enabled: bool
+    auto_play_enabled: bool
+    auto_play_tickets_per_draw: int
+    auto_play_last_succeeded_at: datetime | None
+    auto_play_last_error: str | None
 
 
 class LotteryResponse(ApiModel):
@@ -423,6 +434,30 @@ async def adjust_player_balance(
     return AdjustmentResponse(
         amount=result.amount, already_processed=result.already_processed
     )
+
+
+@router.put("/players/{user_id}/auto-play", response_model=PlayerResponse)
+async def configure_player_auto_play(
+    user_id: UUID,
+    payload: AutoPlayRequest,
+    admin: Annotated[CurrentAdmin, Depends(require_admin_csrf)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> PlayerResponse:
+    try:
+        await AdminMutationService(session, admin.user_id).set_auto_play(
+            user_id,
+            enabled=payload.enabled,
+            tickets_per_draw=payload.tickets_per_draw,
+            reason=payload.reason,
+        )
+        item = await AdminQueryService(session).player(user_id)
+    except LookupError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from error
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(error)
+        ) from error
+    return PlayerResponse.model_validate(item)
 
 
 @router.get("/lotteries", response_model=list[LotteryResponse])

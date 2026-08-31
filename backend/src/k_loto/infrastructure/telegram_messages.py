@@ -104,10 +104,23 @@ def format_result_message(payload: dict[str, Any]) -> str:
     )
 
 
+def format_inactivity_reminder(payload: dict[str, Any]) -> str:
+    scheduled = datetime.fromisoformat(str(payload["scheduled_at"])).astimezone(MOSCOW)
+    return (
+        "🎟 Можно снова испытать удачу\n\n"
+        f"Ближайший тираж — {payload['lottery_name']} "
+        f"№{int(payload['draw_number']):04d}.\n"
+        f"🕒 {scheduled:%d.%m.%Y · %H:%M} МСК\n\n"
+        "Вы давно не выбирали числа. Откройте K-Loto, если хотите участвовать."
+    )
+
+
 class BotNotificationFormatter:
     def format(self, notification: ClaimedNotification) -> str:
         if notification.type == NotificationType.TICKET_PURCHASED:
             return format_purchase_message(notification.payload)
         if notification.type == NotificationType.DRAW_RESULT:
             return format_result_message(notification.payload)
+        if notification.type == NotificationType.INACTIVITY_REMINDER:
+            return format_inactivity_reminder(notification.payload)
         raise ValueError(f"Unsupported notification type: {notification.type}")

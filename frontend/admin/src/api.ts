@@ -129,6 +129,11 @@ export const adminApi = {
         }),
       },
     ),
+  setAutoPlay: (userId: string, enabled: boolean, reason: string) =>
+    request<Player>(`/players/${userId}/auto-play`, {
+      method: "PUT",
+      body: JSON.stringify({ enabled, tickets_per_draw: 5, reason }),
+    }),
   configureLottery: (
     lotteryId: string,
     ticketPrice: number,

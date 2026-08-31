@@ -1,4 +1,4 @@
-import type { Dashboard, Favorite, LiveFeed, PurchaseResult, Ticket } from "./types";
+import type { Account, Dashboard, Favorite, LiveFeed, NotificationPreferences, PurchaseResult, Ticket, UserNotification } from "./types";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "";
 
@@ -48,6 +48,14 @@ export const miniAppApi = {
     }),
   dashboard: (initData: string) =>
     request<Dashboard>("/api/v1/miniapp/dashboard", initData),
+  account: (initData: string) =>
+    request<Account>("/api/v1/miniapp/account", initData),
+  notifications: (initData: string) =>
+    request<UserNotification[]>("/api/v1/miniapp/notifications", initData),
+  notificationPreferences: (initData: string, preferences: NotificationPreferences) =>
+    request<NotificationPreferences>("/api/v1/miniapp/notification-preferences", initData, { method: "PUT", body: JSON.stringify(preferences) }),
+  markNotificationsRead: (initData: string, notificationId?: string) =>
+    request<void>("/api/v1/miniapp/notifications/read", initData, { method: "POST", body: JSON.stringify({ notification_id: notificationId ?? null }) }),
   live: (initData: string) =>
     request<LiveFeed>("/api/v1/miniapp/live", initData),
   liveStream: async (initData: string, onSnapshot: (feed: LiveFeed) => void, signal: AbortSignal) => {

@@ -142,6 +142,8 @@ function PlayerCard({ player, onSaved }: { player: Player; onSaved: () => Promis
   const [amount, setAmount] = useState(String(player.balance));
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const [autoReason, setAutoReason] = useState("");
+  const [autoBusy, setAutoBusy] = useState(false);
   const save = async () => {
     setBusy(true);
     try {
@@ -150,9 +152,18 @@ function PlayerCard({ player, onSaved }: { player: Player; onSaved: () => Promis
       await onSaved();
     } finally { setBusy(false); }
   };
+  const toggleAutoPlay = async () => {
+    setAutoBusy(true);
+    try {
+      await adminApi.setAutoPlay(player.id, !player.auto_play_enabled, autoReason);
+      setAutoReason("");
+      await onSaved();
+    } finally { setAutoBusy(false); }
+  };
   return <article className="player-card">
     <div className="player-head"><div className="avatar">{player.display_name.slice(0, 1)}</div><div><h3>{player.display_name}</h3><small>@{player.username ?? "без_логина"} · TG {player.telegram_id ?? "—"}</small></div><Status active={player.is_active}>{player.is_active ? "АКТИВЕН" : "ОТКЛЮЧЁН"}</Status></div>
     <div className="player-stats"><span><small>БАЛАНС</small><b>{cas(player.balance)}</b></span><span><small>БИЛЕТЫ</small><b>{player.ticket_count}</b></span><span><small>ПОТРАЧЕНО</small><b>{cas(player.spent)}</b></span><span><small>ВЫИГРАНО</small><b>{cas(player.won)}</b></span><span><small>ИТОГ</small><b className={player.net >= 0 ? "positive" : "negative"}>{cas(player.net)}</b></span></div>
+    <div className="player-automation"><div><small>АВТОУЧАСТИЕ</small><b>{player.auto_play_enabled ? "5 случайных билетов на каждый тираж" : "Отключено"}</b><span>Telegram: {player.telegram_notifications_enabled ? "разрешён" : "не разрешён"} · последний успех: {date(player.auto_play_last_succeeded_at)}{player.auto_play_last_error ? ` · ошибка: ${player.auto_play_last_error}` : ""}</span></div><label>Причина автоучастия<input value={autoReason} onChange={(event) => setAutoReason(event.target.value)} placeholder="Почему меняется автоучастие?" /></label><button disabled={autoBusy || !autoReason.trim()} onClick={() => void toggleAutoPlay()}>{player.auto_play_enabled ? "ОТКЛЮЧИТЬ" : "ВКЛЮЧИТЬ 5 БИЛЕТОВ"}</button></div>
     <div className="adjust"><label>Новый баланс<input min="0" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} /></label><label>Обязательная причина<input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Почему требуется изменение?" /></label><button disabled={busy || !reason.trim()} onClick={() => void save()}>ИЗМЕНИТЬ ЧЕРЕЗ ЖУРНАЛ</button></div>
   </article>;
 }

@@ -3,12 +3,13 @@ import type { CSSProperties, ReactNode } from "react";
 
 import { formatCas } from "./format";
 
-export type IconName = "home" | "ticket" | "cart" | "live" | "replay" | "arrow" | "spark" | "repeat" | "close";
+export type IconName = "home" | "ticket" | "profile" | "cart" | "live" | "replay" | "arrow" | "spark" | "repeat" | "close";
 
 export function Icon({ name }: { name: IconName }) {
   const paths: Record<IconName, ReactNode> = {
     home: <><path d="M4 12 12 4l8 8-8 8Z" /><path d="M9 12h6M12 9v6" /></>,
     ticket: <><path d="m5 7 13-2 1 12-13 2Z" /><path d="M9 9.5 10 16M13 9l3-.5M13.5 12l3-.5M14 15l2.5-.5" /></>,
+    profile: <><path d="M12 3.5a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z" /><path d="M4.5 20c.7-4 3.2-6 7.5-6s6.8 2 7.5 6" /><path d="M8 20h8" /></>,
     cart: <><path d="M5 8h14l-1 11H6Z" /><path d="M8 8c0-2.5 1.3-4 4-4s4 1.5 4 4M9 12h6" /></>,
     live: <><path d="M4 12h3l2-5 3 10 2-6 2 3h4" /><path d="M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" /></>,
     replay: <><path d="M6.5 7.5A7 7 0 1 1 5 14" /><path d="M3.5 7.5h3.5V4M10 9l5 3-5 3Z" /></>,

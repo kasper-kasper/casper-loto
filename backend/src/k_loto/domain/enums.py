@@ -22,6 +22,11 @@ class TicketStatus(StrEnum):
     SETTLED = "SETTLED"
 
 
+class TicketSource(StrEnum):
+    MANUAL = "MANUAL"
+    AUTO_PLAY = "AUTO_PLAY"
+
+
 class LedgerAccountKind(StrEnum):
     USER_BALANCE = "USER_BALANCE"
     JACKPOT = "JACKPOT"
@@ -47,6 +52,12 @@ class AuditAction(StrEnum):
 class NotificationType(StrEnum):
     TICKET_PURCHASED = "TICKET_PURCHASED"
     DRAW_RESULT = "DRAW_RESULT"
+    INACTIVITY_REMINDER = "INACTIVITY_REMINDER"
+
+
+class InAppNotificationType(StrEnum):
+    WIN = "WIN"
+    DRAW_INVITATION = "DRAW_INVITATION"
 
 
 class NotificationStatus(StrEnum):

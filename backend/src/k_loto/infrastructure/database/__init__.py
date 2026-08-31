@@ -2,6 +2,7 @@
 
 from k_loto.infrastructure.database.models import (
     AdminAuditLog,
+    AutoPlaySetting,
     Balance,
     DistributionFund,
     Draw,
@@ -12,12 +13,15 @@ from k_loto.infrastructure.database.models import (
     NotificationOutbox,
     Ticket,
     User,
+    UserNotification,
+    UserNotificationPreference,
     WebAccount,
     WebLoginToken,
 )
 
 __all__ = [
     "AdminAuditLog",
+    "AutoPlaySetting",
     "Balance",
     "DistributionFund",
     "Draw",
@@ -28,6 +32,8 @@ __all__ = [
     "NotificationOutbox",
     "Ticket",
     "User",
+    "UserNotification",
+    "UserNotificationPreference",
     "WebAccount",
     "WebLoginToken",
 ]

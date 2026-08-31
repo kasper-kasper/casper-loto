@@ -19,7 +19,7 @@ label { display: grid; gap: 7px; color: #899c94; font: 500 10px "IBM Plex Mono";
 input, select { min-height: 42px; padding: 0 12px; border: 1px solid #243a32; outline: 0; background: #070c0b; color: #e5f2ec; }
 input:focus, select:focus { border-color: #5bba8b; box-shadow: 0 0 0 2px #78f5b510; }
 .login-card form { display: grid; gap: 18px; margin-top: 28px; }
-.primary, .adjust button, .actions button, .filters button { min-height: 42px; border: 1px solid #54d899; background: #173c2c; color: #a3ffd0; font: 600 10px "IBM Plex Mono"; letter-spacing: .1em; }
+.primary, .adjust button, .player-automation button, .actions button, .filters button { min-height: 42px; border: 1px solid #54d899; background: #173c2c; color: #a3ffd0; font: 600 10px "IBM Plex Mono"; letter-spacing: .1em; }
 button:disabled { opacity: .4; cursor: not-allowed; }
 .error { padding: 11px 13px; border: 1px solid #7a3434; background: #351515; color: #ffb2b2; font: 500 11px "IBM Plex Mono"; }
 .admin-shell { display: grid; grid-template-columns: 244px 1fr; min-height: 100vh; }
@@ -80,6 +80,11 @@ tr.clickable { cursor: pointer; } tr.clickable:hover { background: #10231c; }
 .player-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; margin: 18px 0; background: #1a2c25; }
 .player-stats span { padding: 13px; background: #09100e; }.player-stats small, .fund-matrix small { display: block; color: #53675f; font: 8px "IBM Plex Mono"; }.player-stats b, .fund-matrix b { display: block; margin-top: 6px; font: 500 13px "IBM Plex Mono"; }
 .adjust { display: grid; grid-template-columns: 180px 1fr 170px; gap: 10px; align-items: end; }
+.player-automation { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(240px, 1fr) 190px; gap: 10px; margin-bottom: 12px; padding: 13px; align-items: end; border: 1px solid var(--line); background: rgba(29, 55, 101, .16); }
+.player-automation > div small, .player-automation > div b, .player-automation > div span { display: block; }
+.player-automation > div small { color: #6f83aa; font: 8px "IBM Plex Mono"; letter-spacing: .1em; }
+.player-automation > div b { margin-top: 5px; color: #e8c578; font: 600 11px "IBM Plex Mono"; }
+.player-automation > div span { margin-top: 5px; color: #6f83aa; font: 8px "IBM Plex Mono"; }
 .lottery-card > header { padding: 17px 20px; }.lottery-card header small { color: var(--green); font: 8px "IBM Plex Mono"; }.lottery-card header h2 { margin-top: 5px; font-size: 17px; }
 .fund-matrix { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--line); }.fund-matrix > span { padding: 18px 20px; border-right: 1px solid var(--line); }.fund-matrix em { display: block; margin-top: 5px; color: #62766e; font: normal 8px "IBM Plex Mono"; }
 .config-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 13px; padding: 18px 20px 10px; }.reason { padding: 0 20px 12px; }.actions { display: flex; gap: 10px; padding: 0 20px 12px; }.actions button { min-width: 260px; padding: 0 16px; }.save-message { margin: 0 20px 18px; color: var(--green); font: 500 10px "IBM Plex Mono"; }.save-message.error { padding: 10px 12px; color: #ffb2b2; }.lottery-card footer { padding: 12px 20px; border-top: 1px solid var(--line); color: #60736b; font: 8px "IBM Plex Mono"; }.lottery-card code { color: #8aa99b; }

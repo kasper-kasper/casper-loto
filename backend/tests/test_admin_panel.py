@@ -23,12 +23,14 @@ from k_loto.infrastructure.admin_auth import (
 )
 from k_loto.infrastructure.database.models import (
     AdminAuditLog,
+    AutoPlaySetting,
     Balance,
     Draw,
     JackpotAccount,
     LedgerTransaction,
     Lottery,
     LotteryReserve,
+    User,
 )
 from k_loto.main import create_app
 
@@ -64,10 +66,12 @@ class FakeSession:
         scalar_values: list[Any],
         scalar_collections: list[list[Any]] | None = None,
         execute_rows: list[Any] | None = None,
+        get_values: list[Any] | None = None,
     ) -> None:
         self.scalar_values = iter(scalar_values)
         self.scalar_collections = iter(scalar_collections or [])
         self.execute_rows = iter(execute_rows or [])
+        self.get_values = iter(get_values or [])
         self.added: list[Any] = []
 
     def begin(self) -> TransactionContext:
@@ -81,6 +85,9 @@ class FakeSession:
 
     async def execute(self, _statement: object) -> RowResult:
         return RowResult(next(self.execute_rows))
+
+    async def get(self, *_args: object, **_kwargs: object) -> Any:
+        return next(self.get_values)
 
     def add(self, item: Any) -> None:
         self.added.append(item)
@@ -217,6 +224,44 @@ async def test_reserve_adjustment_is_ledgered_and_never_negative() -> None:
             target_amount=-1,
             reason="Invalid",
             idempotency_key="reserve-2",
+        )
+
+
+async def test_auto_play_is_owner_audited_and_limited_to_five_tickets() -> None:
+    user_id = UUID(int=33)
+    user = User(
+        id=user_id,
+        telegram_id=1201541335,
+        display_name="Owner player",
+        is_admin=False,
+        is_active=True,
+    )
+    fake = FakeSession(scalar_values=[user], get_values=[None])
+
+    setting = await AdminMutationService(
+        cast(AsyncSession, fake), UUID(int=20)
+    ).set_auto_play(
+        user_id,
+        enabled=True,
+        tickets_per_draw=5,
+        reason="Owner requested five tickets per draw",
+    )
+
+    assert setting.enabled
+    assert setting.tickets_per_draw == 5
+    assert any(isinstance(item, AutoPlaySetting) for item in fake.added)
+    audit = next(item for item in fake.added if isinstance(item, AdminAuditLog))
+    assert audit.entity_type == "auto_play_setting"
+    assert audit.new_values == {"enabled": True, "tickets_per_draw": 5}
+
+    with pytest.raises(ValueError, match="between 1 and 5"):
+        await AdminMutationService(
+            cast(AsyncSession, fake), UUID(int=20)
+        ).set_auto_play(
+            user_id,
+            enabled=True,
+            tickets_per_draw=6,
+            reason="Invalid amount",
         )
 
 

@@ -17,6 +17,7 @@ from k_loto.infrastructure.database.models import Balance, LedgerTransaction
 from k_loto.infrastructure.telegram_bot import miniapp_markup, miniapp_menu_button
 from k_loto.infrastructure.telegram_messages import (
     BotNotificationFormatter,
+    format_inactivity_reminder,
     format_purchase_message,
     format_result_message,
 )
@@ -114,7 +115,7 @@ async def test_telegram_identity_binding_is_idempotent_and_creates_balance() -> 
     assert profile.id == user_id
     assert profile.display_name == "K Loto"
     assert profile.balance == 100_000_000_500
-    assert session.executed == 1
+    assert session.executed == 2
     grants = [item for item in session.added if isinstance(item, LedgerTransaction)]
     assert len(grants) == 1
     assert grants[0].amount == 100_000_000_000
@@ -178,6 +179,20 @@ def test_draw_result_message_contains_each_ticket_result() -> None:
     assert "совпало 2" in message
     assert "выигрыш 25 CAS" in message
     assert "Твой выигрыш: 25 CAS" in message
+
+
+def test_inactivity_reminder_names_the_next_draw_without_purchase_noise() -> None:
+    message = format_inactivity_reminder(
+        {
+            "lottery_name": "ПСС-Лото",
+            "draw_number": 44,
+            "scheduled_at": "2026-09-02T09:00:00+00:00",
+        }
+    )
+
+    assert "ПСС-Лото №0044" in message
+    assert "02.09.2026 · 12:00 МСК" in message
+    assert "Вы давно не выбирали числа" in message
 
 
 async def test_dispatcher_sends_claimed_event_only_once() -> None:

@@ -12,10 +12,12 @@ from k_loto.application.ports import SecureNumberGenerator
 from k_loto.domain.draw_state import ensure_draw_transition
 from k_loto.domain.enums import (
     DrawStatus,
+    InAppNotificationType,
     LedgerAccountKind,
     LotteryKind,
     NotificationStatus,
     NotificationType,
+    TicketSource,
     TicketStatus,
     TransactionType,
 )
@@ -43,7 +45,8 @@ from k_loto.infrastructure.database.models import (
     LotteryReserve,
     NotificationOutbox,
     Ticket,
-    User,
+    UserNotification,
+    UserNotificationPreference,
 )
 
 MAX_TICKETS_PER_PURCHASE = 1000
@@ -148,6 +151,7 @@ class WeeklyTicketPurchaseService:
         combinations: list[list[int] | tuple[int, ...]],
         idempotency_key: str,
         draw_count: int = 1,
+        source: TicketSource = TicketSource.MANUAL,
         now: datetime | None = None,
     ) -> PurchaseResult:
         if not idempotency_key or len(idempotency_key) > 100:
@@ -341,7 +345,6 @@ class WeeklyTicketPurchaseService:
 
             operation_id = uuid4()
             ticket_ids: list[UUID] = []
-            ticket_payloads: list[dict[str, Any]] = []
             first_number = lottery.next_ticket_number
             offset = 0
             for target_draw in draws[:draw_count]:
@@ -349,14 +352,6 @@ class WeeklyTicketPurchaseService:
                     normalized = tuple(sorted(combination))
                     ticket_id = uuid4()
                     ticket_ids.append(ticket_id)
-                    if len(ticket_payloads) < 20:
-                        ticket_payloads.append(
-                            {
-                                "public_number": first_number + offset,
-                                "numbers": list(normalized),
-                                "draw_number": target_draw.public_number,
-                            }
-                        )
                     self._session.add(
                         Ticket(
                             id=ticket_id,
@@ -366,6 +361,7 @@ class WeeklyTicketPurchaseService:
                             user_id=user_id,
                             numbers=list(normalized),
                             purchase_price=lottery.ticket_price,
+                            source=source,
                             purchased_at=timestamp,
                             status=TicketStatus.PURCHASED,
                             prize_amount=0,
@@ -392,6 +388,7 @@ class WeeklyTicketPurchaseService:
                 "combinations_per_draw": len(combinations),
                 "ticket_ids": [str(value) for value in ticket_ids],
                 "ticket_count": len(ticket_ids),
+                "source": source.value,
             }
             self._session.add_all(
                 [
@@ -436,31 +433,6 @@ class WeeklyTicketPurchaseService:
                     ),
                 ]
             )
-            self._session.add(
-                NotificationOutbox(
-                    id=uuid4(),
-                    event_key=f"purchase:{operation_id}:user:{user_id}",
-                    user_id=user_id,
-                    type=NotificationType.TICKET_PURCHASED,
-                    status=NotificationStatus.PENDING,
-                    payload={
-                        "lottery_name": draw_display_name(
-                            lottery.code, lottery.name, draw.scheduled_at
-                        ),
-                        "draw_number": draw.public_number,
-                        "draw_count": draw_count,
-                        "scheduled_at": draw.scheduled_at.isoformat(),
-                        "tickets": ticket_payloads,
-                        "tickets_truncated": len(ticket_ids) > len(ticket_payloads),
-                        "total_cost": quote.total_cost,
-                        "balance_after": balance.amount,
-                        "prize_fund": jackpot.balance,
-                    },
-                    attempts=0,
-                    available_at=timestamp,
-                )
-            )
-
         return PurchaseResult(
             operation_id=operation_id,
             draw_id=draw.id,
@@ -699,59 +671,78 @@ class WeeklySettlementService:
             draw.distribution_closing = plan.distribution_closing
             draw.reserve_used = plan.reserve_used
             self._session.add_all(ledger_entries)
-            notification_user_ids = set(
-                (
+            preferences = {
+                preference.user_id: preference
+                for preference in (
                     await self._session.scalars(
-                        select(User.id).where(
-                            User.telegram_id.is_not(None),
-                            User.is_active.is_(True),
-                            User.is_admin.is_(False),
+                        select(UserNotificationPreference).where(
+                            UserNotificationPreference.user_id.in_(user_ids)
                         )
                     )
                 ).all()
-            )
-            for user_id in sorted(notification_user_ids, key=lambda value: value.int):
+            }
+            for user_id in sorted(user_ids, key=lambda value: value.int):
                 user_tickets = [
                     ticket for ticket in ticket_models if ticket.user_id == user_id
                 ]
                 user_payouts = [payout_by_ticket[ticket.id] for ticket in user_tickets]
-                self._session.add(
-                    NotificationOutbox(
-                        id=uuid4(),
-                        event_key=f"result:{draw.id}:user:{user_id}",
-                        user_id=user_id,
-                        type=NotificationType.DRAW_RESULT,
-                        status=NotificationStatus.PENDING,
-                        payload={
-                            "lottery_code": lottery.code,
-                            "lottery_name": draw_display_name(
-                                lottery.code, lottery.name, draw.scheduled_at
-                            ),
-                            "draw_number": draw.public_number,
-                            "scheduled_at": draw.scheduled_at.isoformat(),
-                            "winning_numbers": list(plan.winning_numbers),
-                            "tickets": [
-                                {
-                                    "public_number": ticket.public_number,
-                                    "numbers": list(ticket.numbers),
-                                    "matches": payout_by_ticket[ticket.id].matches,
-                                    "prize": payout_by_ticket[ticket.id].amount,
-                                }
-                                for ticket in user_tickets
-                            ],
-                            "total_prize": sum(item.amount for item in user_payouts),
-                            "prize_fund": plan.jackpot_closing,
-                            "draw_total_payout": plan.total_payout,
-                            "balance_after": (
-                                balances[user_id].amount
-                                if user_id in balances
-                                else None
-                            ),
-                        },
-                        attempts=0,
-                        available_at=timestamp,
+                total_prize = sum(item.amount for item in user_payouts)
+                payload = {
+                    "lottery_code": lottery.code,
+                    "lottery_name": draw_display_name(
+                        lottery.code, lottery.name, draw.scheduled_at
+                    ),
+                    "draw_number": draw.public_number,
+                    "scheduled_at": draw.scheduled_at.isoformat(),
+                    "winning_numbers": list(plan.winning_numbers),
+                    "tickets": [
+                        {
+                            "public_number": ticket.public_number,
+                            "numbers": list(ticket.numbers),
+                            "matches": payout_by_ticket[ticket.id].matches,
+                            "prize": payout_by_ticket[ticket.id].amount,
+                        }
+                        for ticket in user_tickets
+                    ],
+                    "total_prize": total_prize,
+                    "prize_fund": plan.jackpot_closing,
+                    "draw_total_payout": plan.total_payout,
+                    "balance_after": balances[user_id].amount,
+                }
+                preference = preferences.get(user_id)
+                if (
+                    preference is not None
+                    and preference.telegram_enabled
+                    and preference.draw_results_enabled
+                ):
+                    self._session.add(
+                        NotificationOutbox(
+                            id=uuid4(),
+                            event_key=f"result:{draw.id}:user:{user_id}",
+                            user_id=user_id,
+                            type=NotificationType.DRAW_RESULT,
+                            status=NotificationStatus.PENDING,
+                            payload=payload,
+                            attempts=0,
+                            available_at=timestamp,
+                        )
                     )
-                )
+                if total_prize > 0:
+                    self._session.add(
+                        UserNotification(
+                            id=uuid4(),
+                            event_key=f"win:{draw.id}:user:{user_id}",
+                            user_id=user_id,
+                            type=InAppNotificationType.WIN,
+                            title=f"Выигрыш {total_prize:,} CAS".replace(",", " "),
+                            body=(
+                                f"{payload['lottery_name']}, тираж "
+                                f"№{draw.public_number:04d}. Выигрыш уже зачислен."
+                            ),
+                            payload=payload,
+                            created_at=timestamp,
+                        )
+                    )
 
         return SettlementResult(
             draw_id=draw.id,

@@ -5,6 +5,8 @@ from datetime import UTC, datetime
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy.dialects.postgresql import insert
 
+from k_loto.application.auto_play import AutoPlayService
+from k_loto.application.engagement import PlayerEngagementService
 from k_loto.application.scheduler import DrawRecoveryService
 from k_loto.infrastructure.database.models import SchedulerHeartbeat
 from k_loto.infrastructure.database.session import session_factory
@@ -42,6 +44,8 @@ class SchedulerRuntime:
             )
         try:
             report = await self._recovery.reconcile(now=started)
+            await AutoPlayService(session_factory).run(now=started)
+            await PlayerEngagementService(session_factory).run(now=started)
         except Exception as error:
             async with session_factory() as session, session.begin():
                 heartbeat = await session.get(SchedulerHeartbeat, 1)

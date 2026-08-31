@@ -3,6 +3,7 @@ interface TelegramWebApp {
   colorScheme?: "light" | "dark";
   ready(): void;
   expand(): void;
+  requestWriteAccess?(callback?: (allowed: boolean) => void): void;
   HapticFeedback?: {
     impactOccurred(style: "light" | "medium" | "heavy" | "rigid" | "soft"): void;
     notificationOccurred(type: "error" | "success" | "warning"): void;
@@ -24,6 +25,12 @@ export function errorHaptic(): void {
 
 export function liveStartHaptic(): void {
   window.Telegram?.WebApp?.HapticFeedback?.impactOccurred("light");
+}
+
+export function requestTelegramWriteAccess(): Promise<boolean> {
+  const method = window.Telegram?.WebApp?.requestWriteAccess;
+  if (!method) return Promise.resolve(false);
+  return new Promise((resolve) => method.call(window.Telegram?.WebApp, resolve));
 }
 
 declare global {
