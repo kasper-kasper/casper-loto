@@ -39,6 +39,18 @@ is processed by one idempotent database transaction instead of client-side
 batches. An optional five-draw choice creates tickets for the current and next
 four draws and debits the complete cost once, without automatic renewal.
 
+Player communication is split into two durable projections. Telegram delivery
+uses the existing outbox only after explicit per-user consent and is limited to
+the player's own draw results and 24-hour inactivity reminders. The Mini App
+inbox stores wins and draw invitations independently; its event body is
+immutable and only `read_at` may change.
+
+Auto-play is an application service invoked after scheduler recovery. It scans
+explicit per-user settings, generates five combinations with `SystemRandom`,
+and delegates to the same transactional purchase service as manual checkout.
+A stable user/draw idempotency key plus the persisted `AUTO_PLAY` ticket source
+prevents duplicate sets after retries or server restarts.
+
 The scheduler calculates official times in `Europe/Moscow`, stores UTC, settles
 missed draws chronologically and relies on row locks and constraints for
 idempotency. Each active lottery maintains its own next draw. Completed draws

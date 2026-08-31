@@ -11,3 +11,5 @@
 | OD-007 | Welcome grant | Resolved 2026-08-31 | Temporary automatic target grant is 100bn CAS once per Telegram identity through ledger. |
 | OD-008 | Cart TTL | Open | Persistence stays disabled until the owner chooses a duration; session cart works. |
 | OD-009 | Multi-draw purchase | Resolved 2026-09-01 | The player explicitly chooses 1 or 5 draws. All tickets and the full integer-CAS price are created and charged atomically up front; there is no renewal or later hidden debit. Paid contributions enter the lottery-wide funds at purchase time. |
+| OD-010 | Player notifications | Resolved 2026-09-01 | Telegram is opt-in and sends only results for draws where the player owned a ticket plus one inactivity reminder after 24 hours without a purchase. Mini App stores wins and draw invitations in its own inbox. |
+| OD-011 | Owner auto-play | Resolved 2026-09-01 | Telegram player 1201541335 receives five cryptographically random tickets once for every open draw. Purchases use the regular ledgered service and are controlled through audited Admin settings. |

@@ -1,6 +1,6 @@
 # K-Loto
 
-Current version: **0.21.0 — Multi-draw play and operational control room**.
+Current version: **0.22.0 — Personal cabinet, consent notifications and auto-play**.
 
 K-Loto is a multi-user lottery platform with integer CAS accounting, an
 immutable transaction ledger, recoverable draw scheduling and four independent

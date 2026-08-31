@@ -17,6 +17,8 @@ no decorative or state-transition animations.
 - operational dashboard: version, uptime, database reachability, configured bot,
   scheduler state, counts, current funds, recent draws and ledger movements;
 - multi-user player overview with balance, tickets, spent, won and net CAS;
+- existing player search by name, username, Telegram ID or UUID, plus audited
+  enable/disable control for five-ticket auto-play;
 - setting a target player balance through an idempotent ledger adjustment;
 - lottery ticket-price and base-jackpot configuration with an audit reason;
 - current jackpot/distribution visibility and reserve adjustment through ledger;

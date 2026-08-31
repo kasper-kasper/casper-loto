@@ -11,7 +11,8 @@ Milestone 5 provides a mobile-first React/TypeScript/Vite client with:
 - Weekly 5/20 and Daily 4/15 number pickers with Web Crypto random pick;
 - single-ticket purchase and multi-ticket cart checkout;
 - duplicate combinations as independent cart tickets;
-- active tickets, completed ticket history and recent results;
+- a «Моё» cabinet with player statistics, active tickets, completed ticket
+  history, notification preferences and a persistent in-app inbox;
 - polished mobile navigation, loading and result states with optional Telegram
   haptic feedback;
 - a permanent server-synchronised **Эфир** screen for waiting, sequentially
@@ -20,8 +21,7 @@ Milestone 5 provides a mobile-first React/TypeScript/Vite client with:
   lottery, reconstructed from immutable draw facts without video storage;
 - fresh sales-state checks before every number picker, background dashboard
   refresh and explicit cutoff time presentation;
-- a cart of up to 1,000 tickets with idempotent 100-ticket server batches,
-  visible progress and preservation of unpurchased combinations after failure;
+- a cart of up to 1,000 tickets submitted as one idempotent server operation;
 - responsive layout from 320px with Telegram/iPhone safe-area support.
 
 The v0.20.0 visual system uses layered navy surfaces, restrained blue and
@@ -81,6 +81,18 @@ The frontend never submits or calculates a ticket price, balance, draw ID,
 jackpot contribution or payout. Weekly checkout calls the existing transactional
 purchase service. When the previous draw has reached cutoff, that service creates
 and assigns the next numbered Weekly draw while holding the lottery row lock.
+
+## Личный кабинет и уведомления
+
+The bottom navigation item «Моё» combines overview, tickets and notifications.
+The server derives all statistics from tickets and the immutable ledger. Wins
+and draw invitations are stored in an inbox; opening the notification tab marks
+only the read timestamp and never edits event content.
+
+Telegram messages are disabled until the native `requestWriteAccess` prompt is
+accepted. The settings screen controls draw-result and 24-hour inactivity
+categories separately. A purchase itself is confirmed by the Mini App and no
+longer creates a duplicate bot message.
 
 ## Cart TTL
 
