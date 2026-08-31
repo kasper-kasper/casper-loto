@@ -17,13 +17,13 @@ or purchased tickets. Versioned CHANGELOG and DEVLOG history is exposed there
 through authenticated, read-only endpoints. Telegram journal delivery is
 retired; Telegram remains a player entry and notification adapter.
 
-The Mini App live-draw adapter is deliberately read-only. It polls a compact
-projection containing server time, the latest immutable result, the nearest
-scheduled draw and an aggregated player outcome. Visual reveal timing is a
-client presentation concern; RNG, settlement, recovery and draw state remain in
-the existing domain/application services. At most three representative player
-tickets are returned, so a player with thousands of tickets does not create an
-unbounded live response.
+The Mini App live-draw adapter is deliberately read-only. A server-authored
+timeline defines broadcast start, every number reveal and completion. An
+authenticated SSE stream pushes compact snapshots; reconnecting clients derive
+the correct stage from server time and never restart the draw locally. RNG,
+settlement, recovery and draw state remain in the existing domain/application
+services. At most three representative player tickets are returned, so a player
+with thousands of tickets does not create an unbounded live response.
 
 Player sales state is treated as volatile. The Mini App dashboard carries a
 server timestamp and per-draw player ticket counts, refreshes periodically and
@@ -33,9 +33,11 @@ authority for displaying a closed-sale message; the transactional purchase
 service still makes the authoritative cutoff decision.
 
 High-volume Mini App checkout is bounded at both layers: 1,000 client-side cart
-entries and 100 tickets per application-service purchase. Large carts are
-processed as idempotent batches, preserving ledger atomicity within each batch
-and retaining unprocessed entries after a partial failure.
+entries and 1,000 combinations per application-service purchase, with a default
+5,000-ticket per-player/per-draw cap and request throttling. Each lottery group
+is processed by one idempotent database transaction instead of client-side
+batches. An optional five-draw choice creates tickets for the current and next
+four draws and debits the complete cost once, without automatic renewal.
 
 The scheduler calculates official times in `Europe/Moscow`, stores UTC, settles
 missed draws chronologically and relies on row locks and constraints for
