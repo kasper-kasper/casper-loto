@@ -17,8 +17,8 @@ vi.mock("./api", () => ({
 }));
 
 const session = { username: "owner", csrf_token: "csrf", expires_at: "2026-08-16T00:00:00Z" };
-const lottery: Lottery = { id: "lottery", code: "weekly", name: "Weekly 5/20", kind: "WEEKLY", ticket_price: 100, base_jackpot: 10_000, current_jackpot: 12_000, distribution_fund: 500, reserve: 100_000, schedule: { weekday: "sunday" }, sales_cutoff_minutes: 5, is_active: true, next_draw_number: 8, next_draw_at: "2026-08-16T17:00:00Z" };
-const dashboard: Dashboard = { version: "0.8.0", uptime_seconds: 120, database_healthy: true, bot_configured: true, scheduler_enabled: true, counts: { users: 1, tickets: 6, completed_draws: 3, pending_draws: 1 }, lotteries: [lottery], recent_draws: [], recent_transactions: [] };
+const lottery: Lottery = { id: "lottery", code: "weekly", name: "Weekly 5/20", kind: "WEEKLY", ticket_price: 100, base_jackpot: 10_000, current_jackpot: 12_000, distribution_fund: 500, reserve: 100_000, schedule: { weekday: "sunday" }, sales_cutoff_minutes: 5, max_tickets_per_purchase: 1000, max_tickets_per_user_per_draw: 5000, is_active: true, next_draw_number: 8, next_draw_at: "2026-08-16T17:00:00Z" };
+const dashboard: Dashboard = { version: "0.8.0", uptime_seconds: 120, database_healthy: true, bot_configured: true, scheduler_enabled: true, counts: { users: 1, tickets: 6, completed_draws: 3, pending_draws: 1 }, lotteries: [lottery], recent_draws: [], recent_transactions: [], operations: { scheduler: { last_started_at: null, last_succeeded_at: null, last_failed_at: null, last_error: null, settled_count: 0, prepared_count: 0 }, stuck_draw_count: 0, notifications: {}, next_draws: [] } };
 const player: Player = { id: "player", display_name: "Test Player", username: "player", telegram_id: 123, is_active: true, balance: 5_000, ticket_count: 6, spent: 600, won: 250, net: -350 };
 
 beforeEach(() => {
@@ -103,7 +103,7 @@ it("saves lottery price, jackpot and reserve with one action", async () => {
   fireEvent.change(screen.getByLabelText("Обязательная причина для аудита"), { target: { value: "Настройки владельца" } });
   fireEvent.click(screen.getByRole("button", { name: "СОХРАНИТЬ ВСЕ НАСТРОЙКИ" }));
 
-  await waitFor(() => expect(adminApi.configureLottery).toHaveBeenCalledWith("lottery", 22222, 2811996, "Настройки владельца"));
+  await waitFor(() => expect(adminApi.configureLottery).toHaveBeenCalledWith("lottery", 22222, 2811996, 5, 1000, 5000, "Настройки владельца"));
   expect(adminApi.setReserve).toHaveBeenCalledWith("lottery", 9999999999, "Настройки владельца");
   expect(await screen.findByText("Цена билета, джекпот и резерв сохранены.")).toBeInTheDocument();
 });

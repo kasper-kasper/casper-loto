@@ -12,8 +12,12 @@ vi.mock("./api", () => ({
     devRefill: vi.fn(),
     dashboard: vi.fn(),
     live: vi.fn(),
+    liveStream: vi.fn(),
     tickets: vi.fn(),
     purchase: vi.fn(),
+    favorites: vi.fn(),
+    saveFavorite: vi.fn(),
+    deleteFavorite: vi.fn(),
   },
 }));
 
@@ -36,6 +40,9 @@ const dashboard: Dashboard = {
       sales_open: true,
       purchase_available: true,
       player_ticket_count: 2,
+      sales_status: "OPEN",
+      max_tickets_per_purchase: 1000,
+      max_tickets_per_user_per_draw: 5000,
     },
     {
       code: "pll",
@@ -51,9 +58,13 @@ const dashboard: Dashboard = {
       sales_open: false,
       purchase_available: false,
       player_ticket_count: 0,
+      sales_status: "CLOSED",
+      max_tickets_per_purchase: 1000,
+      max_tickets_per_user_per_draw: 5000,
     },
   ],
   recent_results: [],
+  monthly_total_payout: 0,
 };
 
 beforeEach(() => {
@@ -62,10 +73,14 @@ beforeEach(() => {
   vi.mocked(miniAppApi.devRefill).mockResolvedValue({ balance: 105_000 });
   vi.mocked(miniAppApi.dashboard).mockResolvedValue(dashboard);
   vi.mocked(miniAppApi.live).mockResolvedValue({ server_time: new Date().toISOString(), latest_completed: null, next_scheduled: null, recent_completed: [] });
+  vi.mocked(miniAppApi.liveStream).mockImplementation(async () => undefined);
   vi.mocked(miniAppApi.tickets).mockResolvedValue([]);
+  vi.mocked(miniAppApi.favorites).mockResolvedValue([]);
   vi.mocked(miniAppApi.purchase).mockResolvedValue({
     operation_id: "operation",
     draw_id: "draw",
+    draw_ids: ["draw"],
+    draw_count: 1,
     ticket_ids: ["ticket"],
     total_cost: 100,
     balance_after: 4_900,
@@ -146,7 +161,7 @@ it("selects five numbers, adds a ticket and buys the cart atomically", async () 
   fireEvent.click(screen.getByRole("button", { name: "В корзину" }));
 
   expect(screen.getByText("1 комбинация")).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Купить 1 бил." }));
+  fireEvent.click(screen.getByRole("button", { name: "Купить 1 комб." }));
 
   await waitFor(() =>
     expect(miniAppApi.purchase).toHaveBeenCalledWith(
@@ -154,11 +169,12 @@ it("selects five numbers, adds a ticket and buys the cart atomically", async () 
       "weekly",
       [[1, 2, 3, 4, 5]],
       "00000000-0000-4000-8000-000000000001",
+      1,
     ),
   );
 });
 
-it("builds a large cart and sends one hundred tickets as a bounded batch", async () => {
+it("builds a large cart and sends one hundred tickets in one operation", async () => {
   render(<App initData="signed" />);
   await selectWeekly();
   fireEvent.click(await screen.findByRole("button", { name: /Выбрать числа.*100 CAS/ }));
@@ -168,10 +184,25 @@ it("builds a large cart and sends one hundred tickets as a bounded batch", async
   fireEvent.click(screen.getByRole("button", { name: "Добавить комбинацию" }));
   fireEvent.click(await screen.findByRole("button", { name: "+50" }));
   expect(await screen.findByText("100 комбинаций")).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Купить 100 бил." }));
+  fireEvent.click(screen.getByRole("button", { name: "Купить 100 комб." }));
 
   await waitFor(() => expect(miniAppApi.purchase).toHaveBeenCalledOnce());
   expect(vi.mocked(miniAppApi.purchase).mock.calls[0][2]).toHaveLength(100);
+});
+
+it("offers an explicit prepaid five-draw purchase without enabling it by default", async () => {
+  render(<App initData="signed" />);
+  await selectWeekly();
+  fireEvent.click(await screen.findByRole("button", { name: /Выбрать числа.*100 CAS/ }));
+  fireEvent.click(await screen.findByRole("button", { name: "5 тиражей" }));
+  const grid = document.querySelector(".number-grid") as HTMLElement;
+  for (const number of [1, 2, 3, 4, 5]) fireEvent.click(within(grid).getByRole("button", { name: String(number) }));
+  fireEvent.click(screen.getByRole("button", { name: "Купить на 5 тиражей" }));
+
+  await waitFor(() => expect(miniAppApi.purchase).toHaveBeenCalledWith(
+    "signed", "weekly", [[1, 2, 3, 4, 5]],
+    "00000000-0000-4000-8000-000000000001", 5,
+  ));
 });
 
 it("shows a designed cart empty state without implementation details", async () => {

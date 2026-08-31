@@ -16,6 +16,10 @@ const completed: LiveDraw = {
   scheduled_at: new Date(startsAt).toISOString(), status: "COMPLETED", winning_numbers: [2, 5, 9, 14],
   jackpot: 24_000_000, player_ticket_count: 1, player_winning_ticket_count: 0,
   player_best_matches: 1, player_total_prize: 0, highlighted_tickets: [],
+  sales_close_at: new Date(startsAt - 120_000).toISOString(), sales_status: "COMPLETED",
+  live_starts_at: new Date(startsAt).toISOString(),
+  reveal_at: [0, 1, 2, 3].map((index) => new Date(startsAt + LIVE_REVEAL_LEAD_MS + index * LIVE_REVEAL_INTERVAL_MS).toISOString()),
+  live_ends_at: new Date(startsAt + LIVE_REVEAL_LEAD_MS + 4 * LIVE_REVEAL_INTERVAL_MS).toISOString(),
 };
 const next = { ...completed, draw_number: 813, status: "SCHEDULED" as const, scheduled_at: "2026-08-31T15:00:00Z", winning_numbers: null };
 const feed: LiveFeed = { server_time: new Date(startsAt).toISOString(), latest_completed: completed, next_scheduled: next, recent_completed: [completed] };

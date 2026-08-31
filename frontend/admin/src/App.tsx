@@ -10,12 +10,13 @@ import type {
   DrawDetail,
   Lottery,
   NumberStatistic,
+  NotificationItem,
   Player,
   ReleaseNote,
   Transaction,
 } from "./types";
 
-type View = "dashboard" | "players" | "lotteries" | "draws" | "ledger" | "statistics" | "audit" | "development";
+type View = "dashboard" | "players" | "lotteries" | "draws" | "ledger" | "statistics" | "notifications" | "audit" | "development";
 
 const navigation: { id: View; label: string; code: string }[] = [
   { id: "dashboard", label: "Обзор", code: "01" },
@@ -24,8 +25,9 @@ const navigation: { id: View; label: string; code: string }[] = [
   { id: "draws", label: "Архив тиражей", code: "04" },
   { id: "ledger", label: "Журнал CAS", code: "05" },
   { id: "statistics", label: "Статистика чисел", code: "06" },
-  { id: "audit", label: "Аудит действий", code: "07" },
-  { id: "development", label: "Разработка", code: "08" },
+  { id: "notifications", label: "Уведомления", code: "07" },
+  { id: "audit", label: "Аудит действий", code: "08" },
+  { id: "development", label: "Разработка", code: "09" },
 ];
 
 const drawStatuses: Record<string, string> = { PENDING: "Ожидает", RUNNING: "Выполняется", COMPLETED: "Завершён", FAILED: "Ошибка" };
@@ -125,6 +127,7 @@ function DashboardView({ data }: { data: Dashboard }) {
       <span>v{data.version} · работает {Math.floor(data.uptime_seconds / 60)} мин.</span>
     </div>
     <section className="metric-grid">{metrics.map(([label, value]) => <article className="metric" key={label}><small>{label}</small><strong>{value}</strong><div className="scan" /></article>)}</section>
+    <section className="panel control-room"><header><h2>Оперативный пульт</h2><span>ТОЛЬКО ЧТЕНИЕ · ОБНОВЛЯЕТСЯ ПРИ ОТКРЫТИИ</span></header><div className="control-status"><article><small>ПОСЛЕДНЯЯ УСПЕШНАЯ ПРОВЕРКА</small><strong>{date(data.operations.scheduler.last_succeeded_at)}</strong><span>{data.operations.scheduler.last_error ? `ОШИБКА: ${data.operations.scheduler.last_error}` : "ПЛАНИРОВЩИК В НОРМЕ"}</span></article><article><small>ЗАВИСШИЕ ТИРАЖИ</small><strong className={data.operations.stuck_draw_count ? "negative" : "positive"}>{data.operations.stuck_draw_count}</strong><span>ОЖИДАЮТ ДОСТАВКИ: {data.operations.notifications.PENDING ?? 0} · ОШИБКИ: {data.operations.notifications.FAILED ?? 0}</span></article></div><div className="operations-table"><table><thead><tr><th>Ближайший тираж</th><th>Время / cutoff</th><th>Участники</th><th>Билеты</th><th>Продажи</th><th>Статус</th></tr></thead><tbody>{data.operations.next_draws.map((draw) => <tr key={draw.id}><td><b>{draw.lottery_name}</b> №{drawNumber(draw.draw_number)}</td><td>{date(draw.scheduled_at)}<small>{date(draw.sales_close_at)}</small></td><td>{draw.participant_count}</td><td>{draw.ticket_count}</td><td>{cas(draw.total_sales)}</td><td><span className={`tag ${draw.status.toLowerCase()}`}>{translated(draw.status, drawStatuses)}</span></td></tr>)}</tbody></table></div></section>
     <div className="split">
       <section className="panel"><header><h2>Контроль фондов</h2><span>ТЕКУЩЕЕ СОСТОЯНИЕ</span></header>
         <div className="fund-list">{data.lotteries.filter((lottery) => lottery.is_active).map((lottery) => <article key={lottery.id}><div><b>{lottery.name}</b><small>ТИРАЖ {lottery.next_draw_number ? drawNumber(lottery.next_draw_number) : "—"}</small></div><dl><dt>ДЖЕКПОТ</dt><dd>{cas(lottery.current_jackpot)}</dd><dt>РАСПРЕДЕЛЕНИЕ</dt><dd>{cas(lottery.distribution_fund)}</dd><dt>РЕЗЕРВ</dt><dd>{cas(lottery.reserve)}</dd></dl></article>)}</div>
@@ -158,6 +161,9 @@ function LotteryCard({ lottery, onSaved }: { lottery: Lottery; onSaved: () => Pr
   const [price, setPrice] = useState(String(lottery.ticket_price ?? 0));
   const [base, setBase] = useState(String(lottery.base_jackpot));
   const [reserve, setReserve] = useState(String(lottery.reserve));
+  const [cutoff, setCutoff] = useState(String(lottery.sales_cutoff_minutes ?? 0));
+  const [purchaseLimit, setPurchaseLimit] = useState(String(lottery.max_tickets_per_purchase));
+  const [playerLimit, setPlayerLimit] = useState(String(lottery.max_tickets_per_user_per_draw));
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -165,7 +171,7 @@ function LotteryCard({ lottery, onSaved }: { lottery: Lottery; onSaved: () => Pr
     setBusy(true);
     setMessage("");
     try {
-      await adminApi.configureLottery(lottery.id, Number(price), Number(base), reason);
+      await adminApi.configureLottery(lottery.id, Number(price), Number(base), Number(cutoff), Number(purchaseLimit), Number(playerLimit), reason);
       await adminApi.setReserve(lottery.id, Number(reserve), reason);
       setReason("");
       setMessage("Цена билета, джекпот и резерв сохранены.");
@@ -179,11 +185,11 @@ function LotteryCard({ lottery, onSaved }: { lottery: Lottery; onSaved: () => Pr
   return <article className="lottery-card">
     <header><div><small>{lottery.kind === "WEEKLY" ? "ЕЖЕНЕДЕЛЬНАЯ" : "ЕЖЕДНЕВНАЯ"}</small><h2>{lottery.name}</h2></div><Status active={lottery.is_active}>{lottery.is_active ? "АКТИВНА" : "НЕАКТИВНА"}</Status></header>
     <div className="fund-matrix"><span><small>ТЕКУЩИЙ ДЖЕКПОТ</small><b>{cas(lottery.current_jackpot)}</b></span><span><small>ФОНД РАСПРЕДЕЛЕНИЯ</small><b>{cas(lottery.distribution_fund)}</b></span><span><small>СЛЕДУЮЩИЙ ТИРАЖ</small><b>{lottery.next_draw_number ? `№${drawNumber(lottery.next_draw_number)}` : "—"}</b><em>{date(lottery.next_draw_at)}</em></span></div>
-    <div className="config-grid"><label>Цена билета, CAS<input type="number" min="1" value={price} onChange={(e) => setPrice(e.target.value)} /></label><label>Базовый джекпот, CAS<input type="number" min="0" value={base} onChange={(e) => setBase(e.target.value)} /></label><label>Резерв, CAS<input type="number" min="0" value={reserve} onChange={(e) => setReserve(e.target.value)} /></label></div>
+    <div className="config-grid"><label>Цена билета, CAS<input type="number" min="1" value={price} onChange={(e) => setPrice(e.target.value)} /></label><label>Базовый джекпот, CAS<input type="number" min="0" value={base} onChange={(e) => setBase(e.target.value)} /></label><label>Резерв, CAS<input type="number" min="0" value={reserve} onChange={(e) => setReserve(e.target.value)} /></label><label>Cutoff, минут<input type="number" min="0" max="1440" value={cutoff} onChange={(e) => setCutoff(e.target.value)} /></label><label>Лимит одной покупки<input type="number" min="1" max="1000" value={purchaseLimit} onChange={(e) => setPurchaseLimit(e.target.value)} /></label><label>Лимит игрока на тираж<input type="number" min="1" max="100000" value={playerLimit} onChange={(e) => setPlayerLimit(e.target.value)} /></label></div>
     <label className="reason">Обязательная причина для аудита<input value={reason} onChange={(e) => setReason(e.target.value)} /></label>
     <div className="actions"><button disabled={busy || !reason.trim()} onClick={() => void saveAll()}>{busy ? "СОХРАНЯЕМ…" : "СОХРАНИТЬ ВСЕ НАСТРОЙКИ"}</button></div>
     {message && <p className={message.includes("сохранены") ? "save-message" : "save-message error"}>{message}</p>}
-    <footer>Расписание: <code>{schedule(lottery.schedule)}</code> · закрытие продаж за {lottery.sales_cutoff_minutes ?? "—"} мин. Изменение расписания и выплат заблокировано до утверждения правил.</footer>
+    <footer>Расписание: <code>{schedule(lottery.schedule)}</code> · новые значения cutoff применяются при подготовке следующих тиражей. Завершённые тиражи и купленные билеты не изменяются.</footer>
   </article>;
 }
 
@@ -224,12 +230,14 @@ export default function App() {
   const [error, setError] = useState("");
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [playerSearch, setPlayerSearch] = useState("");
   const [lotteries, setLotteries] = useState<Lottery[]>([]);
   const [draws, setDraws] = useState<Draw[]>([]);
   const [drawDetail, setDrawDetail] = useState<DrawDetail | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [statistics, setStatistics] = useState<NumberStatistic[]>([]);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [releaseNotes, setReleaseNotes] = useState<{ changelog: ReleaseNote[]; devlog: ReleaseNote[] }>({ changelog: [], devlog: [] });
 
   useEffect(() => { adminApi.session().then(setSession).catch(() => setSession(null)).finally(() => setChecking(false)); }, []);
@@ -243,6 +251,7 @@ export default function App() {
       if (target === "draws") setDraws(await adminApi.draws());
       if (target === "ledger") setTransactions(await adminApi.transactions());
       if (target === "audit") setAudit(await adminApi.audit());
+      if (target === "notifications") setNotifications(await adminApi.notifications());
       if (target === "development") {
         const [changelog, devlog] = await Promise.all([adminApi.releaseNotes("changelog"), adminApi.releaseNotes("devlog")]);
         setReleaseNotes({ changelog, devlog });
@@ -273,11 +282,12 @@ export default function App() {
     <main className="workspace"><header className="topbar"><div><small>K-LOTO / АДМИНИСТРАТОР / {title.toUpperCase()}</small><h1>{title}</h1></div><span className="utc">МСК {new Intl.DateTimeFormat("ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Europe/Moscow" }).format(new Date())}</span></header>
       {error && <div className="error banner">{error}</div>}{loading && <div className="loading">ЗАГРУЖАЕМ ДАННЫЕ…</div>}
       {!loading && view === "dashboard" && dashboard && <DashboardView data={dashboard} />}
-      {!loading && view === "players" && <section className="stack">{players.map((player) => <PlayerCard key={player.id} player={player} onSaved={() => load("players")} />)}</section>}
+      {!loading && view === "players" && <><div className="owner-search"><input aria-label="Поиск игрока" placeholder="Имя, username, Telegram ID или UUID" value={playerSearch} onChange={(event) => setPlayerSearch(event.target.value)} /></div><section className="stack">{players.filter((player) => { const query = playerSearch.trim().toLowerCase(); return !query || `${player.display_name} ${player.username ?? ""} ${player.telegram_id ?? ""} ${player.id}`.toLowerCase().includes(query); }).map((player) => <PlayerCard key={player.id} player={player} onSaved={() => load("players")} />)}</section></>}
       {!loading && view === "lotteries" && <section className="stack">{lotteries.filter((lottery) => lottery.is_active).map((lottery) => <LotteryCard key={lottery.id} lottery={lottery} onSaved={() => load("lotteries")} />)}</section>}
       {!loading && view === "draws" && <section className="panel"><header><h2>Постоянный архив тиражей</h2><span>ТОЛЬКО ПРОСМОТР</span></header><DrawTable draws={draws} onOpen={(id) => void adminApi.draw(id).then(setDrawDetail)} /></section>}
       {!loading && view === "ledger" && <><TransactionFilters onApply={(query) => void adminApi.transactions(query).then(setTransactions).catch((reason: Error) => setError(reason.message))} /><section className="panel"><header><h2>Неизменяемый журнал CAS</h2><span>ЗАПИСЕЙ: {transactions.length}</span></header><TransactionTable rows={transactions} /></section></>}
       {!loading && view === "statistics" && <StatisticsView lotteries={lotteries} rows={statistics} onLottery={(id) => void adminApi.statistics(id).then(setStatistics)} />}
+      {!loading && view === "notifications" && <section className="panel"><header><h2>Очередь уведомлений</h2><span>ДОСТАВЛЕНО · ОШИБКА · ОЖИДАЕТ</span></header><div className="table-wrap"><table><thead><tr><th>Создано</th><th>Тип</th><th>Игрок</th><th>Статус</th><th>Попытки</th><th>Ошибка</th></tr></thead><tbody>{notifications.map((item) => <tr key={item.id}><td>{date(item.created_at)}</td><td>{translated(item.type, transactionTypes)}</td><td><code>{item.user_id.slice(0, 8)}</code></td><td><span className={`tag ${item.status.toLowerCase()}`}>{translated(item.status, { PENDING: "ожидает", PROCESSING: "отправляется", SENT: "доставлено", FAILED: "ошибка" })}</span></td><td>{item.attempts}</td><td>{item.last_error ?? "—"}</td></tr>)}</tbody></table></div></section>}
       {!loading && view === "audit" && <section className="panel"><header><h2>Аудит действий администратора</h2><span>ХРАНИТСЯ ПОСТОЯННО</span></header><div className="audit-list">{audit.map((item) => <article key={item.id}><time>{date(item.created_at)}</time><b>{translated(item.action, auditActions)} · {translated(item.entity_type, entityTypes)}</b><p>{item.reason ?? "Причина не указана"}</p><code>{JSON.stringify(item.old_values)} → {JSON.stringify(item.new_values)}</code></article>)}</div></section>}
       {!loading && view === "development" && <DevelopmentView changelog={releaseNotes.changelog} devlog={releaseNotes.devlog} />}
     </main>{drawDetail && <DrawDetailPanel detail={drawDetail} onClose={() => setDrawDetail(null)} />}

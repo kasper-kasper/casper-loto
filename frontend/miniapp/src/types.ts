@@ -15,6 +15,9 @@ export interface Lottery {
   sales_open: boolean;
   purchase_available: boolean;
   player_ticket_count: number;
+  sales_status: "OPEN" | "CLOSING_SOON" | "CLOSED" | "DRAWING" | "COMPLETED";
+  max_tickets_per_purchase: number;
+  max_tickets_per_user_per_draw: number;
 }
 
 export interface Ticket {
@@ -38,6 +41,7 @@ export interface Dashboard {
   active_ticket_count: number;
   lotteries: Lottery[];
   recent_results: Ticket[];
+  monthly_total_payout: number;
 }
 
 export interface LiveTicket {
@@ -61,6 +65,11 @@ export interface LiveDraw {
   player_best_matches: number | null;
   player_total_prize: number;
   highlighted_tickets: LiveTicket[];
+  sales_close_at: string;
+  sales_status: "OPEN" | "CLOSING_SOON" | "CLOSED" | "DRAWING" | "COMPLETED";
+  live_starts_at: string;
+  reveal_at: string[];
+  live_ends_at: string;
 }
 
 export interface LiveFeed {
@@ -73,6 +82,8 @@ export interface LiveFeed {
 export interface PurchaseResult {
   operation_id: string;
   draw_id: string;
+  draw_ids: string[];
+  draw_count: number;
   ticket_ids: string[];
   total_cost: number;
   balance_after: number;
@@ -84,5 +95,11 @@ export interface CartTicket {
   lotteryCode: string;
   lotteryName: string;
   price: number;
+  numbers: number[];
+  drawCount: 1 | 5;
+}
+
+export interface Favorite {
+  id: string;
   numbers: number[];
 }

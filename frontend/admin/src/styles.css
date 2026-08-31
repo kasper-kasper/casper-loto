@@ -118,3 +118,5 @@ nav button.active { border-color: #3d568b; background: linear-gradient(90deg, #1
 .drawer { border-color: #304d84; background: #07142d; }
 .status i, .secure-line i { background: #6fd2ad; box-shadow: 0 0 10px #6fd2ad; }
 .number-line i, .winning i { border-radius: 8px; border-color: #5571aa; color: #ffe2a0; }
+.control-room { margin-bottom: 15px; }.control-status { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--line); }.control-status article { padding: 17px 20px; border-right: 1px solid var(--line); }.control-status small, .control-status span { display: block; color: var(--muted); font: 8px "IBM Plex Mono"; }.control-status strong { display: block; margin: 8px 0; font: 600 15px "IBM Plex Mono"; }.operations-table td small { display: block; margin-top: 4px; color: var(--muted); }.control-room *, .control-room *::before, .control-room *::after { animation: none !important; transition: none !important; }
+.owner-search { margin: 22px 0 13px; }.owner-search input { width: min(560px, 100%); }

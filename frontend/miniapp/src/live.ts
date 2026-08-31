@@ -39,20 +39,22 @@ export function livePresentation(feed: LiveFeed | null, now: number): LivePresen
   if (!feed) return { phase: "idle", draw: null, revealedNumbers: [], currentNumber: null, nextDraw: null };
   const completed = feed.latest_completed;
   if (completed?.winning_numbers?.length) {
-    const startsAt = new Date(completed.scheduled_at).getTime();
-    const revealEndsAt = startsAt + LIVE_REVEAL_LEAD_MS + completed.winning_numbers.length * LIVE_REVEAL_INTERVAL_MS;
+    const startsAt = new Date(completed.live_starts_at ?? completed.scheduled_at).getTime();
+    const revealTimes = completed.reveal_at?.map((value) => new Date(value).getTime()) ?? completed.winning_numbers.map((_, index) => startsAt + LIVE_REVEAL_LEAD_MS + index * LIVE_REVEAL_INTERVAL_MS);
+    const revealEndsAt = new Date(completed.live_ends_at ?? new Date((revealTimes.at(-1) ?? startsAt) + LIVE_REVEAL_INTERVAL_MS).toISOString()).getTime();
     if (now >= startsAt && now < revealEndsAt + LIVE_RESULT_HOLD_MS) {
-      const revealElapsed = now - startsAt - LIVE_REVEAL_LEAD_MS;
-      if (revealElapsed < 0) {
+      const currentIndex = revealTimes.findIndex((revealAt) => now < revealAt);
+      if (now < revealTimes[0]) {
         return { phase: "starting", draw: completed, revealedNumbers: [], currentNumber: null, nextDraw: feed.next_scheduled };
       }
       if (now < revealEndsAt) {
-        const currentIndex = Math.min(completed.winning_numbers.length - 1, Math.floor(revealElapsed / LIVE_REVEAL_INTERVAL_MS));
+        const revealedCount = currentIndex === -1 ? completed.winning_numbers.length : currentIndex;
+        const activeIndex = Math.min(completed.winning_numbers.length - 1, Math.max(0, revealedCount - 1));
         return {
           phase: "revealing",
           draw: completed,
-          revealedNumbers: completed.winning_numbers.slice(0, currentIndex),
-          currentNumber: completed.winning_numbers[currentIndex],
+          revealedNumbers: completed.winning_numbers.slice(0, activeIndex),
+          currentNumber: completed.winning_numbers[activeIndex],
           nextDraw: feed.next_scheduled,
         };
       }

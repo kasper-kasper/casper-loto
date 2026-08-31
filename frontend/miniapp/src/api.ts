@@ -1,4 +1,4 @@
-import type { Dashboard, LiveFeed, PurchaseResult, Ticket } from "./types";
+import type { Dashboard, Favorite, LiveFeed, PurchaseResult, Ticket } from "./types";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "";
 
@@ -31,6 +31,7 @@ async function request<T>(path: string, initData: string, init?: RequestInit): P
     };
     throw new ApiError(translated[response.status] ?? payload.detail ?? "Не удалось выполнить запрос.", response.status);
   }
+  if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
 }
 
@@ -49,9 +50,32 @@ export const miniAppApi = {
     request<Dashboard>("/api/v1/miniapp/dashboard", initData),
   live: (initData: string) =>
     request<LiveFeed>("/api/v1/miniapp/live", initData),
-  tickets: async (initData: string, state: "active" | "history") => {
+  liveStream: async (initData: string, onSnapshot: (feed: LiveFeed) => void, signal: AbortSignal) => {
+    const headers = new Headers({ Accept: "text/event-stream" });
+    if (initData) headers.set("X-Telegram-Init-Data", initData);
+    const response = await fetch(`${API_BASE}/api/v1/miniapp/live/stream`, { credentials: "include", headers, signal });
+    if (!response.ok || !response.body) throw new ApiError("Не удалось подключиться к эфиру.", response.status);
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    while (!signal.aborted) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const events = buffer.split("\n\n");
+      buffer = events.pop() ?? "";
+      for (const event of events) {
+        const data = event.split("\n").find((line) => line.startsWith("data: "));
+        if (data) onSnapshot(JSON.parse(data.slice(6)) as LiveFeed);
+      }
+    }
+  },
+  tickets: async (initData: string, state: "active" | "history", lotteryCode = "", winsOnly = false) => {
+    const params = new URLSearchParams({ state });
+    if (lotteryCode) params.set("lottery_code", lotteryCode);
+    if (winsOnly) params.set("wins_only", "true");
     const response = await request<{ tickets: Ticket[] }>(
-      `/api/v1/miniapp/tickets?state=${state}`,
+      `/api/v1/miniapp/tickets?${params.toString()}`,
       initData,
     );
     return response.tickets;
@@ -61,13 +85,20 @@ export const miniAppApi = {
     lotteryCode: string,
     combinations: number[][],
     idempotencyKey: string,
+    drawCount: 1 | 5 = 1,
   ) =>
     request<PurchaseResult>(
       `/api/v1/miniapp/lotteries/${encodeURIComponent(lotteryCode)}/purchases`,
       initData,
       {
       method: "POST",
-      body: JSON.stringify({ combinations, idempotency_key: idempotencyKey }),
+      body: JSON.stringify({ combinations, idempotency_key: idempotencyKey, draw_count: drawCount }),
       },
     ),
+  favorites: (initData: string, lotteryCode: string) =>
+    request<Favorite[]>(`/api/v1/miniapp/lotteries/${encodeURIComponent(lotteryCode)}/favorites`, initData),
+  saveFavorite: (initData: string, lotteryCode: string, numbers: number[]) =>
+    request<Favorite>(`/api/v1/miniapp/lotteries/${encodeURIComponent(lotteryCode)}/favorites`, initData, { method: "POST", body: JSON.stringify({ numbers }) }),
+  deleteFavorite: (initData: string, lotteryCode: string, favoriteId: string) =>
+    request<void>(`/api/v1/miniapp/lotteries/${encodeURIComponent(lotteryCode)}/favorites/${encodeURIComponent(favoriteId)}`, initData, { method: "DELETE" }),
 };

@@ -32,7 +32,10 @@ export function loadCart(ttlSeconds: number | null, now = Date.now()): CartTicke
       localStorage.removeItem(STORAGE_KEY);
       return [];
     }
-    return value.tickets.slice(0, CART_MAX_TICKETS);
+    return value.tickets.slice(0, CART_MAX_TICKETS).map((ticket) => ({
+      ...ticket,
+      drawCount: ticket.drawCount === 5 ? 5 : 1,
+    }));
   } catch {
     localStorage.removeItem(STORAGE_KEY);
     return [];

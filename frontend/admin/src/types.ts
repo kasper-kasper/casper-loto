@@ -29,6 +29,8 @@ export interface Lottery {
   reserve: number;
   schedule: Record<string, unknown>;
   sales_cutoff_minutes: number | null;
+  max_tickets_per_purchase: number;
+  max_tickets_per_user_per_draw: number;
   is_active: boolean;
   next_draw_number: number | null;
   next_draw_at: string | null;
@@ -122,10 +124,46 @@ export interface Dashboard {
   lotteries: Lottery[];
   recent_draws: Draw[];
   recent_transactions: Transaction[];
+  operations: {
+    scheduler: {
+      last_started_at: string | null;
+      last_succeeded_at: string | null;
+      last_failed_at: string | null;
+      last_error: string | null;
+      settled_count: number;
+      prepared_count: number;
+    };
+    stuck_draw_count: number;
+    notifications: Record<string, number>;
+    next_draws: Array<{
+      id: string;
+      lottery_name: string;
+      draw_number: number;
+      scheduled_at: string;
+      sales_close_at: string;
+      status: string;
+      ticket_count: number;
+      participant_count: number;
+      total_sales: number;
+    }>;
+  };
 }
 
 export interface ReleaseNote {
   version: string;
   date: string | null;
   content: string;
+}
+
+export interface NotificationItem {
+  id: string;
+  event_key: string;
+  user_id: string;
+  type: string;
+  status: string;
+  attempts: number;
+  available_at: string;
+  sent_at: string | null;
+  last_error: string | null;
+  created_at: string;
 }

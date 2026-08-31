@@ -6,6 +6,7 @@ import type {
   DrawDetail,
   Lottery,
   NumberStatistic,
+  NotificationItem,
   Player,
   Transaction,
   ReleaseNote,
@@ -113,6 +114,7 @@ export const adminApi = {
   statistics: (lotteryId: string) =>
     request<NumberStatistic[]>(`/lotteries/${lotteryId}/number-statistics`),
   audit: () => request<AuditEntry[]>("/audit"),
+  notifications: () => request<NotificationItem[]>("/notifications"),
   releaseNotes: (kind: "changelog" | "devlog") =>
     request<ReleaseNote[]>(`/release-notes/${kind}`),
   setBalance: (userId: string, targetAmount: number, reason: string) =>
@@ -131,6 +133,9 @@ export const adminApi = {
     lotteryId: string,
     ticketPrice: number,
     baseJackpot: number,
+    salesCutoffMinutes: number,
+    maxTicketsPerPurchase: number,
+    maxTicketsPerUserPerDraw: number,
     reason: string,
   ) =>
     request<Lottery>(`/lotteries/${lotteryId}/configuration`, {
@@ -138,6 +143,9 @@ export const adminApi = {
       body: JSON.stringify({
         ticket_price: ticketPrice,
         base_jackpot: baseJackpot,
+        sales_cutoff_minutes: salesCutoffMinutes,
+        max_tickets_per_purchase: maxTicketsPerPurchase,
+        max_tickets_per_user_per_draw: maxTicketsPerUserPerDraw,
         reason,
       }),
     }),
