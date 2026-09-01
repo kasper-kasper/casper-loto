@@ -67,3 +67,4 @@ class NotificationStatus(StrEnum):
     PROCESSING = "PROCESSING"
     SENT = "SENT"
     FAILED = "FAILED"
+    CANCELLED = "CANCELLED"

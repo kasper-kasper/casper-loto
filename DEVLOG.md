@@ -19,6 +19,8 @@
   отправляет владельцу редактированное системное сообщение не чаще раза в час;
 - бот сокращён до `/start`, `/menu`, `/web`, постоянной кнопки Mini App и
   outbox-worker; удалены старые обработчики покупки и их дублирующий UI-код;
+- три исторических `TICKET_PURCHASED` без Telegram identity переводятся
+  миграцией в `CANCELLED` вместо бесконечного повтора;
 - добавлены `load_test_core.py`, `verify_backup_restore.sh`, `.dockerignore` и
   единый `release_vps.py` с обязательной копией БД перед выпуском.
 
@@ -33,7 +35,7 @@
 
 Технически:
 
-- migration: `0016_operational_notifications`;
+- migrations: `0016_operational_notifications`, `0017_cancel_legacy_notices`;
 - нагрузочная проба: 5 000 билетов, bulk validation 0,04 с, Daily settlement
   0,07 с, Weekly settlement 0,09 с на локальной машине;
 - проверки: Ruff и mypy пройдены; backend `134 passed`; Mini App
