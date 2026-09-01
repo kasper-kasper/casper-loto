@@ -25,9 +25,9 @@
 
 - migration: не требуется;
 - Ruff, форматирование и mypy: успешно;
-- focused backend tests: `20 passed`;
-- полный набор v1.8.1 непосредственно перед исправлением: backend `152 passed`,
-  Mini App `31 passed`, Admin Panel `9 passed`, обе production-сборки успешны;
+- backend tests: `152 passed`;
+- Mini App: typecheck/lint, `31 passed`, production build — успешно;
+- Admin Panel: typecheck/lint, `9 passed`, production build — успешно;
 - fix commit: `e100f9f`.
 
 ## [1.8.1] - 2026-09-01
