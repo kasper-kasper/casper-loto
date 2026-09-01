@@ -13,7 +13,7 @@ from k_loto.domain.enums import (
     NotificationStatus,
     NotificationType,
 )
-from k_loto.domain.lotteries import draw_display_name
+from k_loto.domain.lotteries import FAST_LOTTERY_CODES, draw_display_name
 from k_loto.infrastructure.database.models import (
     Draw,
     Lottery,
@@ -49,6 +49,7 @@ class PlayerEngagementService:
                         Draw.status == DrawStatus.SCHEDULED,
                         Draw.sales_close_at > timestamp,
                         Lottery.is_active.is_(True),
+                        Lottery.code.not_in(FAST_LOTTERY_CODES),
                     )
                     .order_by(Draw.scheduled_at, Draw.public_number)
                     .limit(1)

@@ -60,6 +60,7 @@ class NotificationType(StrEnum):
 
 class InAppNotificationType(StrEnum):
     WIN = "WIN"
+    DRAW_RESULT = "DRAW_RESULT"
     DRAW_INVITATION = "DRAW_INVITATION"
     JACKPOT_NEWS = "JACKPOT_NEWS"
 

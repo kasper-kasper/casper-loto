@@ -272,10 +272,29 @@ GROB_RULES = LotteryRuleStrategy(
     MappingProxyType({1: 666, 2: 6_666}),
     True,
 )
+FAST_RULES = LotteryRuleStrategy(
+    "fast_3_15",
+    "Fast",
+    3,
+    15,
+    1,
+    PayoutRatio(1),
+    MappingProxyType({}),
+    None,
+    3,
+    MappingProxyType({1: 88, 2: 888}),
+    True,
+)
 LOTTERY_RULES: Mapping[str, LotteryRuleStrategy] = MappingProxyType(
     {
         rule.code: rule
-        for rule in (WEEKLY_RULES, DAILY_RULES, SEPTEMBER_RULES, GROB_RULES)
+        for rule in (
+            WEEKLY_RULES,
+            DAILY_RULES,
+            SEPTEMBER_RULES,
+            GROB_RULES,
+            FAST_RULES,
+        )
     }
 )
 

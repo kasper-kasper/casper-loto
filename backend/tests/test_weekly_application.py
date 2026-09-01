@@ -17,6 +17,7 @@ from k_loto.application.weekly import (
 )
 from k_loto.domain.enums import (
     DrawStatus,
+    InAppNotificationType,
     LedgerAccountKind,
     LotteryKind,
     NotificationType,
@@ -102,6 +103,12 @@ class FixedDailyGenerator:
 class FixedSeptemberGenerator:
     def draw(self, population_size: int, numbers_to_pick: int) -> tuple[int, ...]:
         assert (population_size, numbers_to_pick) == (33, 3)
+        return (1, 2, 3)
+
+
+class FixedFastGenerator:
+    def draw(self, population_size: int, numbers_to_pick: int) -> tuple[int, ...]:
+        assert (population_size, numbers_to_pick) == (15, 3)
         return (1, 2, 3)
 
 
@@ -521,6 +528,81 @@ async def test_settlement_enqueues_one_result_notification_per_user() -> None:
     assert notification.type == NotificationType.DRAW_RESULT
     assert notification.payload["total_prize"] == 0
     assert notification.payload["tickets"][0]["matches"] == 0
+
+
+async def test_fast_result_stays_in_miniapp_and_never_queues_telegram() -> None:
+    now = datetime(2026, 9, 1, 12, tzinfo=UTC)
+    user_id = UUID(int=850)
+    lottery = Lottery(
+        id=UUID(int=851),
+        code="flash",
+        name="FLASH",
+        kind=LotteryKind.DAILY,
+        ruleset_code="fast_3_15",
+        numbers_to_pick=3,
+        max_number=15,
+        ticket_price=888,
+        timezone="Europe/Moscow",
+        schedule={"type": "interval", "interval_minutes": 20},
+        sales_cutoff_minutes=1,
+        max_tickets_per_purchase=100,
+        max_tickets_per_user_per_draw=500,
+        is_active=True,
+        next_draw_number=2,
+        next_ticket_number=2,
+    )
+    draw = Draw(
+        id=UUID(int=852),
+        lottery_id=lottery.id,
+        public_number=1,
+        status=DrawStatus.SCHEDULED,
+        scheduled_at=now,
+        sales_close_at=now - timedelta(minutes=1),
+        correlation_id=UUID(int=853),
+        ticket_count=1,
+        total_sales=888,
+        total_payout=0,
+        reserve_used=0,
+    )
+    ticket = Ticket(
+        id=UUID(int=854),
+        public_number=1,
+        lottery_id=lottery.id,
+        draw_id=draw.id,
+        user_id=user_id,
+        numbers=[4, 5, 6],
+        purchase_price=888,
+        prize_amount=0,
+    )
+    balance = Balance(user_id=user_id, amount=10_000, version=1)
+    jackpot = JackpotAccount(
+        id=UUID(int=855),
+        lottery_id=lottery.id,
+        balance=888_888,
+        base_amount=888_888,
+        version=1,
+    )
+    fund = KasperFundAccount(id=UUID(int=856), balance=10_000_000, version=1)
+    preference = UserNotificationPreference(
+        user_id=user_id,
+        telegram_enabled=True,
+        draw_results_enabled=True,
+        inactivity_reminders_enabled=True,
+    )
+    fake = FakeSession(
+        scalar_values=[draw, lottery, jackpot, fund],
+        scalar_collections=[[ticket], [balance], [preference]],
+    )
+
+    await LotterySettlementService(
+        cast(AsyncSession, fake), FixedFastGenerator()
+    ).settle(draw.id, now=now)
+
+    assert not any(isinstance(item, NotificationOutbox) for item in fake.added)
+    in_app = [item for item in fake.added if isinstance(item, UserNotification)]
+    assert len(in_app) == 1
+    assert in_app[0].type == InAppNotificationType.DRAW_RESULT
+    assert in_app[0].payload["lottery_code"] == "flash"
 
 
 async def test_draw_cannot_be_settled_before_official_time() -> None:

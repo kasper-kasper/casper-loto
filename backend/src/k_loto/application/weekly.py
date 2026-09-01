@@ -28,7 +28,7 @@ from k_loto.domain.errors import (
     InvalidTicket,
     NoAvailableDraw,
 )
-from k_loto.domain.lotteries import draw_display_name
+from k_loto.domain.lotteries import draw_display_name, is_fast_lottery
 from k_loto.domain.lottery_rules import (
     DAILY_RULES,
     WEEKLY_RULES,
@@ -705,6 +705,7 @@ class WeeklySettlementService:
             draw.reserve_used = 0
             draw.kasper_fund_used = plan.reserve_used
             self._session.add_all(ledger_entries)
+            fast_lottery = is_fast_lottery(lottery.code)
             preferences = {
                 preference.user_id: preference
                 for preference in (
@@ -745,14 +746,19 @@ class WeeklySettlementService:
                 }
                 preference = preferences.get(user_id)
                 if (
-                    preference is not None
+                    not fast_lottery
+                    and preference is not None
                     and preference.telegram_enabled
                     and preference.draw_results_enabled
                 ):
                     self._session.add(
                         NotificationOutbox(
                             id=uuid4(),
-                            event_key=f"result:{draw.id}:user:{user_id}",
+                            event_key=(
+                                f"result:{draw.id}:user:{user_id}"
+                                if fast_lottery
+                                else f"win:{draw.id}:user:{user_id}"
+                            ),
                             user_id=user_id,
                             type=NotificationType.DRAW_RESULT,
                             status=NotificationStatus.PENDING,
@@ -761,24 +767,39 @@ class WeeklySettlementService:
                             available_at=timestamp,
                         )
                     )
-                if total_prize > 0:
+                if fast_lottery or total_prize > 0:
+                    result_type = (
+                        InAppNotificationType.DRAW_RESULT
+                        if fast_lottery
+                        else InAppNotificationType.WIN
+                    )
+                    result_title = (
+                        f"{payload['lottery_name']}: результат раунда"
+                        if fast_lottery and total_prize == 0
+                        else f"Выигрыш {total_prize:,} CAS".replace(",", " ")
+                    )
                     self._session.add(
                         UserNotification(
                             id=uuid4(),
-                            event_key=f"win:{draw.id}:user:{user_id}",
+                            event_key=f"result:{draw.id}:user:{user_id}",
                             user_id=user_id,
-                            type=InAppNotificationType.WIN,
-                            title=f"Выигрыш {total_prize:,} CAS".replace(",", " "),
+                            type=result_type,
+                            title=result_title,
                             body=(
                                 f"{payload['lottery_name']}, тираж "
-                                f"№{draw.public_number:04d}. Выигрыш уже зачислен."
+                                f"№{draw.public_number:04d}. "
+                                + (
+                                    "Выигрыш уже зачислен."
+                                    if total_prize > 0
+                                    else "В этот раз без выигрыша."
+                                )
                             ),
                             payload=payload,
                             created_at=timestamp,
                         )
                     )
 
-            if plan.jackpot_won and plan.jackpot_opening > 0:
+            if not fast_lottery and plan.jackpot_won and plan.jackpot_opening > 0:
                 jackpot_payouts = [
                     item for item in plan.payouts if item.matches == rules.jackpot_match
                 ]

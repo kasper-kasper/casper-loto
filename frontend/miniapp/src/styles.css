@@ -1330,3 +1330,95 @@ body::before, body::after { opacity: .12; }
 .purchase-confirmation > div:last-child { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
 .purchase-confirmation .primary-button,
 .purchase-confirmation .secondary-button { min-height: 50px; }
+
+/* 1.8 — Fast: two lightweight interval lotteries with their own visual language. */
+.fast-view { display: grid; gap: 14px; padding-bottom: 8px; }
+.fast-heading { display: flex; align-items: end; justify-content: space-between; padding: 4px 5px 2px; }
+.fast-heading span { color: #8ca0c9; font-size: 8px; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; }
+.fast-heading h1 { margin: 0; color: #f4f7ff; font-size: 31px; letter-spacing: -.055em; }
+.fast-heading p { margin: 0 0 3px; color: #7283a6; font-size: 9px; line-height: 1.55; text-align: right; }
+.fast-card { --fast-accent: #3794ff; position: relative; min-height: 280px; overflow: hidden; padding: 17px; border: 1px solid color-mix(in srgb,var(--fast-accent) 38%,#24375d); border-radius: 14px 14px 28px 14px; background: #07122b; box-shadow: 0 18px 48px rgba(0,0,0,.25),inset 0 1px rgba(255,255,255,.04); }
+.fast-card.fast-shadow { --fast-accent: #df5d91; background: #130b21; }
+.fast-card > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 60% center; opacity: .72; transform: scale(1.04); animation: fast-scene-breathe 9s ease-in-out infinite alternate; }
+.fast-card-sheen { position: absolute; inset: 0; background: linear-gradient(90deg,rgba(3,9,25,.98) 0%,rgba(3,9,25,.76) 43%,rgba(3,9,25,.12) 78%),linear-gradient(0deg,rgba(3,9,25,.94),transparent 48%); }
+.fast-shadow .fast-card-sheen { background: linear-gradient(90deg,rgba(12,6,23,.98),rgba(12,6,23,.74) 46%,rgba(12,6,23,.12) 80%),linear-gradient(0deg,rgba(12,6,23,.95),transparent 52%); }
+.fast-card > header,.fast-card-main,.fast-card-bottom { position: relative; z-index: 1; }
+.fast-card > header { display: flex; justify-content: space-between; color: var(--fast-accent); font-size: 8px; font-weight: 800; letter-spacing: .18em; }
+.fast-card > header small { color: #7888aa; letter-spacing: .08em; }
+.fast-card-main { display: grid; grid-template-columns: 1fr 112px; gap: 12px; align-items: end; min-height: 165px; }
+.fast-card-main h2 { margin: 22px 0 0; color: #f5f8ff; font-size: clamp(38px,12vw,55px); font-style: italic; font-weight: 900; letter-spacing: -.075em; text-shadow: 0 0 24px color-mix(in srgb,var(--fast-accent) 35%,transparent); }
+.fast-card-main p { margin: -4px 0 22px; color: var(--fast-accent); font-size: 10px; font-weight: 800; letter-spacing: .24em; text-transform: uppercase; }
+.fast-card-main span { display: block; color: #8595b6; font-size: 9px; }
+.fast-card-main strong { color: var(--fast-accent); font-size: 27px; letter-spacing: -.035em; font-variant-numeric: tabular-nums; }
+.fast-signal-preview { display: grid; grid-template-columns: repeat(5,1fr); gap: 4px; padding: 8px; border: 1px solid color-mix(in srgb,var(--fast-accent) 28%,transparent); border-radius: 11px; background: rgba(3,8,22,.58); backdrop-filter: blur(5px); }
+.fast-signal-preview i { aspect-ratio: 1; border: 1px solid rgba(116,139,190,.15); border-radius: 4px; background: rgba(4,9,24,.52); }
+.fast-signal-preview i.active { background: radial-gradient(circle,var(--fast-accent) 0 7%,color-mix(in srgb,var(--fast-accent) 54%,transparent) 8% 23%,transparent 56%); box-shadow: 0 0 13px color-mix(in srgb,var(--fast-accent) 55%,transparent); }
+.fast-card-bottom { display: grid; grid-template-columns: 96px 1fr; gap: 9px; align-items: stretch; margin-top: 12px; }
+.fast-card-bottom > div { display: grid; align-content: center; padding: 10px; border: 1px solid rgba(142,161,203,.18); border-radius: 11px; background: rgba(4,10,26,.72); }
+.fast-card-bottom > div span { color: #8190af; font-size: 7px; letter-spacing: .17em; text-transform: uppercase; }
+.fast-card-bottom > div strong { margin-top: 3px; color: #f2cf7a; font-size: 15px; }
+.fast-card-bottom button { display: grid; grid-template-columns: 21px 1fr auto; gap: 8px; align-items: center; min-height: 53px; padding: 0 13px; border: 1px solid color-mix(in srgb,var(--fast-accent) 72%,#fff); border-radius: 12px 12px 20px 12px; color: #fff; background: linear-gradient(120deg,color-mix(in srgb,var(--fast-accent) 72%,#16315f),color-mix(in srgb,var(--fast-accent) 43%,#17285a)); box-shadow: inset 0 1px rgba(255,255,255,.16),0 9px 24px color-mix(in srgb,var(--fast-accent) 18%,transparent); font-size: 12px; font-weight: 800; }
+.fast-card-bottom button:active { transform: scale(.975); }
+.fast-card-bottom button:disabled { filter: grayscale(.7); opacity: .65; }
+.fast-card-bottom button small { font-size: 8px; font-weight: 700; opacity: .76; }
+.fast-divider { display: grid; grid-template-columns: 1fr 42px 1fr; gap: 10px; align-items: center; margin: 6px 10px -8px; color: #687999; text-align: center; }
+.fast-divider span { display: grid; font-size: 7px; letter-spacing: .16em; text-transform: uppercase; }
+.fast-divider b { color: #b8c6e5; font-size: 12px; letter-spacing: 0; }
+.fast-divider > i { display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid rgba(181,120,229,.46); border-radius: 13px; color: #e8eefe; background: linear-gradient(135deg,#1b4fa2,#791f65); box-shadow: -22px 0 35px rgba(40,112,255,.18),22px 0 35px rgba(219,57,128,.16); transform: rotate(45deg); }
+.fast-divider .icon { width: 21px; transform: rotate(-45deg); }
+.fast-unavailable { display: grid; min-height: 260px; place-items: center; align-content: center; color: #7588ad; text-align: center; }
+.fast-unavailable .icon { width: 40px; margin-bottom: 12px; }
+
+.fast-picker { --fast-accent: #3794ff; position: relative; min-height: calc(100dvh - 24px); overflow: hidden; padding: 118px 12px 18px; border: 1px solid rgba(64,134,243,.28); border-radius: 13px 13px 30px 13px; background: #06122b; }
+.fast-picker.fast-shadow { --fast-accent: #df5d91; border-color: rgba(215,68,129,.3); background: #10091c; }
+.fast-picker-scene { position: absolute; top: 0; left: 0; width: 100%; height: 190px; object-fit: cover; opacity: .78; animation: fast-scene-breathe 9s ease-in-out infinite alternate; }
+.fast-picker-overlay { position: absolute; inset: 0 0 auto; height: 235px; background: linear-gradient(90deg,rgba(4,10,26,.78),transparent 82%),linear-gradient(0deg,#06122b 5%,transparent 78%); }
+.fast-shadow .fast-picker-overlay { background: linear-gradient(90deg,rgba(14,7,24,.78),transparent 82%),linear-gradient(0deg,#10091c 5%,transparent 78%); }
+.fast-picker-close { position: absolute; z-index: 2; top: 12px; left: 12px; display: grid; width: 40px; height: 40px; place-items: center; border: 1px solid rgba(197,211,240,.23); border-radius: 12px; color: #d8e4ff; background: rgba(5,10,23,.65); backdrop-filter: blur(8px); }
+.fast-picker > header,.fast-grid-panel,.fast-selection,.fast-purchase,.fast-picker-note { position: relative; z-index: 1; }
+.fast-picker > header span { color: #a8b5d0; font-size: 8px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
+.fast-picker > header h1 { margin: 3px 0 0; color: #fff; font-size: clamp(25px,8vw,35px); letter-spacing: -.055em; }
+.fast-picker > header p { margin: 3px 0 13px; color: var(--fast-accent); font-size: 10px; }
+.fast-grid-panel { padding: 14px 11px 12px; border: 1px solid color-mix(in srgb,var(--fast-accent) 34%,#20355c); border-radius: 13px 13px 23px 13px; background: rgba(4,10,25,.78); box-shadow: inset 0 1px rgba(255,255,255,.035); backdrop-filter: blur(8px); }
+.fast-grid-panel > div:first-child { display: flex; justify-content: space-between; margin-bottom: 10px; color: #9dabc8; font-size: 8px; letter-spacing: .14em; }
+.fast-grid-panel > div:first-child b { color: var(--fast-accent); font-size: 13px; }
+.fast-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 8px; }
+.fast-grid button { position: relative; display: grid; aspect-ratio: 1.1; place-items: center; border: 1px solid color-mix(in srgb,var(--fast-accent) 28%,#293759); border-radius: 12px; color: #6e81a8; background: linear-gradient(145deg,rgba(19,35,72,.74),rgba(5,11,28,.9)); box-shadow: inset 0 1px rgba(255,255,255,.035); }
+.fast-grid button i { position: absolute; width: 45%; aspect-ratio: 1; border: 1px solid color-mix(in srgb,var(--fast-accent) 25%,transparent); border-radius: 50%; }
+.fast-grid button small { position: absolute; bottom: 4px; font-size: 7px; font-weight: 700; }
+.fast-grid button.selected { color: #eef6ff; border-color: var(--fast-accent); background: radial-gradient(circle,color-mix(in srgb,var(--fast-accent) 65%,#fff) 0 5%,var(--fast-accent) 6% 14%,transparent 43%),linear-gradient(145deg,color-mix(in srgb,var(--fast-accent) 28%,#152445),#071128); box-shadow: 0 0 18px color-mix(in srgb,var(--fast-accent) 38%,transparent),inset 0 0 18px color-mix(in srgb,var(--fast-accent) 18%,transparent); }
+.fast-shadow .fast-grid button.selected { background: radial-gradient(circle,#02030a 0 25%,var(--fast-accent) 28% 31%,transparent 54%),linear-gradient(145deg,#311328,#0b0715); }
+.fast-selection { display: grid; grid-template-columns: 1fr auto; gap: 9px; margin-top: 10px; padding: 12px; border: 1px solid rgba(134,155,201,.17); border-radius: 12px; background: rgba(4,9,23,.57); }
+.fast-selection > div > span { color: #7f90b1; font-size: 8px; letter-spacing: .16em; text-transform: uppercase; }
+.fast-selection > div > div { display: flex; gap: 6px; margin-top: 7px; }
+.fast-selection i { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid rgba(122,145,195,.25); border-radius: 10px; color: #506284; font-size: 9px; font-style: normal; }
+.fast-selection i.filled { color: #fff; border-color: var(--fast-accent); box-shadow: inset 0 0 12px color-mix(in srgb,var(--fast-accent) 18%,transparent); }
+.fast-selection > button { display: flex; gap: 7px; align-items: center; padding: 0 11px; border: 1px solid color-mix(in srgb,var(--fast-accent) 30%,transparent); border-radius: 11px; color: #c5d4f3; background: color-mix(in srgb,var(--fast-accent) 10%,transparent); font-size: 9px; font-weight: 700; }
+.fast-selection > button .icon { width: 17px; }
+.fast-purchase { display: grid; grid-template-columns: 100px 1fr; gap: 9px; margin-top: 10px; }
+.fast-purchase > div { display: grid; align-content: center; padding: 10px; border: 1px solid rgba(134,155,201,.18); border-radius: 12px; background: rgba(4,9,23,.62); }
+.fast-purchase > div span { color: #7f90b1; font-size: 8px; letter-spacing: .15em; text-transform: uppercase; }
+.fast-purchase > div strong { color: #f2cf7a; font-size: 17px; }
+.fast-purchase .primary-button { min-height: 57px; border-color: var(--fast-accent); background: linear-gradient(120deg,color-mix(in srgb,var(--fast-accent) 70%,#203c72),color-mix(in srgb,var(--fast-accent) 36%,#172b61)); }
+.fast-purchase .primary-button > span:last-child { display: flex; gap: 7px; align-items: center; justify-content: center; }
+.fast-purchase .icon { width: 19px; }
+.fast-picker-note { margin: 11px 0 0; color: #617397; font-size: 8px; text-align: center; }
+
+.signal-set { display: flex; gap: 7px; }
+.signal-set > span { --signal-color: #3d9bff; display: grid; width: 38px; height: 38px; place-items: center; border: 1px solid color-mix(in srgb,var(--signal-color) 30%,#283959); border-radius: 11px; background: radial-gradient(circle,color-mix(in srgb,var(--signal-color) 48%,transparent) 0 5%,transparent 38%),#08142d; }
+.signal-set.signal-shadow > span { --signal-color: #da5a8e; background: radial-gradient(circle,#02030a 0 22%,color-mix(in srgb,var(--signal-color) 65%,transparent) 25% 28%,transparent 51%),#140b1f; }
+.signal-set small { align-self: end; margin-bottom: 3px; color: #7385a9; font-size: 7px; }
+.signal-set > span.won { border-color: var(--gold); box-shadow: 0 0 16px rgba(230,183,77,.25); }
+
+@keyframes fast-scene-breathe { to { transform: scale(1.09) translate3d(-1.5%,1%,0); filter: saturate(1.08) brightness(1.05); } }
+@media (max-width: 360px) {
+  .fast-card { padding: 14px; }
+  .fast-card-main { grid-template-columns: 1fr 95px; }
+  .fast-card-main h2 { font-size: 39px; }
+  .fast-grid { gap: 6px; }
+  .fast-selection { grid-template-columns: 1fr; }
+  .fast-selection > button { min-height: 40px; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fast-card > img,.fast-picker-scene { animation: none; }
+}

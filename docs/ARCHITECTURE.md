@@ -43,7 +43,9 @@ Player communication is split into two durable projections. Telegram delivery
 uses the existing outbox only after explicit per-user consent and is limited to
 the player's own draw results and 24-hour inactivity reminders. The Mini App
 inbox stores wins and draw invitations independently; its event body is
-immutable and only `read_at` may change.
+immutable and only `read_at` may change. Fast results are Mini-App-only: every
+participating player receives one inbox result, while no Fast result or jackpot
+news is queued to Telegram.
 
 Auto-play is an application service invoked after scheduler recovery. It scans
 explicit per-user settings, generates five combinations with `SystemRandom`,
@@ -62,6 +64,11 @@ payouts, jackpot tier and central Kasper-Fund-funded
 jackpot refill. Purchase and settlement are code-agnostic. Schedule
 dispatch separately supports weekly, slot-based and interval strategies. See
 `docs/LOTTERY_STRATEGIES.md`.
+
+FLASH and SHADOW are independent interval lotteries presented in the separate
+Fast Mini App section. Each uses a twenty-minute schedule with a ten-minute
+offset, its own draw/ticket counters and jackpot. They deliberately do not enter
+the broadcast adapter, engagement reminders or owner auto-play.
 
 The v0.14.0 transition preserves the final shared Daily draw and its purchased
 tickets. PSS and KHAN start independently at deployment. After the legacy draw

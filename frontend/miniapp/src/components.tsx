@@ -3,7 +3,7 @@ import type { CSSProperties, ReactNode } from "react";
 
 import { formatCas } from "./format";
 
-export type IconName = "home" | "ticket" | "profile" | "cart" | "live" | "replay" | "arrow" | "spark" | "repeat" | "close";
+export type IconName = "home" | "ticket" | "profile" | "cart" | "live" | "fast" | "replay" | "arrow" | "spark" | "repeat" | "close";
 
 export function Icon({ name }: { name: IconName }) {
   const paths: Record<IconName, ReactNode> = {
@@ -12,6 +12,7 @@ export function Icon({ name }: { name: IconName }) {
     profile: <><path d="M12 4 16 8l-4 4-4-4Z" /><path d="M5 20c.8-4.3 3.1-6.5 7-6.5s6.2 2.2 7 6.5" /><path d="M7.5 20h9" /></>,
     cart: <><path d="M5 8h14l-1.2 11H6.2Z" /><path d="M8 8c0-2.6 1.3-4 4-4s4 1.4 4 4" /><path d="M8 13h8M12 10v6" /></>,
     live: <><path d="M3.5 12h3l2-5 3.2 10 2.4-7 2.2 4H21" /><path d="M5 4h14M5 20h14" /><path d="M3 7v10M21 7v10" /></>,
+    fast: <path d="m13.5 2-7 11h5L10.5 22l7-12h-5Z" />,
     replay: <><path d="M6.5 7.5A7 7 0 1 1 5 14" /><path d="M3.5 7.5h3.5V4M10 9l5 3-5 3Z" /></>,
     arrow: <><path d="m14.5 5-7 7 7 7" /></>,
     spark: <><path d="M12 2.5c.5 4.6 2.9 7 7.5 7.5-4.6.5-7 2.9-7.5 7.5-.5-4.6-2.9-7-7.5-7.5 4.6-.5 7-2.9 7.5-7.5Z" /><path d="M19 16.5c.2 1.8 1.2 2.8 3 3-1.8.2-2.8 1.2-3 3-.2-1.8-1.2-2.8-3-3 1.8-.2 2.8-1.2 3-3Z" /></>,
@@ -90,6 +91,10 @@ export function NumberSet({
       return <span className={`number ${won ? "won" : ""} ${animate && won ? "animate-win" : ""}`} key={value} style={{ "--number-index": index } as CSSProperties}>{value}</span>;
     })}
   </div>;
+}
+
+export function SignalSet({ values, code, winning }: { values: number[]; code: "flash" | "shadow"; winning?: number[] | null }) {
+  return <div className={`signal-set signal-${code}`} aria-label={`Позиции: ${values.join(", ")}`}>{values.map((value) => <span className={winning?.includes(value) ? "won" : ""} key={value}><i /><small>{String(value).padStart(2, "0")}</small></span>)}</div>;
 }
 
 export function StatusBadge({ active }: { active: boolean }) {

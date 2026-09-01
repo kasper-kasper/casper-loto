@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 
 from k_loto.domain.enums import LotteryKind
 from k_loto.domain.lottery_rules import (
+    FAST_RULES,
     GROB_RULES,
     SEPTEMBER_RULES,
     LotteryRuleStrategy,
@@ -58,6 +59,48 @@ def test_interval_schedule_is_server_anchored_in_moscow() -> None:
         )
         == 2
     )
+
+
+def test_fast_purchase_and_fixed_payouts_use_unified_funding() -> None:
+    quote = FAST_RULES.quote_purchase([[1, 2, 3], [13, 14, 15]], 888, 10_000)
+    assert quote.total_cost == 1_776
+    assert quote.jackpot_contribution == 1_776
+    assert quote.distribution_contribution == 0
+
+    tickets = [
+        SettlementTicket(UUID(int=61), 1, UUID(int=71), (1, 8, 9), 888),
+        SettlementTicket(UUID(int=62), 2, UUID(int=72), (1, 2, 9), 888),
+        SettlementTicket(UUID(int=63), 3, UUID(int=73), (1, 2, 3), 888),
+        SettlementTicket(UUID(int=64), 4, UUID(int=74), (1, 2, 3), 888),
+    ]
+    plan = FAST_RULES.calculate_settlement(
+        tickets,
+        (1, 2, 3),
+        distribution_balance=0,
+        jackpot_balance=888_889,
+        reserve_balance=2_000_000,
+        base_jackpot=888_888,
+    )
+    assert [item.amount for item in plan.payouts] == [88, 888, 444_445, 444_444]
+    assert plan.jackpot_closing == 888_888
+    assert plan.reserve_used == 889_864
+
+
+def test_flash_and_shadow_schedules_alternate_every_ten_minutes() -> None:
+    moscow = ZoneInfo("Europe/Moscow")
+    after = datetime(2026, 9, 1, 12, 1, tzinfo=moscow)
+    flash = next_draw_at(
+        LotteryKind.DAILY,
+        after,
+        {"type": "interval", "interval_minutes": 20, "anchor_time": "00:00"},
+    )
+    shadow = next_draw_at(
+        LotteryKind.DAILY,
+        after,
+        {"type": "interval", "interval_minutes": 20, "anchor_time": "00:10"},
+    )
+    assert flash == datetime(2026, 9, 1, 9, 20, tzinfo=UTC)
+    assert shadow == datetime(2026, 9, 1, 9, 10, tzinfo=UTC)
 
 
 def test_september_fixed_payouts_and_shared_main_prize() -> None:

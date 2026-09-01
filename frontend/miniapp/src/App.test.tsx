@@ -68,6 +68,42 @@ const dashboard: Dashboard = {
       max_tickets_per_purchase: 1000,
       max_tickets_per_user_per_draw: 5000,
     },
+    {
+      code: "flash",
+      name: "FLASH",
+      kind: "DAILY",
+      numbers_to_pick: 3,
+      max_number: 15,
+      ticket_price: 888,
+      jackpot: 888_888,
+      draw_number: 1,
+      scheduled_at: "2026-08-15T12:20:00Z",
+      sales_close_at: "2026-08-15T12:19:00Z",
+      sales_open: true,
+      purchase_available: true,
+      player_ticket_count: 0,
+      sales_status: "OPEN",
+      max_tickets_per_purchase: 100,
+      max_tickets_per_user_per_draw: 500,
+    },
+    {
+      code: "shadow",
+      name: "SHADOW",
+      kind: "DAILY",
+      numbers_to_pick: 3,
+      max_number: 15,
+      ticket_price: 888,
+      jackpot: 888_888,
+      draw_number: 1,
+      scheduled_at: "2026-08-15T12:10:00Z",
+      sales_close_at: "2026-08-15T12:09:00Z",
+      sales_open: true,
+      purchase_available: true,
+      player_ticket_count: 0,
+      sales_status: "OPEN",
+      max_tickets_per_purchase: 100,
+      max_tickets_per_user_per_draw: 500,
+    },
   ],
   recent_results: [],
   monthly_total_payout: 0,
@@ -272,13 +308,15 @@ it("offers an explicit prepaid five-draw purchase without enabling it by default
   ));
 });
 
-it("shows a designed cart empty state without implementation details", async () => {
+it("opens the separate Fast section without replacing the nearest main draw", async () => {
   render(<App initData="signed" />);
-  fireEvent.click(await screen.findByRole("button", { name: "Корзина" }));
+  expect(await screen.findByText("Ближайший тираж")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Fast" }));
 
-  expect(screen.getByText("Корзина пока пуста")).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: /Выбрать лотерею/ })).toBeInTheDocument();
-  expect(screen.queryByText(/TTL|Постоянное хранение/)).not.toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "Fast" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "FLASH" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "SHADOW" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /Собрать сигнал/ })).toBeInTheDocument();
 });
 
 it("shows one simple notification control and no auto-play panel", async () => {

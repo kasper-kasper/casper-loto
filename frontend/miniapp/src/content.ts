@@ -100,6 +100,7 @@ export const MINIAPP_TEXTS = {
   navigation: {
     home: "Главная",
     live: "Эфир",
+    fast: "Fast",
     account: "Моё",
     cart: "Корзина",
   },

@@ -22,12 +22,21 @@ LOTTERY_DEFINITIONS = (
     LotteryDefinition("khan", "ХАН-Лото", LotteryKind.DAILY, "18:00"),
     LotteryDefinition("september", "3 СЕНТЯБРЯ", LotteryKind.DAILY, "03:33 / 15:33"),
     LotteryDefinition("grob", "ГРОБ", LotteryKind.DAILY, "06:06 / 23:06"),
+    LotteryDefinition("flash", "FLASH", LotteryKind.DAILY, "каждые 20 минут"),
+    LotteryDefinition("shadow", "SHADOW", LotteryKind.DAILY, "каждые 20 минут"),
 )
 
 PLAYABLE_LOTTERY_CODES = frozenset(item.code for item in LOTTERY_DEFINITIONS)
 DAILY_LOTTERY_CODES = frozenset(
     item.code for item in LOTTERY_DEFINITIONS if item.kind == LotteryKind.DAILY
 )
+FAST_LOTTERY_CODES = frozenset({"flash", "shadow"})
+
+
+def is_fast_lottery(code: str) -> bool:
+    """Return whether a stable lottery identity belongs to the Fast section."""
+    return code in FAST_LOTTERY_CODES
+
 
 MOSCOW = ZoneInfo("Europe/Moscow")
 DAILY_SLOT_NAMES = {

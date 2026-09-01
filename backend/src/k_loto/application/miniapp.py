@@ -24,7 +24,11 @@ from k_loto.domain.live_timeline import (
     presentation_timeline,
     sales_status,
 )
-from k_loto.domain.lotteries import draw_display_code, draw_display_name
+from k_loto.domain.lotteries import (
+    FAST_LOTTERY_CODES,
+    draw_display_code,
+    draw_display_name,
+)
 from k_loto.infrastructure.database.models import (
     Balance,
     Draw,
@@ -365,7 +369,9 @@ class MiniAppQueryService:
                 select(Draw)
                 .where(
                     Draw.lottery_id == lottery.id,
-                    Draw.status != DrawStatus.COMPLETED,
+                    Draw.status == DrawStatus.SCHEDULED,
+                    Draw.scheduled_at > timestamp,
+                    Draw.sales_close_at > timestamp,
                 )
                 .order_by(Draw.scheduled_at)
                 .limit(1)
@@ -534,7 +540,10 @@ class MiniAppQueryService:
                 select(Draw, Lottery, JackpotAccount.balance)
                 .join(Lottery, Lottery.id == Draw.lottery_id)
                 .outerjoin(JackpotAccount, JackpotAccount.lottery_id == Lottery.id)
-                .where(Draw.status == DrawStatus.COMPLETED)
+                .where(
+                    Draw.status == DrawStatus.COMPLETED,
+                    Lottery.code.not_in(FAST_LOTTERY_CODES),
+                )
                 .order_by(Draw.scheduled_at.desc())
                 .limit(50)
             )
@@ -553,7 +562,10 @@ class MiniAppQueryService:
                 select(Draw, Lottery, JackpotAccount.balance)
                 .join(Lottery, Lottery.id == Draw.lottery_id)
                 .outerjoin(JackpotAccount, JackpotAccount.lottery_id == Lottery.id)
-                .where(Draw.status == DrawStatus.SCHEDULED)
+                .where(
+                    Draw.status == DrawStatus.SCHEDULED,
+                    Lottery.code.not_in(FAST_LOTTERY_CODES),
+                )
                 .order_by(Draw.scheduled_at, Draw.public_number)
                 .limit(1)
             )

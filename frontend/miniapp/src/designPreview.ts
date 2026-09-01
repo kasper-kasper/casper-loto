@@ -5,6 +5,8 @@ const nowIso = () => new Date().toISOString();
 const future = (minutes: number) => new Date(Date.now() + minutes * 60_000).toISOString();
 
 const lotterySeed = [
+  { code: "shadow", name: "SHADOW", kind: "DAILY" as const, numbers_to_pick: 3, max_number: 15, ticket_price: 888, jackpot: 888_888, draw_number: 38, scheduled_at: future(7) },
+  { code: "flash", name: "FLASH", kind: "DAILY" as const, numbers_to_pick: 3, max_number: 15, ticket_price: 888, jackpot: 901_320, draw_number: 42, scheduled_at: future(17) },
   { code: "grob", name: "ГРОБ", kind: "DAILY" as const, numbers_to_pick: 3, max_number: 16, ticket_price: 6_666, jackpot: 6_666_666, draw_number: 1, scheduled_at: future(36) },
   { code: "september", name: "3 СЕНТЯБРЯ", kind: "DAILY" as const, numbers_to_pick: 3, max_number: 33, ticket_price: 333, jackpot: 33_333_333, draw_number: 1, scheduled_at: future(83) },
   { code: "pll", name: "ПЛЛ-Лото", kind: "DAILY" as const, numbers_to_pick: 4, max_number: 15, ticket_price: 24_000, jackpot: 18_640_000, draw_number: 418, scheduled_at: future(145) },
@@ -21,7 +23,7 @@ const dashboard = (): Dashboard => ({
   server_time: nowIso(),
   balance,
   active_ticket_count: purchasedTickets.length,
-  lotteries: lotterySeed.map((lottery) => ({ ...lottery, sales_close_at: new Date(new Date(lottery.scheduled_at).getTime() - 120_000).toISOString(), sales_open: true, purchase_available: true, player_ticket_count: purchasedTickets.filter((ticket) => ticket.lottery_code === lottery.code).length, sales_status: "OPEN" as const, max_tickets_per_purchase: 1_000, max_tickets_per_user_per_draw: 5_000 })),
+  lotteries: lotterySeed.map((lottery) => ({ ...lottery, sales_close_at: new Date(new Date(lottery.scheduled_at).getTime() - (lottery.code === "flash" || lottery.code === "shadow" ? 60_000 : 120_000)).toISOString(), sales_open: true, purchase_available: true, player_ticket_count: purchasedTickets.filter((ticket) => ticket.lottery_code === lottery.code).length, sales_status: "OPEN" as const, max_tickets_per_purchase: lottery.code === "flash" || lottery.code === "shadow" ? 100 : 1_000, max_tickets_per_user_per_draw: lottery.code === "flash" || lottery.code === "shadow" ? 500 : 5_000 })),
   recent_results: [],
   monthly_total_payout: 12_333_333,
 });
@@ -29,7 +31,7 @@ const dashboard = (): Dashboard => ({
 const account = (): Account => ({ display_name: "Дизайн-превью", balance, ticket_count: purchasedTickets.length + 42, active_ticket_count: purchasedTickets.length, winning_ticket_count: 7, total_spent: 14_760_000, total_won: 19_333_333, best_win: 12_000_000, unread_notification_count: 1, notification_preferences: { telegram_enabled: true, draw_results_enabled: true, inactivity_reminders_enabled: true } });
 
 const liveDraw = (): LiveDraw => {
-  const lottery = lotterySeed[0];
+  const lottery = lotterySeed.find((item) => item.code === "grob")!;
   const starts = lottery.scheduled_at;
   return { lottery_code: lottery.code, lottery_name: lottery.name, lottery_kind: lottery.kind, draw_number: lottery.draw_number, scheduled_at: starts, status: "SCHEDULED", winning_numbers: null, jackpot: lottery.jackpot, player_ticket_count: purchasedTickets.filter((ticket) => ticket.lottery_code === lottery.code).length, player_winning_ticket_count: 0, player_best_matches: null, player_total_prize: 0, highlighted_tickets: [], sales_close_at: new Date(new Date(starts).getTime() - 120_000).toISOString(), sales_status: "OPEN", live_starts_at: starts, reveal_at: [0, 1, 2].map((index) => new Date(new Date(starts).getTime() + 3_000 + index * 4_000).toISOString()), live_ends_at: new Date(new Date(starts).getTime() + 18_000).toISOString() };
 };
