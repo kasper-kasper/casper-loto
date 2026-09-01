@@ -17,9 +17,11 @@ from k_loto.infrastructure.database.models import Balance, LedgerTransaction
 from k_loto.infrastructure.telegram_bot import miniapp_markup, miniapp_menu_button
 from k_loto.infrastructure.telegram_messages import (
     BotNotificationFormatter,
+    format_delivery_test,
     format_inactivity_reminder,
     format_purchase_message,
     format_result_message,
+    format_system_alert,
 )
 
 
@@ -193,6 +195,20 @@ def test_inactivity_reminder_names_the_next_draw_without_purchase_noise() -> Non
     assert "ПСС-Лото №0044" in message
     assert "02.09.2026 · 12:00 МСК" in message
     assert "Вы давно не выбирали числа" in message
+
+
+def test_delivery_diagnostic_is_explicit_and_does_not_expose_payload() -> None:
+    assert "проверочное сообщение" in format_delivery_test().lower()
+
+
+def test_owner_alert_is_redacted_and_points_to_admin_panel() -> None:
+    message = format_system_alert(
+        {"kind": "scheduler_error", "count": 1, "error_code": "DatabaseError"}
+    )
+
+    assert "scheduler_error" in message
+    assert "Admin Panel" in message
+    assert "DatabaseError" not in message
 
 
 async def test_dispatcher_sends_claimed_event_only_once() -> None:

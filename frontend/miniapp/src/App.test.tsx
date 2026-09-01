@@ -14,6 +14,7 @@ vi.mock("./api", () => ({
     account: vi.fn(),
     notifications: vi.fn(),
     notificationPreferences: vi.fn(),
+    testNotification: vi.fn(),
     markNotificationsRead: vi.fn(),
     live: vi.fn(),
     liveStream: vi.fn(),
@@ -80,8 +81,6 @@ const account: Account = {
   total_won: 0,
   best_win: 0,
   unread_notification_count: 0,
-  auto_play_enabled: false,
-  auto_play_tickets_per_draw: 5,
   notification_preferences: {
     telegram_enabled: false,
     draw_results_enabled: true,

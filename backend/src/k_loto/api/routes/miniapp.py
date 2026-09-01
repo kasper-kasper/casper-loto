@@ -124,8 +124,6 @@ class AccountResponse(BaseModel):
     total_won: int
     best_win: int
     unread_notification_count: int
-    auto_play_enabled: bool
-    auto_play_tickets_per_draw: int
     notification_preferences: NotificationPreferencesResponse
 
 
@@ -396,8 +394,6 @@ async def account(
         total_won=item.total_won,
         best_win=item.best_win,
         unread_notification_count=item.unread_notification_count,
-        auto_play_enabled=item.auto_play_enabled,
-        auto_play_tickets_per_draw=item.auto_play_tickets_per_draw,
         notification_preferences=NotificationPreferencesResponse(
             telegram_enabled=item.notification_preferences.telegram_enabled,
             draw_results_enabled=item.notification_preferences.draw_results_enabled,
@@ -455,6 +451,22 @@ async def mark_user_notifications_read(
     await MiniAppQueryService(session).mark_notifications_read(
         user.id, payload.notification_id
     )
+
+
+@router.post("/notifications/test", status_code=status.HTTP_202_ACCEPTED)
+async def test_telegram_delivery(
+    user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> dict[str, bool]:
+    """Queue a user-requested end-to-end Telegram delivery check."""
+
+    try:
+        queued = await MiniAppQueryService(session).queue_delivery_test(user.id)
+    except PermissionError as error:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(error)
+        ) from error
+    return {"queued": queued}
 
 
 @router.get("/live", response_model=LiveFeedResponse)

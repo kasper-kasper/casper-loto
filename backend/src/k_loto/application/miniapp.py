@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from uuid import UUID
+from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, select, update
@@ -13,6 +13,8 @@ from k_loto.domain.enums import (
     InAppNotificationType,
     LedgerAccountKind,
     LotteryKind,
+    NotificationStatus,
+    NotificationType,
     TicketSource,
     TicketStatus,
     TransactionType,
@@ -20,12 +22,12 @@ from k_loto.domain.enums import (
 from k_loto.domain.live_timeline import draw_timeline, sales_status
 from k_loto.domain.lotteries import draw_display_code, draw_display_name
 from k_loto.infrastructure.database.models import (
-    AutoPlaySetting,
     Balance,
     Draw,
     JackpotAccount,
     LedgerTransaction,
     Lottery,
+    NotificationOutbox,
     Ticket,
     User,
     UserNotification,
@@ -158,8 +160,6 @@ class MiniAppAccount:
     total_won: int
     best_win: int
     unread_notification_count: int
-    auto_play_enabled: bool
-    auto_play_tickets_per_draw: int
     notification_preferences: MiniAppNotificationPreferences
 
 
@@ -203,7 +203,6 @@ class MiniAppQueryService:
             )
         ).one()
         preference = await self._session.get(UserNotificationPreference, user_id)
-        auto_play = await self._session.get(AutoPlaySetting, user_id)
         unread = int(
             await self._session.scalar(
                 select(func.count(UserNotification.id)).where(
@@ -223,8 +222,6 @@ class MiniAppQueryService:
             total_won=int(stats[4]),
             best_win=int(stats[5]),
             unread_notification_count=unread,
-            auto_play_enabled=bool(auto_play and auto_play.enabled),
-            auto_play_tickets_per_draw=(auto_play.tickets_per_draw if auto_play else 5),
             notification_preferences=MiniAppNotificationPreferences(
                 telegram_enabled=bool(preference and preference.telegram_enabled),
                 draw_results_enabled=(
@@ -302,6 +299,38 @@ class MiniAppQueryService:
             await self._session.execute(
                 update(UserNotification).where(*filters).values(read_at=timestamp)
             )
+
+    async def queue_delivery_test(
+        self, user_id: UUID, *, now: datetime | None = None
+    ) -> bool:
+        """Queue at most one explicit delivery diagnostic per user and hour."""
+
+        timestamp = now or datetime.now(UTC)
+        async with self._session.begin():
+            preference = await self._session.get(UserNotificationPreference, user_id)
+            if preference is None or not preference.telegram_enabled:
+                raise PermissionError("Telegram notifications are not enabled.")
+            event_key = f"delivery-test:{user_id}:{int(timestamp.timestamp() // 3600)}"
+            exists = await self._session.scalar(
+                select(NotificationOutbox.id).where(
+                    NotificationOutbox.event_key == event_key
+                )
+            )
+            if exists is not None:
+                return False
+            self._session.add(
+                NotificationOutbox(
+                    id=uuid4(),
+                    event_key=event_key,
+                    user_id=user_id,
+                    type=NotificationType.DELIVERY_TEST,
+                    status=NotificationStatus.PENDING,
+                    payload={"requested_at": timestamp.isoformat()},
+                    attempts=0,
+                    available_at=timestamp,
+                )
+            )
+        return True
 
     async def dashboard(
         self, user_id: UUID, *, now: datetime | None = None

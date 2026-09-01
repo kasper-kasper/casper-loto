@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "k-loto"
-version = "0.22.0"
+version = "0.23.0"
 description = "K-Loto virtual lottery platform"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -26,6 +26,7 @@ dependencies = [
 dev = [
     "httpx>=0.28,<1",
     "mypy>=1.14,<2",
+    "paramiko>=3.5,<5",
     "pytest>=8.3,<9",
     "pytest-asyncio>=0.25,<1",
     "ruff>=0.9,<1",

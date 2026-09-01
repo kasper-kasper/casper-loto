@@ -24,8 +24,14 @@ These rules apply to every human or AI change in this repository.
    `Europe/Moscow`. Store CAS as integers, never floating point.
 10. Add an Alembic migration for every schema change and tests for every domain
     rule or regression.
-11. Before finishing a milestone, run formatter, linter, type checks and tests;
-    document unavailable tools or checks.
+11. Match checks to risk while developing: copy/CSS changes use the relevant
+    frontend checks and a smoke test; isolated UI behaviour uses that frontend's
+    lint, typecheck, tests and build; money, draws, scheduler, database, auth and
+    security changes use the full project suite. Run the full required suite once
+    before a release, not after every small edit, and document unavailable checks.
 12. Update `DEVLOG.md` after substantial work. Update `CHANGELOG.md` for visible
     changes and `docs/OPEN_DECISIONS.md` when decisions change.
 13. Keep commits small, logical and meaningful. Never commit `.env`.
+14. Rebuild and redeploy only services affected by a change when that is safe.
+    Group related minor copy changes into one PATCH release; reserve CHANGELOG
+    entries for visible product changes and DEVLOG entries for substantial work.

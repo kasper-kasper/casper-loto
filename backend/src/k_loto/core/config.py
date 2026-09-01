@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     database_url: PostgresDsn
     scheduler_enabled: bool = True
     scheduler_interval_seconds: int = Field(default=30, ge=5, le=3600)
+    owner_telegram_id: int | None = Field(default=None, gt=0)
+    operational_stuck_minutes: int = Field(default=10, ge=5, le=1440)
     lottery_bot_token: SecretStr | None = None
     bot_outbox_interval_seconds: int = Field(default=2, ge=1, le=60)
     bot_max_tickets_per_purchase: int = Field(default=50, ge=1, le=100)

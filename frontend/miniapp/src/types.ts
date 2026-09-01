@@ -121,8 +121,6 @@ export interface Account {
   total_won: number;
   best_win: number;
   unread_notification_count: number;
-  auto_play_enabled: boolean;
-  auto_play_tickets_per_draw: number;
   notification_preferences: NotificationPreferences;
 }
 

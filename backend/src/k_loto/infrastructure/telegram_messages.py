@@ -115,6 +115,23 @@ def format_inactivity_reminder(payload: dict[str, Any]) -> str:
     )
 
 
+def format_delivery_test() -> str:
+    return (
+        "✅ Уведомления K-Loto работают\n\n"
+        "Это проверочное сообщение, которое вы запросили в профиле Mini App. "
+        "Результаты ваших тиражей будут приходить сюда."
+    )
+
+
+def format_system_alert(payload: dict[str, Any]) -> str:
+    return (
+        "🚨 K-Loto: требуется внимание владельца\n\n"
+        f"Событие: {payload.get('kind', 'unknown')}\n"
+        f"Количество: {int(payload.get('count', 1))}\n"
+        "Подробности доступны в Admin Panel. Секретные данные в сообщение не включены."
+    )
+
+
 class BotNotificationFormatter:
     def format(self, notification: ClaimedNotification) -> str:
         if notification.type == NotificationType.TICKET_PURCHASED:
@@ -123,4 +140,8 @@ class BotNotificationFormatter:
             return format_result_message(notification.payload)
         if notification.type == NotificationType.INACTIVITY_REMINDER:
             return format_inactivity_reminder(notification.payload)
+        if notification.type == NotificationType.DELIVERY_TEST:
+            return format_delivery_test()
+        if notification.type == NotificationType.SYSTEM_ALERT:
+            return format_system_alert(notification.payload)
         raise ValueError(f"Unsupported notification type: {notification.type}")

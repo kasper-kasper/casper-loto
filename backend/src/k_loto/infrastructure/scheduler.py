@@ -1,22 +1,33 @@
 """APScheduler adapter for periodic draw reconciliation."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
+import structlog
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy.dialects.postgresql import insert
 
 from k_loto.application.auto_play import AutoPlayService
 from k_loto.application.engagement import PlayerEngagementService
+from k_loto.application.operational_monitoring import OperationalMonitoringService
 from k_loto.application.scheduler import DrawRecoveryService
+from k_loto.core.config import get_settings
 from k_loto.infrastructure.database.models import SchedulerHeartbeat
 from k_loto.infrastructure.database.session import session_factory
+
+logger = structlog.get_logger(__name__)
 
 
 class SchedulerRuntime:
     def __init__(self, interval_seconds: int) -> None:
+        settings = get_settings()
         self._recovery = DrawRecoveryService(session_factory)
         self._scheduler = AsyncIOScheduler(timezone="UTC")
         self._interval_seconds = interval_seconds
+        self._monitor = OperationalMonitoringService(
+            session_factory,
+            owner_telegram_id=settings.owner_telegram_id,
+            stuck_after=timedelta(minutes=settings.operational_stuck_minutes),
+        )
 
     async def start(self) -> None:
         await self._run()
@@ -52,7 +63,17 @@ class SchedulerRuntime:
                 if heartbeat is not None:
                     heartbeat.last_failed_at = datetime.now(UTC)
                     heartbeat.last_error = type(error).__name__[:256]
+            try:
+                await self._monitor.alert_scheduler_error(
+                    type(error).__name__, now=started
+                )
+            except Exception:
+                logger.exception("scheduler_owner_alert_failed")
             raise
+        try:
+            await self._monitor.run(now=started)
+        except Exception:
+            logger.exception("operational_monitor_failed")
         async with session_factory() as session, session.begin():
             heartbeat = await session.get(SchedulerHeartbeat, 1)
             if heartbeat is not None:

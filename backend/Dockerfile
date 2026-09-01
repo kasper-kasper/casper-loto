@@ -6,11 +6,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY pyproject.toml README.md CHANGELOG.md DEVLOG.md alembic.ini ./
+COPY pyproject.toml README.md alembic.ini ./
 COPY backend ./backend
 COPY bot ./bot
 COPY scripts ./scripts
-RUN python -m pip install --no-cache-dir .
+RUN --mount=type=cache,target=/root/.cache/pip python -m pip install .
+COPY CHANGELOG.md DEVLOG.md ./
 
 RUN addgroup --system app && adduser --system --ingroup app app \
     && chown -R app:app /app

@@ -56,6 +56,8 @@ export const miniAppApi = {
     request<NotificationPreferences>("/api/v1/miniapp/notification-preferences", initData, { method: "PUT", body: JSON.stringify(preferences) }),
   markNotificationsRead: (initData: string, notificationId?: string) =>
     request<void>("/api/v1/miniapp/notifications/read", initData, { method: "POST", body: JSON.stringify({ notification_id: notificationId ?? null }) }),
+  testNotification: (initData: string) =>
+    request<{ queued: boolean }>("/api/v1/miniapp/notifications/test", initData, { method: "POST" }),
   live: (initData: string) =>
     request<LiveFeed>("/api/v1/miniapp/live", initData),
   liveStream: async (initData: string, onSnapshot: (feed: LiveFeed) => void, signal: AbortSignal) => {
