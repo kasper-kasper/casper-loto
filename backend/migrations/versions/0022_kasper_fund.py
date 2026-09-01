@@ -66,10 +66,26 @@ def _ledger(
 
 def upgrade() -> None:
     connection = op.get_bind()
-    op.drop_constraint(
-        "ck_ledger_transactions_ledger_account_kind",
-        "ledger_transactions",
-        type_="check",
+    connection.execute(
+        sa.text(
+            """
+            DO $$
+            DECLARE current_name text;
+            BEGIN
+                SELECT conname INTO current_name
+                FROM pg_constraint
+                WHERE conrelid = 'ledger_transactions'::regclass
+                  AND contype = 'c'
+                  AND pg_get_constraintdef(oid) LIKE '%account_kind%';
+                IF current_name IS NOT NULL THEN
+                    EXECUTE format(
+                        'ALTER TABLE ledger_transactions DROP CONSTRAINT %I',
+                        current_name
+                    );
+                END IF;
+            END $$;
+            """
+        )
     )
     op.create_check_constraint(
         "ledger_account_kind",
@@ -77,10 +93,26 @@ def upgrade() -> None:
         "account_kind IN ('USER_BALANCE', 'JACKPOT', 'DISTRIBUTION_FUND', "
         "'LOTTERY_RESERVE', 'KASPER_FUND')",
     )
-    op.drop_constraint(
-        "ck_user_notifications_in_app_notification_type",
-        "user_notifications",
-        type_="check",
+    connection.execute(
+        sa.text(
+            """
+            DO $$
+            DECLARE current_name text;
+            BEGIN
+                SELECT conname INTO current_name
+                FROM pg_constraint
+                WHERE conrelid = 'user_notifications'::regclass
+                  AND contype = 'c'
+                  AND pg_get_constraintdef(oid) LIKE '%DRAW_INVITATION%';
+                IF current_name IS NOT NULL THEN
+                    EXECUTE format(
+                        'ALTER TABLE user_notifications DROP CONSTRAINT %I',
+                        current_name
+                    );
+                END IF;
+            END $$;
+            """
+        )
     )
     op.create_check_constraint(
         "in_app_notification_type",
