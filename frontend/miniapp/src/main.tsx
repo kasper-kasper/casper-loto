@@ -5,8 +5,16 @@ import App from "./App";
 import "./styles.css";
 import { initializeTelegram, isLocalDevMode } from "./telegram";
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <App initData={initializeTelegram()} localDev={isLocalDevMode()} />
-  </StrictMode>,
-);
+async function start(): Promise<void> {
+  if (import.meta.env.VITE_DESIGN_PREVIEW === "true") {
+    const { installDesignPreview } = await import("./designPreview");
+    installDesignPreview();
+  }
+  createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+      <App initData={initializeTelegram()} localDev={isLocalDevMode()} />
+    </StrictMode>,
+  );
+}
+
+void start();
