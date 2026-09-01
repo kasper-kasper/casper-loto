@@ -19,7 +19,11 @@ from k_loto.domain.enums import (
     TicketStatus,
     TransactionType,
 )
-from k_loto.domain.live_timeline import draw_timeline, sales_status
+from k_loto.domain.live_timeline import (
+    draw_timeline,
+    presentation_timeline,
+    sales_status,
+)
 from k_loto.domain.lotteries import draw_display_code, draw_display_name
 from k_loto.infrastructure.database.models import (
     Balance,
@@ -610,7 +614,11 @@ class MiniAppQueryService:
                 )
                 for ticket in tickets
             )
-        timeline = draw_timeline(draw.scheduled_at, lottery.numbers_to_pick)
+        timeline = presentation_timeline(
+            draw.scheduled_at,
+            draw.executed_at if draw.status == DrawStatus.COMPLETED else None,
+            lottery.numbers_to_pick,
+        )
         return MiniAppLiveDraw(
             lottery_code=draw_display_code(lottery.code, draw.scheduled_at),
             lottery_name=draw_display_name(

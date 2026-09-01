@@ -28,6 +28,17 @@ def draw_timeline(scheduled_at: datetime, number_count: int) -> DrawTimeline:
     return DrawTimeline(scheduled_at, reveal_at, ends_at)
 
 
+def presentation_timeline(
+    scheduled_at: datetime,
+    executed_at: datetime | None,
+    number_count: int,
+) -> DrawTimeline:
+    """Start visual reveal only when the immutable result is actually available."""
+
+    starts_at = max(scheduled_at, executed_at) if executed_at else scheduled_at
+    return draw_timeline(starts_at, number_count)
+
+
 def sales_status(
     *,
     now: datetime,

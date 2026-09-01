@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Icon, NumberSet, PrimaryButton } from "./components";
+import { MINIAPP_TEXTS as copy } from "./content";
 import { countdown, formatCas, formatDraw, formatMoscow } from "./format";
 import { livePresentation, replayPresentation } from "./live";
 import { liveStartHaptic, selectionHaptic } from "./telegram";
@@ -69,7 +70,7 @@ export function LiveView({ feed, now, loading, onPlay, onTickets }: LiveViewProp
         <div className="live-facts"><div><span>Джекпот</span><strong>{formatCas(draw.jackpot)}</strong></div><div><span>Ваши билеты</span><strong>{draw.player_ticket_count}</strong></div></div>
       </>}
 
-      {state.phase === "starting" && <div className="live-start"><span>{isReplay ? "Возвращаемся к моменту тиража" : "Тираж начинается"}</span><strong>{isReplay ? "Восстанавливаем последовательность чисел" : "Сервер готовит результат"}</strong><p>{isReplay ? "Это цифровой повтор сохранённого результата." : "Оставайтесь на экране — числа появятся автоматически."}</p><i /></div>}
+      {state.phase === "starting" && <div className="live-start"><span>{isReplay ? "Возвращаемся к моменту тиража" : "Тираж начинается"}</span><strong>{isReplay ? "Восстанавливаем последовательность чисел" : copy.live.choosingNumbers}</strong><p>{isReplay ? "Это цифровой повтор сохранённого результата." : copy.live.stayOnScreen}</p><i /></div>}
 
       {state.phase === "revealing" && <div className="live-reveal" aria-live="polite">
         <span>{isReplay ? "В записи выпало число" : "Выпадает число"}</span>

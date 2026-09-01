@@ -239,6 +239,16 @@ it("shows a designed cart empty state without implementation details", async () 
   expect(screen.queryByText(/TTL|Постоянное хранение/)).not.toBeInTheDocument();
 });
 
+it("shows one simple notification control and no auto-play panel", async () => {
+  render(<App initData="signed" />);
+  fireEvent.click(await screen.findByRole("button", { name: "Моё" }));
+
+  expect(await screen.findByRole("button", { name: "Включить уведомления" })).toBeInTheDocument();
+  expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+  expect(screen.queryByText("Автоучастие")).not.toBeInTheDocument();
+  expect(screen.getByText("Хотел написать «СВОЁ», но не стал…")).toBeInTheDocument();
+});
+
 it("renders losing history as neutral and winning history as rewarded", async () => {
   const history: Ticket[] = [
     {

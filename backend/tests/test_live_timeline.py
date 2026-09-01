@@ -3,7 +3,11 @@
 from datetime import UTC, datetime, timedelta
 
 from k_loto.domain.enums import DrawStatus
-from k_loto.domain.live_timeline import draw_timeline, sales_status
+from k_loto.domain.live_timeline import (
+    draw_timeline,
+    presentation_timeline,
+    sales_status,
+)
 
 
 def test_timeline_assigns_stable_reveal_moments() -> None:
@@ -15,6 +19,16 @@ def test_timeline_assigns_stable_reveal_moments() -> None:
         starts_at + timedelta(seconds=1 + index * 2) for index in range(4)
     )
     assert timeline.ends_at == starts_at + timedelta(seconds=9)
+
+
+def test_completed_draw_reveal_starts_when_result_is_ready() -> None:
+    scheduled = datetime(2026, 9, 1, 9, tzinfo=UTC)
+    executed = scheduled + timedelta(seconds=24)
+
+    timeline = presentation_timeline(scheduled, executed, 4)
+
+    assert timeline.starts_at == executed
+    assert timeline.reveal_at[0] == executed + timedelta(seconds=1)
 
 
 def test_sales_status_covers_owner_visible_lifecycle() -> None:
