@@ -22,7 +22,8 @@
 - migration: не требуется;
 - затронут только интерфейс Mini App;
 - проверки: ESLint — успешно, TypeScript — успешно, Mini App `30 passed`, production build — успешно,
-  metadata/health `4 passed`.
+  metadata/health `4 passed`;
+- release commit: `46a025f`.
 
 ## [1.4.1] - 2026-09-01
 
