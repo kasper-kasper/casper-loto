@@ -126,6 +126,8 @@ class Lottery(TimestampMixin, Base):
         ),
         CheckConstraint("next_draw_number >= 1", name="next_draw_number_positive"),
         CheckConstraint("next_ticket_number >= 1", name="next_ticket_number_positive"),
+        CheckConstraint("char_length(ruleset_code) > 0", name="ruleset_code_not_empty"),
+        Index("ix_lotteries_ruleset_code", "ruleset_code"),
         CheckConstraint(
             "max_tickets_per_purchase BETWEEN 1 AND 1000",
             name="max_tickets_per_purchase_valid",
@@ -142,6 +144,7 @@ class Lottery(TimestampMixin, Base):
     code: Mapped[str] = mapped_column(String(32), unique=True)
     name: Mapped[str] = mapped_column(String(128))
     kind: Mapped[LotteryKind] = mapped_column(enum_type(LotteryKind, "lottery_kind"))
+    ruleset_code: Mapped[str] = mapped_column(String(64))
     numbers_to_pick: Mapped[int] = mapped_column(Integer)
     max_number: Mapped[int] = mapped_column(Integer)
     ticket_price: Mapped[int | None] = mapped_column(BigInteger)

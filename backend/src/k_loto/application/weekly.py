@@ -28,6 +28,12 @@ from k_loto.domain.errors import (
     NoAvailableDraw,
 )
 from k_loto.domain.lotteries import draw_display_name
+from k_loto.domain.lottery_rules import (
+    DAILY_RULES,
+    WEEKLY_RULES,
+    LotteryRuleStrategy,
+    get_lottery_rules,
+)
 from k_loto.domain.schedules import next_draw_at, sales_close_at
 from k_loto.domain.weekly import (
     SettlementTicket,
@@ -51,6 +57,24 @@ from k_loto.infrastructure.database.models import (
 
 MAX_TICKETS_PER_PURCHASE = 1000
 MULTI_DRAW_COUNTS = (1, 5)
+
+
+def _rules_for_lottery(
+    lottery: Lottery, *, expected: str | None
+) -> LotteryRuleStrategy:
+    """Resolve persisted rules; legacy in-memory objects get a safe fallback."""
+    stored = getattr(lottery, "ruleset_code", None)
+    if not stored:
+        stored = (
+            WEEKLY_RULES.code
+            if lottery.kind == LotteryKind.WEEKLY
+            else DAILY_RULES.code
+        )
+    if expected is not None and stored != expected:
+        raise ConfigurationError(
+            f"Lottery uses {stored!r}, expected rule strategy {expected!r}."
+        )
+    return get_lottery_rules(stored)
 
 
 @dataclass(frozen=True, slots=True)
@@ -133,6 +157,7 @@ class WeeklyTicketPurchaseService:
     quote_purchase = staticmethod(quote_weekly_purchase)
     lottery_label = "Weekly"
     default_lottery_code = "weekly"
+    ruleset_code: str | None = WEEKLY_RULES.code
 
     def __init__(
         self,
@@ -179,7 +204,6 @@ class WeeklyTicketPurchaseService:
             lottery = await self._session.scalar(
                 select(Lottery)
                 .where(
-                    Lottery.kind == self.lottery_kind,
                     Lottery.code == self._lottery_code,
                     Lottery.is_active.is_(True),
                 )
@@ -189,9 +213,10 @@ class WeeklyTicketPurchaseService:
                 raise ConfigurationError(
                     f"Active {self.lottery_label} lottery is not configured."
                 )
+            rules = _rules_for_lottery(lottery, expected=self.ruleset_code)
             if (
-                lottery.numbers_to_pick != self.numbers_to_pick
-                or lottery.max_number != self.max_number
+                lottery.numbers_to_pick != rules.numbers_to_pick
+                or lottery.max_number != rules.max_number
             ):
                 raise ConfigurationError(
                     f"{self.lottery_label} lottery format is invalid."
@@ -241,7 +266,7 @@ class WeeklyTicketPurchaseService:
                 )
                 schedule_base = latest.scheduled_at if latest is not None else timestamp
                 scheduled_at = next_draw_at(
-                    self.lottery_kind, schedule_base, lottery.schedule
+                    lottery.kind, schedule_base, lottery.schedule
                 )
                 draw = Draw(
                     id=uuid4(),
@@ -250,7 +275,7 @@ class WeeklyTicketPurchaseService:
                     status=DrawStatus.SCHEDULED,
                     scheduled_at=scheduled_at,
                     sales_close_at=sales_close_at(
-                        self.lottery_kind,
+                        lottery.kind,
                         scheduled_at,
                         lottery.sales_cutoff_minutes,
                     ),
@@ -276,7 +301,7 @@ class WeeklyTicketPurchaseService:
                 )
                 while len(draws) < draw_count:
                     scheduled_at = next_draw_at(
-                        self.lottery_kind, schedule_base, lottery.schedule
+                        lottery.kind, schedule_base, lottery.schedule
                     )
                     future_draw = Draw(
                         id=uuid4(),
@@ -285,7 +310,7 @@ class WeeklyTicketPurchaseService:
                         status=DrawStatus.SCHEDULED,
                         scheduled_at=scheduled_at,
                         sales_close_at=sales_close_at(
-                            self.lottery_kind,
+                            lottery.kind,
                             scheduled_at,
                             lottery.sales_cutoff_minutes,
                         ),
@@ -324,7 +349,7 @@ class WeeklyTicketPurchaseService:
             if balance is None:
                 raise ConfigurationError("User balance account is missing.")
             expanded_combinations = combinations * draw_count
-            quote = self.quote_purchase(
+            quote = rules.quote_purchase(
                 expanded_combinations, lottery.ticket_price, balance.amount
             )
 
@@ -452,6 +477,7 @@ class WeeklySettlementService:
     max_number = 20
     calculate_settlement = staticmethod(calculate_weekly_settlement)
     lottery_label = "Weekly"
+    ruleset_code: str | None = WEEKLY_RULES.code
 
     def __init__(
         self,
@@ -486,10 +512,11 @@ class WeeklySettlementService:
             lottery = await self._session.scalar(
                 select(Lottery).where(Lottery.id == draw.lottery_id).with_for_update()
             )
-            if lottery is None or lottery.kind != self.lottery_kind:
+            if lottery is None:
                 raise ConfigurationError(
                     f"Draw is not attached to a {self.lottery_label} lottery."
                 )
+            rules = _rules_for_lottery(lottery, expected=self.ruleset_code)
             jackpot = await self._session.scalar(
                 select(JackpotAccount)
                 .where(JackpotAccount.lottery_id == lottery.id)
@@ -520,8 +547,10 @@ class WeeklySettlementService:
                     )
                 ).all()
             )
-            winning = self._number_generator.draw(self.max_number, self.numbers_to_pick)
-            plan = self.calculate_settlement(
+            winning = self._number_generator.draw(
+                rules.max_number, rules.numbers_to_pick
+            )
+            plan = rules.calculate_settlement(
                 [
                     SettlementTicket(
                         id=ticket.id,
@@ -570,7 +599,7 @@ class WeeklySettlementService:
                 balance.version += 1
                 transaction_type = (
                     TransactionType.JACKPOT_PAYOUT
-                    if payout.matches == self.numbers_to_pick
+                    if payout.matches == rules.jackpot_match
                     else TransactionType.PRIZE_PAYOUT
                 )
                 ledger_entries.append(
@@ -749,3 +778,17 @@ class WeeklySettlementService:
             winning_numbers=plan.winning_numbers,
             total_payout=plan.total_payout,
         )
+
+
+class LotteryTicketPurchaseService(WeeklyTicketPurchaseService):
+    """Purchase service whose rule strategy is selected by the lottery entity."""
+
+    ruleset_code = None
+    lottery_label = "Configured"
+
+
+class LotterySettlementService(WeeklySettlementService):
+    """Settlement service whose rule strategy is selected by the lottery entity."""
+
+    ruleset_code = None
+    lottery_label = "Configured"

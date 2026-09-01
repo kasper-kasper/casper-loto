@@ -36,6 +36,21 @@ def next_weekly_draw(after: datetime) -> datetime:
     return candidate.astimezone(UTC)
 
 
+def next_interval_draw(
+    after: datetime, *, interval_minutes: int, anchor_time: time = time(0, 0)
+) -> datetime:
+    """Return the next Moscow wall-clock interval, useful for fast lotteries."""
+    if not 1 <= interval_minutes <= 1440:
+        raise ValueError("Lottery interval must be between 1 and 1440 minutes.")
+    local = _aware(after).astimezone(MOSCOW)
+    anchor = _moscow_datetime(local.date(), anchor_time)
+    if anchor > local:
+        return anchor.astimezone(UTC)
+    elapsed_minutes = int((local - anchor).total_seconds() // 60)
+    steps = elapsed_minutes // interval_minutes + 1
+    return (anchor + timedelta(minutes=steps * interval_minutes)).astimezone(UTC)
+
+
 def _parse_time(value: str) -> time:
     try:
         hour, minute = (int(part) for part in value.split(":"))
@@ -63,10 +78,17 @@ def next_draw_at(
     after: datetime,
     schedule: dict[str, Any] | None = None,
 ) -> datetime:
+    configured = schedule or {}
+    schedule_type = configured.get("type")
+    if schedule_type == "interval":
+        return next_interval_draw(
+            after,
+            interval_minutes=int(configured["interval_minutes"]),
+            anchor_time=_parse_time(str(configured.get("anchor_time", "00:00"))),
+        )
     if kind == LotteryKind.WEEKLY:
         return next_weekly_draw(after)
     if kind == LotteryKind.DAILY:
-        configured = schedule or {}
         raw_slots = configured.get("slots")
         if raw_slots is None and configured.get("draw_time"):
             raw_slots = [configured["draw_time"]]
@@ -77,6 +99,22 @@ def next_draw_at(
         )
         return next_daily_draw(after, slots)
     raise ValueError(f"Unsupported lottery kind: {kind}")
+
+
+def future_draw_target(kind: LotteryKind, schedule: dict[str, Any] | None) -> int:
+    """How many future draws should be prepared for a schedule strategy."""
+    configured = schedule or {}
+    explicit = configured.get("future_draw_count")
+    if explicit is not None:
+        value = int(explicit)
+        if not 1 <= value <= 20:
+            raise ValueError("future_draw_count must be between 1 and 20.")
+        return value
+    if configured.get("type") == "interval":
+        return 2
+    if kind == LotteryKind.DAILY:
+        return max(len(configured.get("slots", [])), 1)
+    return 1
 
 
 def sales_close_at(

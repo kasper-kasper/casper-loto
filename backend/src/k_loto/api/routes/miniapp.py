@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from k_loto import __version__
 from k_loto.api.dependencies import (
     CurrentMiniAppUser,
     get_current_miniapp_user,
@@ -30,6 +31,7 @@ from k_loto.application.miniapp import (
 )
 from k_loto.application.weekly import (
     MAX_TICKETS_PER_PURCHASE,
+    LotteryTicketPurchaseService,
     WeeklyTicketPurchaseService,
 )
 from k_loto.core.config import Settings, get_settings
@@ -45,7 +47,6 @@ from k_loto.domain.errors import (
     InvalidTicket,
     NoAvailableDraw,
 )
-from k_loto.domain.lotteries import DAILY_LOTTERY_CODES, PLAYABLE_LOTTERY_CODES
 from k_loto.infrastructure.database.models import Lottery
 from k_loto.infrastructure.database.session import session_factory
 from k_loto.infrastructure.local_dev_auth import (
@@ -96,6 +97,7 @@ class TicketResponse(BaseModel):
 
 
 class DashboardResponse(BaseModel):
+    app_version: str
     server_time: datetime
     balance: int
     active_ticket_count: int
@@ -315,6 +317,7 @@ def _ticket_response(item: MiniAppTicket) -> TicketResponse:
 
 def _dashboard_response(item: MiniAppDashboard) -> DashboardResponse:
     return DashboardResponse(
+        app_version=__version__,
         server_time=item.server_time,
         balance=item.balance,
         active_ticket_count=item.active_ticket_count,
@@ -563,13 +566,14 @@ async def save_favorite(
     user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> FavoriteResponse:
-    lottery_id = await _favorite_lottery(session, lottery_code)
     try:
-        item, _ = await FavoriteCombinationService(session).save(
+        item, _ = await FavoriteCombinationService(session).save_for_code(
             user_id=user.id,
-            lottery_id=lottery_id,
+            lottery_code=lottery_code,
             numbers=tuple(request.numbers),
         )
+    except LookupError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     return FavoriteResponse(id=item.id, numbers=list(item.numbers))
@@ -582,10 +586,12 @@ async def delete_favorite(
     user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> Response:
-    lottery_id = await _favorite_lottery(session, lottery_code)
-    deleted = await FavoriteCombinationService(session).delete(
-        favorite_id=favorite_id, user_id=user.id, lottery_id=lottery_id
-    )
+    try:
+        deleted = await FavoriteCombinationService(session).delete_for_code(
+            favorite_id=favorite_id, user_id=user.id, lottery_code=lottery_code
+        )
+    except LookupError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
     if not deleted:
         raise HTTPException(status_code=404, detail="Favorite was not found.")
     return Response(status_code=204)
@@ -693,13 +699,7 @@ async def purchase_lottery_tickets(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> PurchaseResponse:
-    if lottery_code not in PLAYABLE_LOTTERY_CODES:
-        raise HTTPException(status_code=404, detail="Lottery is not available.")
-    service = (
-        DailyTicketPurchaseService(session, lottery_code=lottery_code)
-        if lottery_code in DAILY_LOTTERY_CODES
-        else WeeklyTicketPurchaseService(session, lottery_code=lottery_code)
-    )
+    service = LotteryTicketPurchaseService(session, lottery_code=lottery_code)
     if not purchase_rate_limiter.allow(
         user.id, limit=settings.miniapp_purchase_requests_per_minute
     ):

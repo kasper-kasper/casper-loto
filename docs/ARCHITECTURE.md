@@ -56,6 +56,12 @@ missed draws chronologically and relies on row locks and constraints for
 idempotency. Each active lottery maintains its own next draw. Completed draws
 are protected by a database trigger.
 
+Lottery mathematics is selected by `lotteries.ruleset_code`. Declarative rule
+strategies contain the format, integer price split, payout ratios, distribution
+pool tier and jackpot tier. Purchase and settlement are code-agnostic. Schedule
+dispatch separately supports weekly, slot-based and interval strategies. See
+`docs/LOTTERY_STRATEGIES.md`.
+
 The v0.14.0 transition preserves the final shared Daily draw and its purchased
 tickets. PSS and KHAN start independently at deployment. After the legacy draw
 settles, an idempotent recovery service ledger-transfers its jackpot,

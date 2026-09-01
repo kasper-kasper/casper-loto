@@ -37,6 +37,7 @@ export interface Ticket {
 }
 
 export interface Dashboard {
+  app_version?: string;
   server_time: string;
   balance: number;
   active_ticket_count: number;

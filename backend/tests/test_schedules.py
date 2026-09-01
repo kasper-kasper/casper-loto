@@ -11,7 +11,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from k_loto.application.scheduler import DrawRecoveryService, DrawScheduleService
-from k_loto.application.weekly import SettlementResult, WeeklySettlementService
+from k_loto.application.weekly import LotterySettlementService, SettlementResult
 from k_loto.domain.enums import DrawStatus, LotteryKind
 from k_loto.domain.schedules import (
     next_daily_draw,
@@ -297,13 +297,13 @@ async def test_recovery_processes_multiple_missed_draws_chronologically(
         return SimpleNamespace(id=next(prepared)), True
 
     async def fake_settle(
-        _self: WeeklySettlementService, draw_id: UUID, *, now: datetime | None = None
+        _self: LotterySettlementService, draw_id: UUID, *, now: datetime | None = None
     ) -> SettlementResult:
         settled.append(draw_id)
         return SettlementResult(draw_id, (1, 2, 3, 4, 5), 0)
 
     monkeypatch.setattr(DrawScheduleService, "ensure_next_draw", fake_ensure)
-    monkeypatch.setattr(WeeklySettlementService, "settle", fake_settle)
+    monkeypatch.setattr(LotterySettlementService, "settle", fake_settle)
 
     report = await service.reconcile(now=local(2026, 8, 30, 21, 0).astimezone(UTC))
 

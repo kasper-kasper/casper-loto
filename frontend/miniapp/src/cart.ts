@@ -2,15 +2,6 @@ import type { CartTicket } from "./types";
 
 const STORAGE_KEY = "k-loto:cart:v2";
 export const CART_MAX_TICKETS = 1_000;
-export const PURCHASE_BATCH_SIZE = 100;
-
-export function batchItems<T>(items: T[], size = PURCHASE_BATCH_SIZE): T[][] {
-  const batches: T[][] = [];
-  for (let index = 0; index < items.length; index += size) {
-    batches.push(items.slice(index, index + size));
-  }
-  return batches;
-}
 
 interface StoredCart {
   expiresAt: number;
@@ -25,11 +16,11 @@ export function configuredCartTtl(): number | null {
 }
 
 export function loadCart(ttlSeconds: number | null, now = Date.now()): CartTicket[] {
-  if (ttlSeconds === null) return [];
+  const storage = ttlSeconds === null ? sessionStorage : localStorage;
   try {
-    const value = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null") as StoredCart | null;
-    if (!value || value.expiresAt <= now || !Array.isArray(value.tickets)) {
-      localStorage.removeItem(STORAGE_KEY);
+    const value = JSON.parse(storage.getItem(STORAGE_KEY) ?? "null") as StoredCart | null;
+    if (!value || (ttlSeconds !== null && value.expiresAt <= now) || !Array.isArray(value.tickets)) {
+      storage.removeItem(STORAGE_KEY);
       return [];
     }
     return value.tickets.slice(0, CART_MAX_TICKETS).map((ticket) => ({
@@ -37,7 +28,7 @@ export function loadCart(ttlSeconds: number | null, now = Date.now()): CartTicke
       drawCount: ticket.drawCount === 5 ? 5 : 1,
     }));
   } catch {
-    localStorage.removeItem(STORAGE_KEY);
+    storage.removeItem(STORAGE_KEY);
     return [];
   }
 }
@@ -47,13 +38,14 @@ export function saveCart(
   ttlSeconds: number | null,
   now = Date.now(),
 ): void {
-  if (ttlSeconds === null || tickets.length === 0) {
-    localStorage.removeItem(STORAGE_KEY);
+  const storage = ttlSeconds === null ? sessionStorage : localStorage;
+  if (tickets.length === 0) {
+    storage.removeItem(STORAGE_KEY);
     return;
   }
   const value: StoredCart = {
-    expiresAt: now + ttlSeconds * 1000,
+    expiresAt: ttlSeconds === null ? Number.MAX_SAFE_INTEGER : now + ttlSeconds * 1000,
     tickets,
   };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+  storage.setItem(STORAGE_KEY, JSON.stringify(value));
 }

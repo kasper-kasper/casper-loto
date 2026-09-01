@@ -1,4 +1,4 @@
-import { batchItems, CART_MAX_TICKETS, loadCart, saveCart } from "./cart";
+import { CART_MAX_TICKETS, loadCart, saveCart } from "./cart";
 
 describe("cart persistence", () => {
   it("restores tickets before the configured expiration", () => {
@@ -15,17 +15,12 @@ describe("cart persistence", () => {
     expect(localStorage.length).toBe(0);
   });
 
-  it("does not persist without an owner-configured TTL", () => {
+  it("survives a safe reload in the current tab without a configured TTL", () => {
     saveCart([{ id: "one", lotteryCode: "weekly", lotteryName: "ЛСД-лото", price: 100, numbers: [1, 2, 3, 4, 5], drawCount: 1 }], null, 1_000);
 
-    expect(loadCart(null, 2_000)).toEqual([]);
+    expect(loadCart(null, 2_000)).toHaveLength(1);
     expect(localStorage.length).toBe(0);
-  });
-
-  it("splits a large checkout into bounded server batches", () => {
-    const tickets = Array.from({ length: 251 }, (_, index) => index);
-
-    expect(batchItems(tickets).map((batch) => batch.length)).toEqual([100, 100, 51]);
+    expect(sessionStorage.length).toBe(1);
   });
 
   it("never restores more than the cart safety limit", () => {

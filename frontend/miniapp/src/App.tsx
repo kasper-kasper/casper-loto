@@ -95,6 +95,7 @@ function NumberPicker({ lottery, purchasing, success, initialNumbers = [], favor
   const [selected, setSelected] = useState<number[]>(initialNumbers);
   const [drawCount, setDrawCount] = useState<1 | 5>(1);
   const ready = selected.length === lottery.numbers_to_pick;
+  const saved = favorites.some((favorite) => favorite.numbers.length === selected.length && favorite.numbers.every((value, index) => value === selected[index]));
   const toggle = (value: number) => {
     setSelected((current) => {
       if (!current.includes(value) && current.length >= lottery.numbers_to_pick) return current;
@@ -114,7 +115,7 @@ function NumberPicker({ lottery, purchasing, success, initialNumbers = [], favor
     <div className="selected-combination"><span>Ваш билет</span><div>{Array.from({ length: lottery.numbers_to_pick }, (_, index) => <i className={selected[index] ? "filled" : ""} key={index}>{selected[index] ?? "—"}</i>)}</div></div>
     <button className="secondary-button random-button" onClick={randomize} type="button"><Icon name="spark" />{copy.actions.randomNumbers}</button>
     <section className="multi-draw-choice"><div><strong>Повторить комбинацию</strong><small>Без автопродления и скрытых списаний</small></div><div><button className={drawCount === 1 ? "selected" : ""} onClick={() => setDrawCount(1)} type="button">1 тираж</button><button className={drawCount === 5 ? "selected" : ""} onClick={() => setDrawCount(5)} type="button">5 тиражей</button></div>{drawCount === 5 && <p>Эти числа участвуют в текущем и следующих 4 тиражах. Полная сумма оплачивается сейчас.</p>}</section>
-    {ready && <button className="favorite-action" onClick={() => onSaveFavorite(selected)} type="button">☆ Сохранить комбинацию</button>}
+    {ready && <button className={`favorite-action ${saved ? "saved" : ""}`} disabled={saved} onClick={() => onSaveFavorite(selected)} type="button">{saved ? "★ Комбинация сохранена" : "☆ Сохранить комбинацию"}</button>}
     {favorites.length > 0 && <div className="favorite-list"><span>Избранные</span>{favorites.map((favorite) => <div key={favorite.id}><button onClick={() => setSelected(favorite.numbers)} type="button">{favorite.numbers.join(" · ")}</button><button aria-label="Удалить из избранного" onClick={() => onDeleteFavorite(favorite.id)} type="button">×</button></div>)}</div>}
     <div className="quick-batches"><div><span>Быстрая корзина</span><small>Случайные комбинации</small></div><div>{[5, 10, 25, 50, 100].map((count) => <button disabled={purchasing || cartRemaining < count} key={count} onClick={() => onAddMany(Array.from({ length: count }, () => randomCombination(lottery.max_number, lottery.numbers_to_pick)), drawCount)} type="button">+{count}</button>)}</div></div>
     <div className="picker-actions"><button className="secondary-button" disabled={!ready || purchasing} onClick={() => onAdd(selected, drawCount)} type="button">{copy.actions.addToCart}</button><PrimaryButton disabled={!ready} loading={purchasing} success={success} onClick={() => onBuy(selected, drawCount)}>{success ? "Билет куплен" : purchasing ? "Оформляем…" : drawCount === 5 ? copy.actions.buyFiveDraws : copy.actions.buyTicket}</PrimaryButton></div>
@@ -174,11 +175,13 @@ export default function App({ initData, localDev = false }: AppProps) {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const [serverOffset, setServerOffset] = useState(0);
 
   const applyDashboard = useCallback((value: Dashboard) => {
     setDashboard(value);
+    if (value.app_version && value.app_version !== __APP_VERSION__) setUpdateAvailable(true);
     setServerOffset(new Date(value.server_time).getTime() - Date.now());
   }, []);
 
@@ -440,6 +443,7 @@ export default function App({ initData, localDev = false }: AppProps) {
 
   return <main className="app-shell">
     <header className="app-header"><div aria-label="Каспер" className="wordmark"><span aria-hidden="true">К</span><div aria-hidden="true">{copy.header.brandContinuation}</div></div><div className="header-actions">{localDev && <button className="dev-badge" onClick={() => void refillDevBalance()} type="button">+ TEST CAS</button>}<Balance value={dashboard.balance} /></div></header>
+    {updateAvailable && <aside className="update-banner"><span><strong>Доступно обновление</strong><small>Корзина сохранена на этом устройстве.</small></span><button onClick={() => window.location.reload()} type="button">Обновить</button></aside>}
     {(error || notice) && <button className={`toast ${error ? "error" : "success"}`} onClick={() => { setError(null); setNotice(null); }} type="button"><span>{error ? "!" : "✓"}</span>{error ?? notice}<Icon name="close" /></button>}
     {showNotificationPrompt && <div className="permission-backdrop"><section className="permission-card"><div className="permission-mark"><Icon name="profile" /></div><span className="eyebrow">{copy.notifications.promptEyebrow}</span><h2>{copy.notifications.promptTitle}</h2><p>{copy.notifications.promptText}</p><PrimaryButton onClick={() => void enableTelegramNotifications()}>{copy.notifications.enable}</PrimaryButton><button className="permission-later" onClick={dismissNotificationPrompt} type="button">{copy.notifications.promptLater}</button></section></div>}
 

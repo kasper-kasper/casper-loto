@@ -63,12 +63,13 @@ can be restarted or closed without affecting the live server timeline.
 
 ## Purchase limits and recovery
 
-The application service rejects a purchase containing more than 100 tickets,
-so the limit also applies when the HTTP API is bypassed. The Mini App can hold
-up to 1,000 tickets and checks out grouped 100-ticket batches. Each batch owns a
-stable idempotency key reused for one safe transient retry. Successfully bought
-batches disappear from the cart immediately; any unprocessed tickets remain if
-a later batch fails.
+The application service and Mini App both cap one purchase at 1,000 tickets;
+the default per-player/per-draw cap is 5,000. Each lottery group is submitted as
+one server transaction with a stable idempotency key. The UI may show progress,
+but it does not send thousands of individual requests.
+
+The live feed uses authenticated SSE. Snapshots follow the server timeline;
+reconnecting or reopening never restarts the reveal locally.
 
 ## Authentication and API
 
@@ -96,10 +97,11 @@ longer creates a duplicate bot message.
 
 ## Cart TTL
 
-`VITE_CART_TTL_SECONDS` enables expiring local persistence. The exact business
-TTL is still OD-007 and has no guessed default. When unset, the cart works only
-in memory for the current Mini App session. Expired or malformed stored carts
-are discarded.
+The current tab stores its cart in `sessionStorage`, so a safe reload does not
+lose selected combinations. `VITE_CART_TTL_SECONDS` optionally enables
+persistence across Mini App sessions in `localStorage`. Expired or malformed
+stored carts are discarded. A running client compares its bundled version with
+the server and offers an explicit reload after release.
 
 ## Local checks
 

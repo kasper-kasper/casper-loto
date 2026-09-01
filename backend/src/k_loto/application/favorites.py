@@ -93,6 +93,46 @@ class FavoriteCombinationService:
             self._session.add(favorite)
         return FavoriteNumbers(favorite.id, normalized), True
 
+    async def save_for_code(
+        self, *, user_id: UUID, lottery_code: str, numbers: tuple[int, ...]
+    ) -> tuple[FavoriteNumbers, bool]:
+        """Save atomically without a route-level query opening another transaction."""
+        async with self._session.begin():
+            user = await self._session.scalar(
+                select(User)
+                .where(User.id == user_id, User.is_active.is_(True))
+                .with_for_update()
+            )
+            lottery = await self._session.scalar(
+                select(Lottery).where(
+                    Lottery.code == lottery_code, Lottery.is_active.is_(True)
+                )
+            )
+            if user is None or lottery is None:
+                raise LookupError("Игрок или лотерея больше недоступны.")
+            normalized = validate_favorite_numbers(
+                numbers,
+                numbers_to_pick=lottery.numbers_to_pick,
+                max_number=lottery.max_number,
+            )
+            existing = await self._session.scalar(
+                select(FavoriteCombination).where(
+                    FavoriteCombination.user_id == user_id,
+                    FavoriteCombination.lottery_id == lottery.id,
+                    FavoriteCombination.numbers == list(normalized),
+                )
+            )
+            if existing is not None:
+                return FavoriteNumbers(existing.id, tuple(existing.numbers)), False
+            favorite = FavoriteCombination(
+                id=uuid4(),
+                user_id=user_id,
+                lottery_id=lottery.id,
+                numbers=list(normalized),
+            )
+            self._session.add(favorite)
+        return FavoriteNumbers(favorite.id, normalized), True
+
     async def get(
         self, *, favorite_id: UUID, user_id: UUID, lottery_id: UUID
     ) -> FavoriteNumbers:
@@ -111,6 +151,28 @@ class FavoriteCombinationService:
         self, *, favorite_id: UUID, user_id: UUID, lottery_id: UUID
     ) -> bool:
         async with self._session.begin():
+            result = await self._session.execute(
+                delete(FavoriteCombination)
+                .where(
+                    FavoriteCombination.id == favorite_id,
+                    FavoriteCombination.user_id == user_id,
+                    FavoriteCombination.lottery_id == lottery_id,
+                )
+                .returning(FavoriteCombination.id)
+            )
+        return result.scalar_one_or_none() is not None
+
+    async def delete_for_code(
+        self, *, favorite_id: UUID, user_id: UUID, lottery_code: str
+    ) -> bool:
+        async with self._session.begin():
+            lottery_id = await self._session.scalar(
+                select(Lottery.id).where(
+                    Lottery.code == lottery_code, Lottery.is_active.is_(True)
+                )
+            )
+            if lottery_id is None:
+                raise LookupError("Лотерея больше недоступна.")
             result = await self._session.execute(
                 delete(FavoriteCombination)
                 .where(

@@ -8,11 +8,10 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from k_loto.application.daily import DailySettlementService
 from k_loto.application.daily_transition import DailyTransitionService
-from k_loto.application.weekly import WeeklySettlementService
+from k_loto.application.weekly import LotterySettlementService
 from k_loto.domain.enums import DrawStatus, LotteryKind
-from k_loto.domain.schedules import next_draw_at, sales_close_at
+from k_loto.domain.schedules import future_draw_target, next_draw_at, sales_close_at
 from k_loto.infrastructure.database.models import Draw, Lottery
 
 logger = structlog.get_logger(__name__)
@@ -49,18 +48,16 @@ class DrawScheduleService:
                 )
                 .order_by(Draw.scheduled_at)
             )
-            if lottery.kind == LotteryKind.WEEKLY:
+            target = future_draw_target(lottery.kind, lottery.schedule)
+            if target == 1:
                 pending = await self._session.scalar(pending_query.limit(1))
                 if pending is not None:
                     return pending, False
                 pending_draws: list[Draw] = []
-                target = 1
             else:
                 pending_draws = list((await self._session.scalars(pending_query)).all())
-                configured_slots = lottery.schedule.get("slots", [])
-                target = max(len(configured_slots), 1)
-                if len(pending_draws) >= target:
-                    return pending_draws[0], False
+            if len(pending_draws) >= target:
+                return pending_draws[0], False
 
             latest = await self._session.scalar(
                 select(Draw)
@@ -139,6 +136,7 @@ class DrawRecoveryService:
         return lottery_id
 
     async def _lottery_kind_for_draw(self, draw_id: UUID) -> LotteryKind:
+        """Compatibility diagnostic; settlement itself now resolves persisted rules."""
         async with self._session_factory() as session:
             kind = await session.scalar(
                 select(Lottery.kind)
@@ -173,13 +171,8 @@ class DrawRecoveryService:
                     prepared.append(draw.id)
 
         while due_draw_id := await self._next_due_draw(timestamp):
-            kind = await self._lottery_kind_for_draw(due_draw_id)
             async with self._session_factory() as session:
-                service = (
-                    WeeklySettlementService(session)
-                    if kind == LotteryKind.WEEKLY
-                    else DailySettlementService(session)
-                )
+                service = LotterySettlementService(session)
                 result = await service.settle(due_draw_id, now=timestamp)
             if not result.already_completed:
                 settled.append(due_draw_id)
