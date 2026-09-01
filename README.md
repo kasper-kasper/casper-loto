@@ -41,3 +41,5 @@ Secrets belong only in ignored `.env` files.
 
 See [architecture](docs/ARCHITECTURE.md), [Daily rules](docs/DAILY_CORE.md),
 [Telegram](docs/TELEGRAM_BOT.md) and [production operations](docs/PRODUCTION.md).
+The owner-facing development order is maintained in the Russian
+[next-steps plan](docs/NEXT_STEPS.md).
