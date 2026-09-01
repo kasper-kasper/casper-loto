@@ -47,10 +47,10 @@ button:disabled { cursor: not-allowed; opacity: .42; }
 
 .app-shell { position: relative; z-index: 1; width: min(100%, 540px); min-height: 100vh; margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) var(--space) calc(100px + env(safe-area-inset-bottom)); }
 .app-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; margin-bottom: 24px; }
-.wordmark { display: flex; align-items: center; gap: 10px; color: var(--text); font-size: 13px; font-weight: 850; letter-spacing: .16em; white-space: nowrap; }
+.wordmark { display: flex; align-items: center; gap: 0; isolation: isolate; white-space: nowrap; }
 .wordmark > span, .brand-mark { display: grid; place-items: center; color: var(--gold-ink); background: linear-gradient(145deg, #ffe39b, #c9902b); box-shadow: 0 8px 24px rgba(229, 176, 67, .22), inset 0 1px rgba(255,255,255,.45); }
-.wordmark > span { width: 34px; height: 34px; border-radius: 11px; font-size: 17px; letter-spacing: 0; }
-.wordmark small { display: block; margin-top: 3px; color: var(--text-muted); font-size: 7px; font-weight: 700; letter-spacing: .18em; }
+.wordmark > span { position: relative; z-index: 1; width: 38px; height: 38px; border: 1px solid rgba(255,235,181,.7); border-radius: 12px; font-size: 20px; font-weight: 900; letter-spacing: 0; transform: rotate(-1deg); }
+.wordmark > div { margin-left: -4px; padding: 7px 12px 8px 11px; border: 1px solid rgba(239,199,110,.16); border-left: 0; border-radius: 0 12px 12px 0; color: #f7f2e7; background: linear-gradient(90deg, rgba(24,45,91,.9), rgba(10,23,55,.5)); box-shadow: inset 0 1px rgba(255,255,255,.045), 8px 10px 28px rgba(0,0,0,.12); font-size: 18px; font-weight: 850; letter-spacing: .065em; line-height: 1; text-shadow: 0 1px 16px rgba(239,199,110,.18); }
 .header-actions { display: flex; align-items: center; justify-content: flex-end; gap: 7px; min-width: 0; }
 .balance { min-width: 112px; padding: 7px 10px 8px; border: 1px solid var(--border); border-radius: 14px; background: linear-gradient(145deg, rgba(20, 39, 85, .86), rgba(9, 21, 50, .9)); box-shadow: inset 0 1px rgba(255,255,255,.035), 0 9px 24px rgba(0,0,0,.15); text-align: right; }
 .balance span { display: block; color: var(--text-muted); font-size: 8px; font-weight: 750; letter-spacing: .11em; text-transform: uppercase; }
@@ -356,7 +356,8 @@ h1, h2, h3, p { margin-top: 0; }
 }
 @media (max-width: 359px) {
   :root { --space: 14px; }
-  .wordmark small { display: none; }
+  .wordmark > span { width: 35px; height: 35px; font-size: 18px; }
+  .wordmark > div { padding: 7px 9px 7px 10px; font-size: 16px; }
   .balance { min-width: 100px; padding-inline: 8px; }
   .balance strong { font-size: 11px; }
   .hero-copy h1 { font-size: 25px; }
