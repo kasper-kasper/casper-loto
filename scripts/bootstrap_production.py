@@ -82,10 +82,10 @@ async def main() -> None:
         5,
         {"weekday": "sunday", "draw_time": "20:00"},
     )
-    for code, name, draw_time in (
-        ("pll", "ПЛЛ-лото", "02:22"),
-        ("pss", "ПСС-Лото", "12:00"),
-        ("khan", "ХАН-Лото", "18:00"),
+    for code, name, slots in (
+        ("pll", "ПЛЛ-лото", ["02:22", "13:45"]),
+        ("pss", "ПСС-Лото", ["12:00", "20:30"]),
+        ("khan", "ХАН-Лото", ["09:00", "18:00"]),
     ):
         await ensure_lottery(
             code,
@@ -94,7 +94,7 @@ async def main() -> None:
             4,
             15,
             2,
-            {"draw_time": draw_time},
+            {"slots": slots},
         )
     await engine.dispose()
 
