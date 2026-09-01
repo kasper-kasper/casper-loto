@@ -745,8 +745,11 @@ class WeeklySettlementService:
                     "balance_after": balances[user_id].amount,
                 }
                 preference = preferences.get(user_id)
+                owner_fast_result = fast_lottery and any(
+                    ticket.source == TicketSource.AUTO_PLAY for ticket in user_tickets
+                )
                 if (
-                    not fast_lottery
+                    (not fast_lottery or owner_fast_result)
                     and preference is not None
                     and preference.telegram_enabled
                     and preference.draw_results_enabled
@@ -754,11 +757,7 @@ class WeeklySettlementService:
                     self._session.add(
                         NotificationOutbox(
                             id=uuid4(),
-                            event_key=(
-                                f"result:{draw.id}:user:{user_id}"
-                                if fast_lottery
-                                else f"win:{draw.id}:user:{user_id}"
-                            ),
+                            event_key=f"result:{draw.id}:user:{user_id}",
                             user_id=user_id,
                             type=NotificationType.DRAW_RESULT,
                             status=NotificationStatus.PENDING,

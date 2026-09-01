@@ -21,6 +21,7 @@ from k_loto.domain.enums import (
     LedgerAccountKind,
     LotteryKind,
     NotificationType,
+    TicketSource,
     TransactionType,
 )
 from k_loto.domain.errors import InvalidStateTransition, InvalidTicket
@@ -530,7 +531,13 @@ async def test_settlement_enqueues_one_result_notification_per_user() -> None:
     assert notification.payload["tickets"][0]["matches"] == 0
 
 
-async def test_fast_result_stays_in_miniapp_and_never_queues_telegram() -> None:
+@pytest.mark.parametrize(
+    ("source", "telegram_count"),
+    ((TicketSource.MANUAL, 0), (TicketSource.AUTO_PLAY, 1)),
+)
+async def test_fast_result_notifies_only_owner_auto_play_in_telegram(
+    source: TicketSource, telegram_count: int
+) -> None:
     now = datetime(2026, 9, 1, 12, tzinfo=UTC)
     user_id = UUID(int=850)
     lottery = Lottery(
@@ -573,6 +580,7 @@ async def test_fast_result_stays_in_miniapp_and_never_queues_telegram() -> None:
         numbers=[4, 5, 6],
         purchase_price=888,
         prize_amount=0,
+        source=source,
     )
     balance = Balance(user_id=user_id, amount=10_000, version=1)
     jackpot = JackpotAccount(
@@ -598,7 +606,8 @@ async def test_fast_result_stays_in_miniapp_and_never_queues_telegram() -> None:
         cast(AsyncSession, fake), FixedFastGenerator()
     ).settle(draw.id, now=now)
 
-    assert not any(isinstance(item, NotificationOutbox) for item in fake.added)
+    telegram = [item for item in fake.added if isinstance(item, NotificationOutbox)]
+    assert len(telegram) == telegram_count
     in_app = [item for item in fake.added if isinstance(item, UserNotification)]
     assert len(in_app) == 1
     assert in_app[0].type == InAppNotificationType.DRAW_RESULT

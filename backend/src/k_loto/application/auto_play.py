@@ -17,7 +17,6 @@ from k_loto.domain.errors import (
     InvalidTicket,
     NoAvailableDraw,
 )
-from k_loto.domain.lotteries import FAST_LOTTERY_CODES
 from k_loto.domain.weekly import SystemRandomNumberGenerator
 from k_loto.infrastructure.database.models import (
     AutoPlaySetting,
@@ -75,7 +74,6 @@ class AutoPlayService:
                         AutoPlaySetting.enabled.is_(True),
                         User.is_active.is_(True),
                         User.is_admin.is_(False),
-                        Lottery.code.not_in(FAST_LOTTERY_CODES),
                         ~exists(
                             select(Ticket.id).where(
                                 Ticket.user_id == AutoPlaySetting.user_id,
