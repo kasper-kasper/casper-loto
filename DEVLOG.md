@@ -37,6 +37,8 @@
 Технически:
 
 - migration: `0024_fast_lotteries`;
+- production-совместимость migration: фактическое сокращённое PostgreSQL-имя
+  check-constraint определяется динамически;
 - Ruff и форматирование: успешно;
 - mypy: успешно;
 - backend tests: `151 passed`;

@@ -42,10 +42,24 @@ LOTTERIES = (
 
 def upgrade() -> None:
     connection = op.get_bind()
-    op.drop_constraint(
-        "ck_user_notifications_in_app_notification_type",
-        "user_notifications",
-        type_="check",
+    op.execute(
+        """
+        DO $$
+        DECLARE current_name text;
+        BEGIN
+            SELECT conname INTO current_name
+            FROM pg_constraint
+            WHERE conrelid = 'user_notifications'::regclass
+              AND contype = 'c'
+              AND pg_get_constraintdef(oid) LIKE '%JACKPOT_NEWS%';
+            IF current_name IS NOT NULL THEN
+                EXECUTE format(
+                    'ALTER TABLE user_notifications DROP CONSTRAINT %I',
+                    current_name
+                );
+            END IF;
+        END $$;
+        """
     )
     op.create_check_constraint(
         "in_app_notification_type",
@@ -161,10 +175,24 @@ def downgrade() -> None:
         connection.execute(
             sa.text("DELETE FROM lotteries WHERE id=:id"), {"id": item["id"]}
         )
-    op.drop_constraint(
-        "ck_user_notifications_in_app_notification_type",
-        "user_notifications",
-        type_="check",
+    op.execute(
+        """
+        DO $$
+        DECLARE current_name text;
+        BEGIN
+            SELECT conname INTO current_name
+            FROM pg_constraint
+            WHERE conrelid = 'user_notifications'::regclass
+              AND contype = 'c'
+              AND pg_get_constraintdef(oid) LIKE '%DRAW_RESULT%';
+            IF current_name IS NOT NULL THEN
+                EXECUTE format(
+                    'ALTER TABLE user_notifications DROP CONSTRAINT %I',
+                    current_name
+                );
+            END IF;
+        END $$;
+        """
     )
     op.create_check_constraint(
         "in_app_notification_type",
