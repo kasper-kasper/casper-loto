@@ -29,7 +29,8 @@
 - аналитика билетов использует два агрегатных SQL-запроса и кэш до 60 секунд;
 - статистика чисел читает только выигрышные комбинации выбранной лотереи;
 - проверки: Ruff и форматирование — успешно, mypy — успешно, backend Admin/health
-  `18 passed`, Mini App `30 passed`, Admin Panel `9 passed`, обе production-сборки — успешно.
+  `18 passed`, Mini App `30 passed`, Admin Panel `9 passed`, обе production-сборки — успешно;
+- release commit: `f0ba298`.
 
 ## [1.4.2] - 2026-09-01
 
