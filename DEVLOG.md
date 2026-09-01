@@ -25,7 +25,7 @@
 - проверки: Ruff и форматирование — успешно, mypy — успешно, backend
   `144 passed`, Mini App `29 passed`, Admin Panel `8 passed`, production-сборки
   — успешно;
-- commit: будет указан после фиксации исправления.
+- release commit: `6d289f3`.
 
 ## [1.2.0] - 2026-09-01
 
