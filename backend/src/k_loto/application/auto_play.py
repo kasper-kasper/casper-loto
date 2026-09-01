@@ -8,8 +8,7 @@ import structlog
 from sqlalchemy import exists, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from k_loto.application.daily import DailyTicketPurchaseService
-from k_loto.application.weekly import WeeklyTicketPurchaseService
+from k_loto.application.weekly import LotteryTicketPurchaseService
 from k_loto.domain.enums import DrawStatus, LotteryKind, TicketSource
 from k_loto.domain.errors import (
     ConfigurationError,
@@ -53,38 +52,42 @@ class AutoPlayService:
         self,
         session_factory: async_sessionmaker[AsyncSession],
         number_generator: SystemRandomNumberGenerator | None = None,
+        *,
+        owner_telegram_id: int | None = None,
     ) -> None:
         self._session_factory = session_factory
         self._number_generator = number_generator or SystemRandomNumberGenerator()
+        self._owner_telegram_id = owner_telegram_id
 
     async def _candidates(self, now: datetime) -> tuple[AutoPlayCandidate, ...]:
         async with self._session_factory() as session:
-            rows = (
-                await session.execute(
-                    select(AutoPlaySetting, Draw, Lottery)
-                    .join(User, User.id == AutoPlaySetting.user_id)
-                    .join(Lottery, Lottery.is_active.is_(True))
-                    .join(
-                        Draw,
-                        (Draw.lottery_id == Lottery.id)
-                        & (Draw.status == DrawStatus.SCHEDULED)
-                        & (Draw.sales_close_at > now),
-                    )
-                    .where(
-                        AutoPlaySetting.enabled.is_(True),
-                        User.is_active.is_(True),
-                        User.is_admin.is_(False),
-                        ~exists(
-                            select(Ticket.id).where(
-                                Ticket.user_id == AutoPlaySetting.user_id,
-                                Ticket.draw_id == Draw.id,
-                                Ticket.source == TicketSource.AUTO_PLAY,
-                            )
-                        ),
-                    )
-                    .order_by(Draw.scheduled_at, AutoPlaySetting.user_id)
+            query = (
+                select(AutoPlaySetting, Draw, Lottery)
+                .join(User, User.id == AutoPlaySetting.user_id)
+                .join(Lottery, Lottery.is_active.is_(True))
+                .join(
+                    Draw,
+                    (Draw.lottery_id == Lottery.id)
+                    & (Draw.status == DrawStatus.SCHEDULED)
+                    & (Draw.sales_close_at > now),
                 )
-            ).all()
+                .where(
+                    AutoPlaySetting.enabled.is_(True),
+                    User.is_active.is_(True),
+                    User.is_admin.is_(False),
+                    ~exists(
+                        select(Ticket.id).where(
+                            Ticket.user_id == AutoPlaySetting.user_id,
+                            Ticket.draw_id == Draw.id,
+                            Ticket.source == TicketSource.AUTO_PLAY,
+                        )
+                    ),
+                )
+                .order_by(Draw.scheduled_at, AutoPlaySetting.user_id)
+            )
+            if self._owner_telegram_id is not None:
+                query = query.where(User.telegram_id == self._owner_telegram_id)
+            rows = (await session.execute(query)).all()
         return tuple(
             AutoPlayCandidate(
                 setting.user_id,
@@ -123,14 +126,9 @@ class AutoPlayService:
                 )
                 for _ in range(candidate.tickets_per_draw)
             ]
-            service_type = (
-                DailyTicketPurchaseService
-                if candidate.lottery_kind == LotteryKind.DAILY
-                else WeeklyTicketPurchaseService
-            )
             try:
                 async with self._session_factory() as session:
-                    await service_type(
+                    await LotteryTicketPurchaseService(
                         session,
                         candidate.lottery_code,
                         target_draw_id=candidate.draw_id,

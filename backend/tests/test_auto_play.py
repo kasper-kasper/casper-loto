@@ -54,7 +54,7 @@ async def test_auto_play_buys_five_random_tickets_with_stable_idempotency(
             calls.append(kwargs)
 
     monkeypatch.setattr(
-        auto_play_module, "WeeklyTicketPurchaseService", FakePurchaseService
+        auto_play_module, "LotteryTicketPurchaseService", FakePurchaseService
     )
     candidate = AutoPlayCandidate(
         user_id=UUID(int=1),

@@ -23,6 +23,7 @@ class SchedulerRuntime:
         self._recovery = DrawRecoveryService(session_factory)
         self._scheduler = AsyncIOScheduler(timezone="UTC")
         self._interval_seconds = interval_seconds
+        self._owner_telegram_id = settings.owner_telegram_id
         self._monitor = OperationalMonitoringService(
             session_factory,
             owner_telegram_id=settings.owner_telegram_id,
@@ -55,7 +56,9 @@ class SchedulerRuntime:
             )
         try:
             report = await self._recovery.reconcile(now=started)
-            await AutoPlayService(session_factory).run(now=started)
+            await AutoPlayService(
+                session_factory, owner_telegram_id=self._owner_telegram_id
+            ).run(now=started)
             await PlayerEngagementService(session_factory).run(now=started)
         except Exception as error:
             async with session_factory() as session, session.begin():
