@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 
 from k_loto.domain.enums import LotteryKind
 from k_loto.domain.lottery_rules import (
+    GROB_RULES,
     SEPTEMBER_RULES,
     LotteryRuleStrategy,
     PayoutRatio,
@@ -107,4 +108,75 @@ def test_september_schedule_has_two_moscow_slots() -> None:
     afternoon = next_draw_at(LotteryKind.DAILY, morning, schedule)
     assert morning == datetime(2026, 9, 1, 0, 33, tzinfo=UTC)
     assert afternoon == datetime(2026, 9, 1, 12, 33, tzinfo=UTC)
+    assert future_draw_target(LotteryKind.DAILY, schedule) == 2
+
+
+def test_grob_purchase_split_is_integer_and_bulk_invariant() -> None:
+    single = GROB_RULES.quote_purchase([[1, 2, 3]], 6_666, 100_000)
+    bulk = GROB_RULES.quote_purchase(
+        [[1, 2, 3], [4, 5, 6], [14, 15, 16]], 6_666, 100_000
+    )
+
+    assert (single.jackpot_contribution, single.distribution_contribution) == (
+        2_666,
+        4_000,
+    )
+    assert bulk.jackpot_contribution == single.jackpot_contribution * 3
+    assert bulk.distribution_contribution == single.distribution_contribution * 3
+
+
+def test_grob_fixed_prizes_use_distribution_then_reserve() -> None:
+    tickets = [
+        SettlementTicket(UUID(int=21), 1, UUID(int=31), (1, 8, 9), 6_666),
+        SettlementTicket(UUID(int=22), 2, UUID(int=32), (1, 2, 9), 6_666),
+        SettlementTicket(UUID(int=23), 3, UUID(int=33), (8, 9, 10), 6_666),
+    ]
+    plan = GROB_RULES.calculate_settlement(
+        tickets,
+        (1, 2, 3),
+        distribution_balance=5_000,
+        jackpot_balance=6_666_666,
+        reserve_balance=10_000,
+        base_jackpot=6_666_666,
+    )
+
+    assert [item.matches for item in plan.payouts] == [1, 2, 0]
+    assert [item.amount for item in plan.payouts] == [666, 6_666, 0]
+    assert plan.distribution_closing == 0
+    assert plan.reserve_used == 2_332
+    assert plan.jackpot_closing == 6_666_666
+
+
+def test_grob_jackpot_is_shared_and_resets_to_base() -> None:
+    tickets = [
+        SettlementTicket(UUID(int=41), 1, UUID(int=51), (1, 2, 3), 6_666),
+        SettlementTicket(UUID(int=42), 2, UUID(int=52), (1, 2, 3), 6_666),
+    ]
+    plan = GROB_RULES.calculate_settlement(
+        tickets,
+        (1, 2, 3),
+        distribution_balance=8_000,
+        jackpot_balance=6_666_667,
+        reserve_balance=1_000_000_000,
+        base_jackpot=6_666_666,
+    )
+
+    assert [item.amount for item in plan.payouts] == [3_333_334, 3_333_333]
+    assert plan.jackpot_closing == 6_666_666
+    assert plan.jackpot_reset_credit == 6_666_666
+    assert plan.distribution_closing == 8_000
+
+
+def test_grob_schedule_has_two_moscow_slots() -> None:
+    moscow = ZoneInfo("Europe/Moscow")
+    schedule = {"slots": ["06:06", "23:06"]}
+    morning = next_draw_at(
+        LotteryKind.DAILY,
+        datetime(2026, 9, 1, 6, 0, tzinfo=moscow),
+        schedule,
+    )
+    evening = next_draw_at(LotteryKind.DAILY, morning, schedule)
+
+    assert morning == datetime(2026, 9, 1, 3, 6, tzinfo=UTC)
+    assert evening == datetime(2026, 9, 1, 20, 6, tzinfo=UTC)
     assert future_draw_target(LotteryKind.DAILY, schedule) == 2

@@ -21,6 +21,7 @@ LOTTERY_DEFINITIONS = (
     LotteryDefinition("pss", "ПСС-Лото", LotteryKind.DAILY, "12:00"),
     LotteryDefinition("khan", "ХАН-Лото", LotteryKind.DAILY, "18:00"),
     LotteryDefinition("september", "3 СЕНТЯБРЯ", LotteryKind.DAILY, "03:33 / 15:33"),
+    LotteryDefinition("grob", "ГРОБ", LotteryKind.DAILY, "06:06 / 23:06"),
 )
 
 PLAYABLE_LOTTERY_CODES = frozenset(item.code for item in LOTTERY_DEFINITIONS)

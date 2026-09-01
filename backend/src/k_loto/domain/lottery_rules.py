@@ -121,7 +121,9 @@ class LotteryRuleStrategy:
         total_cost = ticket_price * len(canonical)
         if balance < total_cost:
             raise InsufficientBalance("Insufficient CAS balance.")
-        jackpot = self.jackpot_share.apply(total_cost)
+        # Split every ticket independently so integer rounding never depends on
+        # whether equal tickets were bought separately or in one bulk request.
+        jackpot = self.jackpot_share.apply(ticket_price) * len(canonical)
         return PurchaseQuote(canonical, total_cost, jackpot, total_cost - jackpot)
 
     def calculate_settlement(
@@ -273,8 +275,23 @@ SEPTEMBER_RULES = LotteryRuleStrategy(
     MappingProxyType({1: 333, 2: 3_333}),
     True,
 )
+GROB_RULES = LotteryRuleStrategy(
+    "grob_3_16",
+    "ГРОБ",
+    3,
+    16,
+    1,
+    PayoutRatio(2, 5),
+    MappingProxyType({}),
+    None,
+    3,
+    MappingProxyType({1: 666, 2: 6_666}),
+)
 LOTTERY_RULES: Mapping[str, LotteryRuleStrategy] = MappingProxyType(
-    {rule.code: rule for rule in (WEEKLY_RULES, DAILY_RULES, SEPTEMBER_RULES)}
+    {
+        rule.code: rule
+        for rule in (WEEKLY_RULES, DAILY_RULES, SEPTEMBER_RULES, GROB_RULES)
+    }
 )
 
 

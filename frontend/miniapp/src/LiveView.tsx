@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 
 import { Icon, NumberSet, PrimaryButton } from "./components";
 import { MINIAPP_TEXTS as copy } from "./content";
-import { countdown, formatCas, formatDraw, formatMoscow } from "./format";
+import { countdown, formatCas, formatDrawLabel, formatMoscow, formatTicketLabel } from "./format";
 import { livePresentation, replayPresentation } from "./live";
 import { LotteryVisual } from "./LotteryVisuals";
 import { liveStartHaptic, selectionHaptic } from "./telegram";
@@ -23,6 +23,7 @@ function drawKey(draw: LiveDraw): string {
 
 function lotteryFormat(draw: LiveDraw): string {
   if (draw.lottery_code === "september") return "DAILY · 3 ИЗ 33";
+  if (draw.lottery_code === "grob") return "DAILY · 3 ИЗ 16";
   return draw.lottery_kind === "WEEKLY" ? "WEEKLY · 5 ИЗ 20" : "DAILY · 4 ИЗ 15";
 }
 
@@ -59,7 +60,7 @@ export function LiveView({ feed, now, loading, onPlay, onTickets }: LiveViewProp
   const startsIn = Math.max(0, new Date(draw.scheduled_at).getTime() - now);
   const finalMinute = !isReplay && state.phase === "waiting" && startsIn <= 60_000;
   const finalMinuteProgress = finalMinute ? Math.max(0, Math.min(100, ((60_000 - startsIn) / 60_000) * 100)) : 0;
-  const resultSize = draw.lottery_code === "september" ? 3 : draw.lottery_kind === "WEEKLY" ? 5 : 4;
+  const resultSize = draw.lottery_code === "september" || draw.lottery_code === "grob" ? 3 : draw.lottery_kind === "WEEKLY" ? 5 : 4;
 
   return <div className="live-experience">
     <section className={`live-stage lottery-${draw.lottery_code} phase-${state.phase} ${finalMinute ? "final-minute" : ""} ${isReplay ? "is-replay" : "is-live"}`}>
@@ -69,9 +70,9 @@ export function LiveView({ feed, now, loading, onPlay, onTickets }: LiveViewProp
       {draw.lottery_code === "september" && <div className="live-september-mark" aria-hidden="true"><small>{copy.september.liveMood}</small><strong>03</strong><span>сентября</span></div>}
       <header className="live-heading">
         <span className="live-label"><i /> {isReplay ? "ПОВТОР ТИРАЖА" : state.phase === "waiting" ? "СКОРО В ЭФИРЕ" : state.phase === "result" ? "ТИРАЖ ЗАВЕРШЁН" : "ПРЯМОЙ ЭФИР"}</span>
-        {isReplay ? <button className="replay-close" onClick={() => setReplayKey(null)} type="button"><Icon name="close" /> К эфиру</button> : <span>Тираж #{formatDraw(draw.draw_number)}</span>}
+        {isReplay ? <button className="replay-close" onClick={() => setReplayKey(null)} type="button"><Icon name="close" /> К эфиру</button> : <span>{formatDrawLabel(draw.lottery_code, draw.draw_number)}</span>}
       </header>
-      <div className="live-identity"><span>{lotteryFormat(draw)}</span><h1>{draw.lottery_name}</h1><time>{formatMoscow(draw.scheduled_at)} МСК · тираж #{formatDraw(draw.draw_number)}</time></div>
+      <div className="live-identity"><span>{lotteryFormat(draw)}</span><h1>{draw.lottery_name}</h1><time>{formatMoscow(draw.scheduled_at)} МСК · {formatDrawLabel(draw.lottery_code, draw.draw_number)}</time></div>
 
       {state.phase === "waiting" && <>
         <div className="live-countdown"><span>{finalMinute ? "Тираж начнётся через" : "До начала тиража"}</span><strong>{countdown(draw.scheduled_at, now)}</strong><small><i /> Синхронизировано с сервером</small><div className="live-signal" aria-hidden="true"><i /><span /></div>{finalMinute && <div className="last-minute-progress"><span style={{ width: `${finalMinuteProgress}%` }} /></div>}</div>
@@ -92,7 +93,7 @@ export function LiveView({ feed, now, loading, onPlay, onTickets }: LiveViewProp
         <span>{isReplay ? "Результат записи" : "Итог тиража"}</span>
         <div className="live-final-numbers">{state.revealedNumbers.map((number) => <i key={number}>{number}</i>)}</div>
         {draw.player_ticket_count === 0 ? <div className="personal-result"><strong>Вы не участвовали в этом тираже</strong><p>Новый билет можно выбрать для ближайшего розыгрыша.</p></div> : winner ? <div className="personal-result win"><span>Ваш выигрыш</span><strong>+{formatCas(draw.player_total_prize)}</strong><p>Выигрышных билетов: {draw.player_winning_ticket_count}</p></div> : <div className="personal-result"><strong>В этот раз без выигрыша</strong><p>{draw.player_best_matches ? `Лучший результат — ${draw.player_best_matches} совпадения.` : "Совпадений нет."} Следующий шанс уже близко.</p></div>}
-        {draw.highlighted_tickets.map((ticket) => <article className="live-ticket" key={ticket.public_number}><div><span>Билет #{formatDraw(ticket.public_number)}</span><strong>{ticket.prize_amount > 0 ? `+${formatCas(ticket.prize_amount)}` : "Без выигрыша"}</strong></div><NumberSet values={ticket.numbers} winning={draw.winning_numbers} animate={ticket.prize_amount > 0} /></article>)}
+        {draw.highlighted_tickets.map((ticket) => <article className="live-ticket" key={ticket.public_number}><div><span>{formatTicketLabel(draw.lottery_code, ticket.public_number)}</span><strong>{ticket.prize_amount > 0 ? `+${formatCas(ticket.prize_amount)}` : "Без выигрыша"}</strong></div><NumberSet values={ticket.numbers} winning={draw.winning_numbers} animate={ticket.prize_amount > 0} /></article>)}
       </motion.div>}
 
       {!isReplay && state.nextDraw && <div className="live-next"><span>Следующий тираж</span><strong>{state.nextDraw.lottery_name}</strong><small>{formatMoscow(state.nextDraw.scheduled_at)} МСК · {countdown(state.nextDraw.scheduled_at, now)}</small></div>}
@@ -101,7 +102,7 @@ export function LiveView({ feed, now, loading, onPlay, onTickets }: LiveViewProp
 
     {!isReplay && feed && <section className="replay-library">
       <div className="section-heading"><div><span className="eyebrow">Цифровой архив</span><h2>Последние розыгрыши</h2></div><span className="section-count">По 2 каждой лотереи</span></div>
-      <div className="replay-list">{feed.recent_completed.map((item) => <button className={`replay-row lottery-${item.lottery_code}`} key={drawKey(item)} onClick={() => startReplay(item)} type="button"><span className="replay-symbol"><Icon name="replay" /></span><span><strong>{item.lottery_name}</strong><small>{formatMoscow(item.scheduled_at)} МСК · тираж #{formatDraw(item.draw_number)}</small></span><span className="replay-numbers">{item.winning_numbers?.join(" · ")}</span><b>Смотреть</b></button>)}</div>
+      <div className="replay-list">{feed.recent_completed.map((item) => <button className={`replay-row lottery-${item.lottery_code}`} key={drawKey(item)} onClick={() => startReplay(item)} type="button"><span className="replay-symbol"><Icon name="replay" /></span><span><strong>{item.lottery_name}</strong><small>{formatMoscow(item.scheduled_at)} МСК · {formatDrawLabel(item.lottery_code, item.draw_number)}</small></span><span className="replay-numbers">{item.winning_numbers?.join(" · ")}</span><b>Смотреть</b></button>)}</div>
     </section>}
   </div>;
 }

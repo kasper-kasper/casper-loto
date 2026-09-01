@@ -4,6 +4,7 @@ import khanScene from "./assets/lotteries/khan-scene.webp";
 import pllScene from "./assets/lotteries/pll-scene.webp";
 import pssScene from "./assets/lotteries/pss-nature-scene.webp";
 import weeklyScene from "./assets/lotteries/weekly-scene.webp";
+import grobScene from "./assets/lotteries/grob-scene.webp";
 
 type VisualContext = "hero" | "picker" | "live";
 
@@ -22,7 +23,7 @@ const draw = {
 export function LotteryVisual({ code, context = "hero", animated = true }: LotteryVisualProps) {
   const transition = { duration: animated ? 1.1 : 0, ease: "easeOut" as const };
   const prefix = `${code}-${context}`;
-  const rasterScenes: Record<string, string> = { pll: pllScene, pss: pssScene, khan: khanScene, weekly: weeklyScene };
+  const rasterScenes: Record<string, string> = { pll: pllScene, pss: pssScene, khan: khanScene, weekly: weeklyScene, grob: grobScene };
 
   if (rasterScenes[code]) return <div aria-hidden="true" className={`lottery-visual visual-${code} visual-${context} raster-visual`}>
     <motion.img alt="" animate={animated ? { scale: [1.02, 1.065], x: [-3, 3], y: [0, -2] } : undefined} className="scene-backdrop" decoding="async" src={rasterScenes[code]} transition={{ duration: 14, ease: "easeInOut", repeat: Infinity, repeatType: "mirror" }} />

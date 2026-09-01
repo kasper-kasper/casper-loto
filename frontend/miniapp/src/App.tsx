@@ -13,7 +13,7 @@ import {
   Skeleton,
   StatusBadge,
 } from "./components";
-import { countdown, formatCas, formatDraw, formatMoscow, formatMoscowTime } from "./format";
+import { countdown, formatCas, formatDraw, formatDrawLabel, formatMoscow, formatMoscowTime, formatTicketLabel } from "./format";
 import { MINIAPP_TEXTS as copy } from "./content";
 import { LiveView } from "./LiveView";
 import { LotteryVisual } from "./LotteryVisuals";
@@ -59,11 +59,11 @@ function TicketCard({ ticket, index = 0 }: { ticket: Ticket; index?: number }) {
   const matches = ticket.matches ?? 0;
   return <article className={`ticket-card ${winner ? "winner" : ""}`} style={{ "--item-index": index } as CSSProperties}>
     <div className="ticket-meta">
-      <div><span className="eyebrow">{ticket.lottery_name}{ticket.source === "AUTO_PLAY" ? " · АВТОБИЛЕТ" : ""}</span><h3>Билет #{formatDraw(ticket.public_number)}</h3></div>
+      <div><span className="eyebrow">{ticket.lottery_name}{ticket.source === "AUTO_PLAY" ? " · АВТОБИЛЕТ" : ""}</span><h3>{formatTicketLabel(ticket.lottery_code, ticket.public_number)}</h3></div>
       <StatusBadge active={!complete} />
     </div>
     <NumberSet values={ticket.numbers} winning={ticket.winning_numbers} animate={winner} />
-    <div className="ticket-footer"><span>Тираж #{formatDraw(ticket.draw_number)}</span><span>{formatMoscow(ticket.scheduled_at)} МСК</span></div>
+    <div className="ticket-footer"><span>{formatDrawLabel(ticket.lottery_code, ticket.draw_number)}</span><span>{formatMoscow(ticket.scheduled_at)} МСК</span></div>
     {complete && <div className={`ticket-result ${winner ? "win" : "loss"}`}>
       <div><span>{matches > 0 ? `Совпадений: ${matches}` : "Совпадений нет"}</span><small>{winner ? "Выигрыш зачислен" : "Без выигрыша"}</small></div>
       <strong>{winner ? `+${formatCas(ticket.prize_amount)}` : "0 CAS"}</strong>
@@ -79,7 +79,7 @@ function TicketGroups({ tickets }: { tickets: Ticket[] }) {
   }
   return <div className="ticket-groups">{Array.from(groups.entries()).map(([key, items]) => {
     const first = items[0];
-    return <section className={`ticket-draw-group lottery-${first.lottery_code}`} key={key}><header><div><span className="eyebrow">{first.lottery_name}</span><h2>Тираж #{formatDraw(first.draw_number)}</h2></div><div><strong>{items.length}</strong><small>{plural(items.length, "билет", "билета", "билетов")}</small></div></header><div className="ticket-group-list">{items.map((ticket, index) => <TicketCard index={index} key={ticket.id} ticket={ticket} />)}</div></section>;
+    return <section className={`ticket-draw-group lottery-${first.lottery_code}`} key={key}><header><div><span className="eyebrow">{first.lottery_name}</span><h2>{formatDrawLabel(first.lottery_code, first.draw_number)}</h2></div><div><strong>{items.length}</strong><small>{plural(items.length, "билет", "билета", "билетов")}</small></div></header><div className="ticket-group-list">{items.map((ticket, index) => <TicketCard index={index} key={ticket.id} ticket={ticket} />)}</div></section>;
   })}</div>;
 }
 
@@ -88,9 +88,10 @@ function NextDraw({ lottery, now, nearest, onLive, onPlay }: { lottery: Lottery;
   return <motion.section animate={{ opacity: 1, y: 0 }} className={`next-draw featured-draw lottery-${lottery.code}`} initial={{ opacity: 0, y: 10 }} transition={{ duration: .34, ease: [0.2, 0.75, 0.25, 1] }}>
     <div className="hero-scene"><LotteryVisual code={lottery.code} /></div>
     <header className="draw-product-bar"><span><i />{nearest ? "Ближайший тираж" : "Выбранная лотерея"}</span><b>{lottery.kind} · {lottery.numbers_to_pick} ИЗ {lottery.max_number}</b></header>
-    <div className="draw-product-title"><div><strong>{lottery.name}</strong><span>{lottery.draw_number ? `Тираж #${formatDraw(lottery.draw_number)}` : "Расписание готовится"}</span></div></div>
+    <div className="draw-product-title"><div><strong>{lottery.name}</strong><span>{lottery.draw_number ? formatDrawLabel(lottery.code, lottery.draw_number) : "Расписание готовится"}</span></div></div>
     <div className="featured-jackpot"><span>{lottery.code === "september" ? copy.september.mainPrizeLabel : "Джекпот"}</span><strong>{formatCas(lottery.jackpot)}</strong></div>
     {lottery.code === "september" && <p className="september-moodline">{copy.september.moodline}</p>}
+    {lottery.code === "grob" && <p className="grob-moodline">{copy.grob.moodline}</p>}
     <div className="draw-control-panel"><div className="countdown"><span>До старта</span><strong>{countdown(lottery.scheduled_at, now)}</strong><small>{lottery.scheduled_at ? `${formatMoscow(lottery.scheduled_at)} МСК` : "Дата уточняется"}</small></div><div className="draw-player-stat"><span>Ваши билеты</span><strong>{lottery.player_ticket_count}</strong><small>{lottery.sales_close_at ? `До ${formatMoscowTime(lottery.sales_close_at)} МСК` : ""}</small></div></div>
     <div className="featured-meta"><span className={`sales-state ${lottery.sales_status.toLowerCase()}`}>{salesLabels[lottery.sales_status]}</span></div>
     <div className="featured-actions"><button className="live-cta" onClick={onLive} type="button"><Icon name="live" /> {startsIn <= 5 * 60_000 ? copy.actions.watchLive : copy.actions.openLive}</button><PrimaryButton className="split-button" disabled={!lottery.scheduled_at || lottery.ticket_price === null} onClick={onPlay}><b>{lottery.purchase_available ? copy.actions.chooseNumbers : "Проверить продажи"}</b><small>{lottery.ticket_price !== null ? formatCas(lottery.ticket_price) : "—"}</small></PrimaryButton></div>
@@ -126,14 +127,15 @@ function NumberPicker({ lottery, purchasing, success, initialNumbers = [], favor
     pss: "Тишина северного озера перед грозой",
     khan: "Четыре знака для одного тиража",
     weekly: "Соберите персональный клубный билет",
+    grob: "Три числа. Одна аккуратно оформленная могила.",
   };
 
   return <div className={`picker-shell lottery-${lottery.code}`}>
-    <div className="picker-heading"><div className="picker-scene"><LotteryVisual code={lottery.code} context="picker" /></div><button className="icon-button" onClick={onClose} type="button" aria-label="Закрыть"><Icon name="arrow" /></button><div><span className="eyebrow">{lottery.name} · тираж #{formatDraw(lottery.draw_number ?? 0)}</span><h1>Выберите {lottery.numbers_to_pick} чисел</h1><p>{pickerMood[lottery.code] ?? "Ваша комбинация на ближайший тираж"}</p></div></div>
+    <div className="picker-heading"><div className="picker-scene"><LotteryVisual code={lottery.code} context="picker" /></div><button className="icon-button" onClick={onClose} type="button" aria-label="Закрыть"><Icon name="arrow" /></button><div><span className="eyebrow">{lottery.name} · {formatDrawLabel(lottery.code, lottery.draw_number ?? 0)}</span><h1>Выберите {lottery.numbers_to_pick} чисел</h1><p>{pickerMood[lottery.code] ?? "Ваша комбинация на ближайший тираж"}</p></div></div>
     {lottery.code === "september" && <div className="september-picker-note"><span>03 / 09</span><strong>{copy.september.pickerInstruction}</strong></div>}
     <div className="picker-summary"><div><span>К оплате за комбинацию</span><strong>{formatCas((lottery.ticket_price ?? 0) * drawCount)}</strong></div><div className="selection-meter"><span>Выбрано</span><strong>{selected.length}<i>/ {lottery.numbers_to_pick}</i></strong></div></div>
-    <div className="picker-board"><div className="picker-board-label"><span>Поле комбинации</span><small>{lottery.code === "september" ? "Три части · 33 числа" : `${lottery.max_number} чисел · выберите ${lottery.numbers_to_pick}`}</small></div><div className="number-grid" aria-label="Выбор чисел">{numberGroups.map(([from, to], groupIndex) => <div className="number-group" key={from}>{lottery.code === "september" && <span className="number-group-label">{groupIndex === 0 ? "Начало" : groupIndex === 1 ? "Середина" : "После"}</span>}{Array.from({ length: to - from + 1 }, (_, index) => from + index).map((value) => <motion.button aria-pressed={selected.includes(value)} className={selected.includes(value) ? "pick-number selected" : "pick-number"} key={value} onClick={() => toggle(value)} type="button" whileTap={{ scale: .88 }}><span>{value}</span><i aria-hidden="true" /></motion.button>)}</div>)}</div></div>
-    <div className="selected-combination"><span>Ваш билет</span><div>{Array.from({ length: lottery.numbers_to_pick }, (_, index) => <i className={selected[index] ? "filled" : ""} key={index}>{selected[index] ?? "—"}</i>)}</div></div>
+    <div className="picker-board"><div className="picker-board-label"><span>{lottery.code === "grob" ? "Поле захоронений" : "Поле комбинации"}</span><small>{lottery.code === "september" ? "Три части · 33 числа" : `${lottery.max_number} чисел · выберите ${lottery.numbers_to_pick}`}</small></div><div className="number-grid" aria-label="Выбор чисел">{numberGroups.map(([from, to], groupIndex) => <div className="number-group" key={from}>{lottery.code === "september" && <span className="number-group-label">{groupIndex === 0 ? "Начало" : groupIndex === 1 ? "Середина" : "После"}</span>}{Array.from({ length: to - from + 1 }, (_, index) => from + index).map((value) => <motion.button aria-pressed={selected.includes(value)} className={selected.includes(value) ? "pick-number selected" : "pick-number"} key={value} onClick={() => toggle(value)} type="button" whileTap={{ scale: lottery.code === "grob" ? .82 : .88 }}><span>{value}</span><i aria-hidden="true" /></motion.button>)}</div>)}</div></div>
+    <div className="selected-combination"><span>{lottery.code === "grob" ? "Ваша могила" : "Ваш билет"}</span><div>{Array.from({ length: lottery.numbers_to_pick }, (_, index) => <i className={selected[index] ? "filled" : ""} key={index}>{selected[index] ?? "—"}</i>)}</div></div>
     <button className="secondary-button random-button" onClick={randomize} type="button"><Icon name="spark" />{copy.actions.randomNumbers}</button>
     <section className="multi-draw-choice"><div><strong>Повторить комбинацию</strong><small>Без автопродления и скрытых списаний</small></div><div><button className={drawCount === 1 ? "selected" : ""} onClick={() => setDrawCount(1)} type="button">1 тираж</button><button className={drawCount === 5 ? "selected" : ""} onClick={() => setDrawCount(5)} type="button">5 тиражей</button></div>{drawCount === 5 && <p>Эти числа участвуют в текущем и следующих 4 тиражах. Полная сумма оплачивается сейчас.</p>}</section>
     {ready && <button className={`favorite-action ${saved ? "saved" : ""}`} disabled={saved} onClick={() => onSaveFavorite(selected)} type="button">{saved ? "★ Комбинация сохранена" : "☆ Сохранить комбинацию"}</button>}

@@ -152,6 +152,42 @@ it("renders server-authoritative balance and lottery states", async () => {
   expect(screen.getByRole("button", { name: /Проверить продажи.*—/ })).toBeDisabled();
 });
 
+it("renders the GROB identity and its three-of-sixteen picker", async () => {
+  const grobDashboard: Dashboard = {
+    ...dashboard,
+    lotteries: [{
+      code: "grob",
+      name: "ГРОБ",
+      kind: "DAILY",
+      numbers_to_pick: 3,
+      max_number: 16,
+      ticket_price: 6_666,
+      jackpot: 6_666_666,
+      draw_number: 1,
+      scheduled_at: "2026-09-02T03:06:00Z",
+      sales_close_at: "2026-09-02T03:04:00Z",
+      sales_open: true,
+      purchase_available: true,
+      player_ticket_count: 0,
+      sales_status: "OPEN",
+      max_tickets_per_purchase: 1_000,
+      max_tickets_per_user_per_draw: 5_000,
+    }],
+  };
+  vi.mocked(miniAppApi.dashboard).mockResolvedValue(grobDashboard);
+  const { container } = render(<App initData="signed" />);
+
+  expect(await screen.findByText("RIP 0001")).toBeInTheDocument();
+  expect(screen.getByText(MINIAPP_TEXTS.grob.moodline)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: /Выбрать числа/ }));
+
+  await waitFor(() => expect(container.querySelector(".number-grid")).not.toBeNull());
+  const grid = container.querySelector(".number-grid");
+  expect(grid).not.toBeNull();
+  expect(within(grid as HTMLElement).getAllByRole("button")).toHaveLength(16);
+  expect(screen.getByText("Поле захоронений")).toBeInTheDocument();
+});
+
 it("refreshes a stale sales state before opening the number picker", async () => {
   const stale: Dashboard = {
     ...dashboard,

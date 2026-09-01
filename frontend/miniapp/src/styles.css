@@ -1276,6 +1276,52 @@ body::before, body::after { opacity: .12; }
   .home-view .featured-draw.lottery-september::before { top: 126px; }
 }
 
+/* 1.6 — ГРОБ: restrained gothic product theme, not a Halloween skin. */
+.lottery-grob { --lottery-accent: #d45470; --lottery-glow: #6d1835; --picker-accent: #cf536d; --picker-scene-base: #170d18; }
+.visual-grob > img { object-position: 68% center; }
+.visual-grob .scene-light { right: 3%; background: radial-gradient(ellipse,rgba(208,69,103,.35),transparent 67%); }
+.visual-grob .scene-mist { opacity: .65; background: radial-gradient(ellipse,rgba(126,48,85,.42),transparent 70%); animation: grob-smoke 8s ease-in-out infinite alternate; }
+.visual-grob .scene-weather { opacity: .38; background: radial-gradient(circle at 79% 73%,rgba(255,181,129,.48) 0 1px,transparent 3px),radial-gradient(circle at 88% 69%,rgba(213,74,101,.35) 0 1px,transparent 3px); animation: grob-candle 2.8s ease-in-out infinite; }
+.featured-draw.lottery-grob { border-color: rgba(190,53,84,.35); background: linear-gradient(145deg,#28101d,#100c19 54%,#080e20); }
+.featured-draw.lottery-grob::after { content: ""; position: absolute; z-index: 1; inset: 0; pointer-events: none; background: linear-gradient(90deg,rgba(5,7,14,.52),transparent 58%),repeating-linear-gradient(90deg,transparent 0 31px,rgba(202,82,108,.025) 32px); }
+.featured-draw.lottery-grob > *:not(.hero-scene) { position: relative; z-index: 2; }
+.featured-draw.lottery-grob .featured-jackpot strong { color: #e45d78; text-shadow: 0 0 24px rgba(196,48,79,.18); }
+.grob-moodline { margin: -3px 0 0; padding: 8px 11px; border: 1px solid rgba(206,72,101,.16); border-radius: 5px 5px 15px 5px; color: #c7adb5; background: rgba(63,18,35,.24); font: italic 10px/1.35 Georgia,"Times New Roman",serif; letter-spacing: .025em; }
+.lottery-switch.lottery-grob.selected { border-color: rgba(212,84,112,.45); background: linear-gradient(145deg,rgba(84,23,45,.72),rgba(14,15,29,.95)); }
+
+.picker-shell.lottery-grob .picker-heading { border-color: rgba(205,73,102,.31) !important; background: #170d18 !important; }
+.picker-shell.lottery-grob .picker-scene::after { background: linear-gradient(90deg,rgba(9,7,13,.88),rgba(19,8,17,.45) 58%,transparent),linear-gradient(0deg,#170d18,transparent 70%) !important; }
+.picker-shell.lottery-grob .picker-board { border-color: rgba(196,63,91,.27); background: radial-gradient(circle at 50% 30%,rgba(106,26,55,.2),transparent 55%),#0d0b13; }
+.picker-shell.lottery-grob .picker-board-label span { font-family: Georgia,"Times New Roman",serif; letter-spacing: .16em; }
+.picker-shell.lottery-grob .number-group { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; }
+.picker-shell.lottery-grob .pick-number { position: relative; min-height: 70px; overflow: visible; border-color: rgba(180,79,101,.34); border-radius: 45% 45% 18% 18% / 26% 26% 13% 13%; color: #d8c5c8; background: linear-gradient(145deg,#24151d,#0f0d13 72%); box-shadow: inset 0 0 0 3px rgba(5,4,8,.5),0 8px 18px rgba(0,0,0,.18); font-family: Georgia,"Times New Roman",serif; font-size: 18px; }
+.picker-shell.lottery-grob .pick-number::before { content: ""; position: absolute; inset: 5px; border: 1px solid rgba(202,114,132,.16); border-radius: inherit; pointer-events: none; }
+.picker-shell.lottery-grob .pick-number::after { content: "†"; position: absolute; left: 50%; bottom: 5px; color: rgba(201,106,125,.3); font: 10px Georgia,serif; transform: translateX(-50%); }
+.picker-shell.lottery-grob .pick-number span { transform: translateY(-3px); }
+.picker-shell.lottery-grob .pick-number.selected { color: #fff2ee; border-color: #d65470; background: linear-gradient(145deg,#8b263f,#361221 74%); box-shadow: inset 0 0 0 3px rgba(28,5,13,.45),0 0 22px rgba(205,66,95,.24); animation: grob-seal 340ms cubic-bezier(.2,.8,.2,1) both; }
+.picker-shell.lottery-grob .pick-number.selected::after { color: rgba(255,210,202,.72); }
+.picker-shell.lottery-grob .selected-combination i { border-radius: 45% 45% 16% 16% / 25% 25% 12% 12%; }
+.picker-shell.lottery-grob .random-button { border-color: rgba(205,73,102,.27); color: #d9adb7; background: rgba(72,18,38,.2); }
+
+.live-stage.lottery-grob { border-color: rgba(196,54,85,.3); background: #0b0912 !important; }
+.live-stage.lottery-grob .live-lottery-scene { opacity: .82; }
+.live-stage.lottery-grob .live-label,
+.live-stage.lottery-grob .live-identity > span { color: #df6a82; }
+.live-stage.lottery-grob .live-reveal > strong { border-color: rgba(214,84,112,.58); border-radius: 45% 45% 15% 15% / 24% 24% 12% 12%; color: #f2c8cf; background: linear-gradient(145deg,rgba(116,31,56,.68),rgba(12,9,17,.92)); box-shadow: inset 0 0 0 5px rgba(8,6,10,.48),0 0 45px rgba(192,50,80,.2); }
+.live-stage.lottery-grob .live-sequence i,
+.live-stage.lottery-grob .live-final-numbers i,
+.live-stage.lottery-grob .result-preview i { border-radius: 45% 45% 15% 15% / 24% 24% 12% 12%; }
+.live-stage.lottery-grob .live-final-numbers i { border-color: #cf526e; color: #f8e8e9; background: linear-gradient(145deg,#9b3049,#3d1423); }
+
+@keyframes grob-seal { 0% { opacity: .65; transform: perspective(120px) rotateX(-16deg) scale(.88); } 65% { transform: perspective(120px) rotateX(3deg) scale(1.035); } 100% { opacity: 1; transform: none; } }
+@keyframes grob-smoke { to { opacity: .38; transform: translate3d(-34px,-8px,0) scale(1.08); } }
+@keyframes grob-candle { 50% { opacity: .62; filter: brightness(1.2); } }
+
+@media (max-width: 350px) {
+  .picker-shell.lottery-grob .number-group { gap: 6px; }
+  .picker-shell.lottery-grob .pick-number { min-height: 61px; }
+}
+
 .purchase-confirmation-backdrop { position: fixed; z-index: 40; inset: 0; display: grid; padding: 24px; place-items: center; background: rgba(2,7,20,.78); backdrop-filter: blur(12px); }
 .purchase-confirmation { width: min(100%, 390px); padding: 28px 22px 22px; border: 1px solid rgba(235,195,108,.28); border-radius: 18px 18px 30px 18px; background: radial-gradient(circle at 85% 5%,rgba(195,140,51,.16),transparent 35%),linear-gradient(145deg,#12254e,#09152f 68%,#241329); box-shadow: 0 30px 90px rgba(0,0,0,.5),inset 0 1px rgba(255,255,255,.05); text-align: center; }
 .purchase-confirmation-mark { display: grid; width: 52px; height: 52px; margin: 0 auto 17px; place-items: center; border: 1px solid var(--gold); border-radius: 50%; color: #171006; background: linear-gradient(135deg,#f4d48a,#bd8138); box-shadow: 0 0 34px rgba(228,177,80,.22); font-size: 22px; font-weight: 900; }

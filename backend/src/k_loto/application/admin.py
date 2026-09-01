@@ -20,6 +20,7 @@ from k_loto.domain.enums import (
     TransactionType,
 )
 from k_loto.domain.lotteries import draw_display_name
+from k_loto.domain.lottery_rules import get_lottery_rules
 from k_loto.infrastructure.database.models import (
     AdminAuditLog,
     AutoPlaySetting,
@@ -375,10 +376,11 @@ class AdminMutationService:
             )
             if lottery is None or jackpot is None:
                 raise LookupError("Lottery or jackpot account does not exist.")
-            if lottery.kind == LotteryKind.WEEKLY and ticket_price % 4:
-                raise ValueError("Weekly ticket price must be divisible by 4 CAS.")
-            if lottery.kind == LotteryKind.DAILY and ticket_price % 2:
-                raise ValueError("Daily ticket price must be even.")
+            rules = get_lottery_rules(lottery.ruleset_code)
+            if ticket_price % rules.price_divisor:
+                raise ValueError(
+                    f"Ticket price must be divisible by {rules.price_divisor} CAS."
+                )
             old_values = {
                 "ticket_price": lottery.ticket_price,
                 "base_jackpot": jackpot.base_amount,

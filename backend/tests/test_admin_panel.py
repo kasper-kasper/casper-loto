@@ -275,6 +275,7 @@ async def test_daily_configuration_accepts_owner_even_ticket_price() -> None:
         code="pll",
         name="ПЛЛ-лото",
         kind=LotteryKind.DAILY,
+        ruleset_code="daily_4_15",
         numbers_to_pick=4,
         max_number=15,
         ticket_price=20_000,

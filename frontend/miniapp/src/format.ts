@@ -6,6 +6,14 @@ export function formatDraw(value: number): string {
   return String(value).padStart(4, "0");
 }
 
+export function formatDrawLabel(lotteryCode: string, value: number): string {
+  return lotteryCode === "grob" ? `RIP ${formatDraw(value)}` : `Тираж #${formatDraw(value)}`;
+}
+
+export function formatTicketLabel(lotteryCode: string, value: number): string {
+  return lotteryCode === "grob" ? `Могила ${formatDraw(value)}` : `Билет #${formatDraw(value)}`;
+}
+
 export function formatMoscow(value: string): string {
   return new Intl.DateTimeFormat("ru-RU", {
     timeZone: "Europe/Moscow",
