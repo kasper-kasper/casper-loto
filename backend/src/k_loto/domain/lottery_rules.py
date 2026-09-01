@@ -2,7 +2,7 @@
 
 import secrets
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from types import MappingProxyType
 from uuid import UUID
 
@@ -80,6 +80,10 @@ class LotteryRuleStrategy:
     guaranteed_payouts: Mapping[int, PayoutRatio]
     distribution_pool_match: int | None
     jackpot_match: int
+    fixed_payouts: Mapping[int, int] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
+    jackpot_refill_from_reserve: bool = False
 
     def validate_combination(
         self, numbers: tuple[int, ...] | list[int]
@@ -146,14 +150,26 @@ class LotteryRuleStrategy:
                 )
             count = len(set(ticket.numbers).intersection(winning))
             matches[ticket.id] = count
+            fixed = self.fixed_payouts.get(count)
             ratio = self.guaranteed_payouts.get(count)
-            if ratio is not None:
+            if fixed is not None:
+                if fixed < 0:
+                    raise ConfigurationError("Fixed payouts cannot be negative.")
+                guaranteed[ticket.id] = fixed
+            elif ratio is not None:
                 guaranteed[ticket.id] = ratio.apply(ticket.purchase_price)
         guaranteed_total = sum(guaranteed.values())
-        reserve_used = max(guaranteed_total - distribution_balance, 0)
+        distribution_shortfall = max(guaranteed_total - distribution_balance, 0)
+        jackpot_tickets = [
+            ticket for ticket in tickets if matches[ticket.id] == self.jackpot_match
+        ]
+        jackpot_reset_credit = base_jackpot if jackpot_tickets else 0
+        reserve_used = distribution_shortfall + (
+            jackpot_reset_credit if self.jackpot_refill_from_reserve else 0
+        )
         if reserve_used > reserve_balance:
             raise InsufficientReserve(
-                "Distribution fund and reserve cannot cover guaranteed payouts."
+                "Lottery funds and reserve cannot cover all payouts and refills."
             )
         distribution_after = max(distribution_balance - guaranteed_total, 0)
         distribution_tickets = (
@@ -169,9 +185,6 @@ class LotteryRuleStrategy:
             distribution_after, distribution_tickets
         )
         distribution_closing = 0 if distribution_tickets else distribution_after
-        jackpot_tickets = [
-            ticket for ticket in tickets if matches[ticket.id] == self.jackpot_match
-        ]
         jackpot_payouts = _allocate_evenly(jackpot_balance, jackpot_tickets)
         jackpot_closing = base_jackpot if jackpot_tickets else jackpot_balance
         payouts = tuple(
@@ -196,7 +209,7 @@ class LotteryRuleStrategy:
             reserve_used,
             jackpot_balance,
             jackpot_closing,
-            base_jackpot if jackpot_tickets else 0,
+            jackpot_reset_credit,
             sum(item.amount for item in payouts),
             self.jackpot_match,
         )
@@ -247,8 +260,21 @@ DAILY_RULES = LotteryRuleStrategy(
     None,
     4,
 )
+SEPTEMBER_RULES = LotteryRuleStrategy(
+    "september_3_33",
+    "3 СЕНТЯБРЯ",
+    3,
+    33,
+    1,
+    PayoutRatio(0),
+    MappingProxyType({}),
+    None,
+    3,
+    MappingProxyType({1: 333, 2: 3_333}),
+    True,
+)
 LOTTERY_RULES: Mapping[str, LotteryRuleStrategy] = MappingProxyType(
-    {rule.code: rule for rule in (WEEKLY_RULES, DAILY_RULES)}
+    {rule.code: rule for rule in (WEEKLY_RULES, DAILY_RULES, SEPTEMBER_RULES)}
 )
 
 

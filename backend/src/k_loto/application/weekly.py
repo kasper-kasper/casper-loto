@@ -415,21 +415,23 @@ class WeeklyTicketPurchaseService:
                 "ticket_count": len(ticket_ids),
                 "source": source.value,
             }
-            self._session.add_all(
-                [
-                    _ledger_entry(
-                        operation_id=operation_id,
-                        idempotency_key=user_ledger_key,
-                        account_kind=LedgerAccountKind.USER_BALANCE,
-                        account_id=balance.user_id,
-                        transaction_type=TransactionType.TICKET_PURCHASE,
-                        before=balance_before,
-                        after=balance.amount,
-                        user_id=user_id,
-                        lottery_id=lottery.id,
-                        draw_id=draw.id,
-                        details=shared_details,
-                    ),
+            purchase_ledger = [
+                _ledger_entry(
+                    operation_id=operation_id,
+                    idempotency_key=user_ledger_key,
+                    account_kind=LedgerAccountKind.USER_BALANCE,
+                    account_id=balance.user_id,
+                    transaction_type=TransactionType.TICKET_PURCHASE,
+                    before=balance_before,
+                    after=balance.amount,
+                    user_id=user_id,
+                    lottery_id=lottery.id,
+                    draw_id=draw.id,
+                    details=shared_details,
+                )
+            ]
+            if jackpot_before != jackpot.balance:
+                purchase_ledger.append(
                     _ledger_entry(
                         operation_id=operation_id,
                         idempotency_key=f"purchase:{idempotency_key}:jackpot",
@@ -442,7 +444,10 @@ class WeeklyTicketPurchaseService:
                         lottery_id=lottery.id,
                         draw_id=draw.id,
                         details=shared_details,
-                    ),
+                    )
+                )
+            if distribution_before != distribution.balance:
+                purchase_ledger.append(
                     _ledger_entry(
                         operation_id=operation_id,
                         idempotency_key=f"purchase:{idempotency_key}:distribution",
@@ -455,9 +460,9 @@ class WeeklyTicketPurchaseService:
                         lottery_id=lottery.id,
                         draw_id=draw.id,
                         details=shared_details,
-                    ),
-                ]
-            )
+                    )
+                )
+            self._session.add_all(purchase_ledger)
         return PurchaseResult(
             operation_id=operation_id,
             draw_id=draw.id,

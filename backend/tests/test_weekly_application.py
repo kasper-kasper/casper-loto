@@ -10,6 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from k_loto.application.daily import DailySettlementService, DailyTicketPurchaseService
 from k_loto.application.weekly import (
+    LotterySettlementService,
+    LotteryTicketPurchaseService,
     WeeklySettlementService,
     WeeklyTicketPurchaseService,
 )
@@ -92,6 +94,12 @@ class FixedDailyGenerator:
     def draw(self, population_size: int, numbers_to_pick: int) -> tuple[int, ...]:
         assert (population_size, numbers_to_pick) == (15, 4)
         return (1, 2, 3, 4)
+
+
+class FixedSeptemberGenerator:
+    def draw(self, population_size: int, numbers_to_pick: int) -> tuple[int, ...]:
+        assert (population_size, numbers_to_pick) == (33, 3)
+        return (1, 2, 3)
 
 
 def build_purchase_accounts(now: datetime):
@@ -188,6 +196,76 @@ async def test_multi_ticket_purchase_updates_all_accounts_and_numbering() -> Non
         item for item in fake.added if isinstance(item, NotificationOutbox)
     ]
     assert notifications == []
+
+
+async def test_september_purchase_omits_zero_jackpot_ledger_entry() -> None:
+    now = datetime(2026, 9, 1, 12, tzinfo=UTC)
+    user_id = UUID(int=920)
+    lottery = Lottery(
+        id=UUID(int=921),
+        code="september",
+        name="3 СЕНТЯБРЯ",
+        kind=LotteryKind.DAILY,
+        ruleset_code="september_3_33",
+        numbers_to_pick=3,
+        max_number=33,
+        ticket_price=333,
+        timezone="Europe/Moscow",
+        schedule={"slots": ["03:33", "15:33"]},
+        sales_cutoff_minutes=2,
+        max_tickets_per_purchase=1000,
+        max_tickets_per_user_per_draw=5000,
+        is_active=True,
+        next_draw_number=100,
+        next_ticket_number=200,
+    )
+    draw = Draw(
+        id=UUID(int=922),
+        lottery_id=lottery.id,
+        public_number=99,
+        status=DrawStatus.SCHEDULED,
+        scheduled_at=now + timedelta(hours=1),
+        sales_close_at=now + timedelta(minutes=58),
+        correlation_id=UUID(int=923),
+        ticket_count=0,
+        total_sales=0,
+        total_payout=0,
+        reserve_used=0,
+    )
+    balance = Balance(user_id=user_id, amount=1_000, version=1)
+    jackpot = JackpotAccount(
+        id=UUID(int=924),
+        lottery_id=lottery.id,
+        balance=33_333_333,
+        base_amount=33_333_333,
+        version=1,
+    )
+    distribution = DistributionFund(
+        id=UUID(int=925), lottery_id=lottery.id, balance=0, version=1
+    )
+    fake = FakeSession(
+        scalar_values=[None, lottery, None, draw, 0, balance, jackpot, distribution]
+    )
+
+    result = await LotteryTicketPurchaseService(
+        cast(AsyncSession, fake), lottery_code="september"
+    ).purchase(
+        user_id=user_id,
+        combinations=[[3, 9, 33]],
+        idempotency_key="september-purchase",
+        now=now,
+    )
+
+    ledger = [item for item in fake.added if isinstance(item, LedgerTransaction)]
+    assert result.total_cost == 333
+    assert balance.amount == 667
+    assert jackpot.balance == 33_333_333
+    assert distribution.balance == 333
+    assert [item.account_kind for item in ledger] == [
+        LedgerAccountKind.USER_BALANCE,
+        LedgerAccountKind.DISTRIBUTION_FUND,
+    ]
+    assert sum(item.amount for item in ledger) == 0
 
 
 async def test_five_draw_purchase_is_prepaid_and_created_atomically() -> None:
@@ -461,3 +539,80 @@ async def test_draw_cannot_be_settled_before_official_time() -> None:
         await service.settle(draw.id, now=now)
 
     assert generator.calls == 0
+
+
+async def test_september_main_prize_is_refilled_from_reserve() -> None:
+    now = datetime(2026, 9, 1, 12, tzinfo=UTC)
+    lottery = Lottery(
+        id=UUID(int=900),
+        code="september",
+        name="3 СЕНТЯБРЯ",
+        kind=LotteryKind.DAILY,
+        ruleset_code="september_3_33",
+        numbers_to_pick=3,
+        max_number=33,
+        ticket_price=333,
+        timezone="Europe/Moscow",
+        schedule={"slots": ["03:33", "15:33"]},
+        sales_cutoff_minutes=2,
+        max_tickets_per_purchase=1000,
+        max_tickets_per_user_per_draw=5000,
+        is_active=True,
+        next_draw_number=900,
+        next_ticket_number=900,
+    )
+    draw = Draw(
+        id=UUID(int=901),
+        lottery_id=lottery.id,
+        public_number=899,
+        status=DrawStatus.SCHEDULED,
+        scheduled_at=now,
+        sales_close_at=now - timedelta(minutes=2),
+        correlation_id=UUID(int=902),
+        ticket_count=1,
+        total_sales=333,
+        total_payout=0,
+        reserve_used=0,
+    )
+    user_id = UUID(int=903)
+    ticket = Ticket(
+        id=UUID(int=904),
+        public_number=899,
+        lottery_id=lottery.id,
+        draw_id=draw.id,
+        user_id=user_id,
+        numbers=[1, 2, 3],
+        purchase_price=333,
+        prize_amount=0,
+    )
+    balance = Balance(user_id=user_id, amount=1_000, version=1)
+    jackpot = JackpotAccount(
+        id=UUID(int=905),
+        lottery_id=lottery.id,
+        balance=33_333_333,
+        base_amount=33_333_333,
+        version=1,
+    )
+    distribution = DistributionFund(
+        id=UUID(int=906), lottery_id=lottery.id, balance=333, version=1
+    )
+    reserve = LotteryReserve(
+        id=UUID(int=907), lottery_id=lottery.id, balance=1_000_000_000, version=1
+    )
+    fake = FakeSession(
+        scalar_values=[draw, lottery, jackpot, distribution, reserve],
+        scalar_collections=[[ticket], [balance], []],
+    )
+
+    result = await LotterySettlementService(
+        cast(AsyncSession, fake), FixedSeptemberGenerator()
+    ).settle(draw.id, now=now)
+
+    ledger = [item for item in fake.added if isinstance(item, LedgerTransaction)]
+    assert result.total_payout == 33_333_333
+    assert balance.amount == 33_334_333
+    assert jackpot.balance == 33_333_333
+    assert distribution.balance == 333
+    assert reserve.balance == 966_666_667
+    assert draw.reserve_used == 33_333_333
+    assert sum(item.amount for item in ledger) == 0

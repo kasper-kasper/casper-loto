@@ -1,9 +1,9 @@
 # K-Loto
 
-Current version: **1.1.0 — universal lottery strategies and reliability pass**.
+Current version: **1.2.0 — «3 СЕНТЯБРЯ» 3/33**.
 
 K-Loto is a multi-user lottery platform with integer CAS accounting, an
-immutable transaction ledger, recoverable draw scheduling and four independent
+immutable transaction ledger, recoverable draw scheduling and five independent
 lotteries. Player interfaces are the Telegram bot and Telegram Mini App. The
 administrator uses a separate HTTPS Web Admin Panel. The former ordinary player
 Web client was retired in v0.14.0.
@@ -16,6 +16,7 @@ Web client was retired in v0.14.0.
 | `pll` | ПЛЛ-лото | 4/15 | daily 02:22 | 2 min |
 | `pss` | ПСС-Лото | 4/15 | daily 12:00 | 2 min |
 | `khan` | ХАН-Лото | 4/15 | daily 18:00 | 2 min |
+| `september` | 3 СЕНТЯБРЯ | 3/33 | daily 03:33 and 15:33 | 2 min |
 
 Each entity owns independent draw numbers, ticket numbers, jackpot,
 distribution fund and reserve. Empty draws are settled normally. Every active

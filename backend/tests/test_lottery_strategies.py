@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 
 from k_loto.domain.enums import LotteryKind
 from k_loto.domain.lottery_rules import (
+    SEPTEMBER_RULES,
     LotteryRuleStrategy,
     PayoutRatio,
     SettlementTicket,
@@ -56,3 +57,54 @@ def test_interval_schedule_is_server_anchored_in_moscow() -> None:
         )
         == 2
     )
+
+
+def test_september_fixed_payouts_and_shared_main_prize() -> None:
+    tickets = [
+        SettlementTicket(UUID(int=1), 10, UUID(int=11), (1, 8, 9), 333),
+        SettlementTicket(UUID(int=2), 11, UUID(int=12), (1, 2, 9), 333),
+        SettlementTicket(UUID(int=3), 12, UUID(int=13), (1, 2, 3), 333),
+        SettlementTicket(UUID(int=4), 13, UUID(int=14), (1, 2, 3), 333),
+    ]
+    plan = SEPTEMBER_RULES.calculate_settlement(
+        tickets,
+        (1, 2, 3),
+        distribution_balance=1_000,
+        jackpot_balance=33_333_333,
+        reserve_balance=1_000_000_000,
+        base_jackpot=33_333_333,
+    )
+
+    assert [item.matches for item in plan.payouts] == [1, 2, 3, 3]
+    assert [item.amount for item in plan.payouts] == [
+        333,
+        3_333,
+        16_666_667,
+        16_666_666,
+    ]
+    assert plan.distribution_closing == 0
+    assert plan.reserve_used == 33_335_999
+    assert plan.jackpot_closing == 33_333_333
+    assert plan.jackpot_reset_credit == 33_333_333
+
+
+def test_september_purchase_goes_entirely_to_distribution() -> None:
+    quote = SEPTEMBER_RULES.quote_purchase([[33, 1, 3], [4, 5, 6]], 333, 1_000)
+    assert quote.combinations == ((1, 3, 33), (4, 5, 6))
+    assert quote.total_cost == 666
+    assert quote.jackpot_contribution == 0
+    assert quote.distribution_contribution == 666
+
+
+def test_september_schedule_has_two_moscow_slots() -> None:
+    moscow = ZoneInfo("Europe/Moscow")
+    schedule = {"slots": ["03:33", "15:33"]}
+    morning = next_draw_at(
+        LotteryKind.DAILY,
+        datetime(2026, 9, 1, 3, 0, tzinfo=moscow),
+        schedule,
+    )
+    afternoon = next_draw_at(LotteryKind.DAILY, morning, schedule)
+    assert morning == datetime(2026, 9, 1, 0, 33, tzinfo=UTC)
+    assert afternoon == datetime(2026, 9, 1, 12, 33, tzinfo=UTC)
+    assert future_draw_target(LotteryKind.DAILY, schedule) == 2

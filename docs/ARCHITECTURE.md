@@ -57,8 +57,9 @@ idempotency. Each active lottery maintains its own next draw. Completed draws
 are protected by a database trigger.
 
 Lottery mathematics is selected by `lotteries.ruleset_code`. Declarative rule
-strategies contain the format, integer price split, payout ratios, distribution
-pool tier and jackpot tier. Purchase and settlement are code-agnostic. Schedule
+strategies contain the format, integer price split, proportional or fixed
+payouts, distribution pool tier, jackpot tier and optional reserve-funded
+jackpot refill. Purchase and settlement are code-agnostic. Schedule
 dispatch separately supports weekly, slot-based and interval strategies. See
 `docs/LOTTERY_STRATEGIES.md`.
 

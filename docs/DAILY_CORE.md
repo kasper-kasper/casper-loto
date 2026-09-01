@@ -18,3 +18,16 @@ an idempotent Telegram broadcast.
 At v0.14.0 PSS and KHAN start with 24,000,000 CAS base/current jackpots and zero
 distribution/reserve. PLL inherits the shared Daily balances after its already
 purchased legacy draw settles. All transfers use paired ledger entries.
+
+## «3 СЕНТЯБРЯ» 3/33
+
+`september` is a separate Daily entity with draws at 03:33 and 15:33 Moscow,
+a two-minute cutoff and independent draw/ticket numbering. A ticket costs
+333 CAS and contains exactly three unique numbers from 1 through 33.
+
+Payouts are 0 for 0/3, 333 CAS for 1/3 and 3,333 CAS for 2/3. The fixed main
+prize of 33,333,333 CAS is split deterministically among all 3/3 tickets. Ticket
+sales enter distribution; fixed lower-tier shortfalls use reserve. After a main
+prize win, reserve refills its account to 33,333,333 CAS, so the displayed prize
+does not accumulate, shrink or reset to another value. The approved initial
+reserve is 1,000,000,000 CAS.

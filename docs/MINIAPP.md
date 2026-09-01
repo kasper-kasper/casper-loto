@@ -8,7 +8,7 @@ player, delivers durable notifications and opens this signed HTTPS client.
 Milestone 5 provides a mobile-first React/TypeScript/Vite client with:
 
 - server-authoritative animated balance and a single focused lottery stage;
-- Weekly 5/20 and Daily 4/15 number pickers with Web Crypto random pick;
+- Weekly 5/20, Daily 4/15 and «3 СЕНТЯБРЯ» 3/33 number pickers with Web Crypto random pick;
 - single-ticket purchase and multi-ticket cart checkout;
 - duplicate combinations as independent cart tickets;
 - a «Моё» cabinet with player statistics, active tickets, completed ticket
@@ -31,6 +31,11 @@ instead of a wall of product cards. PLL, PSS, KHAN and Weekly retain the same
 interaction model but have distinct night-violet, blue, burgundy and gold
 accents. Decorative lottery balls are intentionally not used. Functional
 number choices are rounded tiles.
+
+«3 СЕНТЯБРЯ» keeps the shared navigation and purchase flow but adds a restrained
+burgundy, plum and terracotta theme. Its selected stage uses a subtle 03/09
+calendar mark, while the 33-number picker resembles a paper date grid with a
+soft marker-style selection. It adds no image, canvas or animation dependency.
 
 ## Эфир
 
