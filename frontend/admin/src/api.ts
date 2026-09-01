@@ -10,6 +10,7 @@ import type {
   Player,
   Transaction, TicketAnalytics,
   ReleaseNote,
+  ScheduleEntry,
 } from "./types";
 
 export class ApiError extends Error {
@@ -108,6 +109,7 @@ export const adminApi = {
   players: () => request<Player[]>("/players"),
   lotteries: () => request<Lottery[]>("/lotteries"),
   draws: allDraws,
+  schedule: () => request<ScheduleEntry[]>("/schedule"),
   draw: (id: string) => request<DrawDetail>(`/draws/${id}`),
   transactions: (query = "") =>
     request<Transaction[]>(`/transactions${query ? `?${query}` : ""}`),

@@ -170,6 +170,14 @@ class DrawResponse(ApiModel):
     correlation_id: UUID
 
 
+class ScheduleEntryResponse(ApiModel):
+    id: UUID
+    lottery_id: UUID
+    lottery_name: str
+    public_number: int
+    scheduled_at: datetime
+
+
 class DrawTicketResponse(ApiModel):
     id: UUID
     public_number: int
@@ -606,6 +614,16 @@ async def draws(
         lottery_id=lottery_id, status=draw_status, limit=limit, offset=offset
     )
     return [DrawResponse.model_validate(item) for item in items]
+
+
+@router.get("/schedule", response_model=list[ScheduleEntryResponse])
+async def daily_schedule(
+    _admin: Annotated[CurrentAdmin, Depends(get_current_admin)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    lottery_id: UUID | None = None,
+) -> list[ScheduleEntryResponse]:
+    items = await AdminQueryService(session).daily_schedule(lottery_id=lottery_id)
+    return [ScheduleEntryResponse.model_validate(item) for item in items]
 
 
 @router.get("/draws/{draw_id}", response_model=DrawDetailResponse)

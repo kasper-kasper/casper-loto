@@ -19,8 +19,9 @@ from k_loto.domain.enums import (
     TicketStatus,
     TransactionType,
 )
-from k_loto.domain.lotteries import draw_display_name
+from k_loto.domain.lotteries import MOSCOW, draw_display_name, is_fast_lottery
 from k_loto.domain.lottery_rules import get_lottery_rules
+from k_loto.domain.schedules import next_draw_at
 from k_loto.infrastructure.database.models import (
     AdminAuditLog,
     AutoPlaySetting,
@@ -127,6 +128,15 @@ class AdminDraw:
     reserve_used: int
     kasper_fund_used: int
     correlation_id: UUID
+
+
+@dataclass(frozen=True, slots=True)
+class AdminScheduleEntry:
+    id: UUID
+    lottery_id: UUID
+    lottery_name: str
+    public_number: int
+    scheduled_at: datetime
 
 
 @dataclass(frozen=True, slots=True)
@@ -748,6 +758,81 @@ class AdminQueryService:
             )
         ).all()
         return tuple(self._draw(draw, lottery) for draw, lottery in rows)
+
+    async def daily_schedule(
+        self,
+        *,
+        lottery_id: UUID | None = None,
+        now: datetime | None = None,
+    ) -> tuple[AdminScheduleEntry, ...]:
+        """Return the Moscow calendar day's draws for the owner timetable."""
+        timestamp = now or datetime.now(UTC)
+        local_day = timestamp.astimezone(MOSCOW).date()
+        local_start = datetime.combine(local_day, datetime.min.time(), tzinfo=MOSCOW)
+        start = local_start.astimezone(UTC)
+        end = (local_start + timedelta(days=1)).astimezone(UTC)
+        statement = (
+            select(Draw, Lottery)
+            .join(Lottery, Lottery.id == Draw.lottery_id)
+            .where(
+                Lottery.is_active.is_(True),
+                Draw.scheduled_at >= start,
+                Draw.scheduled_at < end,
+            )
+        )
+        if lottery_id is not None:
+            statement = statement.where(Draw.lottery_id == lottery_id)
+        rows = (
+            await self._session.execute(statement.order_by(Draw.scheduled_at))
+        ).all()
+        entries = [
+            AdminScheduleEntry(
+                id=draw.id,
+                lottery_id=lottery.id,
+                lottery_name=draw_display_name(
+                    lottery.code, lottery.name, draw.scheduled_at
+                ),
+                public_number=draw.public_number,
+                scheduled_at=draw.scheduled_at,
+            )
+            for draw, lottery in rows
+        ]
+
+        # Fast lotteries keep only a few future rows in the database. Project the
+        # rest of today's immutable sequence for the information board without
+        # creating draws, tickets, notifications, or scheduler work.
+        lotteries = {lottery.id: lottery for _, lottery in rows}
+        for lottery in lotteries.values():
+            if not is_fast_lottery(lottery.code):
+                continue
+            lottery_entries = [
+                entry for entry in entries if entry.lottery_id == lottery.id
+            ]
+            if not lottery_entries:
+                continue
+            scheduled_at = max(entry.scheduled_at for entry in lottery_entries)
+            public_number = lottery.next_draw_number
+            while True:
+                scheduled_at = next_draw_at(
+                    lottery.kind, scheduled_at, lottery.schedule
+                )
+                if scheduled_at >= end:
+                    break
+                entries.append(
+                    AdminScheduleEntry(
+                        id=uuid5(
+                            ADMIN_NAMESPACE,
+                            f"schedule:{lottery.id}:{scheduled_at.isoformat()}",
+                        ),
+                        lottery_id=lottery.id,
+                        lottery_name=lottery.name,
+                        public_number=public_number,
+                        scheduled_at=scheduled_at,
+                    )
+                )
+                public_number += 1
+
+        return tuple(sorted(entries, key=lambda item: item.scheduled_at))
 
     async def draw(
         self, draw_id: UUID

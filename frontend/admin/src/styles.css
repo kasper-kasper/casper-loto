@@ -190,3 +190,22 @@ tr.clickable:hover { background: rgba(217,182,102,.055); }
 @keyframes intelligence-scan { 0%,18% { top: 0; opacity: 0; } 35% { opacity: .38; } 72% { top: 100%; opacity: .15; } 100% { top: 100%; opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
 @media (max-width: 1350px) { .command-hero { grid-template-columns: 1fr .62fr .9fr; }.stat-grid { grid-template-columns: repeat(6,1fr); }.statistics-brief { grid-template-columns: 1.3fr repeat(3,1fr); } }
+
+/* 007 daily operations board. */
+.schedule-room { margin-top: 25px; }
+.schedule-command { display: flex; align-items: end; justify-content: space-between; padding: 8px 4px 20px; }
+.schedule-command small { color: #9c8250; font: 600 8px "IBM Plex Mono"; letter-spacing: .18em; }
+.schedule-command h2 { margin: 8px 0 0; color: #f1ead9; font: 500 31px Georgia,"Times New Roman",serif; text-transform: capitalize; }
+.schedule-command label { width: 270px; color: #746e62; font-size: 8px; }
+.schedule-command select { border-color: rgba(217,182,102,.22); background: #080f1d; }
+.schedule-head,.schedule-row { display: grid; grid-template-columns: 190px minmax(300px,1fr) 210px; align-items: center; }
+.schedule-head { padding: 0 28px 10px; color: #626b7b; font: 600 8px "IBM Plex Mono"; letter-spacing: .18em; }
+.schedule-head span:last-child { text-align: right; }
+.schedule-board { max-height: calc(100vh - 250px); overflow-y: auto; scroll-behavior: smooth; background: linear-gradient(180deg,rgba(12,21,37,.82),rgba(5,10,19,.9)); scrollbar-color: #8e7542 transparent; }
+.schedule-row { min-height: 67px; padding: 0 28px; color: #858e9e; transition: color .18s ease,background .18s ease; }
+.schedule-row strong { color: #778193; font: 500 22px "IBM Plex Mono"; }
+.schedule-row b { overflow: hidden; font: 500 20px Georgia,"Times New Roman",serif; text-overflow: ellipsis; white-space: nowrap; }
+.schedule-row time { color: #a5adba; font: 500 29px "IBM Plex Mono"; text-align: right; }
+.schedule-row.focused { color: #fff3d0; background: linear-gradient(90deg,rgba(191,151,64,.2),rgba(74,25,38,.13) 62%,rgba(191,151,64,.08)); box-shadow: inset 3px 0 #d9b666; }
+.schedule-row.focused strong,.schedule-row.focused time { color: #e7c878; }
+.schedule-empty { padding: 70px 28px; color: #626b7b; font: 500 11px "IBM Plex Mono"; text-align: center; letter-spacing: .15em; }

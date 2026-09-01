@@ -95,6 +95,14 @@ export interface DrawDetail {
   tickets: DrawTicket[];
 }
 
+export interface ScheduleEntry {
+  id: string;
+  lottery_id: string;
+  lottery_name: string;
+  public_number: number;
+  scheduled_at: string;
+}
+
 export interface NumberStatistic {
   number: number;
   appearances: number;

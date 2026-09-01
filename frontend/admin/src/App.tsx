@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
 import { ApiError, adminApi } from "./api";
@@ -13,23 +13,25 @@ import type {
   NotificationItem,
   Player,
   ReleaseNote,
+  ScheduleEntry,
   TicketAnalytics,
   Transaction,
 } from "./types";
 
-type View = "dashboard" | "players" | "lotteries" | "draws" | "ledger" | "statistics" | "ticket-analytics" | "notifications" | "audit" | "development";
+type View = "dashboard" | "players" | "lotteries" | "schedule" | "draws" | "ledger" | "statistics" | "ticket-analytics" | "notifications" | "audit" | "development";
 
 const navigation: { id: View; label: string; code: string }[] = [
   { id: "dashboard", label: "Обзор", code: "01" },
   { id: "players", label: "Игроки", code: "02" },
   { id: "lotteries", label: "Лотереи", code: "03" },
-  { id: "draws", label: "Архив тиражей", code: "04" },
-  { id: "ledger", label: "Журнал CAS", code: "05" },
-  { id: "statistics", label: "Статистика чисел", code: "06" },
-  { id: "ticket-analytics", label: "Аналитика билетов", code: "07" },
-  { id: "notifications", label: "Уведомления", code: "08" },
-  { id: "audit", label: "Аудит действий", code: "09" },
-  { id: "development", label: "Разработка", code: "10" },
+  { id: "schedule", label: "Расписание", code: "04" },
+  { id: "draws", label: "Архив тиражей", code: "05" },
+  { id: "ledger", label: "Журнал CAS", code: "06" },
+  { id: "statistics", label: "Статистика чисел", code: "07" },
+  { id: "ticket-analytics", label: "Аналитика билетов", code: "08" },
+  { id: "notifications", label: "Уведомления", code: "09" },
+  { id: "audit", label: "Аудит действий", code: "10" },
+  { id: "development", label: "Разработка", code: "11" },
 ];
 
 const viewStorageKey = "k-loto:admin-view";
@@ -90,6 +92,42 @@ function date(value: string | null): string {
 
 function drawNumber(value: number): string {
   return String(value).padStart(4, "0");
+}
+
+function ScheduleView({ entries, lotteries, loadedAt }: { entries: ScheduleEntry[]; lotteries: Lottery[]; loadedAt: number }) {
+  const [lotteryId, setLotteryId] = useState("");
+  const focusRef = useRef<HTMLDivElement | null>(null);
+  const visible = lotteryId ? entries.filter((entry) => entry.lottery_id === lotteryId) : entries;
+  const now = loadedAt;
+  const live = visible.find((entry) => {
+    const elapsed = now - new Date(entry.scheduled_at).getTime();
+    return elapsed >= 0 && elapsed <= 3 * 60_000;
+  });
+  const focused = live ?? visible.find((entry) => new Date(entry.scheduled_at).getTime() >= now) ?? visible.at(-1);
+
+  useEffect(() => {
+    focusRef.current?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+  }, [focused?.id, lotteryId]);
+
+  const day = entries[0]?.scheduled_at
+    ? new Intl.DateTimeFormat("ru-RU", { dateStyle: "long", timeZone: "Europe/Moscow" }).format(new Date(entries[0].scheduled_at))
+    : new Intl.DateTimeFormat("ru-RU", { dateStyle: "long", timeZone: "Europe/Moscow" }).format(new Date(loadedAt));
+
+  return <section className="schedule-room">
+    <header className="schedule-command">
+      <div><small>ОПЕРАЦИЯ // СУТОЧНЫЙ ПЛАН</small><h2>{day}</h2></div>
+      <label>ЛОТЕРЕЯ<select aria-label="Лотерея расписания" value={lotteryId} onChange={(event) => setLotteryId(event.target.value)}><option value="">Все лотереи</option>{lotteries.filter((lottery) => lottery.is_active).map((lottery) => <option key={lottery.id} value={lottery.id}>{lottery.name}</option>)}</select></label>
+    </header>
+    <div className="schedule-head"><span>ТИРАЖ</span><span>ЛОТЕРЕЯ</span><span>ВРЕМЯ МСК</span></div>
+    <div className="schedule-board">
+      {visible.map((entry) => <div className={`schedule-row ${entry.id === focused?.id ? "focused" : ""}`} key={entry.id} ref={entry.id === focused?.id ? focusRef : undefined}>
+        <strong>№{drawNumber(entry.public_number)}</strong>
+        <b>{entry.lottery_name}</b>
+        <time>{new Intl.DateTimeFormat("ru-RU", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Europe/Moscow" }).format(new Date(entry.scheduled_at))}</time>
+      </div>)}
+      {!visible.length && <div className="schedule-empty">НА СЕГОДНЯ ТИРАЖЕЙ НЕТ</div>}
+    </div>
+  </section>;
 }
 
 function Status({ active, children }: { active: boolean; children: ReactNode }) {
@@ -281,6 +319,8 @@ export default function App() {
   const [playerSearch, setPlayerSearch] = useState("");
   const [lotteries, setLotteries] = useState<Lottery[]>([]);
   const [draws, setDraws] = useState<Draw[]>([]);
+  const [scheduleEntries, setScheduleEntries] = useState<ScheduleEntry[]>([]);
+  const [scheduleLoadedAt, setScheduleLoadedAt] = useState(0);
   const [drawDetail, setDrawDetail] = useState<DrawDetail | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [statistics, setStatistics] = useState<NumberStatisticsReport | null>(null);
@@ -314,6 +354,12 @@ export default function App() {
       }
       if (target === "players") setPlayers(await adminApi.players());
       if (target === "lotteries") setLotteries(await adminApi.lotteries());
+      if (target === "schedule") {
+        const [entries, available] = await Promise.all([adminApi.schedule(), adminApi.lotteries()]);
+        setScheduleEntries(entries);
+        setLotteries(available);
+        setScheduleLoadedAt(Date.now());
+      }
       if (target === "draws") setDraws(await adminApi.draws());
       if (target === "ledger") setTransactions(await adminApi.transactions());
       if (target === "audit") setAudit(await adminApi.audit());
@@ -353,6 +399,7 @@ export default function App() {
       {!loading && view === "dashboard" && dashboard && ticketAnalytics && <DashboardView data={dashboard} analytics={ticketAnalytics} />}
       {!loading && view === "players" && <><div className="owner-search"><input aria-label="Поиск игрока" placeholder="Имя, username, Telegram ID или UUID" value={playerSearch} onChange={(event) => setPlayerSearch(event.target.value)} /></div><section className="stack">{players.filter((player) => { const query = playerSearch.trim().toLowerCase(); return !query || `${player.display_name} ${player.username ?? ""} ${player.telegram_id ?? ""} ${player.id}`.toLowerCase().includes(query); }).map((player) => <PlayerCard key={player.id} player={player} onSaved={() => load("players")} />)}</section></>}
       {!loading && view === "lotteries" && <section className="stack">{lotteries.filter((lottery) => lottery.is_active).map((lottery) => <LotteryCard key={lottery.id} lottery={lottery} onSaved={() => load("lotteries")} />)}</section>}
+      {!loading && view === "schedule" && <ScheduleView entries={scheduleEntries} lotteries={lotteries} loadedAt={scheduleLoadedAt} />}
       {!loading && view === "draws" && <section className="panel"><header><h2>Постоянный архив тиражей</h2><span>ТОЛЬКО ПРОСМОТР</span></header><DrawTable draws={draws} onOpen={(id) => void adminApi.draw(id).then(setDrawDetail)} /></section>}
       {!loading && view === "ledger" && <><TransactionFilters onApply={(query) => void adminApi.transactions(query).then(setTransactions).catch((reason: Error) => setError(reason.message))} /><section className="panel"><header><h2>Неизменяемый журнал CAS</h2><span>ЗАПИСЕЙ: {transactions.length}</span></header><TransactionTable rows={transactions} /></section></>}
       {!loading && view === "statistics" && statistics && <StatisticsView lotteries={lotteries} report={statistics} selectedLotteryId={statisticsLotteryId} windowSize={statisticsWindow} onLottery={setStatisticsLotteryId} onWindow={setStatisticsWindow} />}

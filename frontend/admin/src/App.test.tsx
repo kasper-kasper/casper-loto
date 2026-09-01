@@ -3,13 +3,13 @@ import { vi } from "vitest";
 
 import App from "./App";
 import { adminApi } from "./api";
-import type { Dashboard, Lottery, NumberStatisticsReport, Player, TicketAnalytics } from "./types";
+import type { Dashboard, Lottery, NumberStatisticsReport, Player, ScheduleEntry, TicketAnalytics } from "./types";
 
 vi.mock("./api", () => ({
   ApiError: class ApiError extends Error { status = 500; },
   adminApi: {
     login: vi.fn(), session: vi.fn(), logout: vi.fn(), dashboard: vi.fn(),
-    players: vi.fn(), lotteries: vi.fn(), draws: vi.fn(), draw: vi.fn(),
+    players: vi.fn(), lotteries: vi.fn(), schedule: vi.fn(), draws: vi.fn(), draw: vi.fn(),
     transactions: vi.fn(), statistics: vi.fn(), ticketAnalytics: vi.fn(), audit: vi.fn(),
     notifications: vi.fn(), releaseNotes: vi.fn(),
     setBalance: vi.fn(), configureLottery: vi.fn(), setReserve: vi.fn(),
@@ -23,6 +23,7 @@ const dashboard: Dashboard = { version: "0.8.0", uptime_seconds: 120, database_h
 const player: Player = { id: "player", display_name: "Test Player", username: "player", telegram_id: 123, is_active: true, balance: 5_000, ticket_count: 6, spent: 600, won: 250, net: -350, telegram_notifications_enabled: false, auto_play_enabled: false, auto_play_tickets_per_draw: 5, auto_play_last_succeeded_at: null, auto_play_last_error: null };
 const analytics: TicketAnalytics = { overall: { lottery_id: null, lottery_name: "Все лотереи", is_active: null, total_tickets: 100, active_tickets: 10, settled_tickets: 90, winning_tickets: 21, participants: 8, winning_players: 5, total_sales: 10_000, total_payout: 2_500 }, lotteries: [{ lottery_id: "lottery", lottery_name: "Weekly 5/20", is_active: true, total_tickets: 100, active_tickets: 10, settled_tickets: 90, winning_tickets: 21, participants: 8, winning_players: 5, total_sales: 10_000, total_payout: 2_500 }] };
 const numberStatistics: NumberStatisticsReport = { lottery_id: "lottery", lottery_name: "Weekly 5/20", period_start: "2026-08-31T21:00:00Z", window_size: 20, draw_count: 2, first_draw_at: "2026-09-01T09:00:00Z", last_draw_at: "2026-09-01T15:00:00Z", numbers: [{ number: 7, appearances: 2, draw_percentage: 100, last_appearance: "2026-09-01T15:00:00Z", draws_since_last: 0 }] };
+const scheduleEntries: ScheduleEntry[] = [{ id: "scheduled-draw", lottery_id: "lottery", lottery_name: "Weekly 5/20", public_number: 8, scheduled_at: "2026-09-02T17:00:00Z" }];
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -35,6 +36,7 @@ beforeEach(() => {
   vi.mocked(adminApi.players).mockResolvedValue([player]);
   vi.mocked(adminApi.lotteries).mockResolvedValue([lottery]);
   vi.mocked(adminApi.draws).mockResolvedValue([]);
+  vi.mocked(adminApi.schedule).mockResolvedValue(scheduleEntries);
   vi.mocked(adminApi.transactions).mockResolvedValue([]);
   vi.mocked(adminApi.statistics).mockResolvedValue(numberStatistics);
   vi.mocked(adminApi.ticketAnalytics).mockResolvedValue(analytics);
@@ -86,9 +88,22 @@ it("exposes immutable archive, ledger, statistics and audit navigation", async (
   render(<App />);
   await screen.findByText("БАЗА ДАННЫХ РАБОТАЕТ");
 
-  for (const label of ["Архив тиражей", "Журнал CAS", "Статистика чисел", "Аудит действий", "Разработка"]) {
+  for (const label of ["Расписание", "Архив тиражей", "Журнал CAS", "Статистика чисел", "Аудит действий", "Разработка"]) {
     expect(screen.getByRole("button", { name: new RegExp(label) })).toBeInTheDocument();
   }
+});
+
+it("loads the daily schedule only after opening its section", async () => {
+  render(<App />);
+  await screen.findByText("БАЗА ДАННЫХ РАБОТАЕТ");
+  expect(adminApi.schedule).not.toHaveBeenCalled();
+
+  fireEvent.click(screen.getByRole("button", { name: /Расписание/ }));
+
+  expect(await screen.findByText("№0008")).toBeInTheDocument();
+  expect(screen.getByText("20:00")).toBeInTheDocument();
+  expect(screen.getByLabelText("Лотерея расписания")).toBeInTheDocument();
+  expect(adminApi.schedule).toHaveBeenCalledOnce();
 });
 
 it("shows complete changelog and devlog in separate protected tabs", async () => {

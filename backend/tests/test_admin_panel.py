@@ -377,6 +377,110 @@ async def test_number_statistics_are_derived_from_completed_draw_history() -> No
     assert stats[3].last_appearance is None
 
 
+async def test_daily_schedule_returns_moscow_day_in_chronological_order() -> None:
+    lottery = Lottery(
+        id=UUID(int=45),
+        code="pll",
+        name="ПЛЛ-лото",
+        kind=LotteryKind.DAILY,
+        ruleset_code="daily_4_15",
+        numbers_to_pick=4,
+        max_number=15,
+        ticket_price=24_000,
+        timezone="Europe/Moscow",
+        schedule={"slots": ["02:22", "13:45"]},
+        sales_cutoff_minutes=2,
+        is_active=True,
+        next_draw_number=3,
+        next_ticket_number=1,
+    )
+    first = Draw(
+        id=UUID(int=46),
+        lottery_id=lottery.id,
+        public_number=1,
+        status=DrawStatus.COMPLETED,
+        scheduled_at=datetime(2026, 9, 1, 23, 22, tzinfo=UTC),
+        sales_close_at=datetime(2026, 9, 1, 23, 20, tzinfo=UTC),
+        correlation_id=UUID(int=47),
+        ticket_count=0,
+        total_sales=0,
+        total_payout=0,
+        reserve_used=0,
+    )
+    second = Draw(
+        id=UUID(int=48),
+        lottery_id=lottery.id,
+        public_number=2,
+        status=DrawStatus.SCHEDULED,
+        scheduled_at=datetime(2026, 9, 2, 10, 45, tzinfo=UTC),
+        sales_close_at=datetime(2026, 9, 2, 10, 43, tzinfo=UTC),
+        correlation_id=UUID(int=49),
+        ticket_count=0,
+        total_sales=0,
+        total_payout=0,
+        reserve_used=0,
+    )
+    fake = FakeSession(
+        scalar_values=[], execute_rows=[[(first, lottery), (second, lottery)]]
+    )
+
+    rows = await AdminQueryService(cast(AsyncSession, fake)).daily_schedule(
+        now=datetime(2026, 9, 2, 9, tzinfo=UTC)
+    )
+
+    assert [(row.public_number, row.lottery_name) for row in rows] == [
+        (1, "ПЛЛ-лото"),
+        (2, "ПЛЛ-лото"),
+    ]
+
+
+async def test_daily_schedule_projects_fast_rounds_without_creating_draws() -> None:
+    lottery = Lottery(
+        id=UUID(int=60),
+        code="flash",
+        name="FLASH",
+        kind=LotteryKind.DAILY,
+        ruleset_code="fast_3_15",
+        numbers_to_pick=3,
+        max_number=15,
+        ticket_price=888,
+        timezone="Europe/Moscow",
+        schedule={
+            "type": "interval",
+            "interval_minutes": 20,
+            "anchor_time": "00:00",
+        },
+        sales_cutoff_minutes=1,
+        is_active=True,
+        next_draw_number=2,
+        next_ticket_number=1,
+    )
+    first = Draw(
+        id=UUID(int=61),
+        lottery_id=lottery.id,
+        public_number=1,
+        status=DrawStatus.COMPLETED,
+        scheduled_at=datetime(2026, 9, 1, 21, 0, tzinfo=UTC),
+        sales_close_at=datetime(2026, 9, 1, 20, 59, tzinfo=UTC),
+        correlation_id=UUID(int=62),
+        ticket_count=0,
+        total_sales=0,
+        total_payout=0,
+        reserve_used=0,
+    )
+    fake = FakeSession(scalar_values=[], execute_rows=[[(first, lottery)]])
+
+    rows = await AdminQueryService(cast(AsyncSession, fake)).daily_schedule(
+        now=datetime(2026, 9, 2, 9, tzinfo=UTC)
+    )
+
+    assert len(rows) == 72
+    assert rows[0].public_number == 1
+    assert rows[-1].public_number == 72
+    assert rows[-1].scheduled_at == datetime(2026, 9, 2, 20, 40, tzinfo=UTC)
+    assert fake.added == []
+
+
 async def test_ticket_analytics_uses_aggregate_rows() -> None:
     lottery_id = UUID(int=50)
     fake = FakeSession(
@@ -407,6 +511,7 @@ def test_admin_routes_cover_milestone_and_completed_draws_have_no_mutation() -> 
         "/api/v1/admin/lotteries/{lottery_id}/reserve-adjustments",
         "/api/v1/admin/transactions",
         "/api/v1/admin/draws",
+        "/api/v1/admin/schedule",
         "/api/v1/admin/draws/{draw_id}",
         "/api/v1/admin/lotteries/{lottery_id}/number-statistics",
         "/api/v1/admin/ticket-analytics",
