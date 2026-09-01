@@ -3,6 +3,7 @@ import { vi } from "vitest";
 
 import App from "./App";
 import { miniAppApi } from "./api";
+import { MINIAPP_TEXTS } from "./content";
 import type { Account, Dashboard, Ticket } from "./types";
 
 vi.mock("./api", () => ({
@@ -251,7 +252,7 @@ it("shows one simple notification control and no auto-play panel", async () => {
   expect(await screen.findByRole("button", { name: "Включить уведомления" })).toBeInTheDocument();
   expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
   expect(screen.queryByText("Автоучастие")).not.toBeInTheDocument();
-  expect(screen.getByText("Хотел написать «СВОЁ», но не стал…")).toBeInTheDocument();
+  expect(screen.getByText(MINIAPP_TEXTS.account.subtitle)).toBeInTheDocument();
 });
 
 it("renders losing history as neutral and winning history as rewarded", async () => {
