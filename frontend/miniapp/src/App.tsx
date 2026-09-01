@@ -75,11 +75,24 @@ function TicketGroups({ tickets }: { tickets: Ticket[] }) {
   })}</div>;
 }
 
+function LotterySigil({ code }: { code: string }) {
+  const marks: Record<string, [string, string]> = {
+    pll: ["02", "22"],
+    pss: ["12", "00"],
+    khan: ["18", "00"],
+    weekly: ["05", "20"],
+    september: ["03", "09"],
+  };
+  const [first, second] = marks[code] ?? ["K", "22"];
+  return <div className={`lottery-sigil sigil-${code}`} aria-hidden="true"><span>{first}</span><i /><b>{second}</b></div>;
+}
+
 function NextDraw({ lottery, now, nearest, onLive, onPlay }: { lottery: Lottery; now: number; nearest: boolean; onLive: () => void; onPlay: () => void }) {
   const startsIn = lottery.scheduled_at ? new Date(lottery.scheduled_at).getTime() - now : Infinity;
   return <section className={`next-draw featured-draw lottery-${lottery.code}`}>
     <div className="featured-mesh" aria-hidden="true" />
-    {lottery.code === "september" && <div className="september-date-mark" aria-hidden="true"><strong>03</strong><span>09</span></div>}
+    <LotterySigil code={lottery.code} />
+    {lottery.code === "september" && <div className="september-date-mark" aria-hidden="true"><small>СЕНТЯБРЬ</small><strong>03</strong><span>09</span></div>}
     <div className="next-draw-accent"><span>{nearest ? "Ближайший тираж" : "Выбранная лотерея"}</span><i /></div>
     <div className="featured-title"><div><small>{lottery.kind} · {lottery.numbers_to_pick}/{lottery.max_number}</small><strong>{lottery.name}</strong><span>{lottery.draw_number ? `Тираж #${formatDraw(lottery.draw_number)}` : "Расписание готовится"}</span></div><div className="featured-jackpot"><span>{lottery.code === "september" ? copy.september.mainPrizeLabel : "Джекпот"}</span><strong>{formatCas(lottery.jackpot)}</strong></div></div>
     <div className="featured-timing"><div className="countdown"><span>До старта</span><strong>{countdown(lottery.scheduled_at, now)}</strong></div><div><span>Ваши билеты</span><strong>{lottery.player_ticket_count}</strong></div></div>
@@ -444,7 +457,7 @@ export default function App({ initData, localDev = false }: AppProps) {
   if (pickerLottery) return <main className="app-shell picker-page"><NumberPicker lottery={pickerLottery} purchasing={purchasing} success={purchaseSuccess} initialNumbers={pickerInitialNumbers} favorites={favorites} cartRemaining={CART_MAX_TICKETS - cart.length} onAdd={(numbers, drawCount) => addManyToCart(pickerLottery, [numbers], drawCount)} onAddMany={(combinations, drawCount) => addManyToCart(pickerLottery, combinations, drawCount)} onBuy={(numbers, drawCount) => void purchaseSingle(pickerLottery.code, numbers, drawCount)} onSaveFavorite={(numbers) => void saveFavorite(numbers)} onDeleteFavorite={(id) => void deleteFavorite(id)} onClose={() => setPickerLottery(null)} /></main>;
 
   return <main className="app-shell">
-    <header className="app-header"><div aria-label="Каспер" className="wordmark"><span aria-hidden="true">К</span><div aria-hidden="true">{copy.header.brandContinuation}</div></div><div className="header-actions">{localDev && <button className="dev-badge" onClick={() => void refillDevBalance()} type="button">+ TEST CAS</button>}<Balance value={dashboard.balance} /></div></header>
+    <header className="app-header"><div aria-label="Каспер" className="wordmark" data-club="2:22"><span aria-hidden="true">К</span><div aria-hidden="true">{copy.header.brandContinuation}</div></div><div className="header-actions">{localDev && <button className="dev-badge" onClick={() => void refillDevBalance()} type="button">+ TEST CAS</button>}<Balance value={dashboard.balance} /></div></header>
     {updateAvailable && <aside className="update-banner"><span><strong>Доступно обновление</strong><small>Корзина сохранена на этом устройстве.</small></span><button onClick={() => window.location.reload()} type="button">Обновить</button></aside>}
     {(error || notice) && <button className={`toast ${error ? "error" : "success"}`} onClick={() => { setError(null); setNotice(null); }} type="button"><span>{error ? "!" : "✓"}</span>{error ?? notice}<Icon name="close" /></button>}
     {showNotificationPrompt && <div className="permission-backdrop"><section className="permission-card"><div className="permission-mark"><Icon name="profile" /></div><span className="eyebrow">{copy.notifications.promptEyebrow}</span><h2>{copy.notifications.promptTitle}</h2><p>{copy.notifications.promptText}</p><PrimaryButton onClick={() => void enableTelegramNotifications()}>{copy.notifications.enable}</PrimaryButton><button className="permission-later" onClick={dismissNotificationPrompt} type="button">{copy.notifications.promptLater}</button></section></div>}

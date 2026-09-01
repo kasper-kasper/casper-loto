@@ -520,3 +520,131 @@ h1, h2, h3, p { margin-top: 0; }
   .replay-row { grid-template-columns: 36px minmax(0, 1fr) auto; }.replay-numbers { display: none; }
   .replay-row > b { font-size: 0; }.replay-row > b::after { content: "→"; font-size: 12px; }
 }
+
+/* v1.3 — K-Loto Design 2.0: 2:22 club system, expressive live room and September edition. */
+body { background:
+  radial-gradient(circle at 88% 2%, rgba(54,98,208,.13), transparent 28rem),
+  radial-gradient(circle at -10% 55%, rgba(126,35,73,.11), transparent 25rem),
+  linear-gradient(180deg, #050d27, #040b20 55%, #060d23);
+}
+body::before { width: 1px; height: 100vh; top: 0; right: 22%; background: rgba(121,156,243,.12); filter: none; opacity: .25; }
+body::after { width: 42vw; height: 100vh; top: 0; left: 8%; background: repeating-linear-gradient(90deg, transparent 0 21px, rgba(121,156,243,.025) 21px 22px); filter: none; opacity: .7; transform: skewX(-8deg); }
+
+.app-header { margin-bottom: 21px; }
+.wordmark { position: relative; padding-bottom: 8px; }
+.wordmark::after { content: attr(data-club); position: absolute; left: 42px; bottom: -1px; color: #6f82b3; font-size: 6px; font-weight: 850; letter-spacing: .3em; }
+.wordmark > span { overflow: hidden; width: 40px; height: 40px; border-radius: 11px 11px 15px 11px; transform: none; }
+.wordmark > span::before, .wordmark > span::after { content: ""; position: absolute; width: 28px; height: 1px; left: -6px; background: rgba(29,22,8,.25); transform: rotate(-45deg); }
+.wordmark > span::before { top: 10px; }.wordmark > span::after { bottom: 8px; left: 17px; }
+.wordmark > div { padding: 8px 13px 9px 11px; border-radius: 0 13px 13px 0; background: linear-gradient(100deg, rgba(24,45,91,.92), rgba(9,21,50,.35)); font-size: 17px; letter-spacing: .1em; }
+.balance { border-radius: 12px 12px 17px 12px; }
+
+.hero-copy.refreshed { position: relative; padding-left: 13px; }
+.hero-copy.refreshed::before { content: ""; position: absolute; left: 0; top: 3px; bottom: 2px; width: 3px; border-radius: 3px; background: linear-gradient(var(--blue-soft), rgba(185,74,114,.65)); box-shadow: 0 0 18px rgba(71,124,240,.24); }
+.hero-copy.refreshed h1 { max-width: 390px; letter-spacing: -.038em; }
+
+.featured-draw { min-height: 326px; border-radius: 23px 23px 31px 23px; box-shadow: 0 24px 58px rgba(0,0,0,.28), inset 0 1px rgba(255,255,255,.05); }
+.featured-draw::before { content: ""; position: absolute; z-index: 1; left: 18px; right: 18px; top: 0; height: 2px; background: linear-gradient(90deg, var(--lottery-accent), transparent 78%); opacity: .7; }
+.featured-draw::after { background-image: linear-gradient(90deg, transparent 49.3%, rgba(133,164,237,.2) 50%), linear-gradient(transparent 49.3%, rgba(133,164,237,.12) 50%); background-size: 22px 22px; mask-image: linear-gradient(115deg, transparent 20%, #000); }
+.featured-title > div:first-child strong { max-width: 255px; line-height: .98; text-wrap: balance; }
+.featured-jackpot { padding: 9px 0 9px 14px; border-left: 1px solid color-mix(in srgb, var(--lottery-accent) 20%, transparent); }
+.featured-timing { overflow: hidden; border-radius: 15px 15px 20px 15px; background: linear-gradient(110deg, rgba(3,11,31,.54), rgba(15,30,65,.4)); }
+.featured-timing::after { content: "2:22"; position: absolute; right: 77px; bottom: -13px; color: rgba(163,184,235,.035); font-size: 52px; font-weight: 900; letter-spacing: -.08em; }
+.featured-actions .live-cta { border-color: color-mix(in srgb, var(--lottery-accent) 24%, transparent); background: color-mix(in srgb, var(--lottery-glow) 9%, rgba(10,24,55,.88)); }
+.lottery-sigil { position: absolute !important; z-index: 1 !important; top: 44px; right: 18px; display: grid; grid-template-columns: auto 20px auto; align-items: center; color: color-mix(in srgb, var(--lottery-accent) 32%, transparent); font-variant-numeric: tabular-nums; transform: rotate(-6deg); pointer-events: none; }
+.lottery-sigil span, .lottery-sigil b { font-size: 31px; font-weight: 900; letter-spacing: -.12em; }
+.lottery-sigil b { font-size: 18px; font-weight: 700; }
+.lottery-sigil i { height: 1px; margin: 0 7px; background: currentColor; }
+.sigil-september { display: none; }
+
+.lottery-switcher { padding-block: 5px; }
+.lottery-switch { min-height: 86px; border-radius: 13px 13px 19px 13px; }
+.lottery-switch::after { content: ""; position: absolute; top: 0; right: 14px; width: 1px; height: 25px; background: linear-gradient(var(--lottery-accent), transparent); opacity: .4; }
+.lottery-switch.selected { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(0,0,0,.18), inset 0 1px rgba(255,255,255,.04); }
+.lottery-switch.selected i { left: 9px; right: auto; width: 22px; height: 3px; }
+.monthly-payout { position: relative; overflow: hidden; border-radius: 14px 14px 20px 14px; }
+.monthly-payout::after { content: "222"; position: absolute; right: 9px; bottom: -15px; color: rgba(239,199,110,.035); font-size: 52px; font-weight: 900; }
+.monthly-payout strong { position: relative; z-index: 1; }
+
+.pick-number { overflow: hidden; border-radius: 11px 11px 16px 11px; }
+.pick-number::before { content: ""; position: absolute; left: 7px; right: 7px; bottom: 5px; height: 1px; background: currentColor; opacity: .11; transform: scaleX(.35); transition: opacity var(--normal), transform var(--normal) var(--ease); }
+.pick-number:active span { transform: scale(.88); }
+.pick-number.selected { transform: none; animation: number-lock 340ms var(--ease) both; }
+.pick-number.selected::before { opacity: .42; transform: scaleX(1); }
+.selected-combination, .picker-summary, .multi-draw-choice { border-radius: 14px 14px 19px 14px; }
+.random-button { border-style: dashed; }
+
+.ticket-draw-group, .cart-group, .ticket-card { border-radius: 17px 17px 23px 17px; }
+.ticket-draw-group::before, .cart-group::before { content: ""; display: block; width: 44px; height: 2px; margin-left: 15px; background: var(--lottery-accent); opacity: .55; }
+.ticket-card.winner::before { content: ""; position: absolute; top: 0; left: 17px; width: 48px; height: 2px; background: var(--gold); box-shadow: 0 0 14px rgba(239,199,110,.4); }
+
+.bottom-nav { bottom: 7px; width: min(calc(100% - 20px), 520px); min-height: 68px; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); border: 1px solid rgba(137,157,204,.17); border-radius: 18px 18px 24px 18px; background: linear-gradient(110deg, rgba(8,19,46,.94), rgba(13,24,54,.95) 60%, rgba(30,14,38,.94)); box-shadow: 0 18px 50px rgba(0,0,0,.38), inset 0 1px rgba(255,255,255,.045); }
+.bottom-nav::before { content: "2:22"; position: absolute; top: -9px; left: 50%; padding: 1px 7px 2px; border: 1px solid rgba(121,156,243,.16); border-radius: 7px; color: #7181a8; background: #07122f; font-size: 6px; font-weight: 900; letter-spacing: .18em; transform: translateX(-50%); }
+.bottom-nav button { color: #68779e; }
+.bottom-nav button > span { border-radius: 9px 9px 13px 9px; }
+.bottom-nav button.active { color: #dce6ff; }
+.bottom-nav button.active > span { border-color: rgba(121,156,243,.25); background: linear-gradient(145deg, rgba(71,124,240,.17), rgba(126,35,73,.08)); box-shadow: 0 5px 18px rgba(0,0,0,.2), inset 0 1px rgba(255,255,255,.05); }
+.nav-indicator { bottom: 1px; width: 20px; height: 2px; border-radius: 3px; background: linear-gradient(90deg, var(--blue-soft), var(--burgundy-soft)); box-shadow: 0 0 12px rgba(71,124,240,.38); }
+.bottom-nav button.active .icon { filter: drop-shadow(0 0 7px rgba(121,156,243,.28)); }
+
+.live-stage { isolation: isolate; border-radius: 21px 21px 29px 21px; background: linear-gradient(158deg, rgba(16,35,78,.98), rgba(5,14,36,.99) 56%, rgba(31,12,38,.97)); }
+.live-stage > *:not(.live-grid):not(.live-ambient):not(.live-club-scene) { position: relative; z-index: 3; }
+.live-club-scene { position: absolute; z-index: 1; inset: 0; overflow: hidden; pointer-events: none; }
+.live-ghost-number { position: absolute; color: rgba(142,166,224,.035); font-size: clamp(170px, 56vw, 260px); font-weight: 950; line-height: .75; letter-spacing: -.14em; user-select: none; }
+.ghost-first { top: 19%; left: -28px; animation: ghost-drift-a 16s ease-in-out infinite alternate; }
+.ghost-second { right: -44px; bottom: 11%; animation: ghost-drift-b 19s ease-in-out infinite alternate; }
+.live-rails { position: absolute; inset: 0; opacity: .3; transform: skewX(-9deg); }
+.live-rails i { position: absolute; top: 0; bottom: 0; width: 1px; background: linear-gradient(transparent, rgba(121,156,243,.24) 22%, rgba(185,74,114,.14) 76%, transparent); }
+.live-rails i:first-child { left: 22%; }.live-rails i:nth-child(2) { left: 50%; }.live-rails i:last-child { right: 22%; }
+.phase-starting .live-club-scene, .phase-revealing .live-club-scene { animation: scene-awake 2.8s ease-in-out infinite alternate; }
+.phase-revealing .live-grid { opacity: .25; animation: grid-travel 8s linear infinite; }
+.live-countdown { position: relative; border-color: rgba(142,166,224,.12); background: radial-gradient(circle at 50% 50%, rgba(48,93,197,.07), transparent 60%); }
+.live-countdown strong { text-shadow: 0 8px 34px rgba(71,124,240,.16); }
+.result-preview { border-radius: 13px 13px 19px 13px; }
+.result-preview i, .live-sequence i { border-radius: 8px 8px 12px 8px; }
+.live-reveal > strong { position: relative; border-radius: 23px 23px 35px 23px; background: linear-gradient(145deg, rgba(239,199,110,.13), rgba(18,38,84,.88) 58%, rgba(88,25,52,.35)); }
+.live-reveal > strong::before, .live-reveal > strong::after { content: ""; position: absolute; background: var(--gold); opacity: .35; }
+.live-reveal > strong::before { width: 32px; height: 2px; top: 13px; left: -8px; }.live-reveal > strong::after { width: 2px; height: 32px; right: 13px; bottom: -8px; }
+.live-facts > div, .live-next, .personal-result { border-radius: 13px 13px 19px 13px; }
+
+.featured-draw.lottery-september { min-height: 350px; border-color: rgba(226,164,132,.36); background:
+  radial-gradient(circle at 82% 15%, rgba(217,117,78,.2), transparent 29%),
+  linear-gradient(151deg, #63283a 0%, #34192d 43%, #101832 76%, #0a132b 100%);
+  box-shadow: 0 26px 62px rgba(33,5,16,.38), inset 0 1px rgba(255,231,207,.065);
+}
+.featured-draw.lottery-september::before { background: linear-gradient(90deg, #e3a17f, rgba(227,161,127,.1) 76%, transparent); }
+.featured-draw.lottery-september::after { opacity: .16; background-image: linear-gradient(rgba(246,221,201,.2) 1px, transparent 1px), linear-gradient(90deg, rgba(246,221,201,.16) 1px, transparent 1px); background-size: 27px 27px; mask-image: linear-gradient(125deg, transparent 12%, black 92%); }
+.september-date-mark { top: 19px; right: 17px; width: 91px; height: 109px; padding: 18px 13px 10px; overflow: hidden; border-color: rgba(255,225,204,.23); border-radius: 7px 7px 24px 7px; color: rgba(255,229,209,.16); background: linear-gradient(145deg, rgba(255,227,205,.11), rgba(77,20,38,.07)); box-shadow: 8px 12px 32px rgba(22,5,12,.13); transform: rotate(2.5deg); }
+.september-date-mark::before { top: 14px; height: 2px; background: linear-gradient(90deg, #d8967b 0 18px, rgba(246,221,201,.13) 18px); }
+.september-date-mark::after { content: ""; position: absolute; right: -16px; bottom: -16px; width: 32px; height: 32px; border: 1px solid rgba(255,225,204,.16); transform: rotate(45deg); }
+.september-date-mark small { margin-bottom: 9px; color: rgba(255,229,209,.33); font-size: 5px; font-weight: 850; letter-spacing: .25em; }
+.september-date-mark strong { color: rgba(255,229,209,.18); font-size: 48px; }.september-date-mark span { color: rgba(255,229,209,.22); }
+.featured-draw.lottery-september .featured-title > div:first-child strong { font-family: Georgia, "Times New Roman", serif; font-weight: 600; letter-spacing: -.055em; }
+.featured-draw.lottery-september .featured-jackpot strong { color: #f2c1a6; }
+.featured-draw.lottery-september .featured-timing { border-color: rgba(226,164,132,.18); background: linear-gradient(110deg, rgba(52,17,33,.46), rgba(9,20,43,.55)); }
+.picker-shell.lottery-september .picker-heading { position: relative; overflow: hidden; border-radius: 14px 14px 23px 14px; }
+.picker-shell.lottery-september .picker-heading::after { content: "03 09"; position: absolute; right: -7px; bottom: -17px; color: rgba(255,225,203,.045); font: 900 58px/1 Georgia, serif; letter-spacing: -.1em; }
+.picker-shell.lottery-september .number-grid { position: relative; border-radius: 14px 14px 24px 14px; background: linear-gradient(145deg, rgba(85,31,45,.48), rgba(17,22,45,.79)); }
+.picker-shell.lottery-september .number-grid::before { content: "СЕНТЯБРЬ · 03 / 09"; grid-column: 1 / -1; padding: 0 2px 8px; border-bottom: 1px solid rgba(216,150,123,.13); color: rgba(233,200,183,.45); font-size: 6px; font-weight: 850; letter-spacing: .19em; }
+.picker-shell.lottery-september .pick-number.selected { animation: september-mark 360ms var(--ease) both; }
+.live-stage.lottery-september { border-color: rgba(216,150,123,.3); background: radial-gradient(circle at 75% 16%, rgba(185,79,62,.16), transparent 30%), linear-gradient(155deg, #512136, #19162e 48%, #08142f); }
+.live-september-mark { position: absolute; top: 14%; right: -11px; display: grid; width: 122px; height: 145px; padding: 18px; align-content: center; border: 1px solid rgba(255,224,200,.09); border-radius: 7px 7px 28px 7px; color: rgba(255,224,200,.075); transform: rotate(5deg); }
+.live-september-mark small { font-size: 6px; letter-spacing: .28em; }.live-september-mark strong { font: 600 70px/.85 Georgia, serif; }.live-september-mark span { font: 700 16px/1 Georgia, serif; text-align: right; }
+.live-stage.lottery-september .live-ambient { background: #a23d47; opacity: .18; }
+.live-stage.lottery-september .live-reveal > strong { color: #ffd7bd; border-color: rgba(216,150,123,.5); background: linear-gradient(145deg, rgba(154,61,75,.44), rgba(36,22,46,.9)); box-shadow: 0 0 0 8px rgba(216,150,123,.035), 0 20px 55px rgba(34,5,17,.35), 0 0 42px rgba(123,38,61,.18); }
+
+@keyframes number-lock { 0% { transform: scale(.86); } 62% { transform: scale(1.045); } 100% { transform: scale(1); } }
+@keyframes september-mark { 0% { transform: scale(.9) rotate(-2deg); } 66% { transform: scale(1.04) rotate(1deg); } 100% { transform: scale(1); } }
+@keyframes ghost-drift-a { to { transform: translate(17px, -10px) rotate(-2deg); opacity: .75; } }
+@keyframes ghost-drift-b { to { transform: translate(-14px, 13px) rotate(2deg); opacity: .68; } }
+@keyframes scene-awake { to { filter: saturate(1.18); opacity: .83; } }
+@keyframes grid-travel { to { background-position: 32px 32px; } }
+
+@media (max-width: 359px) {
+  .wordmark > span { width: 36px; height: 36px; }
+  .wordmark > div { padding-inline: 9px 8px; font-size: 15px; }
+  .wordmark::after { left: 38px; }
+  .featured-draw { padding: 17px; }
+  .lottery-sigil { right: 12px; opacity: .65; }
+  .september-date-mark { right: 12px; width: 78px; }
+}

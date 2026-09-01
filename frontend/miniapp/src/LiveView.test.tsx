@@ -49,4 +49,17 @@ describe("personalised live result", () => {
     expect(screen.getByText("Это цифровой повтор сохранённого результата.")).toBeInTheDocument();
     vi.unstubAllGlobals();
   });
+
+  it("uses the dedicated 3 of 33 presentation for the September lottery", () => {
+    renderResult({
+      ...baseDraw,
+      lottery_code: "september",
+      lottery_name: "3 СЕНТЯБРЯ",
+      winning_numbers: [3, 9, 33],
+      reveal_at: [0, 1, 2].map((index) => new Date(startsAt + LIVE_REVEAL_LEAD_MS + index * LIVE_REVEAL_INTERVAL_MS).toISOString()),
+    });
+    expect(screen.getByText("DAILY · 3 ИЗ 33")).toBeInTheDocument();
+    expect(document.querySelector(".live-september-mark")).not.toBeNull();
+    expect(document.querySelectorAll(".live-final-numbers i")).toHaveLength(3);
+  });
 });
