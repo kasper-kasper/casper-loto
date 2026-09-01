@@ -31,7 +31,7 @@
 
 Технически:
 
-- migration: `0022_kasper_fund`;
+- migrations: `0022_kasper_fund`, `0023_kasper_constraints`;
 - production-совместимость migration: фактические сокращённые PostgreSQL-имена
   старых check-constraints определяются динамически, а завершённые тиражи не
   затрагиваются при заполнении snapshot;
@@ -41,7 +41,7 @@
 - Mini App: typecheck/lint, `31 passed`, production build — успешно;
 - Admin Panel: typecheck/lint, `9 passed`, production build — успешно;
 - secret scan: успешно, `.env` не отслеживается Git;
-- feature commit: `8d8f2f7`; migration fixes: `f6cb650`, `140d47e`.
+- feature commit: `8d8f2f7`; migration fixes: `f6cb650`, `140d47e`, `134a7f3`.
 
 ## [1.6.0] - 2026-09-01
 
