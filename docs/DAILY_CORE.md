@@ -1,7 +1,8 @@
 # Daily Lottery 4/15
 
 ПЛЛ-лото (`pll`), ПСС-Лото (`pss`) and ХАН-Лото (`khan`) are independent
-lottery entities. Their Moscow times are 02:22, 12:00 and 18:00 respectively;
+lottery entities. Their Moscow slots are PLL 02:22/13:45, PSS 12:00/20:30 and
+KHAN 09:00/18:00;
 sales close two minutes before each draw. Each has independent draw and ticket
 number sequences and independent jackpot accounts.
 

@@ -129,6 +129,20 @@ def test_named_daily_lotteries_use_independent_moscow_slots(
     assert scheduled.astimezone(MOSCOW) == expected
 
 
+@pytest.mark.parametrize(
+    ("slots", "after", "expected"),
+    [
+        (["09:00", "18:00"], local(2026, 9, 2, 8, 0), local(2026, 9, 2, 9, 0)),
+        (["02:22", "13:45"], local(2026, 9, 2, 3, 0), local(2026, 9, 2, 13, 45)),
+        (["12:00", "20:30"], local(2026, 9, 2, 13, 0), local(2026, 9, 2, 20, 30)),
+    ],
+)
+def test_new_daily_slots(slots: list[str], after: datetime, expected: datetime) -> None:
+    scheduled = next_draw_at(LotteryKind.DAILY, after, {"slots": slots})
+
+    assert scheduled.astimezone(MOSCOW) == expected
+
+
 def test_schedule_rejects_naive_server_time() -> None:
     with pytest.raises(ValueError):
         next_weekly_draw(datetime(2026, 8, 14, 12, 0))

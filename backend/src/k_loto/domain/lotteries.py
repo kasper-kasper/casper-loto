@@ -17,9 +17,9 @@ class LotteryDefinition:
 
 LOTTERY_DEFINITIONS = (
     LotteryDefinition("weekly", "ЛСД-лото", LotteryKind.WEEKLY, "20:00"),
-    LotteryDefinition("pll", "ПЛЛ-лото", LotteryKind.DAILY, "02:22"),
-    LotteryDefinition("pss", "ПСС-Лото", LotteryKind.DAILY, "12:00"),
-    LotteryDefinition("khan", "ХАН-Лото", LotteryKind.DAILY, "18:00"),
+    LotteryDefinition("pll", "ПЛЛ-лото", LotteryKind.DAILY, "02:22 / 13:45"),
+    LotteryDefinition("pss", "ПСС-Лото", LotteryKind.DAILY, "12:00 / 20:30"),
+    LotteryDefinition("khan", "ХАН-Лото", LotteryKind.DAILY, "09:00 / 18:00"),
     LotteryDefinition("september", "3 СЕНТЯБРЯ", LotteryKind.DAILY, "03:33 / 15:33"),
     LotteryDefinition("grob", "ГРОБ", LotteryKind.DAILY, "06:06 / 23:06"),
     LotteryDefinition("flash", "FLASH", LotteryKind.DAILY, "каждые 20 минут"),

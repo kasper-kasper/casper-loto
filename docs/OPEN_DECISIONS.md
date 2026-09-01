@@ -2,7 +2,7 @@
 
 | ID | Topic | Status | Decision |
 |---|---|---|---|
-| OD-001 | Daily lineup | Resolved 2026-08-31 | PLL 02:22, PSS 12:00 and KHAN 18:00 are independent entities. |
+| OD-001 | Daily lineup | Resolved 2026-09-02 | PLL 02:22/13:45, PSS 12:00/20:30 and KHAN 09:00/18:00 are independent entities. |
 | OD-002 | Daily numbering | Resolved 2026-08-31 | Each entity starts at the current production Daily counters and advances independently. |
 | OD-003 | Daily price | Resolved 2026-08-31 | Each starts with the current production Daily ticket price; Admin may configure later. |
 | OD-004 | Daily payout | Resolved 2026-08-15 | 0/1 matches pay 0, 2 pays 50%, 3 pays 300%, 4 splits jackpot; 40/60 funding. |
