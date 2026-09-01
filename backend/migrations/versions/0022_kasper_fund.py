@@ -154,9 +154,7 @@ def upgrade() -> None:
             server_default=sa.func.now(),
             nullable=False,
         ),
-        sa.CheckConstraint(
-            "balance >= 0", name="ck_kasper_fund_accounts_balance_nonnegative"
-        ),
+        sa.CheckConstraint("balance >= 0", name="balance_nonnegative"),
     )
     op.create_table(
         "jackpot_win_events",
@@ -178,16 +176,12 @@ def upgrade() -> None:
         ),
         sa.ForeignKeyConstraint(["draw_id"], ["draws.id"], ondelete="RESTRICT"),
         sa.ForeignKeyConstraint(["lottery_id"], ["lotteries.id"], ondelete="RESTRICT"),
-        sa.CheckConstraint(
-            "jackpot_amount > 0", name="ck_jackpot_win_events_amount_positive"
-        ),
+        sa.CheckConstraint("jackpot_amount > 0", name="amount_positive"),
         sa.CheckConstraint(
             "winner_ticket_count > 0",
-            name="ck_jackpot_win_events_ticket_count_positive",
+            name="ticket_count_positive",
         ),
-        sa.CheckConstraint(
-            "winner_user_count > 0", name="ck_jackpot_win_events_user_count_positive"
-        ),
+        sa.CheckConstraint("winner_user_count > 0", name="user_count_positive"),
     )
     op.create_index("ix_jackpot_win_occurred", "jackpot_win_events", ["occurred_at"])
 
