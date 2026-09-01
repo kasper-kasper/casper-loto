@@ -39,7 +39,7 @@
   `144 passed`, Mini App `30 passed`, Admin Panel `8 passed`, обе production
   frontend-сборки — успешно; локальный Alembic check недоступен без
   `DATABASE_URL` и выполняется release-сценарием на VPS;
-- release commit: будет указан после фиксации релиза.
+- release commit: `9ac985f`.
 
 ## [1.3.0] - 2026-09-01
 
