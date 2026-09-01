@@ -139,9 +139,11 @@ it("opens a loopback development session outside Telegram", async () => {
 });
 
 it("renders server-authoritative balance and lottery states", async () => {
-  render(<App initData="signed" />);
+  const { container } = render(<App initData="signed" />);
 
   expect(await screen.findByText("5 000 CAS")).toBeInTheDocument();
+  expect(screen.getByLabelText("Каспер")).toBeInTheDocument();
+  expect(container.querySelector(".wordmark")?.textContent).toBe("Каспер");
   await selectWeekly();
   expect(screen.getAllByText("10 000 CAS").length).toBeGreaterThan(0);
   expect(screen.getByRole("button", { name: /Выбрать числа.*100 CAS/ })).toBeEnabled();

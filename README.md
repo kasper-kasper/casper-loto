@@ -1,6 +1,6 @@
 # K-Loto
 
-Current version: **1.0.0 — stable operations and administrator analytics**.
+Current version: **1.0.1 — unified Kasper wordmark**.
 
 K-Loto is a multi-user lottery platform with integer CAS accounting, an
 immutable transaction ledger, recoverable draw scheduling and four independent
