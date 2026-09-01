@@ -23,9 +23,11 @@
 Технически:
 
 - migration: `0018_lottery_rulesets`;
-- проверки: полный релизный набор и production smoke фиксируются после выкладки;
+- проверки: backend `139 passed`, Mini App `29 passed`, Admin Panel `8 passed`;
+- PostgreSQL smoke: 50 dashboard-запросов — `2.611 s`, покупка 5 000 билетов — `2.797 s`, settlement — `3.981 s`;
+- production: `alembic check` — расхождений нет, восстановление свежей копии — успешно, API — healthy;
 - внешняя копия: PostgreSQL dump проверен локально и исключён из Git;
-- commit: релизный commit, содержащий эту запись.
+- commits: `00d96b2` (релиз), `bd07c30` (изолированный smoke на восстановленной копии).
 
 ## [1.0.2] - 2026-09-01
 
