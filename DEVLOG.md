@@ -29,7 +29,7 @@
 - проверки: Ruff и форматирование — успешно, mypy — успешно, backend
   `144 passed`, Mini App `30 passed`, Admin Panel `8 passed`, обе production
   frontend-сборки — успешно;
-- release commit: PENDING.
+- release commit: `ffe33e5`.
 
 ## [1.4.0] - 2026-09-01
 
