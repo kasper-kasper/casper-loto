@@ -31,8 +31,8 @@
 - migration: не требуется;
 - зависимости: новые пакеты не добавлялись;
 - проверки: Mini App lint и typecheck — успешно, `30 passed`, production build
-  — успешно;
-- release commit: будет указан после фиксации релиза.
+  — успешно; проверка версии и health API — `4 passed`;
+- release commit: `547d0b1`.
 
 ## [1.2.1] - 2026-09-01
 
