@@ -8,7 +8,7 @@ import type {
   NumberStatistic,
   NotificationItem,
   Player,
-  Transaction,
+  Transaction, TicketAnalytics,
   ReleaseNote,
 } from "./types";
 
@@ -113,6 +113,7 @@ export const adminApi = {
     request<Transaction[]>(`/transactions${query ? `?${query}` : ""}`),
   statistics: (lotteryId: string) =>
     request<NumberStatistic[]>(`/lotteries/${lotteryId}/number-statistics`),
+  ticketAnalytics: () => request<TicketAnalytics>("/ticket-analytics"),
   audit: () => request<AuditEntry[]>("/audit"),
   notifications: () => request<NotificationItem[]>("/notifications"),
   releaseNotes: (kind: "changelog" | "devlog") =>

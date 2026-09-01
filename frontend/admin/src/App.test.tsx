@@ -3,15 +3,15 @@ import { vi } from "vitest";
 
 import App from "./App";
 import { adminApi } from "./api";
-import type { Dashboard, Lottery, Player } from "./types";
+import type { Dashboard, Lottery, Player, TicketAnalytics } from "./types";
 
 vi.mock("./api", () => ({
   ApiError: class ApiError extends Error { status = 500; },
   adminApi: {
     login: vi.fn(), session: vi.fn(), logout: vi.fn(), dashboard: vi.fn(),
     players: vi.fn(), lotteries: vi.fn(), draws: vi.fn(), draw: vi.fn(),
-    transactions: vi.fn(), statistics: vi.fn(), audit: vi.fn(),
-    releaseNotes: vi.fn(),
+    transactions: vi.fn(), statistics: vi.fn(), ticketAnalytics: vi.fn(), audit: vi.fn(),
+    notifications: vi.fn(), releaseNotes: vi.fn(),
     setBalance: vi.fn(), configureLottery: vi.fn(), setReserve: vi.fn(),
     setAutoPlay: vi.fn(),
   },
@@ -21,8 +21,11 @@ const session = { username: "owner", csrf_token: "csrf", expires_at: "2026-08-16
 const lottery: Lottery = { id: "lottery", code: "weekly", name: "Weekly 5/20", kind: "WEEKLY", ticket_price: 100, base_jackpot: 10_000, current_jackpot: 12_000, distribution_fund: 500, reserve: 100_000, schedule: { weekday: "sunday" }, sales_cutoff_minutes: 5, max_tickets_per_purchase: 1000, max_tickets_per_user_per_draw: 5000, is_active: true, next_draw_number: 8, next_draw_at: "2026-08-16T17:00:00Z" };
 const dashboard: Dashboard = { version: "0.8.0", uptime_seconds: 120, database_healthy: true, bot_configured: true, scheduler_enabled: true, counts: { users: 1, tickets: 6, completed_draws: 3, pending_draws: 1 }, lotteries: [lottery], recent_draws: [], recent_transactions: [], operations: { scheduler: { last_started_at: null, last_succeeded_at: null, last_failed_at: null, last_error: null, settled_count: 0, prepared_count: 0 }, stuck_draw_count: 0, notifications: {}, next_draws: [] } };
 const player: Player = { id: "player", display_name: "Test Player", username: "player", telegram_id: 123, is_active: true, balance: 5_000, ticket_count: 6, spent: 600, won: 250, net: -350, telegram_notifications_enabled: false, auto_play_enabled: false, auto_play_tickets_per_draw: 5, auto_play_last_succeeded_at: null, auto_play_last_error: null };
+const analytics: TicketAnalytics = { overall: { lottery_id: null, lottery_name: "Все лотереи", is_active: null, total_tickets: 100, active_tickets: 10, settled_tickets: 90, winning_tickets: 21, participants: 8, winning_players: 5, total_sales: 10_000, total_payout: 2_500 }, lotteries: [{ lottery_id: "lottery", lottery_name: "Weekly 5/20", is_active: true, total_tickets: 100, active_tickets: 10, settled_tickets: 90, winning_tickets: 21, participants: 8, winning_players: 5, total_sales: 10_000, total_payout: 2_500 }] };
 
 beforeEach(() => {
+  window.history.replaceState({}, "", "/");
+  window.localStorage.clear();
   vi.mocked(adminApi.session).mockResolvedValue(session);
   vi.mocked(adminApi.login).mockResolvedValue(session);
   vi.mocked(adminApi.logout).mockResolvedValue();
@@ -32,9 +35,11 @@ beforeEach(() => {
   vi.mocked(adminApi.draws).mockResolvedValue([]);
   vi.mocked(adminApi.transactions).mockResolvedValue([]);
   vi.mocked(adminApi.statistics).mockResolvedValue([]);
+  vi.mocked(adminApi.ticketAnalytics).mockResolvedValue(analytics);
   vi.mocked(adminApi.audit).mockResolvedValue([]);
+  vi.mocked(adminApi.notifications).mockResolvedValue([]);
   vi.mocked(adminApi.releaseNotes).mockImplementation(async (kind) => [{
-    version: "0.15.0", date: "2026-08-31", content: kind === "changelog" ? "Публичное изменение" : "Техническое изменение",
+    version: "0.15.0", date: "2026-08-31", content: kind === "changelog" ? "Публичное изменение" : "Техническое изменение", sequence: kind === "devlog" ? 15 : null,
   }]);
   vi.mocked(adminApi.setBalance).mockResolvedValue({ amount: 9_000, already_processed: false });
   vi.mocked(adminApi.configureLottery).mockResolvedValue(lottery);
@@ -91,8 +96,29 @@ it("shows complete changelog and devlog in separate protected tabs", async () =>
   expect(await screen.findByText("Публичное изменение")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("tab", { name: "DEVLOG" }));
   expect(screen.getByText("Техническое изменение")).toBeInTheDocument();
+  expect(screen.getByText("DEV-0015 · релиз v0.15.0")).toBeInTheDocument();
   expect(adminApi.releaseNotes).toHaveBeenCalledWith("changelog");
   expect(adminApi.releaseNotes).toHaveBeenCalledWith("devlog");
+});
+
+it("keeps the selected section in the URL and restores it after refresh", async () => {
+  const first = render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /Игроки/ }));
+  await screen.findByText("Test Player");
+  expect(window.location.pathname).toBe("/players");
+
+  first.unmount();
+  render(<App />);
+  expect(await screen.findByText("Test Player")).toBeInTheDocument();
+});
+
+it("shows lightweight ticket win analytics overall and by lottery", async () => {
+  render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /Аналитика билетов/ }));
+
+  expect(await screen.findByText("23,33% от рассчитанных")).toBeInTheDocument();
+  expect(screen.getByText("Weekly 5/20")).toBeInTheDocument();
+  expect(adminApi.ticketAnalytics).toHaveBeenCalledOnce();
 });
 
 it("saves lottery price, jackpot and reserve with one action", async () => {

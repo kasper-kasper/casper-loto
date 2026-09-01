@@ -16,6 +16,7 @@ from k_loto.domain.enums import (
     LotteryKind,
     NotificationStatus,
     NotificationType,
+    TicketStatus,
     TransactionType,
 )
 from k_loto.domain.lotteries import draw_display_name
@@ -142,6 +143,27 @@ class NumberStatistic:
     draw_percentage: float
     last_appearance: datetime | None
     draws_since_last: int | None
+
+
+@dataclass(frozen=True, slots=True)
+class TicketAnalyticsRow:
+    lottery_id: UUID | None
+    lottery_name: str
+    is_active: bool | None
+    total_tickets: int
+    active_tickets: int
+    settled_tickets: int
+    winning_tickets: int
+    participants: int
+    winning_players: int
+    total_sales: int
+    total_payout: int
+
+
+@dataclass(frozen=True, slots=True)
+class TicketAnalytics:
+    overall: TicketAnalyticsRow
+    lotteries: tuple[TicketAnalyticsRow, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -800,6 +822,64 @@ class AdminQueryService:
                 (total - 1 - indexes[-1]) if indexes else None,
             )
             for number, indexes in positions.items()
+        )
+
+    async def ticket_analytics(self) -> TicketAnalytics:
+        """Return compact ticket outcome aggregates without loading ticket rows."""
+
+        metrics = (
+            func.count(Ticket.id),
+            func.count(Ticket.id).filter(Ticket.status == TicketStatus.PURCHASED),
+            func.count(Ticket.id).filter(Ticket.status == TicketStatus.SETTLED),
+            func.count(Ticket.id).filter(Ticket.prize_amount > 0),
+            func.count(func.distinct(Ticket.user_id)),
+            func.count(func.distinct(Ticket.user_id)).filter(Ticket.prize_amount > 0),
+            func.coalesce(func.sum(Ticket.purchase_price), 0),
+            func.coalesce(func.sum(Ticket.prize_amount), 0),
+        )
+        overall_values = (await self._session.execute(select(*metrics))).all()[0]
+        lottery_values = (
+            await self._session.execute(
+                select(Lottery.id, Lottery.name, Lottery.is_active, *metrics)
+                .outerjoin(Ticket, Ticket.lottery_id == Lottery.id)
+                .group_by(Lottery.id, Lottery.name, Lottery.is_active)
+                .order_by(Lottery.is_active.desc(), Lottery.name)
+            )
+        ).all()
+
+        def row(
+            values: Any,
+            *,
+            lottery_id: UUID | None,
+            name: str,
+            active: bool | None,
+            offset: int,
+        ) -> TicketAnalyticsRow:
+            return TicketAnalyticsRow(
+                lottery_id,
+                name,
+                active,
+                *(int(value or 0) for value in values[offset : offset + 8]),
+            )
+
+        return TicketAnalytics(
+            overall=row(
+                overall_values,
+                lottery_id=None,
+                name="Все лотереи",
+                active=None,
+                offset=0,
+            ),
+            lotteries=tuple(
+                row(
+                    values,
+                    lottery_id=values[0],
+                    name=values[1],
+                    active=values[2],
+                    offset=3,
+                )
+                for values in lottery_values
+            ),
         )
 
     async def audit(self, *, limit: int = 100) -> tuple[AdminAuditEntry, ...]:

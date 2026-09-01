@@ -158,6 +158,26 @@ export interface ReleaseNote {
   version: string;
   date: string | null;
   content: string;
+  sequence: number | null;
+}
+
+export interface TicketAnalyticsRow {
+  lottery_id: string | null;
+  lottery_name: string;
+  is_active: boolean | null;
+  total_tickets: number;
+  active_tickets: number;
+  settled_tickets: number;
+  winning_tickets: number;
+  participants: number;
+  winning_players: number;
+  total_sales: number;
+  total_payout: number;
+}
+
+export interface TicketAnalytics {
+  overall: TicketAnalyticsRow;
+  lotteries: TicketAnalyticsRow[];
 }
 
 export interface NotificationItem {

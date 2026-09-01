@@ -28,9 +28,15 @@ no decorative or state-transition animations.
   filters;
 - per-lottery number appearances, percentages, last appearance and draws since
   last appearance, calculated from completed draw history;
+- lightweight ticket analytics overall and per lottery: total, active, settled
+  and winning tickets, win percentage, participants, sales and payouts. The
+  read model uses aggregate SQL and is cached for up to 60 seconds;
 - permanent administrator audit history.
 - protected project history with separate read-only CHANGELOG and DEVLOG tabs,
-  including all previous versions.
+  including all previous versions. CHANGELOG follows product SemVer while
+  DEVLOG additionally receives a stable `DEV-0001` sequence number;
+- direct URLs and last-section memory, so refresh returns the owner to the same
+  section instead of forcing the operational overview.
 
 Schedule editing remains deliberately unavailable without effective-date rules.
 Daily price and base jackpot are configurable. Current jackpot and distribution
@@ -84,3 +90,6 @@ not weaken the current authentication boundary.
 Project journals remain version-controlled Markdown files. The Admin API uses
 a fixed file allowlist and never accepts a filesystem path from the browser.
 They are rendered as text, so journal content cannot inject executable HTML.
+The historical `0.x` entries remain unchanged. Starting with `1.0.0`, product
+versions use `MAJOR.MINOR.PATCH`: minor for compatible features, patch for fixes,
+and major only for an incompatible platform change.

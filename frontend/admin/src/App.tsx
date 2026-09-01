@@ -13,10 +13,11 @@ import type {
   NotificationItem,
   Player,
   ReleaseNote,
+  TicketAnalytics,
   Transaction,
 } from "./types";
 
-type View = "dashboard" | "players" | "lotteries" | "draws" | "ledger" | "statistics" | "notifications" | "audit" | "development";
+type View = "dashboard" | "players" | "lotteries" | "draws" | "ledger" | "statistics" | "ticket-analytics" | "notifications" | "audit" | "development";
 
 const navigation: { id: View; label: string; code: string }[] = [
   { id: "dashboard", label: "Обзор", code: "01" },
@@ -25,10 +26,20 @@ const navigation: { id: View; label: string; code: string }[] = [
   { id: "draws", label: "Архив тиражей", code: "04" },
   { id: "ledger", label: "Журнал CAS", code: "05" },
   { id: "statistics", label: "Статистика чисел", code: "06" },
-  { id: "notifications", label: "Уведомления", code: "07" },
-  { id: "audit", label: "Аудит действий", code: "08" },
-  { id: "development", label: "Разработка", code: "09" },
+  { id: "ticket-analytics", label: "Аналитика билетов", code: "07" },
+  { id: "notifications", label: "Уведомления", code: "08" },
+  { id: "audit", label: "Аудит действий", code: "09" },
+  { id: "development", label: "Разработка", code: "10" },
 ];
+
+const viewStorageKey = "k-loto:admin-view";
+
+function storedView(): View {
+  const path = window.location.pathname.split("/").filter(Boolean).at(-1);
+  const remembered = window.localStorage.getItem(viewStorageKey);
+  const candidate = path || remembered || "dashboard";
+  return navigation.some((item) => item.id === candidate) ? candidate as View : "dashboard";
+}
 
 const drawStatuses: Record<string, string> = { PENDING: "Ожидает", RUNNING: "Выполняется", COMPLETED: "Завершён", FAILED: "Ошибка" };
 const transactionTypes: Record<string, string> = {
@@ -225,9 +236,9 @@ function DevelopmentView({ changelog, devlog }: { changelog: ReleaseNote[]; devl
       <button role="tab" aria-selected={kind === "changelog"} className={kind === "changelog" ? "active" : ""} onClick={() => setKind("changelog")}>CHANGELOG</button>
       <button role="tab" aria-selected={kind === "devlog"} className={kind === "devlog" ? "active" : ""} onClick={() => setKind("devlog")}>DEVLOG</button>
     </div>
-    <p className="journal-intro">{kind === "changelog" ? "Официальная история изменений продукта." : "Подробная техническая история разработки."} Старые и новые записи доступны только после входа администратора.</p>
+    <p className="journal-intro">{kind === "changelog" ? "Официальная история релизов: только то, что изменилось для владельца и игроков." : "Технический дневник работ с собственной сквозной нумерацией."} Старые записи сохранены без изменений.</p>
     <div className="journal-list">{notes.map((note) => <article key={`${kind}-${note.version}`}>
-      <header><span>v{note.version}</span><time>{note.date ?? "без даты"}</time></header>
+      <header><span>{kind === "devlog" && note.sequence ? `DEV-${String(note.sequence).padStart(4, "0")} · релиз v${note.version}` : `v${note.version}`}</span><time>{note.date ?? "без даты"}</time></header>
       <pre>{note.content}</pre>
     </article>)}</div>
   </section>;
@@ -236,7 +247,7 @@ function DevelopmentView({ changelog, devlog }: { changelog: ReleaseNote[]; devl
 export default function App() {
   const [session, setSession] = useState<AdminSession | null>(null);
   const [checking, setChecking] = useState(true);
-  const [view, setView] = useState<View>("dashboard");
+  const [view, setView] = useState<View>(storedView);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
@@ -250,8 +261,20 @@ export default function App() {
   const [audit, setAudit] = useState<AuditEntry[]>([]);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [releaseNotes, setReleaseNotes] = useState<{ changelog: ReleaseNote[]; devlog: ReleaseNote[] }>({ changelog: [], devlog: [] });
+  const [ticketAnalytics, setTicketAnalytics] = useState<TicketAnalytics | null>(null);
+
+  const navigate = useCallback((target: View) => {
+    window.localStorage.setItem(viewStorageKey, target);
+    window.history.pushState({}, "", target === "dashboard" ? "/" : `/${target}`);
+    setView(target);
+  }, []);
 
   useEffect(() => { adminApi.session().then(setSession).catch(() => setSession(null)).finally(() => setChecking(false)); }, []);
+  useEffect(() => {
+    const restore = () => setView(storedView());
+    window.addEventListener("popstate", restore);
+    return () => window.removeEventListener("popstate", restore);
+  }, []);
 
   const load = useCallback(async (target: View) => {
     setLoading(true); setError("");
@@ -272,6 +295,7 @@ export default function App() {
         setLotteries(available);
         if (available[0]) setStatistics(await adminApi.statistics(available[0].id));
       }
+      if (target === "ticket-analytics") setTicketAnalytics(await adminApi.ticketAnalytics());
     } catch (reason) {
       if (reason instanceof ApiError && reason.status === 401) setSession(null);
       setError(reason instanceof Error ? reason.message : "Не удалось выполнить запрос администратора.");
@@ -289,7 +313,7 @@ export default function App() {
 
   const title = navigation.find((item) => item.id === view)?.label ?? "Управление";
   return <div className="admin-shell">
-    <aside><div className="brand"><span>K</span><div>K-LOTO<small>СИСТЕМА УПРАВЛЕНИЯ</small></div></div><nav>{navigation.map((item) => <button className={view === item.id ? "active" : ""} key={item.id} onClick={() => setView(item.id)}><small>{item.code}</small>{item.label}</button>)}</nav><div className="operator"><small>АДМИНИСТРАТОР</small><b>{session.username}</b><button onClick={() => void adminApi.logout().finally(() => setSession(null))}>ЗАВЕРШИТЬ СЕАНС</button></div></aside>
+    <aside><div className="brand"><span>K</span><div>K-LOTO<small>СИСТЕМА УПРАВЛЕНИЯ</small></div></div><nav>{navigation.map((item) => <button className={view === item.id ? "active" : ""} key={item.id} onClick={() => navigate(item.id)}><small>{item.code}</small>{item.label}</button>)}</nav><div className="operator"><small>АДМИНИСТРАТОР</small><b>{session.username}</b><button onClick={() => void adminApi.logout().finally(() => setSession(null))}>ЗАВЕРШИТЬ СЕАНС</button></div></aside>
     <main className="workspace"><header className="topbar"><div><small>K-LOTO / АДМИНИСТРАТОР / {title.toUpperCase()}</small><h1>{title}</h1></div><span className="utc">МСК {new Intl.DateTimeFormat("ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Europe/Moscow" }).format(new Date())}</span></header>
       {error && <div className="error banner">{error}</div>}{loading && <div className="loading">ЗАГРУЖАЕМ ДАННЫЕ…</div>}
       {!loading && view === "dashboard" && dashboard && <DashboardView data={dashboard} />}
@@ -298,11 +322,29 @@ export default function App() {
       {!loading && view === "draws" && <section className="panel"><header><h2>Постоянный архив тиражей</h2><span>ТОЛЬКО ПРОСМОТР</span></header><DrawTable draws={draws} onOpen={(id) => void adminApi.draw(id).then(setDrawDetail)} /></section>}
       {!loading && view === "ledger" && <><TransactionFilters onApply={(query) => void adminApi.transactions(query).then(setTransactions).catch((reason: Error) => setError(reason.message))} /><section className="panel"><header><h2>Неизменяемый журнал CAS</h2><span>ЗАПИСЕЙ: {transactions.length}</span></header><TransactionTable rows={transactions} /></section></>}
       {!loading && view === "statistics" && <StatisticsView lotteries={lotteries} rows={statistics} onLottery={(id) => void adminApi.statistics(id).then(setStatistics)} />}
+      {!loading && view === "ticket-analytics" && ticketAnalytics && <TicketAnalyticsView data={ticketAnalytics} />}
       {!loading && view === "notifications" && <section className="panel"><header><h2>Очередь уведомлений</h2><span>ДОСТАВЛЕНО · ОШИБКА · ОЖИДАЕТ</span></header><div className="table-wrap"><table><thead><tr><th>Создано</th><th>Тип</th><th>Игрок</th><th>Статус</th><th>Попытки</th><th>Ошибка</th></tr></thead><tbody>{notifications.map((item) => <tr key={item.id}><td>{date(item.created_at)}</td><td>{translated(item.type, transactionTypes)}</td><td><code>{item.user_id.slice(0, 8)}</code></td><td><span className={`tag ${item.status.toLowerCase()}`}>{translated(item.status, { PENDING: "ожидает", PROCESSING: "отправляется", SENT: "доставлено", FAILED: "ошибка", CANCELLED: "отменено" })}</span></td><td>{item.attempts}</td><td>{item.last_error ?? "—"}</td></tr>)}</tbody></table></div></section>}
       {!loading && view === "audit" && <section className="panel"><header><h2>Аудит действий администратора</h2><span>ХРАНИТСЯ ПОСТОЯННО</span></header><div className="audit-list">{audit.map((item) => <article key={item.id}><time>{date(item.created_at)}</time><b>{translated(item.action, auditActions)} · {translated(item.entity_type, entityTypes)}</b><p>{item.reason ?? "Причина не указана"}</p><code>{JSON.stringify(item.old_values)} → {JSON.stringify(item.new_values)}</code></article>)}</div></section>}
       {!loading && view === "development" && <DevelopmentView changelog={releaseNotes.changelog} devlog={releaseNotes.devlog} />}
     </main>{drawDetail && <DrawDetailPanel detail={drawDetail} onClose={() => setDrawDetail(null)} />}
   </div>;
+}
+
+function percentage(part: number, total: number): string {
+  return total ? `${((part / total) * 100).toLocaleString("ru-RU", { maximumFractionDigits: 2 })}%` : "0%";
+}
+
+function TicketAnalyticsView({ data }: { data: TicketAnalytics }) {
+  const overall = data.overall;
+  return <>
+    <section className="metric-grid analytics-metrics">
+      <article className="metric"><small>ВСЕГО БИЛЕТОВ</small><strong>{overall.total_tickets.toLocaleString("ru-RU")}</strong></article>
+      <article className="metric"><small>РАССЧИТАНО</small><strong>{overall.settled_tickets.toLocaleString("ru-RU")}</strong></article>
+      <article className="metric"><small>ВЫИГРЫШНЫЕ БИЛЕТЫ</small><strong>{overall.winning_tickets.toLocaleString("ru-RU")}</strong><em>{percentage(overall.winning_tickets, overall.settled_tickets)} от рассчитанных</em></article>
+      <article className="metric"><small>ВЫПЛАЧЕНО</small><strong>{cas(overall.total_payout)}</strong><em>{percentage(overall.total_payout, overall.total_sales)} от продаж</em></article>
+    </section>
+    <section className="panel analytics-panel"><header><h2>Результаты по каждой лотерее</h2><span>READ ONLY · КЭШ ДО 60 СЕКУНД</span></header><div className="table-wrap"><table><thead><tr><th>Лотерея</th><th>Билеты</th><th>Активные / рассчитанные</th><th>Выигрышные</th><th>Процент выигрышей</th><th>Игроки / победители</th><th>Продажи</th><th>Выплаты</th></tr></thead><tbody>{data.lotteries.map((row) => <tr key={row.lottery_id}><td><b>{row.lottery_name}</b><small>{row.is_active ? "активна" : "архивная"}</small></td><td>{row.total_tickets.toLocaleString("ru-RU")}</td><td>{row.active_tickets.toLocaleString("ru-RU")} / {row.settled_tickets.toLocaleString("ru-RU")}</td><td className={row.winning_tickets ? "positive" : ""}>{row.winning_tickets.toLocaleString("ru-RU")}</td><td>{percentage(row.winning_tickets, row.settled_tickets)}</td><td>{row.participants.toLocaleString("ru-RU")} / {row.winning_players.toLocaleString("ru-RU")}</td><td>{cas(row.total_sales)}</td><td>{cas(row.total_payout)}</td></tr>)}</tbody></table></div><p className="source-note">Процент выигрышей считается только среди уже рассчитанных билетов. Данные формируются двумя агрегатными SQL-запросами и не загружают билеты в память приложения.</p></section>
+  </>;
 }
 
 function TransactionFilters({ onApply }: { onApply: (query: string) => void }) {

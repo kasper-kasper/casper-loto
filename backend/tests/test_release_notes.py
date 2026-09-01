@@ -37,3 +37,21 @@ def test_loader_uses_only_fixed_journal_names(
     devlog = load_release_notes("devlog")
     assert changelog[0].content == "- Public change."
     assert devlog[0].content == "- Technical change."
+    assert changelog[0].sequence is None
+    assert devlog[0].sequence == 1
+
+
+def test_devlog_gets_stable_oldest_first_sequence_without_editing_markdown(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "DEVLOG.md").write_text(
+        "## [1.0.0] - 2026-09-01\n\n- New.\n\n## [0.9.0] - 2026-08-31\n\n- Old.\n",
+        encoding="utf-8",
+    )
+
+    notes = load_release_notes("devlog", project_root=tmp_path)
+
+    assert [(note.version, note.sequence) for note in notes] == [
+        ("1.0.0", 2),
+        ("0.9.0", 1),
+    ]

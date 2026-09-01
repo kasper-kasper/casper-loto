@@ -1,7 +1,7 @@
 """Read-only access to versioned project journals for administrators."""
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Literal
 
@@ -22,6 +22,7 @@ class ReleaseNote:
     version: str
     date: str | None
     content: str
+    sequence: int | None = None
 
 
 def parse_release_notes(markdown: str) -> tuple[ReleaseNote, ...]:
@@ -48,4 +49,10 @@ def load_release_notes(
     """Load a journal selected from the fixed allowlist at the project root."""
 
     root = project_root or Path.cwd()
-    return parse_release_notes((root / _FILES[kind]).read_text(encoding="utf-8"))
+    notes = parse_release_notes((root / _FILES[kind]).read_text(encoding="utf-8"))
+    if kind != "devlog":
+        return notes
+    total = len(notes)
+    return tuple(
+        replace(note, sequence=total - index) for index, note in enumerate(notes)
+    )

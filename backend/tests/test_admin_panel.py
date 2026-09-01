@@ -58,6 +58,9 @@ class RowResult:
     def one_or_none(self) -> Any:
         return self._value
 
+    def all(self) -> Any:
+        return self._value
+
 
 class FakeSession:
     def __init__(
@@ -370,6 +373,24 @@ async def test_number_statistics_are_derived_from_completed_draw_history() -> No
     assert stats[3].last_appearance is None
 
 
+async def test_ticket_analytics_uses_aggregate_rows() -> None:
+    lottery_id = UUID(int=50)
+    fake = FakeSession(
+        scalar_values=[],
+        execute_rows=[
+            [(100, 10, 90, 21, 8, 5, 10_000, 2_500)],
+            [(lottery_id, "Weekly", True, 100, 10, 90, 21, 8, 5, 10_000, 2_500)],
+        ],
+    )
+
+    analytics = await AdminQueryService(cast(AsyncSession, fake)).ticket_analytics()
+
+    assert analytics.overall.total_tickets == 100
+    assert analytics.overall.winning_tickets == 21
+    assert analytics.lotteries[0].lottery_name == "Weekly"
+    assert analytics.lotteries[0].total_payout == 2_500
+
+
 def test_admin_routes_cover_milestone_and_completed_draws_have_no_mutation() -> None:
     paths = create_app().openapi()["paths"]
     required = {
@@ -384,6 +405,7 @@ def test_admin_routes_cover_milestone_and_completed_draws_have_no_mutation() -> 
         "/api/v1/admin/draws",
         "/api/v1/admin/draws/{draw_id}",
         "/api/v1/admin/lotteries/{lottery_id}/number-statistics",
+        "/api/v1/admin/ticket-analytics",
         "/api/v1/admin/audit",
         "/api/v1/admin/release-notes/{kind}",
     }

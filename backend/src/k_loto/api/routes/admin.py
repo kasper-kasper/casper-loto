@@ -1,5 +1,6 @@
 """Authenticated Web Admin Panel API."""
 
+import asyncio
 import hmac
 from datetime import datetime
 from time import monotonic
@@ -48,6 +49,8 @@ from k_loto.infrastructure.admin_auth import (
 
 router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
 started_at = monotonic()
+ticket_analytics_cache: tuple[float, "TicketAnalyticsResponse"] | None = None
+ticket_analytics_lock = asyncio.Lock()
 
 
 class ApiModel(BaseModel):
@@ -218,6 +221,26 @@ class ReleaseNoteResponse(BaseModel):
     version: str
     date: str | None
     content: str
+    sequence: int | None = None
+
+
+class TicketAnalyticsRowResponse(ApiModel):
+    lottery_id: UUID | None
+    lottery_name: str
+    is_active: bool | None
+    total_tickets: int
+    active_tickets: int
+    settled_tickets: int
+    winning_tickets: int
+    participants: int
+    winning_players: int
+    total_sales: int
+    total_payout: int
+
+
+class TicketAnalyticsResponse(ApiModel):
+    overall: TicketAnalyticsRowResponse
+    lotteries: list[TicketAnalyticsRowResponse]
 
 
 class NotificationResponse(ApiModel):
@@ -613,6 +636,28 @@ async def audit(
         AuditResponse.model_validate(item)
         for item in await AdminQueryService(session).audit(limit=limit)
     ]
+
+
+@router.get("/ticket-analytics", response_model=TicketAnalyticsResponse)
+async def ticket_analytics(
+    _admin: Annotated[CurrentAdmin, Depends(get_current_admin)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> TicketAnalyticsResponse:
+    """Return ticket outcome statistics cached for one minute per API worker."""
+
+    global ticket_analytics_cache
+    now = monotonic()
+    if ticket_analytics_cache and now - ticket_analytics_cache[0] < 60:
+        return ticket_analytics_cache[1]
+    async with ticket_analytics_lock:
+        now = monotonic()
+        if ticket_analytics_cache and now - ticket_analytics_cache[0] < 60:
+            return ticket_analytics_cache[1]
+        result = TicketAnalyticsResponse.model_validate(
+            await AdminQueryService(session).ticket_analytics()
+        )
+        ticket_analytics_cache = (now, result)
+        return result
 
 
 @router.get("/release-notes/{kind}", response_model=list[ReleaseNoteResponse])
