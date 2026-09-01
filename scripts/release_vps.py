@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import os
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from uuid import uuid4
@@ -81,7 +82,13 @@ def main() -> None:
                 f"tar -xzf {remote_archive} -C /opt/k-loto; rm -f {remote_archive}; "
                 f"{compose} build {build}; {compose} up -d db; "
                 f"{compose} run --rm api alembic upgrade head; "
-                f"{compose} up -d {build}; {compose} ps"
+                f"{compose} up -d {build}; "
+                f"{compose} exec -T api alembic check; "
+                f"latest=$({compose} exec -T db sh -c "
+                "'ls -1t /backups/k-loto-*.dump | head -n 1'); "
+                f'{compose} exec -T db sh -s -- "$latest" '
+                "< scripts/verify_backup_restore.sh; "
+                f"{compose} ps"
             )
             _stdin, stdout, stderr = client.exec_command(command, timeout=1800)
             exit_code = stdout.channel.recv_exit_status()
@@ -91,7 +98,7 @@ def main() -> None:
                 raise RuntimeError(
                     f"Remote release failed (exit {exit_code}):\n{error[-4000:]}"
                 )
-            print(output[-4000:])
+            sys.stdout.buffer.write(output[-4000:].encode("utf-8", "replace"))
         finally:
             client.close()
 
