@@ -2,6 +2,13 @@
 
 All notable changes follow Keep a Changelog and Semantic Versioning principles.
 
+## [1.9.1] - 2026-09-02
+
+### Исправлено
+
+- Production bootstrap больше не возвращает ПЛЛ, ПСС и ХАН к старому расписанию
+  после перезапуска backend.
+
 ## [1.9.0] - 2026-09-02
 
 ### Добавлено
