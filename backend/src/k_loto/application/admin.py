@@ -146,6 +146,18 @@ class NumberStatistic:
 
 
 @dataclass(frozen=True, slots=True)
+class NumberStatisticsReport:
+    lottery_id: UUID
+    lottery_name: str
+    period_start: datetime | None
+    window_size: int | None
+    draw_count: int
+    first_draw_at: datetime | None
+    last_draw_at: datetime | None
+    numbers: tuple[NumberStatistic, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class TicketAnalyticsRow:
     lottery_id: UUID | None
     lottery_name: str
@@ -210,7 +222,7 @@ async def ensure_admin_user(session: AsyncSession, username: str) -> UUID:
             .on_conflict_do_update(
                 index_elements=[User.id],
                 set_={"username": username, "is_active": True, "is_admin": True},
-            )
+            ),
         )
     return admin_id
 
@@ -789,23 +801,30 @@ class AdminQueryService:
             draw.correlation_id,
         )
 
-    async def number_statistics(self, lottery_id: UUID) -> tuple[NumberStatistic, ...]:
+    async def number_statistics(
+        self,
+        lottery_id: UUID,
+        *,
+        date_from: datetime | None = None,
+        limit: int | None = 20,
+    ) -> NumberStatisticsReport:
         lottery = await self._session.scalar(
             select(Lottery).where(Lottery.id == lottery_id)
         )
         if lottery is None:
             raise LookupError("Lottery does not exist.")
-        draws = (
-            await self._session.scalars(
-                select(Draw)
-                .where(
-                    Draw.lottery_id == lottery_id,
-                    Draw.status == DrawStatus.COMPLETED,
-                    Draw.winning_numbers.is_not(None),
-                )
-                .order_by(Draw.scheduled_at)
-            )
-        ).all()
+        statement = select(Draw).where(
+            Draw.lottery_id == lottery_id,
+            Draw.status == DrawStatus.COMPLETED,
+            Draw.winning_numbers.is_not(None),
+        )
+        if date_from is not None:
+            statement = statement.where(Draw.scheduled_at >= date_from)
+        statement = statement.order_by(Draw.scheduled_at.desc())
+        if limit is not None:
+            statement = statement.limit(limit)
+        recent_draws = (await self._session.scalars(statement)).all()
+        draws = sorted(recent_draws, key=lambda item: item.scheduled_at)
         positions: dict[int, list[int]] = {
             number: [] for number in range(1, lottery.max_number + 1)
         }
@@ -813,15 +832,24 @@ class AdminQueryService:
             for number in draw.winning_numbers or []:
                 positions[number].append(index)
         total = len(draws)
-        return tuple(
-            NumberStatistic(
-                number,
-                len(indexes),
-                round((len(indexes) / total) * 100, 2) if total else 0.0,
-                draws[indexes[-1]].scheduled_at if indexes else None,
-                (total - 1 - indexes[-1]) if indexes else None,
-            )
-            for number, indexes in positions.items()
+        return NumberStatisticsReport(
+            lottery.id,
+            lottery.name,
+            date_from,
+            limit,
+            total,
+            draws[0].scheduled_at if draws else None,
+            draws[-1].scheduled_at if draws else None,
+            tuple(
+                NumberStatistic(
+                    number,
+                    len(indexes),
+                    round((len(indexes) / total) * 100, 2) if total else 0.0,
+                    draws[indexes[-1]].scheduled_at if indexes else None,
+                    (total - 1 - indexes[-1]) if indexes else None,
+                )
+                for number, indexes in positions.items()
+            ),
         )
 
     async def ticket_analytics(self) -> TicketAnalytics:

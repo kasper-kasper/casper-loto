@@ -1275,3 +1275,12 @@ body::before, body::after { opacity: .12; }
   .home-view .featured-draw.lottery-september .hero-scene { height: 128px; }
   .home-view .featured-draw.lottery-september::before { top: 126px; }
 }
+
+.purchase-confirmation-backdrop { position: fixed; z-index: 40; inset: 0; display: grid; padding: 24px; place-items: center; background: rgba(2,7,20,.78); backdrop-filter: blur(12px); }
+.purchase-confirmation { width: min(100%, 390px); padding: 28px 22px 22px; border: 1px solid rgba(235,195,108,.28); border-radius: 18px 18px 30px 18px; background: radial-gradient(circle at 85% 5%,rgba(195,140,51,.16),transparent 35%),linear-gradient(145deg,#12254e,#09152f 68%,#241329); box-shadow: 0 30px 90px rgba(0,0,0,.5),inset 0 1px rgba(255,255,255,.05); text-align: center; }
+.purchase-confirmation-mark { display: grid; width: 52px; height: 52px; margin: 0 auto 17px; place-items: center; border: 1px solid var(--gold); border-radius: 50%; color: #171006; background: linear-gradient(135deg,#f4d48a,#bd8138); box-shadow: 0 0 34px rgba(228,177,80,.22); font-size: 22px; font-weight: 900; }
+.purchase-confirmation h2 { margin: 8px 0 9px; color: #fff; font-size: 25px; letter-spacing: -.04em; }
+.purchase-confirmation p { margin: 0 auto 22px; max-width: 290px; color: #95a5c8; font-size: 11px; line-height: 1.6; }
+.purchase-confirmation > div:last-child { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.purchase-confirmation .primary-button,
+.purchase-confirmation .secondary-button { min-height: 50px; }

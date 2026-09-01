@@ -358,10 +358,13 @@ async def test_number_statistics_are_derived_from_completed_draw_history() -> No
     )
     fake = FakeSession(scalar_values=[lottery], scalar_collections=[[first, second]])
 
-    stats = await AdminQueryService(cast(AsyncSession, fake)).number_statistics(
+    report = await AdminQueryService(cast(AsyncSession, fake)).number_statistics(
         lottery_id
     )
+    stats = report.numbers
 
+    assert report.draw_count == 2
+    assert report.window_size == 20
     assert [(item.number, item.appearances) for item in stats] == [
         (1, 2),
         (2, 1),

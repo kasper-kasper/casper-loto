@@ -5,7 +5,7 @@ import type {
   Draw,
   DrawDetail,
   Lottery,
-  NumberStatistic,
+  NumberStatisticsReport,
   NotificationItem,
   Player,
   Transaction, TicketAnalytics,
@@ -111,8 +111,10 @@ export const adminApi = {
   draw: (id: string) => request<DrawDetail>(`/draws/${id}`),
   transactions: (query = "") =>
     request<Transaction[]>(`/transactions${query ? `?${query}` : ""}`),
-  statistics: (lotteryId: string) =>
-    request<NumberStatistic[]>(`/lotteries/${lotteryId}/number-statistics`),
+  statistics: (lotteryId: string, limit = 20, dateFrom = "2026-08-31T21:00:00.000Z") => {
+    const params = new URLSearchParams({ limit: String(limit), date_from: dateFrom });
+    return request<NumberStatisticsReport>(`/lotteries/${lotteryId}/number-statistics?${params.toString()}`);
+  },
   ticketAnalytics: () => request<TicketAnalytics>("/ticket-analytics"),
   audit: () => request<AuditEntry[]>("/audit"),
   notifications: () => request<NotificationItem[]>("/notifications"),

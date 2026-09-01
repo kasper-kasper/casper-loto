@@ -192,6 +192,17 @@ class NumberStatisticResponse(ApiModel):
     draws_since_last: int | None
 
 
+class NumberStatisticsReportResponse(ApiModel):
+    lottery_id: UUID
+    lottery_name: str
+    period_start: datetime | None
+    window_size: int | None
+    draw_count: int
+    first_draw_at: datetime | None
+    last_draw_at: datetime | None
+    numbers: list[NumberStatisticResponse]
+
+
 class AuditResponse(ApiModel):
     id: UUID
     admin_user_id: UUID
@@ -612,18 +623,24 @@ async def draw_detail(
 
 @router.get(
     "/lotteries/{lottery_id}/number-statistics",
-    response_model=list[NumberStatisticResponse],
+    response_model=NumberStatisticsReportResponse,
 )
 async def number_statistics(
     lottery_id: UUID,
     _admin: Annotated[CurrentAdmin, Depends(get_current_admin)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
-) -> list[NumberStatisticResponse]:
+    date_from: Annotated[datetime | None, Query()] = None,
+    limit: Annotated[int, Query(ge=0, le=100)] = 20,
+) -> NumberStatisticsReportResponse:
     try:
-        items = await AdminQueryService(session).number_statistics(lottery_id)
+        report = await AdminQueryService(session).number_statistics(
+            lottery_id,
+            date_from=date_from,
+            limit=limit or None,
+        )
     except LookupError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from error
-    return [NumberStatisticResponse.model_validate(item) for item in items]
+    return NumberStatisticsReportResponse.model_validate(report)
 
 
 @router.get("/audit", response_model=list[AuditResponse])

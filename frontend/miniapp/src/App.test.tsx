@@ -199,6 +199,9 @@ it("selects five numbers, adds a ticket and buys the cart atomically", async () 
       1,
     ),
   );
+  expect(await screen.findByText("Билет уже участвует")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Купить ещё" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Мои билеты" })).toBeInTheDocument();
 });
 
 it("builds a large cart and sends one hundred tickets in one operation", async () => {

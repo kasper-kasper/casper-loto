@@ -3,7 +3,7 @@ import { vi } from "vitest";
 
 import App from "./App";
 import { adminApi } from "./api";
-import type { Dashboard, Lottery, Player, TicketAnalytics } from "./types";
+import type { Dashboard, Lottery, NumberStatisticsReport, Player, TicketAnalytics } from "./types";
 
 vi.mock("./api", () => ({
   ApiError: class ApiError extends Error { status = 500; },
@@ -22,8 +22,10 @@ const lottery: Lottery = { id: "lottery", code: "weekly", name: "Weekly 5/20", k
 const dashboard: Dashboard = { version: "0.8.0", uptime_seconds: 120, database_healthy: true, bot_configured: true, scheduler_enabled: true, counts: { users: 1, tickets: 6, completed_draws: 3, pending_draws: 1 }, lotteries: [lottery], recent_draws: [], recent_transactions: [], operations: { scheduler: { last_started_at: null, last_succeeded_at: null, last_failed_at: null, last_error: null, settled_count: 0, prepared_count: 0 }, stuck_draw_count: 0, notifications: {}, next_draws: [] } };
 const player: Player = { id: "player", display_name: "Test Player", username: "player", telegram_id: 123, is_active: true, balance: 5_000, ticket_count: 6, spent: 600, won: 250, net: -350, telegram_notifications_enabled: false, auto_play_enabled: false, auto_play_tickets_per_draw: 5, auto_play_last_succeeded_at: null, auto_play_last_error: null };
 const analytics: TicketAnalytics = { overall: { lottery_id: null, lottery_name: "Все лотереи", is_active: null, total_tickets: 100, active_tickets: 10, settled_tickets: 90, winning_tickets: 21, participants: 8, winning_players: 5, total_sales: 10_000, total_payout: 2_500 }, lotteries: [{ lottery_id: "lottery", lottery_name: "Weekly 5/20", is_active: true, total_tickets: 100, active_tickets: 10, settled_tickets: 90, winning_tickets: 21, participants: 8, winning_players: 5, total_sales: 10_000, total_payout: 2_500 }] };
+const numberStatistics: NumberStatisticsReport = { lottery_id: "lottery", lottery_name: "Weekly 5/20", period_start: "2026-08-31T21:00:00Z", window_size: 20, draw_count: 2, first_draw_at: "2026-09-01T09:00:00Z", last_draw_at: "2026-09-01T15:00:00Z", numbers: [{ number: 7, appearances: 2, draw_percentage: 100, last_appearance: "2026-09-01T15:00:00Z", draws_since_last: 0 }] };
 
 beforeEach(() => {
+  vi.clearAllMocks();
   window.history.replaceState({}, "", "/");
   window.localStorage.clear();
   vi.mocked(adminApi.session).mockResolvedValue(session);
@@ -34,7 +36,7 @@ beforeEach(() => {
   vi.mocked(adminApi.lotteries).mockResolvedValue([lottery]);
   vi.mocked(adminApi.draws).mockResolvedValue([]);
   vi.mocked(adminApi.transactions).mockResolvedValue([]);
-  vi.mocked(adminApi.statistics).mockResolvedValue([]);
+  vi.mocked(adminApi.statistics).mockResolvedValue(numberStatistics);
   vi.mocked(adminApi.ticketAnalytics).mockResolvedValue(analytics);
   vi.mocked(adminApi.audit).mockResolvedValue([]);
   vi.mocked(adminApi.notifications).mockResolvedValue([]);
@@ -119,6 +121,15 @@ it("shows lightweight ticket win analytics overall and by lottery", async () => 
   expect(await screen.findByText("23,33% от рассчитанных")).toBeInTheDocument();
   expect(screen.getByText("Weekly 5/20")).toBeInTheDocument();
   expect(adminApi.ticketAnalytics).toHaveBeenCalledOnce();
+});
+
+it("filters number statistics by lottery and draw window without changing history", async () => {
+  render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /Статистика чисел/ }));
+
+  expect(await screen.findByText("Статистика начата заново с 1 сентября 2026 года. История тиражей и их номера не изменялись.")).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText("Количество тиражей"), { target: { value: "50" } });
+  await waitFor(() => expect(adminApi.statistics).toHaveBeenCalledWith("lottery", 50));
 });
 
 it("saves lottery price, jackpot and reserve with one action", async () => {

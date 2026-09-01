@@ -183,6 +183,16 @@ function CartView({ cart, groups, purchasing, success, progress, canAdd, onClear
   </div>;
 }
 
+function PurchaseConfirmation({ count, cost, onAgain, onTickets }: { count: number; cost: number; onAgain: () => void; onTickets: () => void }) {
+  return <div className="purchase-confirmation-backdrop"><motion.section animate={{ opacity: 1, y: 0, scale: 1 }} className="purchase-confirmation" initial={{ opacity: 0, y: 12, scale: .98 }} transition={{ duration: .28 }}>
+    <div className="purchase-confirmation-mark">✓</div>
+    <span className="eyebrow">Покупка завершена</span>
+    <h2>{count === 1 ? "Билет уже участвует" : `${count} ${plural(count, "билет участвует", "билета участвуют", "билетов участвуют")}`}</h2>
+    <p>Списано {formatCas(cost)}. Билет сохранён и появится в результатах после тиража.</p>
+    <div><PrimaryButton onClick={onAgain}>Купить ещё</PrimaryButton><button className="secondary-button" onClick={onTickets} type="button">Мои билеты</button></div>
+  </motion.section></div>;
+}
+
 export default function App({ initData, localDev = false }: AppProps) {
   const authenticated = Boolean(initData) || localDev;
   const [cartTtl] = useState(() => configuredCartTtl());
@@ -206,6 +216,7 @@ export default function App({ initData, localDev = false }: AppProps) {
   const [liveLoading, setLiveLoading] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
+  const [purchaseConfirmation, setPurchaseConfirmation] = useState<{ lotteryCode: string | null; count: number; cost: number } | null>(null);
   const [purchaseProgress, setPurchaseProgress] = useState<{ done: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -369,7 +380,8 @@ export default function App({ initData, localDev = false }: AppProps) {
       const updatedAccount = await refreshAccount();
       if (!localDev && !updatedAccount?.notification_preferences.telegram_enabled && localStorage.getItem("k-loto:notification-prompt-dismissed") !== "true") setShowNotificationPrompt(true);
       await new Promise((resolve) => window.setTimeout(resolve, 480));
-      setPickerLottery(null); setTicketsLoading(true); setView("account"); setAccountView("tickets"); setTicketView("active");
+      setPickerLottery(null); setSelectedLotteryCode(lotteryCode); setView("home");
+      setPurchaseConfirmation({ lotteryCode, count: 1, cost: result.total_cost });
     } catch (reason) {
       errorHaptic();
       setError(reason instanceof ApiError ? reason.message : "Покупка не выполнена.");
@@ -380,6 +392,7 @@ export default function App({ initData, localDev = false }: AppProps) {
 
   const purchaseCart = async () => {
     if (purchasing || cart.length === 0) return;
+    const returnLotteryCode = cart[0]?.lotteryCode ?? null;
     const groups = new Map<string, CartTicket[]>();
     for (const item of cart) {
       const key = `${item.lotteryCode}:${item.drawCount}`;
@@ -406,7 +419,8 @@ export default function App({ initData, localDev = false }: AppProps) {
       const updatedAccount = await refreshAccount();
       if (!localDev && !updatedAccount?.notification_preferences.telegram_enabled && localStorage.getItem("k-loto:notification-prompt-dismissed") !== "true") setShowNotificationPrompt(true);
       await new Promise((resolve) => window.setTimeout(resolve, 480));
-      setTicketsLoading(true); setView("account"); setAccountView("tickets"); setTicketView("active");
+      setSelectedLotteryCode(returnLotteryCode); setView("home");
+      setPurchaseConfirmation({ lotteryCode: returnLotteryCode, count: done, cost: totalCost });
     } catch (reason) {
       errorHaptic();
       setError(`${done ? `Куплено ${done} из ${total}. ` : ""}${reason instanceof ApiError ? reason.message : "Покупка прервана. Непроданные билеты остались в корзине."}`);
@@ -485,6 +499,7 @@ export default function App({ initData, localDev = false }: AppProps) {
     {updateAvailable && <aside className="update-banner"><span><strong>Доступно обновление</strong><small>Корзина сохранена на этом устройстве.</small></span><button onClick={() => window.location.reload()} type="button">Обновить</button></aside>}
     {(error || notice) && <button className={`toast ${error ? "error" : "success"}`} onClick={() => { setError(null); setNotice(null); }} type="button"><span>{error ? "!" : "✓"}</span>{error ?? notice}<Icon name="close" /></button>}
     {showNotificationPrompt && <div className="permission-backdrop"><section className="permission-card"><div className="permission-mark"><Icon name="profile" /></div><span className="eyebrow">{copy.notifications.promptEyebrow}</span><h2>{copy.notifications.promptTitle}</h2><p>{copy.notifications.promptText}</p><PrimaryButton onClick={() => void enableTelegramNotifications()}>{copy.notifications.enable}</PrimaryButton><button className="permission-later" onClick={dismissNotificationPrompt} type="button">{copy.notifications.promptLater}</button></section></div>}
+    {purchaseConfirmation && <PurchaseConfirmation count={purchaseConfirmation.count} cost={purchaseConfirmation.cost} onAgain={() => { const code = purchaseConfirmation.lotteryCode; setPurchaseConfirmation(null); if (code) void openLottery(code); else setView("home"); }} onTickets={() => { setPurchaseConfirmation(null); setTicketsLoading(true); setView("account"); setAccountView("tickets"); setTicketView("active"); }} />}
 
     {view === "home" && <section className="view-content home-view" key="home">
       {selectedLottery && <NextDraw key={selectedLottery.code} lottery={selectedLottery} nearest={selectedLottery.code === nearestLottery?.code} now={serverNow} onLive={() => { setLiveLoading(true); setView("live"); }} onPlay={() => void openLottery(selectedLottery.code)} />}

@@ -1,6 +1,6 @@
 # K-Loto
 
-Current version: **1.4.2 — compact nearest-draw home layout**.
+Current version: **1.5.0 — owner intelligence room and smoother purchase flow**.
 
 K-Loto is a multi-user lottery platform with integer CAS accounting, an
 immutable transaction ledger, recoverable draw scheduling and five independent

@@ -102,6 +102,17 @@ export interface NumberStatistic {
   draws_since_last: number | null;
 }
 
+export interface NumberStatisticsReport {
+  lottery_id: string;
+  lottery_name: string;
+  period_start: string | null;
+  window_size: number | null;
+  draw_count: number;
+  first_draw_at: string | null;
+  last_draw_at: string | null;
+  numbers: NumberStatistic[];
+}
+
 export interface AuditEntry {
   id: string;
   admin_user_id: string;
