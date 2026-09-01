@@ -206,6 +206,7 @@ class Draw(TimestampMixin, Base):
         CheckConstraint("ticket_count >= 0", name="ticket_count_nonnegative"),
         CheckConstraint("total_sales >= 0", name="total_sales_nonnegative"),
         CheckConstraint("total_payout >= 0", name="total_payout_nonnegative"),
+        CheckConstraint("kasper_fund_used >= 0", name="kasper_fund_used_nonnegative"),
         Index("ix_draw_due", "status", "scheduled_at"),
     )
 
@@ -236,6 +237,12 @@ class Draw(TimestampMixin, Base):
     distribution_opening: Mapped[int | None] = mapped_column(BigInteger)
     distribution_closing: Mapped[int | None] = mapped_column(BigInteger)
     reserve_used: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    kasper_fund_used: Mapped[int] = mapped_column(
+        BigInteger, default=0, server_default="0"
+    )
+    configuration_snapshot: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, default=dict, server_default="{}"
+    )
 
 
 class Ticket(Base):
@@ -348,6 +355,47 @@ class LotteryReserve(TimestampMixin, Base):
     )
     balance: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
     version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+
+
+class KasperFundAccount(TimestampMixin, Base):
+    """Singleton source for ordinary prizes and base-jackpot resets."""
+
+    __tablename__ = "kasper_fund_accounts"
+    __table_args__ = (CheckConstraint("balance >= 0", name="balance_nonnegative"),)
+
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
+    balance: Mapped[int] = mapped_column(BigInteger)
+    version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+
+
+class JackpotWinEvent(Base):
+    """Immutable projection of a jackpot win for inbox news and analytics."""
+
+    __tablename__ = "jackpot_win_events"
+    __table_args__ = (
+        CheckConstraint("jackpot_amount > 0", name="amount_positive"),
+        CheckConstraint("winner_ticket_count > 0", name="ticket_count_positive"),
+        CheckConstraint("winner_user_count > 0", name="user_count_positive"),
+        Index("ix_jackpot_win_occurred", "occurred_at"),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), primary_key=True, default=uuid4
+    )
+    draw_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("draws.id", ondelete="RESTRICT"), unique=True
+    )
+    lottery_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("lotteries.id", ondelete="RESTRICT")
+    )
+    jackpot_amount: Mapped[int] = mapped_column(BigInteger)
+    winner_ticket_count: Mapped[int] = mapped_column(Integer)
+    winner_user_count: Mapped[int] = mapped_column(Integer)
+    base_jackpot_after: Mapped[int] = mapped_column(BigInteger)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
 
 class LedgerTransaction(Base):

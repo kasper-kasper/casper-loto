@@ -20,7 +20,7 @@ Web client was retired in v0.14.0.
 | `grob` | ГРОБ | 3/16 | daily 06:06 and 23:06 | 2 min |
 
 Each entity owns independent draw numbers, ticket numbers, jackpot,
-distribution fund and reserve. Empty draws are settled normally. Every active
+central Kasper Fund. Empty draws are settled normally. Every active
 Telegram player receives one idempotent result message and a purchase button.
 
 ## Repository

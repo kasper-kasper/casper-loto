@@ -40,7 +40,7 @@ def test_new_three_of_thirty_three_format_needs_no_new_service_math() -> None:
         base_jackpot=500,
     )
     assert plan.payouts[0].amount == 200
-    assert plan.reserve_used == 150
+    assert plan.reserve_used == 200
     assert plan.jackpot_closing == 1_000
 
 
@@ -84,17 +84,17 @@ def test_september_fixed_payouts_and_shared_main_prize() -> None:
         16_666_666,
     ]
     assert plan.distribution_closing == 0
-    assert plan.reserve_used == 33_335_999
+    assert plan.reserve_used == 33_336_999
     assert plan.jackpot_closing == 33_333_333
     assert plan.jackpot_reset_credit == 33_333_333
 
 
-def test_september_purchase_goes_entirely_to_distribution() -> None:
+def test_september_purchase_goes_entirely_to_jackpot() -> None:
     quote = SEPTEMBER_RULES.quote_purchase([[33, 1, 3], [4, 5, 6]], 333, 1_000)
     assert quote.combinations == ((1, 3, 33), (4, 5, 6))
     assert quote.total_cost == 666
-    assert quote.jackpot_contribution == 0
-    assert quote.distribution_contribution == 666
+    assert quote.jackpot_contribution == 666
+    assert quote.distribution_contribution == 0
 
 
 def test_september_schedule_has_two_moscow_slots() -> None:
@@ -111,21 +111,18 @@ def test_september_schedule_has_two_moscow_slots() -> None:
     assert future_draw_target(LotteryKind.DAILY, schedule) == 2
 
 
-def test_grob_purchase_split_is_integer_and_bulk_invariant() -> None:
+def test_grob_purchase_goes_entirely_to_jackpot_and_is_bulk_invariant() -> None:
     single = GROB_RULES.quote_purchase([[1, 2, 3]], 6_666, 100_000)
     bulk = GROB_RULES.quote_purchase(
         [[1, 2, 3], [4, 5, 6], [14, 15, 16]], 6_666, 100_000
     )
 
-    assert (single.jackpot_contribution, single.distribution_contribution) == (
-        2_666,
-        4_000,
-    )
+    assert (single.jackpot_contribution, single.distribution_contribution) == (6_666, 0)
     assert bulk.jackpot_contribution == single.jackpot_contribution * 3
     assert bulk.distribution_contribution == single.distribution_contribution * 3
 
 
-def test_grob_fixed_prizes_use_distribution_then_reserve() -> None:
+def test_grob_fixed_prizes_use_kasper_fund() -> None:
     tickets = [
         SettlementTicket(UUID(int=21), 1, UUID(int=31), (1, 8, 9), 6_666),
         SettlementTicket(UUID(int=22), 2, UUID(int=32), (1, 2, 9), 6_666),
@@ -143,7 +140,7 @@ def test_grob_fixed_prizes_use_distribution_then_reserve() -> None:
     assert [item.matches for item in plan.payouts] == [1, 2, 0]
     assert [item.amount for item in plan.payouts] == [666, 6_666, 0]
     assert plan.distribution_closing == 0
-    assert plan.reserve_used == 2_332
+    assert plan.reserve_used == 7_332
     assert plan.jackpot_closing == 6_666_666
 
 
@@ -164,7 +161,8 @@ def test_grob_jackpot_is_shared_and_resets_to_base() -> None:
     assert [item.amount for item in plan.payouts] == [3_333_334, 3_333_333]
     assert plan.jackpot_closing == 6_666_666
     assert plan.jackpot_reset_credit == 6_666_666
-    assert plan.distribution_closing == 8_000
+    assert plan.distribution_closing == 0
+    assert plan.reserve_used == 6_666_666
 
 
 def test_grob_schedule_has_two_moscow_slots() -> None:

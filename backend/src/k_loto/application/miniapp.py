@@ -371,7 +371,13 @@ class MiniAppQueryService:
                 .limit(1)
             )
             sales_open = draw is not None and draw.sales_close_at > timestamp
-            purchase_available = lottery.ticket_price is not None and sales_open
+            snapshot = (draw.configuration_snapshot or {}) if draw is not None else {}
+            draw_ticket_price = (
+                int(snapshot["ticket_price"])
+                if snapshot.get("ticket_price") is not None
+                else lottery.ticket_price
+            )
+            purchase_available = draw_ticket_price is not None and sales_open
             player_ticket_count = 0
             if draw is not None:
                 player_ticket_count = int(
@@ -400,7 +406,7 @@ class MiniAppQueryService:
                     kind=lottery.kind,
                     numbers_to_pick=lottery.numbers_to_pick,
                     max_number=lottery.max_number,
-                    ticket_price=lottery.ticket_price,
+                    ticket_price=draw_ticket_price,
                     jackpot=jackpot or 0,
                     draw_number=draw.public_number if draw else None,
                     scheduled_at=draw.scheduled_at if draw else None,

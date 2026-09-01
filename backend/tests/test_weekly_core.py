@@ -42,7 +42,7 @@ def settle(
     *,
     distribution: int = 1_000,
     jackpot: int = 10_000,
-    reserve: int = 5_000,
+    reserve: int = 1_000_000_000,
     base_jackpot: int = 2_000,
 ):
     return calculate_weekly_settlement(
@@ -81,8 +81,8 @@ def test_multi_ticket_purchase_and_identical_combinations() -> None:
     assert len(quote.combinations) == 2
     assert quote.combinations[0] == quote.combinations[1]
     assert quote.total_cost == 200
-    assert quote.jackpot_contribution == 100
-    assert quote.distribution_contribution == 100
+    assert quote.jackpot_contribution == 200
+    assert quote.distribution_contribution == 0
 
 
 def test_purchase_rejects_insufficient_balance() -> None:
@@ -107,7 +107,7 @@ def test_zero_and_one_match_pay_zero(numbers: tuple[int, ...], matches: int) -> 
 
     assert plan.payouts[0].matches == matches
     assert plan.payouts[0].amount == 0
-    assert plan.distribution_closing == 1_000
+    assert plan.distribution_closing == 0
     assert plan.jackpot_closing == 10_000
 
 
@@ -115,17 +115,17 @@ def test_two_matches_pay_quarter_of_ticket_snapshot() -> None:
     plan = settle([ticket(1, (1, 2, 6, 7, 8), price=200)])
 
     assert plan.payouts[0].amount == 50
-    assert plan.distribution_closing == 950
+    assert plan.reserve_used == 50
 
 
 def test_three_matches_refund_ticket_snapshot() -> None:
     plan = settle([ticket(1, (1, 2, 3, 6, 7), price=200)])
 
     assert plan.payouts[0].amount == 200
-    assert plan.distribution_closing == 800
+    assert plan.reserve_used == 200
 
 
-def test_four_matches_split_fund_after_guaranteed_categories() -> None:
+def test_four_matches_pay_fixed_fifty_thousand_from_kasper_fund() -> None:
     tickets = [
         ticket(1, (1, 2, 6, 7, 8)),
         ticket(2, (1, 2, 3, 6, 7)),
@@ -133,12 +133,13 @@ def test_four_matches_split_fund_after_guaranteed_categories() -> None:
     ]
     plan = settle(tickets)
 
-    assert [item.amount for item in plan.payouts] == [25, 100, 875]
+    assert [item.amount for item in plan.payouts] == [25, 100, 50_000]
     assert plan.distribution_closing == 0
-    assert plan.total_payout == 1_000
+    assert plan.total_payout == 50_125
+    assert plan.reserve_used == 50_125
 
 
-def test_multiple_four_match_winners_split_remainder_by_ticket_number() -> None:
+def test_multiple_four_match_winners_each_receive_fixed_prize() -> None:
     plan = settle(
         [
             ticket(20, (1, 2, 3, 4, 6)),
@@ -148,7 +149,7 @@ def test_multiple_four_match_winners_split_remainder_by_ticket_number() -> None:
     )
 
     payouts = {item.public_number: item.amount for item in plan.payouts}
-    assert payouts == {10: 501, 20: 500}
+    assert payouts == {10: 50_000, 20: 50_000}
     assert plan.distribution_closing == 0
 
 
@@ -180,30 +181,30 @@ def test_jackpot_carries_when_no_five_match_ticket_exists() -> None:
     assert plan.jackpot_reset_credit == 0
 
 
-def test_unused_distribution_fund_carries_to_next_draw() -> None:
+def test_legacy_distribution_is_not_used_by_new_settlement() -> None:
     plan = settle([ticket(1, (6, 7, 8, 9, 10))], distribution=777)
 
-    assert plan.distribution_closing == 777
+    assert plan.distribution_closing == 0
 
 
-def test_reserve_covers_guaranteed_payout_shortfall() -> None:
+def test_kasper_fund_covers_ordinary_payout() -> None:
     plan = settle(
         [ticket(1, (1, 2, 3, 6, 7))],
         distribution=40,
-        reserve=60,
+        reserve=100,
     )
 
     assert plan.payouts[0].amount == 100
     assert plan.distribution_closing == 0
-    assert plan.reserve_used == 60
+    assert plan.reserve_used == 100
 
 
-def test_insufficient_reserve_aborts_the_plan() -> None:
+def test_insufficient_kasper_fund_aborts_the_plan() -> None:
     with pytest.raises(InsufficientReserve):
         settle(
             [ticket(1, (1, 2, 3, 6, 7))],
             distribution=40,
-            reserve=59,
+            reserve=99,
         )
 
 
@@ -212,7 +213,7 @@ def test_empty_draw_is_completed_mathematically_with_carryovers() -> None:
 
     assert plan.payouts == ()
     assert plan.total_payout == 0
-    assert plan.distribution_closing == 777
+    assert plan.distribution_closing == 0
     assert plan.jackpot_closing == 12_345
 
 

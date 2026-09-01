@@ -74,23 +74,27 @@ def test_invalid_daily_ticket_is_rejected(numbers: list[int]) -> None:
         validate_daily_combination(numbers)
 
 
-def test_purchase_split_is_40_percent_jackpot_and_60_distribution() -> None:
+def test_purchase_goes_entirely_to_jackpot() -> None:
     quote = quote_daily_purchase([list(WINNING), list(WINNING)], 100, 500)
 
     assert quote.combinations == (WINNING, WINNING)
     assert quote.total_cost == 200
-    assert quote.jackpot_contribution == 80
-    assert quote.distribution_contribution == 120
+    assert quote.jackpot_contribution == 200
+    assert quote.distribution_contribution == 0
 
 
-def test_even_daily_price_assigns_rounding_remainder_to_distribution() -> None:
+def test_even_daily_price_keeps_integer_payouts() -> None:
     quote = quote_daily_purchase([list(WINNING)], 22_222, 30_000)
 
     assert quote.total_cost == 22_222
-    assert quote.jackpot_contribution == 8_888
-    assert quote.distribution_contribution == 13_334
+    assert quote.jackpot_contribution == 22_222
+    assert quote.distribution_contribution == 0
 
-    plan = settle([ticket(1, (1, 2, 5, 6), price=22_222)], distribution=20_000)
+    plan = settle(
+        [ticket(1, (1, 2, 5, 6), price=22_222)],
+        distribution=20_000,
+        reserve=20_000,
+    )
     assert plan.payouts[0].amount == 11_111
 
 
@@ -110,7 +114,7 @@ def test_zero_and_one_match_pay_zero(numbers: tuple[int, ...], matches: int) -> 
 
     assert plan.payouts[0].matches == matches
     assert plan.payouts[0].amount == 0
-    assert plan.distribution_closing == 1_000
+    assert plan.distribution_closing == 0
     assert plan.jackpot_closing == 10_000
 
 
@@ -118,30 +122,30 @@ def test_two_matches_pay_half_ticket_price() -> None:
     plan = settle([ticket(1, (1, 2, 5, 6), price=200)])
 
     assert plan.payouts[0].amount == 100
-    assert plan.distribution_closing == 900
+    assert plan.reserve_used == 100
 
 
 def test_three_matches_pay_three_times_ticket_price() -> None:
     plan = settle([ticket(1, (1, 2, 3, 5), price=200)])
 
     assert plan.payouts[0].amount == 600
-    assert plan.distribution_closing == 400
+    assert plan.reserve_used == 600
 
 
-def test_distribution_shortfall_uses_reserve_without_touching_jackpot() -> None:
+def test_kasper_fund_pays_prize_without_touching_jackpot() -> None:
     plan = settle(
-        [ticket(1, (1, 2, 3, 5))], distribution=100, reserve=200, jackpot=12_345
+        [ticket(1, (1, 2, 3, 5))], distribution=100, reserve=300, jackpot=12_345
     )
 
     assert plan.payouts[0].amount == 300
     assert plan.distribution_closing == 0
-    assert plan.reserve_used == 200
+    assert plan.reserve_used == 300
     assert plan.jackpot_closing == 12_345
 
 
-def test_insufficient_reserve_aborts_atomically() -> None:
+def test_insufficient_kasper_fund_aborts_atomically() -> None:
     with pytest.raises(InsufficientReserve):
-        settle([ticket(1, (1, 2, 3, 5))], distribution=100, reserve=199)
+        settle([ticket(1, (1, 2, 3, 5))], distribution=100, reserve=299)
 
 
 def test_jackpot_is_shared_with_deterministic_remainder_and_reset() -> None:
@@ -160,10 +164,10 @@ def test_jackpot_is_shared_with_deterministic_remainder_and_reset() -> None:
     assert plan.jackpot_reset_credit == 2_000
 
 
-def test_unwon_jackpot_and_unused_distribution_carry_over() -> None:
+def test_unwon_jackpot_carries_and_legacy_distribution_is_ignored() -> None:
     plan = settle([ticket(1, (5, 6, 7, 8))], distribution=777, jackpot=12_345)
 
-    assert plan.distribution_closing == 777
+    assert plan.distribution_closing == 0
     assert plan.jackpot_closing == 12_345
     assert not plan.jackpot_won
 
@@ -173,7 +177,7 @@ def test_empty_daily_draw_completes_with_carryovers() -> None:
 
     assert plan.payouts == ()
     assert plan.total_payout == 0
-    assert plan.distribution_closing == 777
+    assert plan.distribution_closing == 0
     assert plan.jackpot_closing == 12_345
 
 

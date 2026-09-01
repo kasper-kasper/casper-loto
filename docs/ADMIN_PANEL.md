@@ -21,7 +21,7 @@ no decorative or state-transition animations.
   enable/disable control for five-ticket auto-play;
 - setting a target player balance through an idempotent ledger adjustment;
 - lottery ticket-price and base-jackpot configuration with an audit reason;
-- current jackpot/distribution visibility and reserve adjustment through ledger;
+- current jackpots, central Kasper Fund and jackpot-win history;
 - permanent read-only draw archive with results, funds, tickets, winners,
   timestamps and correlation IDs;
 - immutable transaction ledger with date, type, user, lottery, draw and ticket

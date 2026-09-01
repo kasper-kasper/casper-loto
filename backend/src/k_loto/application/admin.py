@@ -28,6 +28,8 @@ from k_loto.infrastructure.database.models import (
     DistributionFund,
     Draw,
     JackpotAccount,
+    JackpotWinEvent,
+    KasperFundAccount,
     LedgerTransaction,
     Lottery,
     LotteryReserve,
@@ -123,6 +125,7 @@ class AdminDraw:
     distribution_opening: int | None
     distribution_closing: int | None
     reserve_used: int
+    kasper_fund_used: int
     correlation_id: UUID
 
 
@@ -800,6 +803,7 @@ class AdminQueryService:
             draw.distribution_opening,
             draw.distribution_closing,
             draw.reserve_used,
+            draw.kasper_fund_used,
             draw.correlation_id,
         )
 
@@ -959,6 +963,72 @@ class AdminQueryService:
             "tickets": tickets or 0,
             "completed_draws": completed or 0,
             "pending_draws": pending or 0,
+        }
+
+    async def jackpot_analytics(self) -> dict[str, Any]:
+        """Return the central fund and immutable jackpot-win history."""
+        fund = await self._session.scalar(select(KasperFundAccount).limit(1))
+        events = (
+            await self._session.execute(
+                select(JackpotWinEvent, Lottery)
+                .join(Lottery, Lottery.id == JackpotWinEvent.lottery_id)
+                .order_by(JackpotWinEvent.occurred_at.desc())
+                .limit(50)
+            )
+        ).all()
+        totals = (
+            await self._session.execute(
+                select(
+                    func.count(JackpotWinEvent.id),
+                    func.coalesce(func.sum(JackpotWinEvent.jackpot_amount), 0),
+                    func.coalesce(func.max(JackpotWinEvent.jackpot_amount), 0),
+                )
+            )
+        ).one()
+        grouped = (
+            await self._session.execute(
+                select(
+                    Lottery.code,
+                    Lottery.name,
+                    func.count(JackpotWinEvent.id),
+                    func.coalesce(func.sum(JackpotWinEvent.jackpot_amount), 0),
+                    func.max(JackpotWinEvent.occurred_at),
+                )
+                .outerjoin(JackpotWinEvent, JackpotWinEvent.lottery_id == Lottery.id)
+                .where(Lottery.is_active.is_(True))
+                .group_by(Lottery.id)
+                .order_by(Lottery.code)
+            )
+        ).all()
+        return {
+            "kasper_fund_balance": fund.balance if fund else 0,
+            "total_wins": int(totals[0]),
+            "total_paid": int(totals[1]),
+            "largest_win": int(totals[2]),
+            "lotteries": [
+                {
+                    "code": code,
+                    "name": name,
+                    "win_count": int(count),
+                    "total_paid": int(total),
+                    "last_win_at": last_at,
+                }
+                for code, name, count, total, last_at in grouped
+            ],
+            "history": [
+                {
+                    "id": str(event.id),
+                    "lottery_code": lottery.code,
+                    "lottery_name": lottery.name,
+                    "draw_id": str(event.draw_id),
+                    "jackpot_amount": event.jackpot_amount,
+                    "winner_ticket_count": event.winner_ticket_count,
+                    "winner_user_count": event.winner_user_count,
+                    "base_jackpot_after": event.base_jackpot_after,
+                    "occurred_at": event.occurred_at,
+                }
+                for event, lottery in events
+            ],
         }
 
     async def operational_status(self) -> dict[str, Any]:

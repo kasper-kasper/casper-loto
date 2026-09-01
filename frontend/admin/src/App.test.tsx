@@ -19,7 +19,7 @@ vi.mock("./api", () => ({
 
 const session = { username: "owner", csrf_token: "csrf", expires_at: "2026-08-16T00:00:00Z" };
 const lottery: Lottery = { id: "lottery", code: "weekly", name: "Weekly 5/20", kind: "WEEKLY", ticket_price: 100, base_jackpot: 10_000, current_jackpot: 12_000, distribution_fund: 500, reserve: 100_000, schedule: { weekday: "sunday" }, sales_cutoff_minutes: 5, max_tickets_per_purchase: 1000, max_tickets_per_user_per_draw: 5000, is_active: true, next_draw_number: 8, next_draw_at: "2026-08-16T17:00:00Z" };
-const dashboard: Dashboard = { version: "0.8.0", uptime_seconds: 120, database_healthy: true, bot_configured: true, scheduler_enabled: true, counts: { users: 1, tickets: 6, completed_draws: 3, pending_draws: 1 }, lotteries: [lottery], recent_draws: [], recent_transactions: [], operations: { scheduler: { last_started_at: null, last_succeeded_at: null, last_failed_at: null, last_error: null, settled_count: 0, prepared_count: 0 }, stuck_draw_count: 0, notifications: {}, next_draws: [] } };
+const dashboard: Dashboard = { version: "0.8.0", uptime_seconds: 120, database_healthy: true, bot_configured: true, scheduler_enabled: true, counts: { users: 1, tickets: 6, completed_draws: 3, pending_draws: 1 }, lotteries: [lottery], recent_draws: [], recent_transactions: [], operations: { scheduler: { last_started_at: null, last_succeeded_at: null, last_failed_at: null, last_error: null, settled_count: 0, prepared_count: 0 }, stuck_draw_count: 0, notifications: {}, next_draws: [] }, jackpots: { kasper_fund_balance: 1_000_000_000_000_000, total_wins: 0, total_paid: 0, largest_win: 0, lotteries: [{ code: "weekly", name: "Weekly 5/20", win_count: 0, total_paid: 0, last_win_at: null }], history: [] } };
 const player: Player = { id: "player", display_name: "Test Player", username: "player", telegram_id: 123, is_active: true, balance: 5_000, ticket_count: 6, spent: 600, won: 250, net: -350, telegram_notifications_enabled: false, auto_play_enabled: false, auto_play_tickets_per_draw: 5, auto_play_last_succeeded_at: null, auto_play_last_error: null };
 const analytics: TicketAnalytics = { overall: { lottery_id: null, lottery_name: "Все лотереи", is_active: null, total_tickets: 100, active_tickets: 10, settled_tickets: 90, winning_tickets: 21, participants: 8, winning_players: 5, total_sales: 10_000, total_payout: 2_500 }, lotteries: [{ lottery_id: "lottery", lottery_name: "Weekly 5/20", is_active: true, total_tickets: 100, active_tickets: 10, settled_tickets: 90, winning_tickets: 21, participants: 8, winning_players: 5, total_sales: 10_000, total_payout: 2_500 }] };
 const numberStatistics: NumberStatisticsReport = { lottery_id: "lottery", lottery_name: "Weekly 5/20", period_start: "2026-08-31T21:00:00Z", window_size: 20, draw_count: 2, first_draw_at: "2026-09-01T09:00:00Z", last_draw_at: "2026-09-01T15:00:00Z", numbers: [{ number: 7, appearances: 2, draw_percentage: 100, last_appearance: "2026-09-01T15:00:00Z", draws_since_last: 0 }] };
@@ -132,17 +132,16 @@ it("filters number statistics by lottery and draw window without changing histor
   await waitFor(() => expect(adminApi.statistics).toHaveBeenCalledWith("lottery", 50));
 });
 
-it("saves lottery price, jackpot and reserve with one action", async () => {
+it("saves lottery price, jackpot and limits with one action", async () => {
   render(<App />);
   fireEvent.click(await screen.findByRole("button", { name: /Лотереи/ }));
 
   fireEvent.change(await screen.findByLabelText("Цена билета, CAS"), { target: { value: "22222" } });
   fireEvent.change(screen.getByLabelText("Базовый джекпот, CAS"), { target: { value: "2811996" } });
-  fireEvent.change(screen.getByLabelText("Резерв, CAS"), { target: { value: "9999999999" } });
   fireEvent.change(screen.getByLabelText("Обязательная причина для аудита"), { target: { value: "Настройки владельца" } });
   fireEvent.click(screen.getByRole("button", { name: "СОХРАНИТЬ ВСЕ НАСТРОЙКИ" }));
 
   await waitFor(() => expect(adminApi.configureLottery).toHaveBeenCalledWith("lottery", 22222, 2811996, 5, 1000, 5000, "Настройки владельца"));
-  expect(adminApi.setReserve).toHaveBeenCalledWith("lottery", 9999999999, "Настройки владельца");
-  expect(await screen.findByText("Цена билета, джекпот и резерв сохранены.")).toBeInTheDocument();
+  expect(adminApi.setReserve).not.toHaveBeenCalled();
+  expect(await screen.findByText("Цена билета, джекпот и лимиты сохранены.")).toBeInTheDocument();
 });

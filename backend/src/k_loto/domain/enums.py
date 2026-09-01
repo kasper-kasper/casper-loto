@@ -32,6 +32,7 @@ class LedgerAccountKind(StrEnum):
     JACKPOT = "JACKPOT"
     DISTRIBUTION_FUND = "DISTRIBUTION_FUND"
     LOTTERY_RESERVE = "LOTTERY_RESERVE"
+    KASPER_FUND = "KASPER_FUND"
 
 
 class TransactionType(StrEnum):
@@ -60,6 +61,7 @@ class NotificationType(StrEnum):
 class InAppNotificationType(StrEnum):
     WIN = "WIN"
     DRAW_INVITATION = "DRAW_INVITATION"
+    JACKPOT_NEWS = "JACKPOT_NEWS"
 
 
 class NotificationStatus(StrEnum):

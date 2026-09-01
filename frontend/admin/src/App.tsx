@@ -155,6 +155,17 @@ function DashboardView({ data, analytics }: { data: Dashboard; analytics: Ticket
       <article className="metric"><small>ВЫПЛАЧЕНО ИГРОКАМ</small><strong>{compactCas(overall.total_payout)}</strong><em>{percentage(overall.total_payout, overall.total_sales)} от стоимости билетов</em></article>
       <article className="metric"><small>ИГРОКОВ В СИСТЕМЕ</small><strong>{data.counts.users.toLocaleString("ru-RU")}</strong><em>{overall.participants.toLocaleString("ru-RU")} покупали билеты</em></article>
     </section>
+    <section className="panel jackpot-command">
+      <header><h2>Джекпот-контроль</h2><span>ЕДИНАЯ ФИНАНСОВАЯ СХЕМА</span></header>
+      <div className="metric-grid">
+        <article className="metric"><small>ФОНД КАСПЕРА</small><strong>{compactCas(data.jackpots.kasper_fund_balance)}</strong><em>обычные выигрыши и восстановление джекпотов</em></article>
+        <article className="metric"><small>ДЖЕКПОТОВ СОРВАНО</small><strong>{data.jackpots.total_wins}</strong><em>по новой финансовой схеме</em></article>
+        <article className="metric"><small>ВЫПЛАЧЕНО ДЖЕКПОТАМИ</small><strong>{compactCas(data.jackpots.total_paid)}</strong></article>
+        <article className="metric"><small>КРУПНЕЙШИЙ ДЖЕКПОТ</small><strong>{compactCas(data.jackpots.largest_win)}</strong></article>
+      </div>
+      <div className="table-wrap"><table><thead><tr><th>Лотерея</th><th>Сорвано</th><th>Выплачено</th><th>Последний раз</th></tr></thead><tbody>{data.jackpots.lotteries.map((row) => <tr key={row.code}><td><b>{row.name}</b></td><td>{row.win_count}</td><td>{cas(row.total_paid)}</td><td>{date(row.last_win_at)}</td></tr>)}</tbody></table></div>
+      {data.jackpots.history.length > 0 && <div className="table-wrap"><table><thead><tr><th>Дата</th><th>Лотерея</th><th>Сумма</th><th>Билеты / игроки</th><th>Новый джекпот</th></tr></thead><tbody>{data.jackpots.history.map((row) => <tr key={row.id}><td>{date(row.occurred_at)}</td><td>{row.lottery_name}</td><td className="positive">{cas(row.jackpot_amount)}</td><td>{row.winner_ticket_count} / {row.winner_user_count}</td><td>{cas(row.base_jackpot_after)}</td></tr>)}</tbody></table></div>}
+    </section>
     <section className="panel control-room"><header><h2>Оперативный пульт</h2><span>ТОЛЬКО ЧТЕНИЕ · ОБНОВЛЯЕТСЯ ПРИ ОТКРЫТИИ</span></header><div className="control-status"><article><small>ПОСЛЕДНЯЯ УСПЕШНАЯ ПРОВЕРКА</small><strong>{date(data.operations.scheduler.last_succeeded_at)}</strong><span>{data.operations.scheduler.last_error ? `ОШИБКА: ${data.operations.scheduler.last_error}` : "ПЛАНИРОВЩИК В НОРМЕ"}</span></article><article><small>ЗАВИСШИЕ ТИРАЖИ</small><strong className={data.operations.stuck_draw_count ? "negative" : "positive"}>{data.operations.stuck_draw_count}</strong><span>ОЖИДАЮТ ДОСТАВКИ: {data.operations.notifications.PENDING ?? 0} · ОШИБКИ: {data.operations.notifications.FAILED ?? 0}</span></article></div><div className="operations-table"><table><thead><tr><th>Ближайший тираж</th><th>Время / cutoff</th><th>Участники</th><th>Билеты</th><th>Продажи</th><th>Статус</th></tr></thead><tbody>{data.operations.next_draws.map((draw) => <tr key={draw.id}><td><b>{draw.lottery_name}</b> №{drawNumber(draw.draw_number)}</td><td>{date(draw.scheduled_at)}<small>{date(draw.sales_close_at)}</small></td><td>{draw.participant_count}</td><td>{draw.ticket_count}</td><td>{cas(draw.total_sales)}</td><td><span className={`tag ${draw.status.toLowerCase()}`}>{translated(draw.status, drawStatuses)}</span></td></tr>)}</tbody></table></div></section>
     <div className="split">
       <section className="panel"><header><h2>Контроль фондов</h2><span>ТЕКУЩЕЕ СОСТОЯНИЕ</span></header>
@@ -199,7 +210,6 @@ function PlayerCard({ player, onSaved }: { player: Player; onSaved: () => Promis
 function LotteryCard({ lottery, onSaved }: { lottery: Lottery; onSaved: () => Promise<void> }) {
   const [price, setPrice] = useState(String(lottery.ticket_price ?? 0));
   const [base, setBase] = useState(String(lottery.base_jackpot));
-  const [reserve, setReserve] = useState(String(lottery.reserve));
   const [cutoff, setCutoff] = useState(String(lottery.sales_cutoff_minutes ?? 0));
   const [purchaseLimit, setPurchaseLimit] = useState(String(lottery.max_tickets_per_purchase));
   const [playerLimit, setPlayerLimit] = useState(String(lottery.max_tickets_per_user_per_draw));
@@ -211,9 +221,8 @@ function LotteryCard({ lottery, onSaved }: { lottery: Lottery; onSaved: () => Pr
     setMessage("");
     try {
       await adminApi.configureLottery(lottery.id, Number(price), Number(base), Number(cutoff), Number(purchaseLimit), Number(playerLimit), reason);
-      await adminApi.setReserve(lottery.id, Number(reserve), reason);
       setReason("");
-      setMessage("Цена билета, джекпот и резерв сохранены.");
+      setMessage("Цена билета, джекпот и лимиты сохранены.");
       await onSaved();
     } catch (saveError) {
       setMessage(saveError instanceof Error ? saveError.message : "Не удалось сохранить настройки.");
@@ -223,8 +232,8 @@ function LotteryCard({ lottery, onSaved }: { lottery: Lottery; onSaved: () => Pr
   };
   return <article className="lottery-card">
     <header><div><small>{lottery.kind === "WEEKLY" ? "ЕЖЕНЕДЕЛЬНАЯ" : "ЕЖЕДНЕВНАЯ"}</small><h2>{lottery.name}</h2></div><Status active={lottery.is_active}>{lottery.is_active ? "АКТИВНА" : "НЕАКТИВНА"}</Status></header>
-    <div className="fund-matrix"><span><small>ТЕКУЩИЙ ДЖЕКПОТ</small><b>{cas(lottery.current_jackpot)}</b></span><span><small>ФОНД РАСПРЕДЕЛЕНИЯ</small><b>{cas(lottery.distribution_fund)}</b></span><span><small>СЛЕДУЮЩИЙ ТИРАЖ</small><b>{lottery.next_draw_number ? `№${drawNumber(lottery.next_draw_number)}` : "—"}</b><em>{date(lottery.next_draw_at)}</em></span></div>
-    <div className="config-grid"><label>Цена билета, CAS<input type="number" min="1" value={price} onChange={(e) => setPrice(e.target.value)} /></label><label>Базовый джекпот, CAS<input type="number" min="0" value={base} onChange={(e) => setBase(e.target.value)} /></label><label>Резерв, CAS<input type="number" min="0" value={reserve} onChange={(e) => setReserve(e.target.value)} /></label><label>Cutoff, минут<input type="number" min="0" max="1440" value={cutoff} onChange={(e) => setCutoff(e.target.value)} /></label><label>Лимит одной покупки<input type="number" min="1" max="1000" value={purchaseLimit} onChange={(e) => setPurchaseLimit(e.target.value)} /></label><label>Лимит игрока на тираж<input type="number" min="1" max="100000" value={playerLimit} onChange={(e) => setPlayerLimit(e.target.value)} /></label></div>
+    <div className="fund-matrix"><span><small>ТЕКУЩИЙ ДЖЕКПОТ</small><b>{cas(lottery.current_jackpot)}</b></span><span><small>СХЕМА ПОКУПКИ</small><b>100% в джекпот</b></span><span><small>СЛЕДУЮЩИЙ ТИРАЖ</small><b>{lottery.next_draw_number ? `№${drawNumber(lottery.next_draw_number)}` : "—"}</b><em>{date(lottery.next_draw_at)}</em></span></div>
+    <div className="config-grid"><label>Цена билета, CAS<input type="number" min="1" value={price} onChange={(e) => setPrice(e.target.value)} /></label><label>Базовый джекпот, CAS<input type="number" min="0" value={base} onChange={(e) => setBase(e.target.value)} /></label><label>Cutoff, минут<input type="number" min="0" max="1440" value={cutoff} onChange={(e) => setCutoff(e.target.value)} /></label><label>Лимит одной покупки<input type="number" min="1" max="1000" value={purchaseLimit} onChange={(e) => setPurchaseLimit(e.target.value)} /></label><label>Лимит игрока на тираж<input type="number" min="1" max="100000" value={playerLimit} onChange={(e) => setPlayerLimit(e.target.value)} /></label></div>
     <label className="reason">Обязательная причина для аудита<input value={reason} onChange={(e) => setReason(e.target.value)} /></label>
     <div className="actions"><button disabled={busy || !reason.trim()} onClick={() => void saveAll()}>{busy ? "СОХРАНЯЕМ…" : "СОХРАНИТЬ ВСЕ НАСТРОЙКИ"}</button></div>
     {message && <p className={message.includes("сохранены") ? "save-message" : "save-message error"}>{message}</p>}
@@ -242,7 +251,7 @@ function TransactionTable({ rows }: { rows: Transaction[] }) {
 
 function DrawDetailPanel({ detail, onClose }: { detail: DrawDetail; onClose: () => void }) {
   const draw = detail.draw;
-  return <div className="drawer"><button aria-label="Закрыть" className="close" onClick={onClose}>×</button><small>НЕИЗМЕНЯЕМАЯ ЗАПИСЬ ТИРАЖА</small><h2>{draw.lottery_name} №{drawNumber(draw.public_number)}</h2><div className="winning">{draw.winning_numbers?.map((n) => <i key={n}>{n}</i>) ?? "НЕТ РЕЗУЛЬТАТА"}</div><dl className="detail-list"><dt>Статус</dt><dd>{translated(draw.status, drawStatuses)}</dd><dt>По расписанию</dt><dd>{date(draw.scheduled_at)}</dd><dt>Проведён</dt><dd>{date(draw.executed_at)}</dd><dt>Продажи</dt><dd>{cas(draw.total_sales)}</dd><dt>Выплачено</dt><dd>{cas(draw.total_payout)}</dd><dt>Использовано из резерва</dt><dd>{cas(draw.reserve_used)}</dd><dt>Код связи</dt><dd><code>{draw.correlation_id}</code></dd></dl><h3>Билеты ({detail.tickets.length})</h3>{detail.tickets.map((ticket) => <div className="ticket-row" key={ticket.id}><b>№{drawNumber(ticket.public_number)}</b><span>{ticket.numbers.join(" · ")}</span><span>совпадений: {ticket.matches ?? "—"}</span><strong>{cas(ticket.prize_amount)}</strong></div>)}</div>;
+  return <div className="drawer"><button aria-label="Закрыть" className="close" onClick={onClose}>×</button><small>НЕИЗМЕНЯЕМАЯ ЗАПИСЬ ТИРАЖА</small><h2>{draw.lottery_name} №{drawNumber(draw.public_number)}</h2><div className="winning">{draw.winning_numbers?.map((n) => <i key={n}>{n}</i>) ?? "НЕТ РЕЗУЛЬТАТА"}</div><dl className="detail-list"><dt>Статус</dt><dd>{translated(draw.status, drawStatuses)}</dd><dt>По расписанию</dt><dd>{date(draw.scheduled_at)}</dd><dt>Проведён</dt><dd>{date(draw.executed_at)}</dd><dt>Продажи</dt><dd>{cas(draw.total_sales)}</dd><dt>Выплачено</dt><dd>{cas(draw.total_payout)}</dd><dt>Использовано из Фонда Каспера</dt><dd>{cas(draw.kasper_fund_used)}</dd><dt>Код связи</dt><dd><code>{draw.correlation_id}</code></dd></dl><h3>Билеты ({detail.tickets.length})</h3>{detail.tickets.map((ticket) => <div className="ticket-row" key={ticket.id}><b>№{drawNumber(ticket.public_number)}</b><span>{ticket.numbers.join(" · ")}</span><span>совпадений: {ticket.matches ?? "—"}</span><strong>{cas(ticket.prize_amount)}</strong></div>)}</div>;
 }
 
 function DevelopmentView({ changelog, devlog }: { changelog: ReleaseNote[]; devlog: ReleaseNote[] }) {

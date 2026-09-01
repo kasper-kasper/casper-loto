@@ -19,7 +19,7 @@ from k_loto.domain.schedules import (
     next_weekly_draw,
     sales_close_at,
 )
-from k_loto.infrastructure.database.models import Draw, Lottery
+from k_loto.infrastructure.database.models import Draw, JackpotAccount, Lottery
 
 MOSCOW = ZoneInfo("Europe/Moscow")
 
@@ -170,9 +170,19 @@ def daily_lottery() -> Lottery:
     )
 
 
+def jackpot(lottery: Lottery) -> JackpotAccount:
+    return JackpotAccount(
+        id=UUID(int=900),
+        lottery_id=lottery.id,
+        balance=1_000_000,
+        base_amount=1_000_000,
+        version=1,
+    )
+
+
 async def test_daily_scheduler_keeps_all_three_named_slots_ready() -> None:
     lottery = daily_lottery()
-    fake = FakeSession([lottery, None], scalar_rows=[[]])
+    fake = FakeSession([lottery, jackpot(lottery), None], scalar_rows=[[]])
 
     first, created = await DrawScheduleService(
         cast(AsyncSession, fake)
@@ -191,7 +201,7 @@ async def test_daily_scheduler_keeps_all_three_named_slots_ready() -> None:
 
 async def test_next_draw_creation_allocates_number_once() -> None:
     lottery = weekly_lottery()
-    fake = FakeSession([lottery, None, None])
+    fake = FakeSession([lottery, None, jackpot(lottery), None])
     service = DrawScheduleService(cast(AsyncSession, fake))
 
     draw, created = await service.ensure_next_draw(
@@ -248,7 +258,7 @@ async def test_cutoff_prepares_next_weekly_draw_before_current_settlement() -> N
         total_payout=0,
         reserve_used=0,
     )
-    fake = FakeSession([lottery, None, closing_draw])
+    fake = FakeSession([lottery, None, jackpot(lottery), closing_draw])
 
     draw, created = await DrawScheduleService(
         cast(AsyncSession, fake)

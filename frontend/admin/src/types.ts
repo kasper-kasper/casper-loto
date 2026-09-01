@@ -76,6 +76,7 @@ export interface Draw {
   distribution_opening: number | null;
   distribution_closing: number | null;
   reserve_used: number;
+  kasper_fund_used: number;
   correlation_id: string;
 }
 
@@ -162,6 +163,14 @@ export interface Dashboard {
       participant_count: number;
       total_sales: number;
     }>;
+  };
+  jackpots: {
+    kasper_fund_balance: number;
+    total_wins: number;
+    total_paid: number;
+    largest_win: number;
+    lotteries: Array<{ code: string; name: string; win_count: number; total_paid: number; last_win_at: string | null }>;
+    history: Array<{ id: string; lottery_code: string; lottery_name: string; draw_id: string; jackpot_amount: number; winner_ticket_count: number; winner_user_count: number; base_jackpot_after: number; occurred_at: string }>;
   };
 }
 

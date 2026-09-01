@@ -127,7 +127,7 @@ export interface Account {
 
 export interface UserNotification {
   id: string;
-  type: "WIN" | "DRAW_INVITATION";
+  type: "WIN" | "DRAW_INVITATION" | "JACKPOT_NEWS";
   title: string;
   body: string;
   payload: Record<string, unknown>;

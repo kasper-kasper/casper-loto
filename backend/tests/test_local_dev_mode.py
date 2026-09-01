@@ -161,7 +161,7 @@ async def test_dev_session_cookie_is_httponly_and_loopback_only() -> None:
 async def test_dev_bootstrap_creates_playable_ledgered_fixture() -> None:
     user_id = UUID(int=50)
     balance = Balance(user_id=user_id, amount=0, version=1)
-    fake = FakeSession([balance, *([None] * 30)])
+    fake = FakeSession([None, balance, *([None] * 30)])
     service = DevBootstrapService(
         cast(AsyncSession, fake),
         DevBootstrapConfig(
@@ -180,8 +180,8 @@ async def test_dev_bootstrap_creates_playable_ledgered_fixture() -> None:
     assert {item.code for item in lotteries} == {"weekly", "pll", "pss", "khan"}
     assert len(draws) == 4
     assert balance.amount == 100_000
-    assert len(ledger) == 9
-    assert sum(item.amount for item in ledger) == 540_000
+    assert len(ledger) == 10
+    assert sum(item.amount for item in ledger) == 1_000_000_000_540_000
 
 
 async def test_dev_refill_is_an_explicit_ledger_credit() -> None:

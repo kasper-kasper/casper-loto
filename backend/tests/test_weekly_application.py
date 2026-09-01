@@ -28,11 +28,14 @@ from k_loto.infrastructure.database.models import (
     DistributionFund,
     Draw,
     JackpotAccount,
+    JackpotWinEvent,
+    KasperFundAccount,
     LedgerTransaction,
     Lottery,
     LotteryReserve,
     NotificationOutbox,
     Ticket,
+    UserNotification,
     UserNotificationPreference,
 )
 
@@ -168,9 +171,7 @@ async def test_multi_ticket_purchase_updates_all_accounts_and_numbering() -> Non
     user_id, lottery, draw, balance, jackpot, distribution = build_purchase_accounts(
         now
     )
-    fake = FakeSession(
-        scalar_values=[None, lottery, None, draw, 0, balance, jackpot, distribution]
-    )
+    fake = FakeSession(scalar_values=[None, lottery, jackpot, None, draw, 0, balance])
     service = WeeklyTicketPurchaseService(cast(AsyncSession, fake))
 
     result = await service.purchase(
@@ -184,13 +185,13 @@ async def test_multi_ticket_purchase_updates_all_accounts_and_numbering() -> Non
     ledger = [item for item in fake.added if isinstance(item, LedgerTransaction)]
     assert [item.public_number for item in created_tickets] == [11, 12]
     assert balance.amount == 800
-    assert jackpot.balance == 2_100
-    assert distribution.balance == 400
+    assert jackpot.balance == 2_200
+    assert distribution.balance == 300
     assert lottery.next_ticket_number == 13
     assert draw.ticket_count == 2
     assert draw.total_sales == 200
     assert result.total_cost == 200
-    assert len(ledger) == 3
+    assert len(ledger) == 2
     assert sum(item.amount for item in ledger) == 0
     notifications = [
         item for item in fake.added if isinstance(item, NotificationOutbox)
@@ -198,7 +199,7 @@ async def test_multi_ticket_purchase_updates_all_accounts_and_numbering() -> Non
     assert notifications == []
 
 
-async def test_september_purchase_omits_zero_jackpot_ledger_entry() -> None:
+async def test_september_purchase_credits_the_full_jackpot() -> None:
     now = datetime(2026, 9, 1, 12, tzinfo=UTC)
     user_id = UUID(int=920)
     lottery = Lottery(
@@ -243,9 +244,7 @@ async def test_september_purchase_omits_zero_jackpot_ledger_entry() -> None:
     distribution = DistributionFund(
         id=UUID(int=925), lottery_id=lottery.id, balance=0, version=1
     )
-    fake = FakeSession(
-        scalar_values=[None, lottery, None, draw, 0, balance, jackpot, distribution]
-    )
+    fake = FakeSession(scalar_values=[None, lottery, jackpot, None, draw, 0, balance])
 
     result = await LotteryTicketPurchaseService(
         cast(AsyncSession, fake), lottery_code="september"
@@ -259,11 +258,11 @@ async def test_september_purchase_omits_zero_jackpot_ledger_entry() -> None:
     ledger = [item for item in fake.added if isinstance(item, LedgerTransaction)]
     assert result.total_cost == 333
     assert balance.amount == 667
-    assert jackpot.balance == 33_333_333
-    assert distribution.balance == 333
+    assert jackpot.balance == 33_333_666
+    assert distribution.balance == 0
     assert [item.account_kind for item in ledger] == [
         LedgerAccountKind.USER_BALANCE,
-        LedgerAccountKind.DISTRIBUTION_FUND,
+        LedgerAccountKind.JACKPOT,
     ]
     assert sum(item.amount for item in ledger) == 0
 
@@ -277,6 +276,7 @@ async def test_five_draw_purchase_is_prepaid_and_created_atomically() -> None:
         scalar_values=[
             None,
             lottery,
+            jackpot,
             None,
             draw,
             0,
@@ -285,8 +285,6 @@ async def test_five_draw_purchase_is_prepaid_and_created_atomically() -> None:
             0,
             0,
             balance,
-            jackpot,
-            distribution,
         ],
         scalar_collections=[[draw]],
     )
@@ -308,11 +306,11 @@ async def test_five_draw_purchase_is_prepaid_and_created_atomically() -> None:
     assert len(result.draw_ids) == 5
     assert result.total_cost == 500
     assert balance.amount == 500
-    assert jackpot.balance == 2_250
-    assert distribution.balance == 550
+    assert jackpot.balance == 2_500
+    assert distribution.balance == 300
 
 
-async def test_daily_purchase_uses_40_60_split_and_independent_numbering() -> None:
+async def test_daily_purchase_credits_full_jackpot_and_independent_numbering() -> None:
     now = datetime(2026, 8, 14, 12, tzinfo=UTC)
     user_id, lottery, draw, balance, jackpot, distribution = build_purchase_accounts(
         now
@@ -326,9 +324,7 @@ async def test_daily_purchase_uses_40_60_split_and_independent_numbering() -> No
     lottery.next_ticket_number = 50
     draw.scheduled_at = datetime(2026, 8, 14, 15, tzinfo=UTC)
     draw.sales_close_at = datetime(2026, 8, 14, 14, 58, tzinfo=UTC)
-    fake = FakeSession(
-        scalar_values=[None, lottery, None, draw, 0, balance, jackpot, distribution]
-    )
+    fake = FakeSession(scalar_values=[None, lottery, jackpot, None, draw, 0, balance])
 
     result = await DailyTicketPurchaseService(cast(AsyncSession, fake)).purchase(
         user_id=user_id,
@@ -339,8 +335,8 @@ async def test_daily_purchase_uses_40_60_split_and_independent_numbering() -> No
 
     tickets = [item for item in fake.added if isinstance(item, Ticket)]
     assert [item.public_number for item in tickets] == [50, 51]
-    assert jackpot.balance == 2_080
-    assert distribution.balance == 420
+    assert jackpot.balance == 2_200
+    assert distribution.balance == 300
     assert balance.amount == 800
     assert result.total_cost == 200
 
@@ -358,7 +354,7 @@ async def test_empty_daily_draw_settlement_is_completed_idempotently() -> None:
         id=UUID(int=700), lottery_id=lottery.id, balance=1_000, version=1
     )
     fake = FakeSession(
-        scalar_values=[draw, lottery, jackpot, distribution, reserve],
+        scalar_values=[draw, lottery, jackpot, reserve],
         scalar_collections=[[], [], []],
     )
 
@@ -414,13 +410,12 @@ async def test_purchase_after_cutoff_creates_and_uses_next_weekly_draw() -> None
         scalar_values=[
             None,
             lottery,
+            jackpot,
             None,
             None,
             closing_draw,
             0,
             balance,
-            jackpot,
-            distribution,
         ]
     )
 
@@ -448,7 +443,7 @@ async def test_empty_draw_settlement_completes_and_uses_secure_generator() -> No
         id=UUID(int=700), lottery_id=lottery.id, balance=1_000, version=1
     )
     fake = FakeSession(
-        scalar_values=[draw, lottery, jackpot, distribution, reserve],
+        scalar_values=[draw, lottery, jackpot, reserve],
         scalar_collections=[[], [], []],
     )
     generator = FixedGenerator()
@@ -510,7 +505,7 @@ async def test_settlement_enqueues_one_result_notification_per_user() -> None:
         inactivity_reminders_enabled=True,
     )
     fake = FakeSession(
-        scalar_values=[draw, lottery, jackpot, distribution, reserve],
+        scalar_values=[draw, lottery, jackpot, reserve],
         scalar_collections=[[ticket], [balance], [preference]],
     )
 
@@ -596,12 +591,10 @@ async def test_september_main_prize_is_refilled_from_reserve() -> None:
     distribution = DistributionFund(
         id=UUID(int=906), lottery_id=lottery.id, balance=333, version=1
     )
-    reserve = LotteryReserve(
-        id=UUID(int=907), lottery_id=lottery.id, balance=1_000_000_000, version=1
-    )
+    reserve = KasperFundAccount(id=UUID(int=907), balance=1_000_000_000, version=1)
     fake = FakeSession(
-        scalar_values=[draw, lottery, jackpot, distribution, reserve],
-        scalar_collections=[[ticket], [balance], []],
+        scalar_values=[draw, lottery, jackpot, reserve],
+        scalar_collections=[[ticket], [balance], [], [user_id]],
     )
 
     result = await LotterySettlementService(
@@ -614,5 +607,9 @@ async def test_september_main_prize_is_refilled_from_reserve() -> None:
     assert jackpot.balance == 33_333_333
     assert distribution.balance == 333
     assert reserve.balance == 966_666_667
-    assert draw.reserve_used == 33_333_333
+    assert draw.reserve_used == 0
+    assert draw.kasper_fund_used == 33_333_333
     assert sum(item.amount for item in ledger) == 0
+    assert len([item for item in fake.added if isinstance(item, JackpotWinEvent)]) == 1
+    inbox = [item for item in fake.added if isinstance(item, UserNotification)]
+    assert {item.type.value for item in inbox} == {"WIN", "JACKPOT_NEWS"}

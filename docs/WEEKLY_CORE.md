@@ -12,12 +12,12 @@ SQLAlchemy application services.
   still in the future; a stale frontend draw ID is not trusted.
 - The per-lottery ticket counter is locked and incremented inside the purchase
   transaction.
-- 50% of the price enters jackpot and 50% enters distribution fund.
+- 100% of the price enters jackpot.
 - Weekly ticket price must be divisible by 4 CAS, guaranteeing exact 25% prizes
   without floating-point or rounding.
 
 Each checkout writes balanced immutable ledger records for the user debit,
-jackpot credit and distribution credit. A caller-supplied idempotency key is
+jackpot credit. A caller-supplied idempotency key is
 checked before and after locking the lottery row.
 
 ## Settlement
@@ -29,18 +29,18 @@ transaction.
 - 0/5 and 1/5: 0 CAS.
 - 2/5: 25% of that ticket's purchase-price snapshot.
 - 3/5: 100% of that ticket's purchase-price snapshot.
-- 4/5: remaining distribution fund after guaranteed prizes.
+- 4/5: fixed 50,000 CAS from the Kasper Fund.
 - 5/5: entire jackpot; distribution fund is not used.
 
-Guaranteed distribution shortfalls debit the per-lottery reserve. If fund plus
-reserve is insufficient, the transaction aborts without a partial result and is
-safe to retry after reserve funding. Jackpot is never used for this purpose.
+All non-jackpot prizes debit the central Kasper Fund. If it is insufficient,
+the transaction aborts without a partial result and is safe to retry after
+funding. Jackpot is never used for lower-tier prizes.
 
 When equal division leaves whole-CAS remainder, one extra CAS is assigned in
 ascending public ticket-number order. This is deterministic and exhausts the
-awarded pool without floats. Unused distribution and an unclaimed jackpot carry
-forward. After a jackpot win, the jackpot is paid down and a separate immutable
-ledger entry credits the configured base jackpot.
+awarded pool without floats. An unclaimed jackpot carries forward. After a
+jackpot win, the jackpot is paid down and restored to the draw's snapshotted
+base jackpot from the Kasper Fund through immutable ledger entries.
 
 A completed draw returns its existing result on repeated invocation. Database
 locks, completed status, unique ledger idempotency keys and immutable triggers

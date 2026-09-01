@@ -9,10 +9,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from k_loto.application.daily_transition import DailyTransitionService
-from k_loto.application.weekly import LotterySettlementService
+from k_loto.application.weekly import (
+    LotterySettlementService,
+    draw_configuration_snapshot,
+)
 from k_loto.domain.enums import DrawStatus, LotteryKind
 from k_loto.domain.schedules import future_draw_target, next_draw_at, sales_close_at
-from k_loto.infrastructure.database.models import Draw, Lottery
+from k_loto.infrastructure.database.models import Draw, JackpotAccount, Lottery
 
 logger = structlog.get_logger(__name__)
 
@@ -38,7 +41,6 @@ class DrawScheduleService:
             )
             if lottery is None:
                 raise LookupError("Lottery does not exist.")
-
             pending_query = (
                 select(Draw)
                 .where(
@@ -58,6 +60,12 @@ class DrawScheduleService:
                 pending_draws = list((await self._session.scalars(pending_query)).all())
             if len(pending_draws) >= target:
                 return pending_draws[0], False
+
+            jackpot = await self._session.scalar(
+                select(JackpotAccount).where(JackpotAccount.lottery_id == lottery.id)
+            )
+            if jackpot is None:
+                raise LookupError("Lottery jackpot does not exist.")
 
             latest = await self._session.scalar(
                 select(Draw)
@@ -85,6 +93,10 @@ class DrawScheduleService:
                     total_sales=0,
                     total_payout=0,
                     reserve_used=0,
+                    kasper_fund_used=0,
+                    configuration_snapshot=draw_configuration_snapshot(
+                        lottery, jackpot.base_amount
+                    ),
                 )
                 lottery.next_draw_number += 1
                 self._session.add(draw)

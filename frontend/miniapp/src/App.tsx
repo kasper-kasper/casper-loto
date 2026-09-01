@@ -170,7 +170,11 @@ function AccountOverview({ account, onEnableTelegram, onSavePreferences }: { acc
 
 function NotificationCenter({ notifications, onPlay, onTickets }: { notifications: UserNotification[]; onPlay: () => void; onTickets: () => void }) {
   if (!notifications.length) return <EmptyState title={copy.notifications.emptyTitle} text={copy.notifications.emptyText} />;
-  return <div className="inbox-list">{notifications.map((item) => <article className={`${item.type === "WIN" ? "win" : "invite"} ${item.read_at ? "read" : "unread"}`} key={item.id}><div className="inbox-symbol">{item.type === "WIN" ? "+" : "K"}</div><div><header><strong>{item.title}</strong><time>{formatMoscow(item.created_at)} МСК</time></header><p>{item.body}</p><button onClick={item.type === "WIN" ? onTickets : onPlay} type="button">{item.type === "WIN" ? copy.actions.openTickets : copy.actions.chooseNumbers}<span>→</span></button></div></article>)}</div>;
+  return <div className="inbox-list">{notifications.map((item) => {
+    const isWin = item.type === "WIN";
+    const isJackpot = item.type === "JACKPOT_NEWS";
+    return <article className={`${isWin ? "win" : isJackpot ? "news" : "invite"} ${item.read_at ? "read" : "unread"}`} key={item.id}><div className="inbox-symbol">{isWin ? "+" : isJackpot ? "J" : "K"}</div><div><header><strong>{item.title}</strong><time>{formatMoscow(item.created_at)} МСК</time></header><p>{item.body}</p><button onClick={isWin ? onTickets : onPlay} type="button">{isWin ? copy.actions.openTickets : copy.actions.chooseNumbers}<span>→</span></button></div></article>;
+  })}</div>;
 }
 
 function CartView({ cart, groups, purchasing, success, progress, canAdd, onClear, onRemove, onAdd, onBuy, onHome }: { cart: CartTicket[]; groups: CartTicket[][]; purchasing: boolean; success: boolean; progress: { done: number; total: number } | null; canAdd: boolean; onClear: () => void; onRemove: (id: string) => void; onAdd: () => void; onBuy: () => void; onHome: () => void }) {

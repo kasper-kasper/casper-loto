@@ -23,6 +23,7 @@ from k_loto.domain.enums import (
 )
 from k_loto.domain.errors import (
     ConfigurationError,
+    InsufficientBalance,
     InvalidStateTransition,
     InvalidTicket,
     NoAvailableDraw,
@@ -43,20 +44,38 @@ from k_loto.domain.weekly import (
 )
 from k_loto.infrastructure.database.models import (
     Balance,
-    DistributionFund,
     Draw,
     JackpotAccount,
+    JackpotWinEvent,
+    KasperFundAccount,
     LedgerTransaction,
     Lottery,
-    LotteryReserve,
     NotificationOutbox,
     Ticket,
+    User,
     UserNotification,
     UserNotificationPreference,
 )
 
 MAX_TICKETS_PER_PURCHASE = 1000
 MULTI_DRAW_COUNTS = (1, 5)
+KASPER_FUND_ID = UUID("4b415350-4552-4655-4e44-000000000001")
+
+
+def draw_configuration_snapshot(lottery: Lottery, base_jackpot: int) -> dict[str, Any]:
+    """Freeze every setting which can change the price or payout of a draw."""
+    return {
+        "ruleset_code": lottery.ruleset_code,
+        "ticket_price": lottery.ticket_price,
+        "numbers_to_pick": lottery.numbers_to_pick,
+        "max_number": lottery.max_number,
+        "base_jackpot": base_jackpot,
+    }
+
+
+def _snapshot_value(draw: Draw, key: str, fallback: Any) -> Any:
+    value = (draw.configuration_snapshot or {}).get(key)
+    return fallback if value is None else value
 
 
 def _rules_for_lottery(
@@ -222,6 +241,14 @@ class WeeklyTicketPurchaseService:
                     f"{self.lottery_label} lottery format is invalid."
                 )
 
+            jackpot = await self._session.scalar(
+                select(JackpotAccount)
+                .where(JackpotAccount.lottery_id == lottery.id)
+                .with_for_update()
+            )
+            if jackpot is None:
+                raise ConfigurationError(f"{self.lottery_label} jackpot is missing.")
+
             existing_after_lock = await self._session.scalar(
                 select(LedgerTransaction).where(
                     LedgerTransaction.idempotency_key == user_ledger_key
@@ -284,6 +311,10 @@ class WeeklyTicketPurchaseService:
                     total_sales=0,
                     total_payout=0,
                     reserve_used=0,
+                    kasper_fund_used=0,
+                    configuration_snapshot=draw_configuration_snapshot(
+                        lottery, jackpot.base_amount
+                    ),
                 )
                 lottery.next_draw_number += 1
                 self._session.add(draw)
@@ -319,6 +350,10 @@ class WeeklyTicketPurchaseService:
                         total_sales=0,
                         total_payout=0,
                         reserve_used=0,
+                        kasper_fund_used=0,
+                        configuration_snapshot=draw_configuration_snapshot(
+                            lottery, jackpot.base_amount
+                        ),
                     )
                     lottery.next_draw_number += 1
                     self._session.add(future_draw)
@@ -348,33 +383,25 @@ class WeeklyTicketPurchaseService:
             )
             if balance is None:
                 raise ConfigurationError("User balance account is missing.")
-            expanded_combinations = combinations * draw_count
-            quote = rules.quote_purchase(
-                expanded_combinations, lottery.ticket_price, balance.amount
-            )
-
-            jackpot = await self._session.scalar(
-                select(JackpotAccount)
-                .where(JackpotAccount.lottery_id == lottery.id)
-                .with_for_update()
-            )
-            distribution = await self._session.scalar(
-                select(DistributionFund)
-                .where(DistributionFund.lottery_id == lottery.id)
-                .with_for_update()
-            )
-            if jackpot is None or distribution is None:
-                raise ConfigurationError(
-                    f"{self.lottery_label} fund accounts are missing."
-                )
+            canonical = tuple(rules.validate_combination(item) for item in combinations)
+            prices = [
+                int(_snapshot_value(item, "ticket_price", lottery.ticket_price))
+                for item in draws[:draw_count]
+            ]
+            if any(price <= 0 or price % rules.price_divisor for price in prices):
+                raise ConfigurationError("Draw ticket price snapshot is invalid.")
+            total_cost = len(canonical) * sum(prices)
+            if balance.amount < total_cost:
+                raise InsufficientBalance("Insufficient CAS balance.")
 
             operation_id = uuid4()
             ticket_ids: list[UUID] = []
             first_number = lottery.next_ticket_number
             offset = 0
-            for target_draw in draws[:draw_count]:
-                for combination in combinations:
-                    normalized = tuple(sorted(combination))
+            for target_draw, ticket_price in zip(
+                draws[:draw_count], prices, strict=True
+            ):
+                for normalized in canonical:
                     ticket_id = uuid4()
                     ticket_ids.append(ticket_id)
                     self._session.add(
@@ -385,7 +412,7 @@ class WeeklyTicketPurchaseService:
                             draw_id=target_draw.id,
                             user_id=user_id,
                             numbers=list(normalized),
-                            purchase_price=lottery.ticket_price,
+                            purchase_price=ticket_price,
                             source=source,
                             purchased_at=timestamp,
                             status=TicketStatus.PURCHASED,
@@ -394,18 +421,15 @@ class WeeklyTicketPurchaseService:
                     )
                     offset += 1
                 target_draw.ticket_count += len(combinations)
-                target_draw.total_sales += len(combinations) * lottery.ticket_price
+                target_draw.total_sales += len(combinations) * ticket_price
             lottery.next_ticket_number += len(ticket_ids)
 
             balance_before = balance.amount
-            balance.amount -= quote.total_cost
+            balance.amount -= total_cost
             balance.version += 1
             jackpot_before = jackpot.balance
-            jackpot.balance += quote.jackpot_contribution
+            jackpot.balance += total_cost
             jackpot.version += 1
-            distribution_before = distribution.balance
-            distribution.balance += quote.distribution_contribution
-            distribution.version += 1
             shared_details = {
                 "draw_id": str(draw.id),
                 "draw_ids": [str(value.id) for value in draws[:draw_count]],
@@ -446,28 +470,12 @@ class WeeklyTicketPurchaseService:
                         details=shared_details,
                     )
                 )
-            if distribution_before != distribution.balance:
-                purchase_ledger.append(
-                    _ledger_entry(
-                        operation_id=operation_id,
-                        idempotency_key=f"purchase:{idempotency_key}:distribution",
-                        account_kind=LedgerAccountKind.DISTRIBUTION_FUND,
-                        account_id=distribution.id,
-                        transaction_type=TransactionType.TICKET_PURCHASE,
-                        before=distribution_before,
-                        after=distribution.balance,
-                        user_id=user_id,
-                        lottery_id=lottery.id,
-                        draw_id=draw.id,
-                        details=shared_details,
-                    )
-                )
             self._session.add_all(purchase_ledger)
         return PurchaseResult(
             operation_id=operation_id,
             draw_id=draw.id,
             ticket_ids=tuple(ticket_ids),
-            total_cost=quote.total_cost,
+            total_cost=total_cost,
             balance_after=balance.amount,
             draw_ids=tuple(value.id for value in draws[:draw_count]),
             draw_count=draw_count,
@@ -521,23 +529,24 @@ class WeeklySettlementService:
                 raise ConfigurationError(
                     f"Draw is not attached to a {self.lottery_label} lottery."
                 )
-            rules = _rules_for_lottery(lottery, expected=self.ruleset_code)
+            current_rules = _rules_for_lottery(lottery, expected=self.ruleset_code)
+            snapshot_rules = str(
+                _snapshot_value(draw, "ruleset_code", current_rules.code)
+            )
+            rules = get_lottery_rules(snapshot_rules)
+            if self.ruleset_code is not None and rules.code != self.ruleset_code:
+                raise ConfigurationError("Draw rules snapshot is incompatible.")
             jackpot = await self._session.scalar(
                 select(JackpotAccount)
                 .where(JackpotAccount.lottery_id == lottery.id)
                 .with_for_update()
             )
-            distribution = await self._session.scalar(
-                select(DistributionFund)
-                .where(DistributionFund.lottery_id == lottery.id)
+            fund = await self._session.scalar(
+                select(KasperFundAccount)
+                .where(KasperFundAccount.id == KASPER_FUND_ID)
                 .with_for_update()
             )
-            reserve = await self._session.scalar(
-                select(LotteryReserve)
-                .where(LotteryReserve.lottery_id == lottery.id)
-                .with_for_update()
-            )
-            if jackpot is None or distribution is None or reserve is None:
+            if jackpot is None or fund is None:
                 raise ConfigurationError(
                     f"{self.lottery_label} settlement accounts are missing."
                 )
@@ -567,10 +576,12 @@ class WeeklySettlementService:
                     for ticket in ticket_models
                 ],
                 winning,
-                distribution_balance=distribution.balance,
+                distribution_balance=0,
                 jackpot_balance=jackpot.balance,
-                reserve_balance=reserve.balance,
-                base_jackpot=jackpot.base_amount,
+                reserve_balance=fund.balance,
+                base_jackpot=int(
+                    _snapshot_value(draw, "base_jackpot", jackpot.base_amount)
+                ),
             )
 
             user_ids = {ticket.user_id for ticket in ticket_models}
@@ -624,38 +635,26 @@ class WeeklySettlementService:
                     )
                 )
 
-            distribution_before = distribution.balance
-            distribution.balance = plan.distribution_closing
-            distribution.version += 1
-            if distribution_before != distribution.balance:
-                ledger_entries.append(
-                    _ledger_entry(
-                        operation_id=operation_id,
-                        idempotency_key=f"draw:{draw.id}:distribution:payout",
-                        account_kind=LedgerAccountKind.DISTRIBUTION_FUND,
-                        account_id=distribution.id,
-                        transaction_type=TransactionType.PRIZE_PAYOUT,
-                        before=distribution_before,
-                        after=distribution.balance,
-                        lottery_id=lottery.id,
-                        draw_id=draw.id,
-                    )
-                )
             if plan.reserve_used:
-                reserve_before = reserve.balance
-                reserve.balance -= plan.reserve_used
-                reserve.version += 1
+                fund_before = fund.balance
+                fund.balance -= plan.reserve_used
+                fund.version += 1
                 ledger_entries.append(
                     _ledger_entry(
                         operation_id=operation_id,
-                        idempotency_key=f"draw:{draw.id}:reserve:payout",
-                        account_kind=LedgerAccountKind.LOTTERY_RESERVE,
-                        account_id=reserve.id,
+                        idempotency_key=f"draw:{draw.id}:kasper-fund:payout",
+                        account_kind=LedgerAccountKind.KASPER_FUND,
+                        account_id=fund.id,
                         transaction_type=TransactionType.PRIZE_PAYOUT,
-                        before=reserve_before,
-                        after=reserve.balance,
+                        before=fund_before,
+                        after=fund.balance,
                         lottery_id=lottery.id,
                         draw_id=draw.id,
+                        details={
+                            "ordinary_prizes": plan.reserve_used
+                            - plan.jackpot_reset_credit,
+                            "jackpot_reset": plan.jackpot_reset_credit,
+                        },
                     )
                 )
             jackpot_before = jackpot.balance
@@ -703,7 +702,8 @@ class WeeklySettlementService:
             draw.jackpot_closing = plan.jackpot_closing
             draw.distribution_opening = plan.distribution_opening
             draw.distribution_closing = plan.distribution_closing
-            draw.reserve_used = plan.reserve_used
+            draw.reserve_used = 0
+            draw.kasper_fund_used = plan.reserve_used
             self._session.add_all(ledger_entries)
             preferences = {
                 preference.user_id: preference
@@ -774,6 +774,60 @@ class WeeklySettlementService:
                                 f"№{draw.public_number:04d}. Выигрыш уже зачислен."
                             ),
                             payload=payload,
+                            created_at=timestamp,
+                        )
+                    )
+
+            if plan.jackpot_won and plan.jackpot_opening > 0:
+                jackpot_payouts = [
+                    item for item in plan.payouts if item.matches == rules.jackpot_match
+                ]
+                winner_ids = {item.user_id for item in jackpot_payouts}
+                self._session.add(
+                    JackpotWinEvent(
+                        id=uuid4(),
+                        draw_id=draw.id,
+                        lottery_id=lottery.id,
+                        jackpot_amount=plan.jackpot_opening,
+                        winner_ticket_count=len(jackpot_payouts),
+                        winner_user_count=len(winner_ids),
+                        base_jackpot_after=plan.jackpot_closing,
+                        occurred_at=timestamp,
+                    )
+                )
+                recipients = (
+                    await self._session.scalars(
+                        select(User.id).where(
+                            User.is_active.is_(True), User.is_admin.is_(False)
+                        )
+                    )
+                ).all()
+                display_name = draw_display_name(
+                    lottery.code, lottery.name, draw.scheduled_at
+                )
+                formatted_amount = f"{plan.jackpot_opening:,}".replace(",", " ")
+                for recipient_id in recipients:
+                    self._session.add(
+                        UserNotification(
+                            id=uuid4(),
+                            event_key=f"jackpot:{draw.id}:user:{recipient_id}",
+                            user_id=recipient_id,
+                            type=InAppNotificationType.JACKPOT_NEWS,
+                            title="Джекпот сорван!",
+                            body=(
+                                f"В {display_name}, тираж №{draw.public_number:04d}, "
+                                f"разыграно {formatted_amount} CAS. "
+                                "Джекпот восстановлен."
+                            ),
+                            payload={
+                                "lottery_code": lottery.code,
+                                "lottery_name": display_name,
+                                "draw_number": draw.public_number,
+                                "jackpot_amount": plan.jackpot_opening,
+                                "winner_ticket_count": len(jackpot_payouts),
+                                "winner_user_count": len(winner_ids),
+                                "base_jackpot_after": plan.jackpot_closing,
+                            },
                             created_at=timestamp,
                         )
                     )

@@ -161,32 +161,15 @@ class LotteryRuleStrategy:
             elif ratio is not None:
                 guaranteed[ticket.id] = ratio.apply(ticket.purchase_price)
         guaranteed_total = sum(guaranteed.values())
-        distribution_shortfall = max(guaranteed_total - distribution_balance, 0)
         jackpot_tickets = [
             ticket for ticket in tickets if matches[ticket.id] == self.jackpot_match
         ]
         jackpot_reset_credit = base_jackpot if jackpot_tickets else 0
-        reserve_used = distribution_shortfall + (
-            jackpot_reset_credit if self.jackpot_refill_from_reserve else 0
-        )
-        if reserve_used > reserve_balance:
+        fund_used = guaranteed_total + jackpot_reset_credit
+        if fund_used > reserve_balance:
             raise InsufficientReserve(
-                "Lottery funds and reserve cannot cover all payouts and refills."
+                "Kasper Fund cannot cover all ordinary payouts and jackpot resets."
             )
-        distribution_after = max(distribution_balance - guaranteed_total, 0)
-        distribution_tickets = (
-            [
-                ticket
-                for ticket in tickets
-                if matches[ticket.id] == self.distribution_pool_match
-            ]
-            if self.distribution_pool_match is not None
-            else []
-        )
-        distribution_payouts = _allocate_evenly(
-            distribution_after, distribution_tickets
-        )
-        distribution_closing = 0 if distribution_tickets else distribution_after
         jackpot_payouts = _allocate_evenly(jackpot_balance, jackpot_tickets)
         jackpot_closing = base_jackpot if jackpot_tickets else jackpot_balance
         payouts = tuple(
@@ -195,9 +178,7 @@ class LotteryRuleStrategy:
                 ticket.public_number,
                 ticket.user_id,
                 matches[ticket.id],
-                guaranteed.get(ticket.id, 0)
-                + distribution_payouts.get(ticket.id, 0)
-                + jackpot_payouts.get(ticket.id, 0),
+                guaranteed.get(ticket.id, 0) + jackpot_payouts.get(ticket.id, 0),
             )
             for ticket in sorted(
                 tickets, key=lambda item: (item.public_number, item.id.int)
@@ -206,9 +187,9 @@ class LotteryRuleStrategy:
         return SettlementPlan(
             winning,
             payouts,
-            distribution_balance,
-            distribution_closing,
-            reserve_used,
+            0,
+            0,
+            fund_used,
             jackpot_balance,
             jackpot_closing,
             jackpot_reset_credit,
@@ -246,10 +227,12 @@ WEEKLY_RULES = LotteryRuleStrategy(
     5,
     20,
     4,
-    PayoutRatio(1, 2),
+    PayoutRatio(1),
     MappingProxyType({2: PayoutRatio(1, 4), 3: PayoutRatio(1)}),
-    4,
+    None,
     5,
+    MappingProxyType({4: 50_000}),
+    True,
 )
 DAILY_RULES = LotteryRuleStrategy(
     "daily_4_15",
@@ -257,10 +240,11 @@ DAILY_RULES = LotteryRuleStrategy(
     4,
     15,
     2,
-    PayoutRatio(2, 5),
+    PayoutRatio(1),
     MappingProxyType({2: PayoutRatio(1, 2), 3: PayoutRatio(3)}),
     None,
     4,
+    jackpot_refill_from_reserve=True,
 )
 SEPTEMBER_RULES = LotteryRuleStrategy(
     "september_3_33",
@@ -268,7 +252,7 @@ SEPTEMBER_RULES = LotteryRuleStrategy(
     3,
     33,
     1,
-    PayoutRatio(0),
+    PayoutRatio(1),
     MappingProxyType({}),
     None,
     3,
@@ -281,11 +265,12 @@ GROB_RULES = LotteryRuleStrategy(
     3,
     16,
     1,
-    PayoutRatio(2, 5),
+    PayoutRatio(1),
     MappingProxyType({}),
     None,
     3,
     MappingProxyType({1: 666, 2: 6_666}),
+    True,
 )
 LOTTERY_RULES: Mapping[str, LotteryRuleStrategy] = MappingProxyType(
     {

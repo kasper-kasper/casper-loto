@@ -3,12 +3,12 @@
 ПЛЛ-лото (`pll`), ПСС-Лото (`pss`) and ХАН-Лото (`khan`) are independent
 lottery entities. Their Moscow times are 02:22, 12:00 and 18:00 respectively;
 sales close two minutes before each draw. Each has independent draw and ticket
-number sequences and independent jackpot, distribution and reserve accounts.
+number sequences and independent jackpot accounts.
 
-For each ticket, 40% of price enters jackpot and 60% enters distribution.
+For each new ticket, 100% of price enters jackpot.
 Payouts are 0 for 0/4 and 1/4, 50% of ticket price for 2/4, 300% for 3/4, and
-the entire jackpot split equally among 4/4 tickets. Guaranteed distribution
-payout shortage uses reserve and never jackpot. Remainders carry over. After a
+the entire jackpot split equally among 4/4 tickets. Lower-tier payouts use the
+central Kasper Fund and never jackpot. After a
 4/4 win, jackpot resets to that lottery's Admin-configured base.
 
 Identical combinations are allowed as separate tickets. RNG uses
@@ -27,8 +27,8 @@ a two-minute cutoff and independent draw/ticket numbering. A ticket costs
 
 Payouts are 0 for 0/3, 333 CAS for 1/3 and 3,333 CAS for 2/3. The fixed main
 prize of 33,333,333 CAS is split deterministically among all 3/3 tickets. Ticket
-sales enter distribution; fixed lower-tier shortfalls use reserve. After a main
-prize win, reserve refills its account to 33,333,333 CAS, so the displayed prize
+sales enter jackpot; fixed lower-tier prizes use the Kasper Fund. After a main
+prize win, the Kasper Fund refills it to 33,333,333 CAS, so the displayed prize
 does not accumulate, shrink or reset to another value. The approved initial
 reserve is 1,000,000,000 CAS.
 
@@ -40,11 +40,9 @@ ticket costs 6,666 CAS and contains exactly three unique numbers from 1 through
 16.
 
 Payouts are 0 for 0/3, 666 CAS for 1/3 and 6,666 CAS for 2/3. Fixed payouts use
-distribution first and reserve for any shortfall; jackpot is never used for
-them. All 3/3 tickets split the current jackpot deterministically. An unclaimed
-jackpot and unused distribution carry over; after a 3/3 win the jackpot resets
+the Kasper Fund; jackpot is never used for them. All 3/3 tickets split the
+current jackpot deterministically. An unclaimed jackpot carries over; after a 3/3 win the jackpot resets
 to its Admin-configured base, initially 6,666,666 CAS.
 
-All CAS stays integer. Each ticket contributes 2,666 CAS to jackpot and the
-remaining 4,000 CAS to distribution. The split is calculated per ticket, so a
-bulk purchase has exactly the same accounting result as separate purchases.
+All CAS stays integer. Each new ticket contributes its full 6,666 CAS to the
+jackpot. A bulk purchase has exactly the same accounting result as separate purchases.

@@ -166,6 +166,7 @@ class DrawResponse(ApiModel):
     distribution_opening: int | None
     distribution_closing: int | None
     reserve_used: int
+    kasper_fund_used: int
     correlation_id: UUID
 
 
@@ -226,6 +227,7 @@ class DashboardResponse(BaseModel):
     recent_draws: list[DrawResponse]
     recent_transactions: list[TransactionResponse]
     operations: dict[str, Any]
+    jackpots: dict[str, Any]
 
 
 class ReleaseNoteResponse(BaseModel):
@@ -407,6 +409,7 @@ async def dashboard(
             TransactionResponse.model_validate(item) for item in transactions
         ],
         operations=await service.operational_status(),
+        jackpots=await service.jackpot_analytics(),
     )
 
 

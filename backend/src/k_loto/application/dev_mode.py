@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from k_loto.application.weekly import draw_configuration_snapshot
 from k_loto.domain.enums import (
     DrawStatus,
     LedgerAccountKind,
@@ -19,10 +20,13 @@ from k_loto.infrastructure.database.models import (
     DistributionFund,
     Draw,
     JackpotAccount,
+    KasperFundAccount,
     LedgerTransaction,
     Lottery,
     LotteryReserve,
 )
+
+KASPER_FUND_ID = UUID("4b415350-4552-4655-4e44-000000000001")
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,9 +73,28 @@ class DevBootstrapService:
         if self._config.weekly_ticket_price % 4:
             raise ValueError("Development Weekly price must be divisible by 4 CAS.")
         async with self._session.begin():
+            await self._ensure_kasper_fund()
             await self._ensure_user_funding(user_id)
             await self._ensure_weekly(now)
             await self._ensure_daily(now)
+
+    async def _ensure_kasper_fund(self) -> None:
+        fund = await self._session.scalar(
+            select(KasperFundAccount).where(KasperFundAccount.id == KASPER_FUND_ID)
+        )
+        if fund is not None:
+            return
+        amount = 1_000_000_000_000_000
+        fund = KasperFundAccount(id=KASPER_FUND_ID, balance=amount, version=1)
+        self._session.add(fund)
+        self._session.add(
+            _credit_entry(
+                key="dev-bootstrap:kasper-fund",
+                account_kind=LedgerAccountKind.KASPER_FUND,
+                account_id=fund.id,
+                amount=amount,
+            )
+        )
 
     async def refill_user(self, user_id: UUID, amount: int) -> int:
         if amount <= 0:
@@ -156,10 +179,12 @@ class DevBootstrapService:
                 next_ticket_number=1,
             )
             self._session.add(lottery)
-        await self._ensure_weekly_accounts(lottery, created=created)
-        await self._ensure_draw(lottery, now)
+        jackpot = await self._ensure_weekly_accounts(lottery, created=created)
+        await self._ensure_draw(lottery, now, jackpot)
 
-    async def _ensure_weekly_accounts(self, lottery: Lottery, *, created: bool) -> None:
+    async def _ensure_weekly_accounts(
+        self, lottery: Lottery, *, created: bool
+    ) -> JackpotAccount:
         jackpot = None
         distribution = None
         reserve = None
@@ -222,6 +247,7 @@ class DevBootstrapService:
                         lottery_id=lottery.id,
                     )
                 )
+        return jackpot
 
     async def _ensure_daily(self, now: datetime) -> None:
         for code, name, draw_time in (
@@ -251,10 +277,12 @@ class DevBootstrapService:
                     next_ticket_number=1,
                 )
                 self._session.add(lottery)
-            await self._ensure_weekly_accounts(lottery, created=created)
-            await self._ensure_draw(lottery, now)
+            jackpot = await self._ensure_weekly_accounts(lottery, created=created)
+            await self._ensure_draw(lottery, now, jackpot)
 
-    async def _ensure_draw(self, lottery: Lottery, now: datetime) -> None:
+    async def _ensure_draw(
+        self, lottery: Lottery, now: datetime, jackpot: JackpotAccount
+    ) -> None:
         open_draw = await self._session.scalar(
             select(Draw)
             .where(
@@ -293,6 +321,10 @@ class DevBootstrapService:
                 total_sales=0,
                 total_payout=0,
                 reserve_used=0,
+                kasper_fund_used=0,
+                configuration_snapshot=draw_configuration_snapshot(
+                    lottery, jackpot.base_amount
+                ),
             )
         )
         lottery.next_draw_number += 1
