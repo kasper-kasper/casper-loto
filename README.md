@@ -1,6 +1,6 @@
 # K-Loto
 
-Current version: **1.2.0 — «3 СЕНТЯБРЯ» 3/33**.
+Current version: **1.2.1 — corrected «3 СЕНТЯБРЯ» numbering**.
 
 K-Loto is a multi-user lottery platform with integer CAS accounting, an
 immutable transaction ledger, recoverable draw scheduling and five independent
