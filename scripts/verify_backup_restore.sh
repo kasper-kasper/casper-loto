@@ -19,9 +19,12 @@ createdb -U "$POSTGRES_USER" "$restore_db"
 pg_restore -U "$POSTGRES_USER" --exit-on-error --no-owner \
   --dbname "$restore_db" "$backup_path"
 
+schema_count="$(psql -U "$POSTGRES_USER" -d "$restore_db" -Atc \
+  'SELECT count(*) FROM alembic_version')"
+test "$schema_count" = "1"
+echo "schema:ok"
+
 psql -U "$POSTGRES_USER" -d "$restore_db" -v ON_ERROR_STOP=1 -At <<'SQL'
-SELECT CASE WHEN count(*) = 1 THEN 'schema:ok' ELSE (1/0)::text END
-FROM alembic_version;
 SELECT 'users:' || count(*) FROM users;
 SELECT 'draws:' || count(*) FROM draws;
 SELECT 'tickets:' || count(*) FROM tickets;
