@@ -7,13 +7,14 @@ from datetime import UTC, datetime, timedelta
 from time import perf_counter
 from uuid import UUID, uuid4
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 
 from k_loto.application.miniapp import MiniAppQueryService
 from k_loto.application.weekly import (
     LotterySettlementService,
     LotteryTicketPurchaseService,
 )
+from k_loto.core.config import get_settings
 from k_loto.domain.enums import (
     DrawStatus,
     LedgerAccountKind,
@@ -39,6 +40,28 @@ class FixedDailyNumbers:
     def draw(self, population_size: int, numbers_to_pick: int) -> tuple[int, ...]:
         assert (population_size, numbers_to_pick) == (15, 4)
         return (1, 2, 3, 4)
+
+
+async def clear_restored_smoke_database() -> None:
+    """Remove restored business data, guarded by the disposable database name."""
+    if not str(get_settings().database_url).rstrip("/").endswith("/k_loto_smoke"):
+        raise RuntimeError("Refusing to clear a database not named k_loto_smoke.")
+    statement = text(
+        """
+        DO $$
+        DECLARE item record;
+        BEGIN
+          FOR item IN
+            SELECT tablename FROM pg_tables
+            WHERE schemaname = 'public' AND tablename <> 'alembic_version'
+          LOOP
+            EXECUTE format('TRUNCATE TABLE %I CASCADE', item.tablename);
+          END LOOP;
+        END $$;
+        """
+    )
+    async with session_factory() as session, session.begin():
+        await session.execute(statement)
 
 
 def ledger_credit(
@@ -114,8 +137,34 @@ async def seed() -> tuple[UUID, list[UUID], datetime]:
         reserve = LotteryReserve(
             id=uuid4(), lottery_id=lottery_id, balance=1_000_000_000, version=1
         )
-        session.add_all([lottery, draw, jackpot, distribution, reserve])
-        session.add_all(
+        users = [
+            User(
+                id=user_id,
+                telegram_id=-(index + 1),
+                display_name=f"Smoke {index + 1}",
+                is_active=True,
+                is_admin=False,
+            )
+            for index, user_id in enumerate(user_ids)
+        ]
+        session.add_all([lottery, *users])
+        await session.flush()
+        balances = [
+            Balance(user_id=user_id, amount=10_000_000, version=1)
+            for user_id in user_ids
+        ]
+        session.add_all([draw, jackpot, distribution, reserve, *balances])
+        await session.flush()
+        ledger_entries = [
+            ledger_credit(
+                account_kind=LedgerAccountKind.USER_BALANCE,
+                account_id=balance.user_id,
+                amount=balance.amount,
+                user_id=balance.user_id,
+            )
+            for balance in balances
+        ]
+        ledger_entries.extend(
             [
                 ledger_credit(
                     account_kind=LedgerAccountKind.JACKPOT,
@@ -137,27 +186,7 @@ async def seed() -> tuple[UUID, list[UUID], datetime]:
                 ),
             ]
         )
-        for index, user_id in enumerate(user_ids):
-            user = User(
-                id=user_id,
-                telegram_id=-(index + 1),
-                display_name=f"Smoke {index + 1}",
-                is_active=True,
-                is_admin=False,
-            )
-            balance = Balance(user_id=user_id, amount=10_000_000, version=1)
-            session.add_all(
-                [
-                    user,
-                    balance,
-                    ledger_credit(
-                        account_kind=LedgerAccountKind.USER_BALANCE,
-                        account_id=user_id,
-                        amount=balance.amount,
-                        user_id=user_id,
-                    ),
-                ]
-            )
+        session.add_all(ledger_entries)
     return draw_id, user_ids, now
 
 
@@ -181,6 +210,7 @@ async def buy(user_id: UUID, count: int, key: str, now: datetime) -> None:
 
 
 async def main() -> None:
+    await clear_restored_smoke_database()
     draw_id, users, now = await seed()
     started = perf_counter()
     await asyncio.gather(*(open_dashboard(user_id) for user_id in users))

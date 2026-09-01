@@ -30,8 +30,11 @@ def main() -> None:
     command = (
         "set -eu; cd /opt/k-loto; "
         f"{compose} exec -T db sh -c '"
+        "latest=$(ls -1t /backups/k-loto-*.dump | head -n 1); "
         'dropdb -U "$POSTGRES_USER" --if-exists k_loto_smoke; '
-        'createdb -U "$POSTGRES_USER" k_loto_smoke\'; '
+        'createdb -U "$POSTGRES_USER" k_loto_smoke; '
+        'pg_restore -U "$POSTGRES_USER" --exit-on-error --no-owner '
+        '--dbname k_loto_smoke "$latest"\'; '
         "cleanup() { "
         f"{compose} exec -T db sh -c '"
         'dropdb -U "$POSTGRES_USER" --if-exists k_loto_smoke\' '
@@ -51,7 +54,7 @@ def main() -> None:
         client.close()
     if exit_code:
         raise RuntimeError(
-            f"PostgreSQL smoke failed (exit {exit_code}): {error[-2000:]}"
+            f"PostgreSQL smoke failed (exit {exit_code}): {error[-12000:]}"
         )
     print(output.strip())
 
