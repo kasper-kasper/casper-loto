@@ -33,7 +33,19 @@
   агрегатов аналитики;
 - версия `1.0.0` фиксирует переход стабильного работающего проекта с ветки
   разработки `0.x`; старые записи не переписаны;
-- проверки и production deployment фиксируются после release commit.
+- проверки: Ruff и форматирование без замечаний, mypy без ошибок, backend
+  `137 passed`, Mini App `30 passed`, Admin Panel `8 passed`; оба интерфейса
+  прошли typecheck, lint и production build.
+
+Развёртывание:
+
+- release commit: `1a2a0b6`;
+- API и gateway v1.0.0 развёрнуты на VPS, не изменявшийся Telegram-бот не
+  перезапускался;
+- production `alembic check` чистый, резервная копия восстановлена во временную
+  БД: 5 пользователей, 56 тиражей, 1 072 билета и 462 ledger-записи;
+- health, главная Admin Panel и прямые адреса `/ticket-analytics` и
+  `/development` отвечают `200` по HTTPS.
 
 ## [0.23.1] - 2026-09-01
 
