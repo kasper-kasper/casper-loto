@@ -205,6 +205,7 @@ def upgrade() -> None:
             FROM lotteries AS l
             JOIN jackpot_accounts AS j ON j.lottery_id = l.id
             WHERE d.lottery_id = l.id
+              AND d.status <> 'COMPLETED'
             """
         )
     )
