@@ -533,6 +533,21 @@ async def test_ticket_analytics_uses_aggregate_rows() -> None:
     assert analytics.lotteries[0].total_payout == 2_500
 
 
+async def test_dashboard_activity_uses_compact_draw_buckets() -> None:
+    bucket = datetime(2026, 9, 4, 16, tzinfo=UTC)
+    fake = FakeSession(
+        scalar_values=[],
+        execute_rows=[[(bucket, 15, 13_320, 1_020_156)]],
+    )
+
+    points = await AdminQueryService(cast(AsyncSession, fake)).activity(period_days=1)
+
+    assert points[0].bucket_at == bucket
+    assert points[0].ticket_count == 15
+    assert points[0].total_sales == 13_320
+    assert points[0].total_payout == 1_020_156
+
+
 def test_admin_routes_cover_milestone_and_completed_draws_have_no_mutation() -> None:
     paths = create_app().openapi()["paths"]
     required = {
@@ -550,6 +565,7 @@ def test_admin_routes_cover_milestone_and_completed_draws_have_no_mutation() -> 
         "/api/v1/admin/draws/{draw_id}",
         "/api/v1/admin/lotteries/{lottery_id}/number-statistics",
         "/api/v1/admin/ticket-analytics",
+        "/api/v1/admin/activity",
         "/api/v1/admin/audit",
         "/api/v1/admin/release-notes/{kind}",
     }

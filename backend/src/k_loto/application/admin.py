@@ -193,6 +193,14 @@ class TicketAnalytics:
 
 
 @dataclass(frozen=True, slots=True)
+class AdminActivityPoint:
+    bucket_at: datetime
+    ticket_count: int
+    total_sales: int
+    total_payout: int
+
+
+@dataclass(frozen=True, slots=True)
 class AdminAuditEntry:
     id: UUID
     admin_user_id: UUID
@@ -1060,6 +1068,38 @@ class AdminQueryService:
                 )
                 for values in lottery_values
             ),
+        )
+
+    async def activity(self, *, period_days: int) -> tuple[AdminActivityPoint, ...]:
+        """Return compact draw activity buckets for the owner dashboard."""
+
+        bucket = "hour" if period_days == 1 else "day"
+        bucket_at = func.date_trunc(bucket, Draw.scheduled_at).label("bucket_at")
+        rows = (
+            await self._session.execute(
+                select(
+                    bucket_at,
+                    func.coalesce(func.sum(Draw.ticket_count), 0),
+                    func.coalesce(func.sum(Draw.total_sales), 0),
+                    func.coalesce(func.sum(Draw.total_payout), 0),
+                )
+                .where(
+                    Draw.status == DrawStatus.COMPLETED,
+                    Draw.scheduled_at
+                    >= datetime.now(UTC) - timedelta(days=period_days),
+                )
+                .group_by(bucket_at)
+                .order_by(bucket_at)
+            )
+        ).all()
+        return tuple(
+            AdminActivityPoint(
+                bucket_at=row[0],
+                ticket_count=int(row[1]),
+                total_sales=int(row[2]),
+                total_payout=int(row[3]),
+            )
+            for row in rows
         )
 
     async def audit(self, *, limit: int = 100) -> tuple[AdminAuditEntry, ...]:

@@ -10,7 +10,7 @@ vi.mock("./api", () => ({
   adminApi: {
     login: vi.fn(), session: vi.fn(), logout: vi.fn(), dashboard: vi.fn(),
     players: vi.fn(), lotteries: vi.fn(), schedule: vi.fn(), draws: vi.fn(), draw: vi.fn(),
-    transactions: vi.fn(), statistics: vi.fn(), ticketAnalytics: vi.fn(), audit: vi.fn(),
+    transactions: vi.fn(), statistics: vi.fn(), ticketAnalytics: vi.fn(), activity: vi.fn(), audit: vi.fn(),
     notifications: vi.fn(), releaseNotes: vi.fn(),
     setBalance: vi.fn(), configureLottery: vi.fn(), setReserve: vi.fn(), setJackpot: vi.fn(),
     setAutoPlay: vi.fn(),
@@ -40,6 +40,7 @@ beforeEach(() => {
   vi.mocked(adminApi.transactions).mockResolvedValue([]);
   vi.mocked(adminApi.statistics).mockResolvedValue(numberStatistics);
   vi.mocked(adminApi.ticketAnalytics).mockResolvedValue(analytics);
+  vi.mocked(adminApi.activity).mockResolvedValue([]);
   vi.mocked(adminApi.audit).mockResolvedValue([]);
   vi.mocked(adminApi.notifications).mockResolvedValue([]);
   vi.mocked(adminApi.releaseNotes).mockImplementation(async (kind) => [{
@@ -58,6 +59,24 @@ it("restores an authenticated session and renders Russian system truth", async (
   expect(await screen.findByText("БАЗА ДАННЫХ РАБОТАЕТ")).toBeInTheDocument();
   expect(screen.getByText("12 000 CAS")).toBeInTheDocument();
   expect(screen.getByText("v0.8.0 · работает 2 мин.")).toBeInTheDocument();
+});
+
+it("distinguishes one draw jackpot from the all-time lottery total", async () => {
+  vi.mocked(adminApi.dashboard).mockResolvedValueOnce({
+    ...dashboard,
+    jackpots: {
+      ...dashboard.jackpots,
+      total_wins: 34,
+      total_paid: 34_000_000,
+      lotteries: [{ code: "shadow", name: "SHADOW", win_count: 34, total_paid: 34_000_000, last_win_at: "2026-09-04T16:15:00Z" }],
+      history: [{ id: "event", lottery_code: "shadow", lottery_name: "SHADOW", draw_id: "draw", jackpot_amount: 1_019_980, winner_ticket_count: 1, winner_user_count: 1, base_jackpot_after: 1_000_000, occurred_at: "2026-09-04T16:15:00Z" }],
+    },
+  });
+  render(<App />);
+
+  expect(await screen.findByText("Выплачено за всё время")).toBeInTheDocument();
+  expect(screen.getByText("Джекпот этого тиража")).toBeInTheDocument();
+  expect(screen.getByText("1 019 980 CAS")).toBeInTheDocument();
 });
 
 it("shows login and authenticates when no session exists", async () => {
@@ -85,13 +104,17 @@ it("adjusts a player balance only with a mandatory reason", async () => {
   await waitFor(() => expect(adminApi.setBalance).toHaveBeenCalledWith("player", 9000, "Тестовое начисление"));
 });
 
-it("exposes immutable archive, ledger, statistics and audit navigation", async () => {
+it("groups administration into eight task-oriented sections", async () => {
   render(<App />);
   await screen.findByText("БАЗА ДАННЫХ РАБОТАЕТ");
 
-  for (const label of ["Расписание", "Архив тиражей", "Журнал CAS", "Статистика чисел", "Аудит действий", "Разработка"]) {
+  for (const label of ["Обзор", "Лотереи", "Расписание", "Тиражи", "Игроки", "Аналитика", "Система", "Разработка"]) {
     expect(screen.getByRole("button", { name: new RegExp(label) })).toBeInTheDocument();
   }
+  fireEvent.click(screen.getByRole("button", { name: /Система/ }));
+  expect(await screen.findByRole("tab", { name: "Журнал CAS" })).toBeInTheDocument();
+  expect(screen.getByRole("tab", { name: "Уведомления" })).toBeInTheDocument();
+  expect(screen.getByRole("tab", { name: "Аудит действий" })).toBeInTheDocument();
 });
 
 it("loads the daily schedule only after opening its section", async () => {
@@ -132,16 +155,18 @@ it("keeps the selected section in the URL and restores it after refresh", async 
 
 it("shows lightweight ticket win analytics overall and by lottery", async () => {
   render(<App />);
-  fireEvent.click(await screen.findByRole("button", { name: /Аналитика билетов/ }));
+  fireEvent.click(await screen.findByRole("button", { name: /Аналитика/ }));
+  fireEvent.click(await screen.findByRole("tab", { name: "Билеты" }));
 
   expect(await screen.findByText("23,33% от рассчитанных")).toBeInTheDocument();
   expect(screen.getByText("Weekly 5/20")).toBeInTheDocument();
-  expect(adminApi.ticketAnalytics).toHaveBeenCalledOnce();
+  expect(adminApi.ticketAnalytics).toHaveBeenCalledTimes(2);
 });
 
 it("filters number statistics by lottery and draw window without changing history", async () => {
   render(<App />);
-  fireEvent.click(await screen.findByRole("button", { name: /Статистика чисел/ }));
+  fireEvent.click(await screen.findByRole("button", { name: /Аналитика/ }));
+  fireEvent.click(await screen.findByRole("tab", { name: "Числа" }));
 
   expect(await screen.findByText("Статистика начата заново с 1 сентября 2026 года. История тиражей и их номера не изменялись.")).toBeInTheDocument();
   fireEvent.change(screen.getByLabelText("Количество тиражей"), { target: { value: "50" } });

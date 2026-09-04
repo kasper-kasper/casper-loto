@@ -210,3 +210,37 @@ tr.clickable:hover { background: rgba(217,182,102,.055); }
 .schedule-row.focused { color: #fff3d0; background: linear-gradient(90deg,rgba(191,151,64,.2),rgba(74,25,38,.13) 62%,rgba(191,151,64,.08)); box-shadow: inset 3px 0 #d9b666; }
 .schedule-row.focused strong,.schedule-row.focused time { color: #e7c878; }
 .schedule-empty { padding: 70px 28px; color: #626b7b; font: 500 11px "IBM Plex Mono"; text-align: center; letter-spacing: .15em; }
+
+/* 1.16.0 — task-oriented control structure. */
+.section-tabs { display: flex; flex-wrap: wrap; gap: 7px; margin: 22px 0 14px; padding: 5px; border: 1px solid rgba(184,157,98,.16); background: rgba(6,13,25,.7); }
+.section-tabs button { min-height: 40px; padding: 0 17px; border: 1px solid transparent; color: #7f899a; background: transparent; font: 600 9px "IBM Plex Mono"; letter-spacing: .08em; }
+.section-tabs button:hover { color: #d7cfbf; background: rgba(255,255,255,.025); }
+.section-tabs button.active { border-color: rgba(217,182,102,.28); color: #f3e6c5; background: linear-gradient(110deg,rgba(217,182,102,.14),rgba(83,37,55,.08)); box-shadow: inset 0 -2px #d9b666; }
+.section-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.section-toolbar .section-tabs { flex: 1; }
+.section-toolbar > select { min-width: 260px; }
+.subheading { margin: 22px 20px 8px; color: #d8c79e; font: 500 16px Georgia,"Times New Roman",serif; }
+.jackpot-hit { display: grid; gap: 7px; margin: 0 0 18px; padding: 16px 18px; border: 1px solid rgba(217,182,102,.34); background: linear-gradient(110deg,rgba(217,182,102,.13),rgba(91,25,43,.12)); }
+.jackpot-hit small { color: #ac9561; font: 600 8px "IBM Plex Mono"; letter-spacing: .12em; }
+.jackpot-hit strong { color: #efd38c; font: 500 28px Georgia,"Times New Roman",serif; }
+.jackpot-hit span { color: #8992a1; font-size: 10px; line-height: 1.45; }
+.activity-panel { margin-bottom: 15px; }
+.activity-panel > header > div:first-child span { display: block; margin-top: 5px; }
+.activity-periods { display: flex; gap: 5px; }
+.activity-periods button { min-height: 32px; padding: 0 11px; border: 1px solid rgba(169,145,92,.18); color: #778194; background: #08111f; font: 600 8px "IBM Plex Mono"; }
+.activity-periods button.active { border-color: rgba(217,182,102,.42); color: #efd895; background: rgba(217,182,102,.1); }
+.activity-legend { display: flex; justify-content: flex-end; gap: 18px; padding: 13px 20px 0; color: #747e8f; font: 8px "IBM Plex Mono"; }
+.activity-legend span { display: flex; align-items: center; gap: 6px; }.activity-legend i { width: 9px; height: 9px; background: #5d82cf; }.activity-legend i.payout { background: #c69363; }
+.activity-chart { display: flex; min-height: 190px; padding: 18px 20px 15px; align-items: end; gap: clamp(4px,1vw,12px); overflow-x: auto; }
+.activity-column { display: grid; min-width: 28px; height: 155px; flex: 1; grid-template-rows: 1fr auto; gap: 7px; }
+.activity-column > div { display: flex; height: 100%; align-items: end; justify-content: center; gap: 2px; border-bottom: 1px solid rgba(181,155,99,.16); background: linear-gradient(rgba(113,135,177,.035) 1px,transparent 1px); background-size: 100% 25%; }
+.activity-column i { width: min(42%,13px); min-height: 2px; background: linear-gradient(#77a2ef,#345b9d); }.activity-column i.payout { background: linear-gradient(#e0bb7a,#865946); }
+.activity-column small { color: #596374; font: 7px "IBM Plex Mono"; text-align: center; }
+.schedule-room > .section-tabs { margin: 0 0 12px; }
+.schedule-row { position: relative; }
+.schedule-row::before { position: absolute; left: 0; top: 17px; bottom: 17px; width: 3px; content: ""; background: #70809b; opacity: .62; }
+.schedule-row.lottery-flash::before { background: #438fff; }.schedule-row.lottery-shadow::before { background: #ce5b9a; }.schedule-row.lottery-pulse::before { background: #ff4058; }
+.schedule-row.lottery-weekly::before { background: #e1bd68; }.schedule-row.lottery-september::before { background: #c77c58; }.schedule-row.lottery-grob::before { background: #9c3654; }
+.schedule-row b small { display: block; margin-top: 5px; color: #596375; font: 600 7px "IBM Plex Mono"; letter-spacing: .13em; }
+.schedule-row.focused b small { color: #cdb372; }
+@media (max-width: 1250px) { .section-toolbar { align-items: stretch; flex-direction: column; }.section-toolbar > select { width: 100%; }.schedule-head,.schedule-row { grid-template-columns: 150px minmax(260px,1fr) 160px; } }

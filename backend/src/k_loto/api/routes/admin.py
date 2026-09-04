@@ -264,6 +264,13 @@ class TicketAnalyticsResponse(ApiModel):
     lotteries: list[TicketAnalyticsRowResponse]
 
 
+class ActivityPointResponse(ApiModel):
+    bucket_at: datetime
+    ticket_count: int
+    total_sales: int
+    total_payout: int
+
+
 class NotificationResponse(ApiModel):
     id: UUID
     event_key: str
@@ -724,6 +731,18 @@ async def ticket_analytics(
         )
         ticket_analytics_cache = (now, result)
         return result
+
+
+@router.get("/activity", response_model=list[ActivityPointResponse])
+async def activity(
+    _admin: Annotated[CurrentAdmin, Depends(get_current_admin)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    period_days: int = Query(default=1, ge=1, le=30),
+) -> list[ActivityPointResponse]:
+    """Return lightweight sales and payout buckets when the dashboard is opened."""
+
+    rows = await AdminQueryService(session).activity(period_days=period_days)
+    return [ActivityPointResponse.model_validate(item) for item in rows]
 
 
 @router.get("/release-notes/{kind}", response_model=list[ReleaseNoteResponse])

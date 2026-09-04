@@ -11,6 +11,7 @@ import type {
   Transaction, TicketAnalytics,
   ReleaseNote,
   ScheduleEntry,
+  ActivityPoint,
 } from "./types";
 
 export class ApiError extends Error {
@@ -118,6 +119,7 @@ export const adminApi = {
     return request<NumberStatisticsReport>(`/lotteries/${lotteryId}/number-statistics?${params.toString()}`);
   },
   ticketAnalytics: () => request<TicketAnalytics>("/ticket-analytics"),
+  activity: (periodDays = 1) => request<ActivityPoint[]>(`/activity?period_days=${periodDays}`),
   audit: () => request<AuditEntry[]>("/audit"),
   notifications: () => request<NotificationItem[]>("/notifications"),
   releaseNotes: (kind: "changelog" | "devlog") =>

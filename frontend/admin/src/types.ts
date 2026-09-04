@@ -208,6 +208,13 @@ export interface TicketAnalytics {
   lotteries: TicketAnalyticsRow[];
 }
 
+export interface ActivityPoint {
+  bucket_at: string;
+  ticket_count: number;
+  total_sales: number;
+  total_payout: number;
+}
+
 export interface NotificationItem {
   id: string;
   event_key: string;
