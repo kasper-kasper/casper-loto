@@ -25,6 +25,7 @@ async def ensure_lottery(
     maximum: int,
     cutoff: int,
     schedule: dict[str, object],
+    ruleset_code: str,
 ) -> None:
     async with session_factory() as session, session.begin():
         lottery = await session.scalar(
@@ -37,6 +38,7 @@ async def ensure_lottery(
                 code=code,
                 name=name,
                 kind=kind,
+                ruleset_code=ruleset_code,
                 numbers_to_pick=pick,
                 max_number=maximum,
                 ticket_price=None,
@@ -52,6 +54,9 @@ async def ensure_lottery(
         lottery.sales_cutoff_minutes = cutoff
         lottery.name = name
         lottery.schedule = schedule
+        lottery.ruleset_code = ruleset_code
+        lottery.numbers_to_pick = pick
+        lottery.max_number = maximum
         if created:
             lottery.is_active = True
         for model in (JackpotAccount, DistributionFund, LotteryReserve):
@@ -75,12 +80,13 @@ async def ensure_lottery(
 async def main() -> None:
     await ensure_lottery(
         "weekly",
-        "ЛСД-лото",
+        "Kasper Grand",
         LotteryKind.WEEKLY,
-        5,
-        20,
+        7,
+        40,
         5,
         {"weekday": "sunday", "draw_time": "20:00"},
+        "weekly_grand_5_35_2_5",
     )
     for code, name, slots in (
         ("pll", "ПЛЛ-лото", ["02:22", "13:45"]),
@@ -95,6 +101,7 @@ async def main() -> None:
             15,
             2,
             {"slots": slots},
+            "daily_4_15",
         )
     await engine.dispose()
 
