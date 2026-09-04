@@ -21,8 +21,8 @@
 Технически:
 
 - migration: `0029_fast_cutoff`;
-- tests: будут зафиксированы после итоговой проверки;
-- commit: будет зафиксирован после завершения проверки.
+- tests: 168 backend + 38 Mini App + 11 Admin Panel passed;
+- commit: 0baacd2.
 
 ## [1.15.0] - 2026-09-04
 
