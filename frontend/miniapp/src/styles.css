@@ -1535,3 +1535,7 @@ body::before, body::after { opacity: .12; }
 @media (prefers-reduced-motion: reduce) {
   .fast-card > img,.fast-live-card > img,.fast-live-card > header i,.fast-live-scan i,.fast-picker-scene,.fast-divider::after,.fast-divider > i,.storefront-rail > i,.storefront-card,.storefront-card::after { animation: none; }
 }
+
+/* 1.12.2 — keep number selection above the fold on compact Telegram viewports. */
+.picker-heading { min-height: 88px !important; padding: 39px 12px 9px 56px !important; }
+.picker-heading h1 { font-size: clamp(18px,5.7vw,22px); }
