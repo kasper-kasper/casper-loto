@@ -49,8 +49,9 @@ the immutable result.
 The client derives the visual phase from the server-time offset and the official
 UTC `scheduled_at`: waiting, short start, two-second sequential reveal and final
 result. Opening late or returning from the background triggers a fresh sync and
-resumes the correct phase without replaying a completed draw. Polling is active
-only while the screen is open; no WebSocket or streaming infrastructure is used.
+resumes the correct phase without replaying a completed draw. The authenticated
+SSE connection is active only while the relevant screen is open; WebSocket is
+not required.
 
 The screen uses a low-cost CSS grid and one blurred ambient glow. Number reveal
 uses only opacity, blur and transform. Reduced-motion preferences, 320px layouts
@@ -75,6 +76,12 @@ but it does not send thousands of individual requests.
 
 The live feed uses authenticated SSE. Snapshots follow the server timeline;
 reconnecting or reopening never restarts the reveal locally.
+
+Fast uses the same read-only feed with `scope=fast`, but renders it directly in
+the FLASH or SHADOW card. The card changes 20 seconds before the draw, reveals
+the three immutable result numbers in sequence, holds the final result for 12
+seconds and then returns automatically. The SSE connection exists only while
+the Fast section is open.
 
 ## Authentication and API
 

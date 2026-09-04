@@ -230,6 +230,40 @@ async def test_reserve_adjustment_is_ledgered_and_never_negative() -> None:
         )
 
 
+async def test_current_jackpot_adjustment_is_ledgered_and_audited() -> None:
+    lottery_id = UUID(int=32)
+    jackpot = JackpotAccount(
+        id=UUID(int=320),
+        lottery_id=lottery_id,
+        balance=888_888,
+        base_amount=888_888,
+        version=1,
+    )
+    fake = FakeSession(scalar_values=[None, jackpot])
+
+    result = await AdminMutationService(
+        cast(AsyncSession, fake), UUID(int=20)
+    ).set_jackpot(
+        lottery_id,
+        target_amount=999_999,
+        reason="Owner changed the current Fast jackpot",
+        idempotency_key="jackpot-1",
+    )
+
+    ledger = next(item for item in fake.added if isinstance(item, LedgerTransaction))
+    audit = next(item for item in fake.added if isinstance(item, AdminAuditLog))
+    assert result.amount == 999_999
+    assert jackpot.balance == 999_999
+    assert ledger.account_kind.value == "JACKPOT"
+    assert ledger.type == TransactionType.SYSTEM_ADJUSTMENT
+    assert (ledger.balance_before, ledger.amount, ledger.balance_after) == (
+        888_888,
+        111_111,
+        999_999,
+    )
+    assert audit.entity_type == "jackpot_account"
+
+
 async def test_auto_play_is_owner_audited_and_limited_to_five_tickets() -> None:
     user_id = UUID(int=33)
     user = User(
@@ -508,6 +542,7 @@ def test_admin_routes_cover_milestone_and_completed_draws_have_no_mutation() -> 
         "/api/v1/admin/players/{user_id}/balance-adjustments",
         "/api/v1/admin/lotteries",
         "/api/v1/admin/lotteries/{lottery_id}/configuration",
+        "/api/v1/admin/lotteries/{lottery_id}/jackpot-adjustments",
         "/api/v1/admin/lotteries/{lottery_id}/reserve-adjustments",
         "/api/v1/admin/transactions",
         "/api/v1/admin/draws",

@@ -363,6 +363,66 @@ class AdminMutationService:
             )
         return AdjustmentResult(target_amount, False)
 
+    async def set_jackpot(
+        self,
+        lottery_id: UUID,
+        *,
+        target_amount: int,
+        reason: str,
+        idempotency_key: str,
+    ) -> AdjustmentResult:
+        """Set a current jackpot through an immutable ledger adjustment."""
+        _validate_adjustment(target_amount, reason, idempotency_key)
+        ledger_key = f"admin-jackpot:{idempotency_key}"
+        async with self._session.begin():
+            existing = await self._session.scalar(
+                select(LedgerTransaction).where(
+                    LedgerTransaction.idempotency_key == ledger_key
+                )
+            )
+            if existing is not None:
+                return AdjustmentResult(existing.balance_after, True)
+            jackpot = await self._session.scalar(
+                select(JackpotAccount)
+                .where(JackpotAccount.lottery_id == lottery_id)
+                .with_for_update()
+            )
+            if jackpot is None:
+                raise LookupError("Lottery jackpot does not exist.")
+            before = jackpot.balance
+            if before == target_amount:
+                return AdjustmentResult(before, False)
+            jackpot.balance = target_amount
+            jackpot.version += 1
+            self._session.add(
+                LedgerTransaction(
+                    id=uuid4(),
+                    operation_id=uuid4(),
+                    idempotency_key=ledger_key,
+                    account_kind=LedgerAccountKind.JACKPOT,
+                    account_id=jackpot.id,
+                    type=TransactionType.SYSTEM_ADJUSTMENT,
+                    amount=target_amount - before,
+                    balance_before=before,
+                    balance_after=target_amount,
+                    lottery_id=lottery_id,
+                    details={
+                        "reason": reason,
+                        "source": "admin",
+                        "admin_user_id": str(self._admin_user_id),
+                    },
+                )
+            )
+            self._audit(
+                AuditAction.ADJUST,
+                "jackpot_account",
+                jackpot.id,
+                {"amount": before},
+                {"amount": target_amount},
+                reason,
+            )
+        return AdjustmentResult(target_amount, False)
+
     async def configure_lottery(
         self,
         lottery_id: UUID,

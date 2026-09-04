@@ -248,11 +248,13 @@ function PlayerCard({ player, onSaved }: { player: Player; onSaved: () => Promis
 function LotteryCard({ lottery, onSaved }: { lottery: Lottery; onSaved: () => Promise<void> }) {
   const [price, setPrice] = useState(String(lottery.ticket_price ?? 0));
   const [base, setBase] = useState(String(lottery.base_jackpot));
+  const [currentJackpot, setCurrentJackpot] = useState(String(lottery.current_jackpot));
   const [cutoff, setCutoff] = useState(String(lottery.sales_cutoff_minutes ?? 0));
   const [purchaseLimit, setPurchaseLimit] = useState(String(lottery.max_tickets_per_purchase));
   const [playerLimit, setPlayerLimit] = useState(String(lottery.max_tickets_per_user_per_draw));
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const [jackpotBusy, setJackpotBusy] = useState(false);
   const [message, setMessage] = useState("");
   const saveAll = async () => {
     setBusy(true);
@@ -260,7 +262,7 @@ function LotteryCard({ lottery, onSaved }: { lottery: Lottery; onSaved: () => Pr
     try {
       await adminApi.configureLottery(lottery.id, Number(price), Number(base), Number(cutoff), Number(purchaseLimit), Number(playerLimit), reason);
       setReason("");
-      setMessage("Цена билета, джекпот и лимиты сохранены.");
+      setMessage("Цена билета, базовый джекпот и лимиты сохранены.");
       await onSaved();
     } catch (saveError) {
       setMessage(saveError instanceof Error ? saveError.message : "Не удалось сохранить настройки.");
@@ -268,13 +270,27 @@ function LotteryCard({ lottery, onSaved }: { lottery: Lottery; onSaved: () => Pr
       setBusy(false);
     }
   };
+  const saveJackpot = async () => {
+    setJackpotBusy(true);
+    setMessage("");
+    try {
+      await adminApi.setJackpot(lottery.id, Number(currentJackpot), reason);
+      setReason("");
+      setMessage("Текущий джекпот изменён через журнал CAS.");
+      await onSaved();
+    } catch (saveError) {
+      setMessage(saveError instanceof Error ? saveError.message : "Не удалось изменить текущий джекпот.");
+    } finally {
+      setJackpotBusy(false);
+    }
+  };
   return <article className="lottery-card">
     <header><div><small>{lottery.kind === "WEEKLY" ? "ЕЖЕНЕДЕЛЬНАЯ" : "ЕЖЕДНЕВНАЯ"}</small><h2>{lottery.name}</h2></div><Status active={lottery.is_active}>{lottery.is_active ? "АКТИВНА" : "НЕАКТИВНА"}</Status></header>
     <div className="fund-matrix"><span><small>ТЕКУЩИЙ ДЖЕКПОТ</small><b>{cas(lottery.current_jackpot)}</b></span><span><small>СХЕМА ПОКУПКИ</small><b>100% в джекпот</b></span><span><small>СЛЕДУЮЩИЙ ТИРАЖ</small><b>{lottery.next_draw_number ? `№${drawNumber(lottery.next_draw_number)}` : "—"}</b><em>{date(lottery.next_draw_at)}</em></span></div>
-    <div className="config-grid"><label>Цена билета, CAS<input type="number" min="1" value={price} onChange={(e) => setPrice(e.target.value)} /></label><label>Базовый джекпот, CAS<input type="number" min="0" value={base} onChange={(e) => setBase(e.target.value)} /></label><label>Cutoff, минут<input type="number" min="0" max="1440" value={cutoff} onChange={(e) => setCutoff(e.target.value)} /></label><label>Лимит одной покупки<input type="number" min="1" max="1000" value={purchaseLimit} onChange={(e) => setPurchaseLimit(e.target.value)} /></label><label>Лимит игрока на тираж<input type="number" min="1" max="100000" value={playerLimit} onChange={(e) => setPlayerLimit(e.target.value)} /></label></div>
+    <div className="config-grid"><label>Цена билета, CAS<input type="number" min="1" value={price} onChange={(e) => setPrice(e.target.value)} /></label><label>Базовый джекпот после выигрыша, CAS<input type="number" min="0" value={base} onChange={(e) => setBase(e.target.value)} /></label><label>Cutoff, минут<input type="number" min="0" max="1440" value={cutoff} onChange={(e) => setCutoff(e.target.value)} /></label><label>Лимит одной покупки<input type="number" min="1" max="1000" value={purchaseLimit} onChange={(e) => setPurchaseLimit(e.target.value)} /></label><label>Лимит игрока на тираж<input type="number" min="1" max="100000" value={playerLimit} onChange={(e) => setPlayerLimit(e.target.value)} /></label></div>
     <label className="reason">Обязательная причина для аудита<input value={reason} onChange={(e) => setReason(e.target.value)} /></label>
-    <div className="actions"><button disabled={busy || !reason.trim()} onClick={() => void saveAll()}>{busy ? "СОХРАНЯЕМ…" : "СОХРАНИТЬ ВСЕ НАСТРОЙКИ"}</button></div>
-    {message && <p className={message.includes("сохранены") ? "save-message" : "save-message error"}>{message}</p>}
+    <div className="lottery-actions"><div className="actions"><button disabled={busy || jackpotBusy || !reason.trim()} onClick={() => void saveAll()}>{busy ? "СОХРАНЯЕМ…" : "СОХРАНИТЬ НАСТРОЙКИ"}</button></div><div className="jackpot-adjust"><label>Текущий джекпот, CAS<input type="number" min="0" value={currentJackpot} onChange={(e) => setCurrentJackpot(e.target.value)} /></label><button disabled={busy || jackpotBusy || !reason.trim()} onClick={() => void saveJackpot()}>{jackpotBusy ? "МЕНЯЕМ…" : "ИЗМЕНИТЬ ЧЕРЕЗ ЖУРНАЛ"}</button></div></div>
+    {message && <p className={message.includes("сохранен") || message.includes("изменён") ? "save-message" : "save-message error"}>{message}</p>}
     <footer>Расписание: <code>{schedule(lottery.schedule)}</code> · новые значения cutoff применяются при подготовке следующих тиражей. Завершённые тиражи и купленные билеты не изменяются.</footer>
   </article>;
 }

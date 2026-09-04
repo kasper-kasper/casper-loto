@@ -59,7 +59,7 @@ export interface LiveDraw {
   lottery_kind: LotteryKind;
   draw_number: number;
   scheduled_at: string;
-  status: "SCHEDULED" | "COMPLETED";
+  status: "SCHEDULED" | "CLOSED" | "DRAWING" | "SETTLING" | "COMPLETED";
   winning_numbers: number[] | null;
   jackpot: number;
   player_ticket_count: number;

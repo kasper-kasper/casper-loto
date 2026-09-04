@@ -1361,6 +1361,35 @@ body::before, body::after { opacity: .12; }
 .fast-card-bottom button:active { transform: scale(.975); }
 .fast-card-bottom button:disabled { filter: grayscale(.7); opacity: .65; }
 .fast-card-bottom button small { font-size: 8px; font-weight: 700; opacity: .76; }
+.fast-live-card { --fast-accent: #3794ff; position: relative; min-height: 280px; overflow: hidden; padding: 17px; border: 1px solid color-mix(in srgb,var(--fast-accent) 58%,#24375d); border-radius: 14px 14px 28px 14px; color: #eef4ff; background: #06122b; box-shadow: 0 18px 54px rgba(0,0,0,.3),0 0 34px color-mix(in srgb,var(--fast-accent) 13%,transparent); }
+.fast-live-card.fast-shadow { --fast-accent: #df5d91; background: #130b21; }
+.fast-live-card > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 64% center; opacity: .38; animation: fast-live-drift 7s ease-in-out infinite alternate; }
+.fast-live-veil { position: absolute; inset: 0; background: radial-gradient(circle at 73% 42%,color-mix(in srgb,var(--fast-accent) 19%,transparent),transparent 35%),linear-gradient(110deg,rgba(2,7,20,.98) 0%,rgba(3,9,24,.88) 53%,rgba(3,8,20,.57)); }
+.fast-live-card > header,.fast-live-title,.fast-live-ticket,.fast-live-note,.fast-live-result { position: relative; z-index: 1; }
+.fast-live-card > header { display: flex; justify-content: space-between; color: var(--fast-accent); font-size: 8px; font-weight: 800; letter-spacing: .16em; }
+.fast-live-card > header span { display: flex; align-items: center; gap: 7px; }
+.fast-live-card > header i { width: 6px; height: 6px; border-radius: 50%; background: var(--fast-accent); box-shadow: 0 0 12px var(--fast-accent); animation: fast-live-pulse 1.25s ease-in-out infinite; }
+.fast-live-card > header small { color: #9aa7c3; letter-spacing: .08em; }
+.fast-live-title { display: flex; align-items: end; justify-content: space-between; gap: 12px; margin: 20px 0 12px; }
+.fast-live-title small { color: var(--fast-accent); font-size: 10px; font-weight: 900; letter-spacing: .18em; }
+.fast-live-title h2 { margin: 2px 0 0; color: #fff; font-size: clamp(20px,6vw,28px); letter-spacing: -.035em; }
+.fast-live-title > b { color: #8f9fbe; font-size: 9px; white-space: nowrap; }
+.fast-live-ticket { padding: 13px; border: 1px solid color-mix(in srgb,var(--fast-accent) 32%,rgba(126,148,192,.18)); border-radius: 12px 12px 22px 12px; background: linear-gradient(135deg,rgba(5,12,30,.9),rgba(12,17,38,.7)); backdrop-filter: blur(7px); }
+.fast-live-ticket-head { display: flex; justify-content: space-between; color: #8190ae; font-size: 7px; font-weight: 800; letter-spacing: .17em; }
+.fast-live-ticket-head small { color: var(--fast-accent); }
+.fast-live-slots { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 10px; }
+.fast-live-slots i { display: grid; min-height: 61px; place-items: center; border: 1px dashed rgba(130,151,195,.26); border-radius: 11px 11px 18px 11px; color: #52617f; background: rgba(2,7,20,.62); font-size: 24px; font-style: normal; font-weight: 900; }
+.fast-live-slots i.lit { border-style: solid; border-color: color-mix(in srgb,var(--fast-accent) 78%,#fff); color: #fff; background: radial-gradient(circle,color-mix(in srgb,var(--fast-accent) 38%,transparent),rgba(4,10,26,.96) 67%); box-shadow: inset 0 0 22px color-mix(in srgb,var(--fast-accent) 20%,transparent),0 0 17px color-mix(in srgb,var(--fast-accent) 23%,transparent); text-shadow: 0 0 13px var(--fast-accent); }
+.fast-live-scan { position: relative; height: 20px; overflow: hidden; margin-top: 9px; color: #8190ae; font-size: 7px; text-align: center; letter-spacing: .13em; text-transform: uppercase; }
+.fast-live-scan::before { position: absolute; top: 3px; right: 0; left: 0; height: 1px; content: ""; background: linear-gradient(90deg,transparent,color-mix(in srgb,var(--fast-accent) 48%,transparent),transparent); }
+.fast-live-scan i { position: absolute; top: 1px; left: 0; width: 24%; height: 4px; border-radius: 99px; background: linear-gradient(90deg,transparent,#fff,var(--fast-accent),transparent); filter: blur(.3px); animation: fast-live-scan 1.35s linear infinite; }
+.fast-live-scan span { position: relative; top: 9px; }
+.fast-live-note { margin: 10px 0 0; color: #8392b1; font-size: 8px; text-align: center; }
+.fast-live-result { display: grid; margin-top: 10px; padding: 9px 12px; border-left: 2px solid var(--fast-accent); color: #8e9bb5; background: rgba(4,9,23,.66); }
+.fast-live-result > span { color: var(--fast-accent); font-size: 7px; font-weight: 800; letter-spacing: .18em; }
+.fast-live-result strong { margin-top: 2px; color: #eef4ff; font-size: 18px; }
+.fast-live-result.winner strong { color: #f4d681; text-shadow: 0 0 13px rgba(244,214,129,.24); }
+.fast-live-result small { margin-top: 2px; font-size: 8px; }
 .fast-divider { position: relative; display: grid; grid-template-columns: 1fr 42px 1fr; gap: 10px; align-items: center; min-height: 54px; overflow: hidden; margin: 6px 10px -8px; color: #687999; text-align: center; }
 .fast-divider::before { position: absolute; z-index: 0; top: 50%; right: 7%; left: 7%; height: 1px; content: ""; background: linear-gradient(90deg,transparent,#2e88ff 18%,rgba(191,95,192,.5) 50%,#e45792 82%,transparent); opacity: .5; }
 .fast-divider::after { position: absolute; z-index: 1; top: calc(50% - 2px); left: 5%; width: 23%; height: 4px; border-radius: 999px; content: ""; background: linear-gradient(90deg,transparent,#94c8ff 55%,#fff); filter: blur(.2px); box-shadow: 0 0 8px #328fff,0 0 16px rgba(216,80,157,.7); animation: fast-divider-signal 2.8s cubic-bezier(.4,0,.2,1) infinite; }
@@ -1422,6 +1451,9 @@ body::before, body::after { opacity: .12; }
   0%,38%,100% { box-shadow: -22px 0 35px rgba(40,112,255,.18),22px 0 35px rgba(219,57,128,.16); }
   48% { box-shadow: 0 0 12px rgba(255,255,255,.52),-27px 0 40px rgba(40,112,255,.35),27px 0 40px rgba(219,57,128,.32); }
 }
+@keyframes fast-live-pulse { 50% { opacity: .42; transform: scale(.76); } }
+@keyframes fast-live-scan { from { transform: translateX(-110%); } to { transform: translateX(430%); } }
+@keyframes fast-live-drift { from { transform: scale(1.03) translate3d(-.6%,0,0); } to { transform: scale(1.09) translate3d(1.2%,-.7%,0); } }
 @media (max-width: 360px) {
   .fast-card { padding: 14px; }
   .fast-card-main { grid-template-columns: 1fr 95px; }
@@ -1431,5 +1463,5 @@ body::before, body::after { opacity: .12; }
   .fast-selection > button { min-height: 40px; justify-content: center; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .fast-card > img,.fast-picker-scene,.fast-divider::after,.fast-divider > i { animation: none; }
+  .fast-card > img,.fast-live-card > img,.fast-live-card > header i,.fast-live-scan i,.fast-picker-scene,.fast-divider::after,.fast-divider > i { animation: none; }
 }

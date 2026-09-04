@@ -214,6 +214,7 @@ export default function App({ initData, localDev = false }: AppProps) {
   const [account, setAccount] = useState<Account | null>(null);
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [liveFeed, setLiveFeed] = useState<LiveFeed | null>(null);
+  const [fastFeed, setFastFeed] = useState<LiveFeed | null>(null);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [cart, setCart] = useState<CartTicket[]>(() => loadCart(cartTtl));
   const [pickerLottery, setPickerLottery] = useState<Lottery | null>(null);
@@ -268,6 +269,15 @@ export default function App({ initData, localDev = false }: AppProps) {
     setLiveFeed(feed);
   }, [authenticated, initData]);
 
+  const refreshFastLive = useCallback(async () => {
+    if (!authenticated) return;
+    const requestedAt = Date.now();
+    const feed = await miniAppApi.live(initData, "fast");
+    const receivedAt = Date.now();
+    setServerOffset(new Date(feed.server_time).getTime() - (requestedAt + receivedAt) / 2);
+    setFastFeed(feed);
+  }, [authenticated, initData]);
+
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1_000);
     return () => window.clearInterval(timer);
@@ -320,6 +330,21 @@ export default function App({ initData, localDev = false }: AppProps) {
     });
     return () => { window.clearTimeout(initial); controller.abort(); };
   }, [authenticated, initData, refreshDashboard, refreshLive, view]);
+  useEffect(() => {
+    if (view !== "fast" || !authenticated) return;
+    const controller = new AbortController();
+    const initial = window.setTimeout(() => {
+      void refreshFastLive();
+    }, 0);
+    void miniAppApi.liveStream(initData, (feed) => {
+      setServerOffset(new Date(feed.server_time).getTime() - Date.now());
+      setFastFeed(feed);
+      void refreshDashboard().catch(() => undefined);
+    }, controller.signal, "fast").catch((reason: unknown) => {
+      if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : "Не удалось подключиться к Fast-эфиру.");
+    });
+    return () => { window.clearTimeout(initial); controller.abort(); };
+  }, [authenticated, initData, refreshDashboard, refreshFastLive, view]);
 
   const standardLotteries = useMemo(() => dashboard?.lotteries.filter((item) => !isFastLottery(item.code)) ?? [], [dashboard]);
   const fastLotteries = useMemo(() => dashboard?.lotteries.filter((item) => isFastLottery(item.code)) ?? [], [dashboard]);
@@ -531,7 +556,7 @@ export default function App({ initData, localDev = false }: AppProps) {
       <LiveView feed={liveFeed} now={serverNow} loading={liveLoading} onPlay={(code) => void openLottery(code)} onTickets={() => { setTicketsLoading(true); setAccountView("tickets"); setView("account"); }} />
     </section>}
 
-    {view === "fast" && <section className="view-content" key="fast"><FastView lotteries={fastLotteries} now={serverNow} onOpen={(code) => void openLottery(code)} /></section>}
+    {view === "fast" && <section className="view-content" key="fast"><FastView lotteries={fastLotteries} feed={fastFeed} now={serverNow} onOpen={(code) => void openLottery(code)} /></section>}
 
     {view === "account" && <section className="view-content" key="account">
       <div className="page-title account-title"><h1>{copy.account.title}</h1><p>{copy.account.subtitle}</p></div>

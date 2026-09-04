@@ -171,4 +171,16 @@ export const adminApi = {
         }),
       },
     ),
+  setJackpot: (lotteryId: string, targetAmount: number, reason: string) =>
+    request<{ amount: number; already_processed: boolean }>(
+      `/lotteries/${lotteryId}/jackpot-adjustments`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          target_amount: targetAmount,
+          reason,
+          idempotency_key: crypto.randomUUID(),
+        }),
+      },
+    ),
 };

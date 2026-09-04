@@ -577,7 +577,7 @@ async def test_fast_result_notifies_only_owner_auto_play_in_telegram(
         lottery_id=lottery.id,
         draw_id=draw.id,
         user_id=user_id,
-        numbers=[4, 5, 6],
+        numbers=[1, 2, 3],
         purchase_price=888,
         prize_amount=0,
         source=source,
@@ -612,6 +612,7 @@ async def test_fast_result_notifies_only_owner_auto_play_in_telegram(
     assert len(in_app) == 1
     assert in_app[0].type == InAppNotificationType.DRAW_RESULT
     assert in_app[0].payload["lottery_code"] == "flash"
+    assert len([item for item in fake.added if isinstance(item, JackpotWinEvent)]) == 1
 
 
 async def test_draw_cannot_be_settled_before_official_time() -> None:

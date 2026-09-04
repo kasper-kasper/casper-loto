@@ -3,6 +3,8 @@ import type { LiveDraw, LiveFeed } from "./types";
 export const LIVE_REVEAL_LEAD_MS = 1_000;
 export const LIVE_REVEAL_INTERVAL_MS = 2_000;
 export const LIVE_RESULT_HOLD_MS = 90_000;
+export const FAST_PRELIVE_MS = 20_000;
+export const FAST_RESULT_HOLD_MS = 12_000;
 export const REPLAY_REVEAL_LEAD_MS = 700;
 export const REPLAY_REVEAL_INTERVAL_MS = 1_250;
 
@@ -78,4 +80,20 @@ export function livePresentation(feed: LiveFeed | null, now: number): LivePresen
     };
   }
   return { phase: "idle", draw: null, revealedNumbers: [], currentNumber: null, nextDraw: null };
+}
+
+export function fastLivePresentation(feed: LiveFeed | null, now: number): LivePresentation | null {
+  if (!feed) return null;
+  const completed = feed.latest_completed;
+  if (completed?.winning_numbers?.length) {
+    const liveEndsAt = new Date(completed.live_ends_at).getTime();
+    if (now >= new Date(completed.live_starts_at).getTime() && now < liveEndsAt + FAST_RESULT_HOLD_MS) {
+      return livePresentation(feed, now);
+    }
+  }
+  const next = feed.next_scheduled;
+  if (!next) return null;
+  const startsIn = new Date(next.scheduled_at).getTime() - now;
+  if (startsIn > FAST_PRELIVE_MS || startsIn < -120_000) return null;
+  return livePresentation({ ...feed, latest_completed: null }, now);
 }

@@ -21,6 +21,7 @@ no decorative or state-transition animations.
   enable/disable control for five-ticket auto-play;
 - setting a target player balance through an idempotent ledger adjustment;
 - lottery ticket-price and base-jackpot configuration with an audit reason;
+- separate current-jackpot adjustment through the immutable CAS ledger;
 - current jackpots, central Kasper Fund and jackpot-win history;
 - permanent read-only draw archive with results, funds, tickets, winners,
   timestamps and correlation IDs;
@@ -39,9 +40,10 @@ no decorative or state-transition animations.
   section instead of forcing the operational overview.
 
 Schedule editing remains deliberately unavailable without effective-date rules.
-Daily price and base jackpot are configurable. Current jackpot and distribution
-balances are lifecycle-owned and cannot be silently overwritten. Completed
-draws have no mutation endpoint.
+Price and base jackpot are configuration for future draws. The current jackpot
+may be adjusted separately with a mandatory reason; the mutation is row-locked
+and creates both ledger and administrator audit records. Distribution balances
+remain lifecycle-owned. Completed draws have no mutation endpoint.
 
 ## One-time credential setup
 
@@ -82,7 +84,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start_admin.ps1
 - no credential or session secret enters the frontend bundle;
 - mutation services hold database row locks and commit CAS ledger plus audit
   records atomically;
-- idempotency keys protect balance and reserve adjustments from retries.
+- idempotency keys protect balance, reserve and jackpot adjustments from retries.
 
 Rate limiting and production reverse-proxy policy remain deployment work and do
 not weaken the current authentication boundary.

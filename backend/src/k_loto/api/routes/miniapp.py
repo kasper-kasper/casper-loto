@@ -476,14 +476,18 @@ async def test_telegram_delivery(
 async def live(
     user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
+    scope: Annotated[Literal["standard", "fast"], Query()] = "standard",
 ) -> LiveFeedResponse:
-    return _live_response(await MiniAppQueryService(session).live(user.id))
+    return _live_response(
+        await MiniAppQueryService(session).live(user.id, fast_only=scope == "fast")
+    )
 
 
 @router.get("/live/stream")
 async def live_stream(
     request: Request,
     user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
+    scope: Annotated[Literal["standard", "fast"], Query()] = "standard",
 ) -> StreamingResponse:
     """Push the authoritative live snapshot; fetch streaming keeps auth in headers."""
 
@@ -492,7 +496,9 @@ async def live_stream(
         while not await request.is_disconnected():
             async with session_factory() as session:
                 payload = _live_response(
-                    await MiniAppQueryService(session).live(user.id)
+                    await MiniAppQueryService(session).live(
+                        user.id, fast_only=scope == "fast"
+                    )
                 ).model_dump_json()
             if payload != previous:
                 yield f"event: snapshot\ndata: {payload}\n\n"

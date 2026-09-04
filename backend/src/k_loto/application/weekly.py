@@ -798,7 +798,7 @@ class WeeklySettlementService:
                         )
                     )
 
-            if not fast_lottery and plan.jackpot_won and plan.jackpot_opening > 0:
+            if plan.jackpot_won and plan.jackpot_opening > 0:
                 jackpot_payouts = [
                     item for item in plan.payouts if item.matches == rules.jackpot_match
                 ]
@@ -815,42 +815,43 @@ class WeeklySettlementService:
                         occurred_at=timestamp,
                     )
                 )
-                recipients = (
-                    await self._session.scalars(
-                        select(User.id).where(
-                            User.is_active.is_(True), User.is_admin.is_(False)
+                if not fast_lottery:
+                    recipients = (
+                        await self._session.scalars(
+                            select(User.id).where(
+                                User.is_active.is_(True), User.is_admin.is_(False)
+                            )
                         )
+                    ).all()
+                    display_name = draw_display_name(
+                        lottery.code, lottery.name, draw.scheduled_at
                     )
-                ).all()
-                display_name = draw_display_name(
-                    lottery.code, lottery.name, draw.scheduled_at
-                )
-                formatted_amount = f"{plan.jackpot_opening:,}".replace(",", " ")
-                for recipient_id in recipients:
-                    self._session.add(
-                        UserNotification(
-                            id=uuid4(),
-                            event_key=f"jackpot:{draw.id}:user:{recipient_id}",
-                            user_id=recipient_id,
-                            type=InAppNotificationType.JACKPOT_NEWS,
-                            title="Джекпот сорван!",
-                            body=(
-                                f"В {display_name}, тираж №{draw.public_number:04d}, "
-                                f"разыграно {formatted_amount} CAS. "
-                                "Джекпот восстановлен."
-                            ),
-                            payload={
-                                "lottery_code": lottery.code,
-                                "lottery_name": display_name,
-                                "draw_number": draw.public_number,
-                                "jackpot_amount": plan.jackpot_opening,
-                                "winner_ticket_count": len(jackpot_payouts),
-                                "winner_user_count": len(winner_ids),
-                                "base_jackpot_after": plan.jackpot_closing,
-                            },
-                            created_at=timestamp,
+                    formatted_amount = f"{plan.jackpot_opening:,}".replace(",", " ")
+                    for recipient_id in recipients:
+                        self._session.add(
+                            UserNotification(
+                                id=uuid4(),
+                                event_key=f"jackpot:{draw.id}:user:{recipient_id}",
+                                user_id=recipient_id,
+                                type=InAppNotificationType.JACKPOT_NEWS,
+                                title="Джекпот сорван!",
+                                body=(
+                                    f"В {display_name}, тираж "
+                                    f"№{draw.public_number:04d}, разыграно "
+                                    f"{formatted_amount} CAS. Джекпот восстановлен."
+                                ),
+                                payload={
+                                    "lottery_code": lottery.code,
+                                    "lottery_name": display_name,
+                                    "draw_number": draw.public_number,
+                                    "jackpot_amount": plan.jackpot_opening,
+                                    "winner_ticket_count": len(jackpot_payouts),
+                                    "winner_user_count": len(winner_ids),
+                                    "base_jackpot_after": plan.jackpot_closing,
+                                },
+                                created_at=timestamp,
+                            )
                         )
-                    )
 
         return SettlementResult(
             draw_id=draw.id,

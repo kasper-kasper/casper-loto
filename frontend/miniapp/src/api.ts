@@ -58,12 +58,12 @@ export const miniAppApi = {
     request<void>("/api/v1/miniapp/notifications/read", initData, { method: "POST", body: JSON.stringify({ notification_id: notificationId ?? null }) }),
   testNotification: (initData: string) =>
     request<{ queued: boolean }>("/api/v1/miniapp/notifications/test", initData, { method: "POST" }),
-  live: (initData: string) =>
-    request<LiveFeed>("/api/v1/miniapp/live", initData),
-  liveStream: async (initData: string, onSnapshot: (feed: LiveFeed) => void, signal: AbortSignal) => {
+  live: (initData: string, scope: "standard" | "fast" = "standard") =>
+    request<LiveFeed>(`/api/v1/miniapp/live?scope=${scope}`, initData),
+  liveStream: async (initData: string, onSnapshot: (feed: LiveFeed) => void, signal: AbortSignal, scope: "standard" | "fast" = "standard") => {
     const headers = new Headers({ Accept: "text/event-stream" });
     if (initData) headers.set("X-Telegram-Init-Data", initData);
-    const response = await fetch(`${API_BASE}/api/v1/miniapp/live/stream`, { credentials: "include", headers, signal });
+    const response = await fetch(`${API_BASE}/api/v1/miniapp/live/stream?scope=${scope}`, { credentials: "include", headers, signal });
     if (!response.ok || !response.body) throw new ApiError("Не удалось подключиться к эфиру.", response.status);
     const reader = response.body.getReader();
     const decoder = new TextDecoder();

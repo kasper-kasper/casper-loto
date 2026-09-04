@@ -67,9 +67,11 @@ dispatch separately supports weekly, slot-based and interval strategies. See
 
 FLASH and SHADOW are independent interval lotteries presented in the separate
 Fast Mini App section. Each uses a twenty-minute schedule with a ten-minute
-offset, its own draw/ticket counters and jackpot. They deliberately do not enter
-the broadcast adapter or engagement reminders. Owner auto-play uses the same
-idempotent service as every other lottery.
+offset, its own draw/ticket counters and jackpot. They do not enter the ordinary
+broadcast screen or engagement reminders. A scoped SSE projection drives a
+short embedded Fast presentation only while the Fast section is open: 20 seconds
+of anticipation, the server-authored reveal sequence and a 12-second result.
+Owner auto-play uses the same idempotent service as every other lottery.
 
 The v0.14.0 transition preserves the final shared Daily draw and its purchased
 tickets. PSS and KHAN start independently at deployment. After the legacy draw

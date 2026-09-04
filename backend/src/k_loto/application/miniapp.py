@@ -1,7 +1,7 @@
 """Read models for the Telegram Mini App."""
 
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
 
@@ -531,10 +531,19 @@ class MiniAppQueryService:
         )
 
     async def live(
-        self, user_id: UUID, *, now: datetime | None = None
+        self,
+        user_id: UUID,
+        *,
+        now: datetime | None = None,
+        fast_only: bool = False,
     ) -> MiniAppLiveFeed:
         """Return immutable draw facts and a server clock for visual playback."""
         timestamp = now or datetime.now(UTC)
+        lottery_filter = (
+            Lottery.code.in_(FAST_LOTTERY_CODES)
+            if fast_only
+            else Lottery.code.not_in(FAST_LOTTERY_CODES)
+        )
         completed_rows = (
             await self._session.execute(
                 select(Draw, Lottery, JackpotAccount.balance)
@@ -542,7 +551,7 @@ class MiniAppQueryService:
                 .outerjoin(JackpotAccount, JackpotAccount.lottery_id == Lottery.id)
                 .where(
                     Draw.status == DrawStatus.COMPLETED,
-                    Lottery.code.not_in(FAST_LOTTERY_CODES),
+                    lottery_filter,
                 )
                 .order_by(Draw.scheduled_at.desc())
                 .limit(50)
@@ -557,17 +566,29 @@ class MiniAppQueryService:
             recent_rows.append((row[0], row[1], row[2]))
             per_lottery[lottery_code] = per_lottery.get(lottery_code, 0) + 1
         latest_row = recent_rows[0] if recent_rows else None
+        active_statuses = (
+            (
+                DrawStatus.SCHEDULED,
+                DrawStatus.CLOSED,
+                DrawStatus.DRAWING,
+                DrawStatus.SETTLING,
+            )
+            if fast_only
+            else (DrawStatus.SCHEDULED,)
+        )
+        next_statement = (
+            select(Draw, Lottery, JackpotAccount.balance)
+            .join(Lottery, Lottery.id == Draw.lottery_id)
+            .outerjoin(JackpotAccount, JackpotAccount.lottery_id == Lottery.id)
+            .where(Draw.status.in_(active_statuses), lottery_filter)
+        )
+        if fast_only:
+            next_statement = next_statement.where(
+                Draw.scheduled_at >= timestamp - timedelta(minutes=2)
+            )
         next_row = (
             await self._session.execute(
-                select(Draw, Lottery, JackpotAccount.balance)
-                .join(Lottery, Lottery.id == Draw.lottery_id)
-                .outerjoin(JackpotAccount, JackpotAccount.lottery_id == Lottery.id)
-                .where(
-                    Draw.status == DrawStatus.SCHEDULED,
-                    Lottery.code.not_in(FAST_LOTTERY_CODES),
-                )
-                .order_by(Draw.scheduled_at, Draw.public_number)
-                .limit(1)
+                next_statement.order_by(Draw.scheduled_at, Draw.public_number).limit(1)
             )
         ).first()
         return MiniAppLiveFeed(

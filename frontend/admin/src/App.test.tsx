@@ -12,7 +12,7 @@ vi.mock("./api", () => ({
     players: vi.fn(), lotteries: vi.fn(), schedule: vi.fn(), draws: vi.fn(), draw: vi.fn(),
     transactions: vi.fn(), statistics: vi.fn(), ticketAnalytics: vi.fn(), audit: vi.fn(),
     notifications: vi.fn(), releaseNotes: vi.fn(),
-    setBalance: vi.fn(), configureLottery: vi.fn(), setReserve: vi.fn(),
+    setBalance: vi.fn(), configureLottery: vi.fn(), setReserve: vi.fn(), setJackpot: vi.fn(),
     setAutoPlay: vi.fn(),
   },
 }));
@@ -47,6 +47,7 @@ beforeEach(() => {
   }]);
   vi.mocked(adminApi.setBalance).mockResolvedValue({ amount: 9_000, already_processed: false });
   vi.mocked(adminApi.configureLottery).mockResolvedValue(lottery);
+  vi.mocked(adminApi.setJackpot).mockResolvedValue({ amount: lottery.current_jackpot, already_processed: false });
   vi.mocked(adminApi.setReserve).mockResolvedValue({ amount: 100_000, already_processed: false });
   vi.mocked(adminApi.setAutoPlay).mockResolvedValue(player);
 });
@@ -147,16 +148,28 @@ it("filters number statistics by lottery and draw window without changing histor
   await waitFor(() => expect(adminApi.statistics).toHaveBeenCalledWith("lottery", 50));
 });
 
-it("saves lottery price, jackpot and limits with one action", async () => {
+it("saves lottery price, base jackpot and limits with one action", async () => {
   render(<App />);
   fireEvent.click(await screen.findByRole("button", { name: /Лотереи/ }));
 
   fireEvent.change(await screen.findByLabelText("Цена билета, CAS"), { target: { value: "22222" } });
-  fireEvent.change(screen.getByLabelText("Базовый джекпот, CAS"), { target: { value: "2811996" } });
+  fireEvent.change(screen.getByLabelText("Базовый джекпот после выигрыша, CAS"), { target: { value: "2811996" } });
   fireEvent.change(screen.getByLabelText("Обязательная причина для аудита"), { target: { value: "Настройки владельца" } });
-  fireEvent.click(screen.getByRole("button", { name: "СОХРАНИТЬ ВСЕ НАСТРОЙКИ" }));
+  fireEvent.click(screen.getByRole("button", { name: "СОХРАНИТЬ НАСТРОЙКИ" }));
 
   await waitFor(() => expect(adminApi.configureLottery).toHaveBeenCalledWith("lottery", 22222, 2811996, 5, 1000, 5000, "Настройки владельца"));
   expect(adminApi.setReserve).not.toHaveBeenCalled();
-  expect(await screen.findByText("Цена билета, джекпот и лимиты сохранены.")).toBeInTheDocument();
+  expect(await screen.findByText("Цена билета, базовый джекпот и лимиты сохранены.")).toBeInTheDocument();
+});
+
+it("adjusts the current jackpot through the ledger action", async () => {
+  render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /Лотереи/ }));
+
+  fireEvent.change(await screen.findByLabelText("Текущий джекпот, CAS"), { target: { value: "999999" } });
+  fireEvent.change(screen.getByLabelText("Обязательная причина для аудита"), { target: { value: "Решение владельца" } });
+  fireEvent.click(screen.getByRole("button", { name: "ИЗМЕНИТЬ ЧЕРЕЗ ЖУРНАЛ" }));
+
+  await waitFor(() => expect(adminApi.setJackpot).toHaveBeenCalledWith("lottery", 999999, "Решение владельца"));
+  expect(await screen.findByText("Текущий джекпот изменён через журнал CAS.")).toBeInTheDocument();
 });

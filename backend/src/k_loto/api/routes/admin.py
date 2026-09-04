@@ -543,6 +543,34 @@ async def configure_lottery(
 
 
 @router.post(
+    "/lotteries/{lottery_id}/jackpot-adjustments",
+    response_model=AdjustmentResponse,
+)
+async def adjust_jackpot(
+    lottery_id: UUID,
+    payload: AdjustmentRequest,
+    admin: Annotated[CurrentAdmin, Depends(require_admin_csrf)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> AdjustmentResponse:
+    try:
+        result = await AdminMutationService(session, admin.user_id).set_jackpot(
+            lottery_id,
+            target_amount=payload.target_amount,
+            reason=payload.reason,
+            idempotency_key=payload.idempotency_key,
+        )
+    except LookupError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from error
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(error)
+        ) from error
+    return AdjustmentResponse(
+        amount=result.amount, already_processed=result.already_processed
+    )
+
+
+@router.post(
     "/lotteries/{lottery_id}/reserve-adjustments",
     response_model=AdjustmentResponse,
 )

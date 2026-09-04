@@ -3,9 +3,12 @@ import { describe, expect, it } from "vitest";
 import {
   LIVE_REVEAL_INTERVAL_MS,
   LIVE_REVEAL_LEAD_MS,
+  FAST_PRELIVE_MS,
+  FAST_RESULT_HOLD_MS,
   REPLAY_REVEAL_INTERVAL_MS,
   REPLAY_REVEAL_LEAD_MS,
   livePresentation,
+  fastLivePresentation,
   replayPresentation,
 } from "./live";
 import type { LiveDraw, LiveFeed } from "./types";
@@ -49,6 +52,32 @@ describe("server-synchronised live phases", () => {
     expect(state.phase).toBe("result");
     expect(state.revealedNumbers).toEqual([2, 5, 9, 14]);
     expect(state.nextDraw?.draw_number).toBe(813);
+  });
+});
+
+describe("embedded Fast broadcast", () => {
+  const fastCompleted = {
+    ...completed,
+    lottery_code: "flash",
+    lottery_name: "FLASH",
+    winning_numbers: [2, 5, 9],
+    reveal_at: [0, 1, 2].map((index) => new Date(startsAt + LIVE_REVEAL_LEAD_MS + index * LIVE_REVEAL_INTERVAL_MS).toISOString()),
+    live_ends_at: new Date(startsAt + LIVE_REVEAL_LEAD_MS + 3 * LIVE_REVEAL_INTERVAL_MS).toISOString(),
+  };
+
+  it("appears only during the final twenty seconds", () => {
+    const fastNext = { ...fastCompleted, status: "SCHEDULED" as const, winning_numbers: null };
+    const fastFeed = { ...feed, latest_completed: null, next_scheduled: fastNext };
+    expect(fastLivePresentation(fastFeed, startsAt - FAST_PRELIVE_MS - 1)).toBeNull();
+    expect(fastLivePresentation(fastFeed, startsAt - FAST_PRELIVE_MS)?.phase).toBe("waiting");
+  });
+
+  it("reveals the result and removes it after a short hold", () => {
+    const fastFeed = { ...feed, latest_completed: fastCompleted, next_scheduled: null };
+    expect(fastLivePresentation(fastFeed, startsAt + LIVE_REVEAL_LEAD_MS + 100)?.phase).toBe("revealing");
+    const endsAt = new Date(fastCompleted.live_ends_at).getTime();
+    expect(fastLivePresentation(fastFeed, endsAt)?.phase).toBe("result");
+    expect(fastLivePresentation(fastFeed, endsAt + FAST_RESULT_HOLD_MS)).toBeNull();
   });
 });
 
