@@ -16,7 +16,7 @@ class LotteryDefinition:
 
 
 LOTTERY_DEFINITIONS = (
-    LotteryDefinition("weekly", "ЛСД-лото", LotteryKind.WEEKLY, "20:00"),
+    LotteryDefinition("weekly", "Kasper Grand", LotteryKind.WEEKLY, "20:00"),
     LotteryDefinition("pll", "ПЛЛ-лото", LotteryKind.DAILY, "02:22 / 13:45"),
     LotteryDefinition("pss", "ПСС-Лото", LotteryKind.DAILY, "12:00 / 20:30"),
     LotteryDefinition("khan", "ХАН-Лото", LotteryKind.DAILY, "09:00 / 18:00"),

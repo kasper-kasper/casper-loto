@@ -15,7 +15,23 @@ def format_cas(amount: int) -> str:
     return f"{amount:,}".replace(",", " ")
 
 
-def _ticket_lines(tickets: list[dict[str, Any]], *, include_result: bool) -> str:
+def _display_numbers(numbers: list[int], lottery_code: str) -> str:
+    if lottery_code == "weekly" and len(numbers) == 7:
+        main = [value for value in numbers if value <= 35]
+        special = [value - 35 for value in numbers if value > 35]
+        return f"{' · '.join(map(str, main))}  +  {' · '.join(map(str, special))}"
+    return " · ".join(str(value) for value in numbers)
+
+
+def _display_matches(matches: int, lottery_code: str, *, grand_format: bool) -> str:
+    if lottery_code == "weekly" and grand_format:
+        return f"{matches // 10}+{matches % 10}"
+    return str(matches)
+
+
+def _ticket_lines(
+    tickets: list[dict[str, Any]], *, include_result: bool, lottery_code: str
+) -> str:
     ordered = tickets
     if include_result:
         ordered = sorted(
@@ -29,11 +45,16 @@ def _ticket_lines(tickets: list[dict[str, Any]], *, include_result: bool) -> str
     sections: list[str] = []
     for ticket in visible:
         number = int(ticket["public_number"])
-        numbers = " · ".join(str(value) for value in ticket["numbers"])
+        numbers = _display_numbers(list(ticket["numbers"]), lottery_code)
         line = f"🎫 №{number:04d}: {numbers}"
         if include_result:
+            matches = _display_matches(
+                int(ticket["matches"]),
+                lottery_code,
+                grand_format=len(ticket["numbers"]) == 7,
+            )
             line += (
-                f"\n   совпало {int(ticket['matches'])} · "
+                f"\n   совпало {matches} · "
                 f"выигрыш {format_cas(int(ticket['prize']))} CAS"
             )
         sections.append(line)
@@ -54,12 +75,17 @@ def _scheduled_line(payload: dict[str, Any]) -> str:
 def format_purchase_message(payload: dict[str, Any]) -> str:
     tickets = list(payload["tickets"])
     prize_fund = int(payload.get("prize_fund", 0))
+    ticket_lines = _ticket_lines(
+        tickets,
+        include_result=False,
+        lottery_code=str(payload.get("lottery_code", "")),
+    )
     return (
         "🎟 Готово — билеты уже в игре!\n\n"
         f"🎲 {payload['lottery_name']} · тираж №{int(payload['draw_number']):04d}\n"
         f"{_scheduled_line(payload)}"
         f"🎁 Призовой фонд: {format_cas(prize_fund)} CAS\n\n"
-        f"{_ticket_lines(tickets, include_result=False)}\n\n"
+        f"{ticket_lines}\n\n"
         f"Куплено: {len(tickets)} бил. · "
         f"списано {format_cas(int(payload['total_cost']))} CAS\n"
         f"💰 Осталось на счету: {format_cas(int(payload['balance_after']))} CAS\n\n"
@@ -69,7 +95,8 @@ def format_purchase_message(payload: dict[str, Any]) -> str:
 
 def format_result_message(payload: dict[str, Any]) -> str:
     scheduled = datetime.fromisoformat(str(payload["scheduled_at"])).astimezone(MOSCOW)
-    winning = " · ".join(str(value) for value in payload["winning_numbers"])
+    lottery_code = str(payload.get("lottery_code", ""))
+    winning = _display_numbers(list(payload["winning_numbers"]), lottery_code)
     tickets = list(payload["tickets"])
     total_prize = int(payload["total_prize"])
     prize_fund = int(payload.get("prize_fund", 0))
@@ -85,7 +112,7 @@ def format_result_message(payload: dict[str, Any]) -> str:
         ending = "В этот раз ты смотрел со стороны. Следующий шанс уже ждёт в меню."
 
     ticket_section = (
-        _ticket_lines(tickets, include_result=True)
+        _ticket_lines(tickets, include_result=True, lottery_code=lottery_code)
         if tickets
         else "У тебя не было билетов на этот тираж."
     )

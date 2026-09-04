@@ -20,6 +20,7 @@ class DrawStatus(StrEnum):
 class TicketStatus(StrEnum):
     PURCHASED = "PURCHASED"
     SETTLED = "SETTLED"
+    REFUNDED = "REFUNDED"
 
 
 class TicketSource(StrEnum):
@@ -38,6 +39,7 @@ class LedgerAccountKind(StrEnum):
 class TransactionType(StrEnum):
     ADMIN_BALANCE_ADJUSTMENT = "ADMIN_BALANCE_ADJUSTMENT"
     TICKET_PURCHASE = "TICKET_PURCHASE"
+    TICKET_REFUND = "TICKET_REFUND"
     PRIZE_PAYOUT = "PRIZE_PAYOUT"
     JACKPOT_PAYOUT = "JACKPOT_PAYOUT"
     RESERVE_ADJUSTMENT = "RESERVE_ADJUSTMENT"

@@ -4,6 +4,7 @@ import secrets
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from types import MappingProxyType
+from typing import Protocol
 from uuid import UUID
 
 from k_loto.domain.errors import (
@@ -67,6 +68,10 @@ class PayoutRatio:
         return amount * self.numerator // self.denominator
 
 
+class NumberGenerator(Protocol):
+    def draw(self, population_size: int, numbers_to_pick: int) -> tuple[int, ...]: ...
+
+
 @dataclass(frozen=True, slots=True)
 class LotteryRuleStrategy:
     """Complete format and payout rules without transport or database concerns."""
@@ -84,6 +89,22 @@ class LotteryRuleStrategy:
         default_factory=lambda: MappingProxyType({})
     )
     jackpot_refill_from_reserve: bool = False
+    primary_numbers_to_pick: int | None = None
+    primary_max_number: int | None = None
+    secondary_numbers_to_pick: int = 0
+    secondary_max_number: int = 0
+    secondary_storage_offset: int = 0
+    tier_pool_payouts: Mapping[int, PayoutRatio] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
+
+    @property
+    def display_primary_numbers_to_pick(self) -> int:
+        return self.primary_numbers_to_pick or self.numbers_to_pick
+
+    @property
+    def display_primary_max_number(self) -> int:
+        return self.primary_max_number or self.max_number
 
     def validate_combination(
         self, numbers: tuple[int, ...] | list[int]
@@ -102,7 +123,71 @@ class LotteryRuleStrategy:
             raise InvalidTicket(
                 f"{self.label} ticket numbers must be between 1 and {self.max_number}."
             )
+        if self.secondary_numbers_to_pick:
+            primary = [
+                value for value in numbers if value <= self.display_primary_max_number
+            ]
+            secondary = [
+                value
+                for value in numbers
+                if self.secondary_storage_offset
+                < value
+                <= self.secondary_storage_offset + self.secondary_max_number
+            ]
+            if (
+                len(primary) != self.display_primary_numbers_to_pick
+                or len(secondary) != self.secondary_numbers_to_pick
+                or len(primary) + len(secondary) != len(numbers)
+            ):
+                raise InvalidTicket(
+                    f"{self.label} tickets require "
+                    f"{self.display_primary_numbers_to_pick} main and "
+                    f"{self.secondary_numbers_to_pick} special numbers."
+                )
         return tuple(sorted(numbers))
+
+    def generate_combination(self, generator: NumberGenerator) -> tuple[int, ...]:
+        if not self.secondary_numbers_to_pick:
+            return generator.draw(self.max_number, self.numbers_to_pick)
+        primary = generator.draw(
+            self.display_primary_max_number, self.display_primary_numbers_to_pick
+        )
+        secondary = generator.draw(
+            self.secondary_max_number, self.secondary_numbers_to_pick
+        )
+        return tuple(
+            sorted(primary)
+            + [self.secondary_storage_offset + value for value in sorted(secondary)]
+        )
+
+    def match_count(
+        self, ticket_numbers: tuple[int, ...], winning_numbers: tuple[int, ...]
+    ) -> int:
+        if not self.secondary_numbers_to_pick:
+            return len(set(ticket_numbers).intersection(winning_numbers))
+        main_matches = len(
+            {
+                value
+                for value in ticket_numbers
+                if value <= self.display_primary_max_number
+            }.intersection(
+                value
+                for value in winning_numbers
+                if value <= self.display_primary_max_number
+            )
+        )
+        special_matches = len(
+            {
+                value
+                for value in ticket_numbers
+                if value > self.secondary_storage_offset
+            }.intersection(
+                value
+                for value in winning_numbers
+                if value > self.secondary_storage_offset
+            )
+        )
+        return main_matches * 10 + special_matches
 
     def quote_purchase(
         self,
@@ -150,7 +235,7 @@ class LotteryRuleStrategy:
                 raise ConfigurationError(
                     "Ticket price snapshot is incompatible with the lottery rules."
                 )
-            count = len(set(ticket.numbers).intersection(winning))
+            count = self.match_count(ticket.numbers, winning)
             matches[ticket.id] = count
             fixed = self.fixed_payouts.get(count)
             ratio = self.guaranteed_payouts.get(count)
@@ -160,6 +245,13 @@ class LotteryRuleStrategy:
                 guaranteed[ticket.id] = fixed
             elif ratio is not None:
                 guaranteed[ticket.id] = ratio.apply(ticket.purchase_price)
+        accumulated_jackpot = max(jackpot_balance - base_jackpot, 0)
+        for match_code, share in self.tier_pool_payouts.items():
+            winners = [ticket for ticket in tickets if matches[ticket.id] == match_code]
+            for ticket_id, amount in _allocate_evenly(
+                share.apply(accumulated_jackpot), winners
+            ).items():
+                guaranteed[ticket_id] = guaranteed.get(ticket_id, 0) + amount
         guaranteed_total = sum(guaranteed.values())
         jackpot_tickets = [
             ticket for ticket in tickets if matches[ticket.id] == self.jackpot_match
@@ -234,6 +326,32 @@ WEEKLY_RULES = LotteryRuleStrategy(
     MappingProxyType({4: 50_000}),
     True,
 )
+KASPER_GRAND_RULES = LotteryRuleStrategy(
+    code="weekly_grand_5_35_2_5",
+    label="Kasper Grand",
+    numbers_to_pick=7,
+    max_number=40,
+    price_divisor=1,
+    jackpot_share=PayoutRatio(1),
+    guaranteed_payouts=MappingProxyType({}),
+    distribution_pool_match=None,
+    jackpot_match=52,
+    jackpot_refill_from_reserve=True,
+    primary_numbers_to_pick=5,
+    primary_max_number=35,
+    secondary_numbers_to_pick=2,
+    secondary_max_number=5,
+    secondary_storage_offset=35,
+    tier_pool_payouts=MappingProxyType(
+        {
+            51: PayoutRatio(20, 100),
+            50: PayoutRatio(10, 100),
+            42: PayoutRatio(8, 100),
+            41: PayoutRatio(4, 100),
+            32: PayoutRatio(2, 100),
+        }
+    ),
+)
 DAILY_RULES = LotteryRuleStrategy(
     "daily_4_15",
     "Daily",
@@ -290,6 +408,7 @@ LOTTERY_RULES: Mapping[str, LotteryRuleStrategy] = MappingProxyType(
         rule.code: rule
         for rule in (
             WEEKLY_RULES,
+            KASPER_GRAND_RULES,
             DAILY_RULES,
             SEPTEMBER_RULES,
             GROB_RULES,

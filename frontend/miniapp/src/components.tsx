@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
 import { formatCas } from "./format";
+import { splitGrandNumbers } from "./grand";
 
 export type IconName = "home" | "ticket" | "profile" | "cart" | "live" | "fast" | "replay" | "arrow" | "spark" | "repeat" | "close";
 
@@ -93,12 +94,30 @@ export function NumberSet({
   </div>;
 }
 
+export function GrandNumberSet({
+  values,
+  winning,
+  animate = false,
+}: {
+  values: number[];
+  winning?: number[] | null;
+  animate?: boolean;
+}) {
+  const parts = splitGrandNumbers(values);
+  const winningParts = winning ? splitGrandNumbers(winning) : null;
+  return <div className="grand-number-set" aria-label={`Основные числа: ${parts.main.join(", ")}; специальные числа: ${parts.special.join(", ")}`}>
+    <div><small>Основное поле</small><NumberSet animate={animate} values={parts.main} winning={winningParts?.main} /></div>
+    <span aria-hidden="true">+</span>
+    <div className="grand-special"><small>Спецчисла</small><NumberSet animate={animate} values={parts.special} winning={winningParts?.special} /></div>
+  </div>;
+}
+
 export function SignalSet({ values, code, winning }: { values: number[]; code: "flash" | "shadow"; winning?: number[] | null }) {
   return <div className={`signal-set signal-${code}`} aria-label={`Позиции: ${values.join(", ")}`}>{values.map((value) => <span className={winning?.includes(value) ? "won" : ""} key={value}><i /><small>{String(value).padStart(2, "0")}</small></span>)}</div>;
 }
 
-export function StatusBadge({ active }: { active: boolean }) {
-  return <span className={`status ${active ? "active" : "complete"}`}><i />{active ? "Активен" : "Завершён"}</span>;
+export function StatusBadge({ active, label }: { active: boolean; label?: string }) {
+  return <span className={`status ${active ? "active" : "complete"} ${label ? "custom" : ""}`}><i />{label ?? (active ? "Активен" : "Завершён")}</span>;
 }
 
 export function EmptyState({

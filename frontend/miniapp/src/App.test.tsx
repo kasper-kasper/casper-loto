@@ -312,6 +312,37 @@ it("selects five numbers, adds a ticket and buys the cart atomically", async () 
   expect(document.querySelector(".number-grid")).toBeNull();
 });
 
+it("keeps Kasper Grand main and special number fields independent", async () => {
+  const grandDashboard: Dashboard = {
+    ...dashboard,
+    lotteries: [{
+      ...dashboard.lotteries[0],
+      name: "Kasper Grand",
+      numbers_to_pick: 7,
+      max_number: 40,
+      primary_numbers_to_pick: 5,
+      primary_max_number: 35,
+      secondary_numbers_to_pick: 2,
+      secondary_max_number: 5,
+      secondary_storage_offset: 35,
+    }],
+  };
+  vi.mocked(miniAppApi.dashboard).mockResolvedValue(grandDashboard);
+  render(<App initData="signed" />);
+
+  fireEvent.click(await screen.findByRole("button", { name: /Выбрать числа.*100 CAS/ }));
+  const main = (await screen.findByText("Поле №1 · Основные числа")).closest("section") as HTMLElement;
+  const special = screen.getByText("Поле №2 · Специальные числа").closest("section") as HTMLElement;
+  for (const number of [1, 2, 3, 4, 5]) fireEvent.click(within(main).getByRole("button", { name: String(number) }));
+  for (const number of [1, 2]) fireEvent.click(within(special).getByRole("button", { name: String(number) }));
+  fireEvent.click(screen.getByRole("button", { name: "Купить билет" }));
+
+  await waitFor(() => expect(miniAppApi.purchase).toHaveBeenCalledWith(
+    "signed", "weekly", [[1, 2, 3, 4, 5, 36, 37]],
+    "00000000-0000-4000-8000-000000000001", 1,
+  ));
+});
+
 it("builds a large cart and sends one hundred tickets in one operation", async () => {
   render(<App initData="signed" />);
   await openWeeklyFromStorefront();

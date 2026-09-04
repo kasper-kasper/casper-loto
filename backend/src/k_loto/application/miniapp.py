@@ -29,6 +29,7 @@ from k_loto.domain.lotteries import (
     draw_display_code,
     draw_display_name,
 )
+from k_loto.domain.lottery_rules import get_lottery_rules
 from k_loto.infrastructure.database.models import (
     Balance,
     Draw,
@@ -50,6 +51,11 @@ class MiniAppLottery:
     kind: LotteryKind
     numbers_to_pick: int
     max_number: int
+    primary_numbers_to_pick: int
+    primary_max_number: int
+    secondary_numbers_to_pick: int
+    secondary_max_number: int
+    secondary_storage_offset: int
     ticket_price: int | None
     jackpot: int
     draw_number: int | None
@@ -204,7 +210,12 @@ class MiniAppQueryService:
                         Ticket.status == TicketStatus.PURCHASED
                     ),
                     func.count(Ticket.id).filter(Ticket.prize_amount > 0),
-                    func.coalesce(func.sum(Ticket.purchase_price), 0),
+                    func.coalesce(
+                        func.sum(Ticket.purchase_price).filter(
+                            Ticket.status != TicketStatus.REFUNDED
+                        ),
+                        0,
+                    ),
                     func.coalesce(func.sum(Ticket.prize_amount), 0),
                     func.coalesce(func.max(Ticket.prize_amount), 0),
                 ).where(Ticket.user_id == user_id)
@@ -378,6 +389,9 @@ class MiniAppQueryService:
             )
             sales_open = draw is not None and draw.sales_close_at > timestamp
             snapshot = (draw.configuration_snapshot or {}) if draw is not None else {}
+            rules = get_lottery_rules(
+                str(snapshot.get("ruleset_code", lottery.ruleset_code))
+            )
             draw_ticket_price = (
                 int(snapshot["ticket_price"])
                 if snapshot.get("ticket_price") is not None
@@ -412,6 +426,11 @@ class MiniAppQueryService:
                     kind=lottery.kind,
                     numbers_to_pick=lottery.numbers_to_pick,
                     max_number=lottery.max_number,
+                    primary_numbers_to_pick=rules.display_primary_numbers_to_pick,
+                    primary_max_number=rules.display_primary_max_number,
+                    secondary_numbers_to_pick=rules.secondary_numbers_to_pick,
+                    secondary_max_number=rules.secondary_max_number,
+                    secondary_storage_offset=rules.secondary_storage_offset,
                     ticket_price=draw_ticket_price,
                     jackpot=jackpot or 0,
                     draw_number=draw.public_number if draw else None,
@@ -467,8 +486,13 @@ class MiniAppQueryService:
         lottery_code: str | None = None,
         wins_only: bool = False,
     ) -> tuple[MiniAppTicket, ...]:
-        status = TicketStatus.PURCHASED if active else TicketStatus.SETTLED
-        filters = [Ticket.user_id == user_id, Ticket.status == status]
+        filters = [Ticket.user_id == user_id]
+        if active:
+            filters.append(Ticket.status == TicketStatus.PURCHASED)
+        else:
+            filters.append(
+                Ticket.status.in_((TicketStatus.SETTLED, TicketStatus.REFUNDED))
+            )
         if lottery_code:
             filters.append(Lottery.code == lottery_code)
         if wins_only:

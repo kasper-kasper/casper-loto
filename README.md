@@ -1,6 +1,6 @@
 # K-Loto
 
-Current version: **1.6.0 — «ГРОБ» 3/16**.
+Current version: **1.13.0 — Kasper Grand**.
 
 K-Loto is a multi-user lottery platform with integer CAS accounting, an
 immutable transaction ledger, recoverable draw scheduling and six independent
@@ -12,7 +12,7 @@ Web client was retired in v0.14.0.
 
 | Code | Name | Format | Moscow draw time | Cutoff |
 |---|---|---:|---:|---:|
-| `weekly` | ЛСД-лото | 5/20 | Sunday 20:00 | 5 min |
+| `weekly` | Kasper Grand | 5/35 + 2/5 | Sunday 20:00 | 5 min |
 | `pll` | ПЛЛ-лото | 4/15 | daily 02:22 | 2 min |
 | `pss` | ПСС-Лото | 4/15 | daily 12:00 | 2 min |
 | `khan` | ХАН-Лото | 4/15 | daily 18:00 | 2 min |

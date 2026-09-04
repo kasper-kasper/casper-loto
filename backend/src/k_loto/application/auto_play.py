@@ -16,6 +16,7 @@ from k_loto.domain.errors import (
     InvalidTicket,
     NoAvailableDraw,
 )
+from k_loto.domain.lottery_rules import WEEKLY_RULES, get_lottery_rules
 from k_loto.domain.weekly import SystemRandomNumberGenerator
 from k_loto.infrastructure.database.models import (
     AutoPlaySetting,
@@ -37,6 +38,7 @@ class AutoPlayCandidate:
     numbers_to_pick: int
     max_number: int
     tickets_per_draw: int
+    ruleset_code: str = WEEKLY_RULES.code
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,13 +92,14 @@ class AutoPlayService:
             rows = (await session.execute(query)).all()
         return tuple(
             AutoPlayCandidate(
-                setting.user_id,
-                draw.id,
-                lottery.code,
-                lottery.kind,
-                lottery.numbers_to_pick,
-                lottery.max_number,
-                setting.tickets_per_draw,
+                user_id=setting.user_id,
+                draw_id=draw.id,
+                lottery_code=lottery.code,
+                lottery_kind=lottery.kind,
+                numbers_to_pick=lottery.numbers_to_pick,
+                max_number=lottery.max_number,
+                tickets_per_draw=setting.tickets_per_draw,
+                ruleset_code=lottery.ruleset_code,
             )
             for setting, draw, lottery in rows
         )
@@ -118,12 +121,9 @@ class AutoPlayService:
         purchased: list[UUID] = []
         failed: list[UUID] = []
         for candidate in await self._candidates(timestamp):
+            rules = get_lottery_rules(candidate.ruleset_code)
             combinations: list[list[int] | tuple[int, ...]] = [
-                list(
-                    self._number_generator.draw(
-                        candidate.max_number, candidate.numbers_to_pick
-                    )
-                )
+                list(rules.generate_combination(self._number_generator))
                 for _ in range(candidate.tickets_per_draw)
             ]
             try:

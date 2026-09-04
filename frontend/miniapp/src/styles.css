@@ -1539,3 +1539,45 @@ body::before, body::after { opacity: .12; }
 /* 1.12.2 — keep number selection above the fold on compact Telegram viewports. */
 .picker-heading { min-height: 88px !important; padding: 39px 12px 9px 56px !important; }
 .picker-heading h1 { font-size: clamp(18px,5.7vw,22px); }
+
+/* Kasper Grand — the weekly flagship has two unmistakably independent fields. */
+.lottery-weekly { --lottery-accent: #f0cc76; --lottery-glow: #9c6b22; --picker-accent: #f0cc76; --picker-scene-base: #10182a; }
+.featured-draw.lottery-weekly { border-color: rgba(240,204,118,.43); background: #091225; box-shadow: 0 28px 75px rgba(0,0,0,.42),0 0 54px rgba(197,146,53,.1),inset 0 1px rgba(255,244,211,.09); }
+.featured-draw.lottery-weekly .draw-product-title strong { font-family: Georgia,"Times New Roman",serif; font-weight: 600; letter-spacing: -.045em; text-shadow: 0 5px 24px rgba(0,0,0,.54); }
+.featured-draw.lottery-weekly .featured-jackpot { background: linear-gradient(125deg,rgba(9,15,29,.91),rgba(42,31,25,.72)); }
+.storefront-weekly { min-height: 390px; }
+.storefront-weekly .storefront-copy h2 { font-size: clamp(34px,10vw,47px); }
+.visual-weekly > img { object-position: 60% center; }
+.visual-weekly .scene-foreground { clip-path: polygon(38% 0,100% 0,100% 100%,28% 100%); opacity: .58; }
+.visual-weekly .scene-light { right: 27%; background: radial-gradient(ellipse,rgba(255,218,139,.33),transparent 67%); }
+.picker-shell.lottery-weekly .picker-heading { min-height: 132px !important; padding-top: 66px !important; background: #10182a !important; }
+.picker-shell.lottery-weekly .picker-scene::after { background: linear-gradient(90deg,rgba(5,9,20,.87),rgba(6,11,23,.3) 68%,transparent),linear-gradient(0deg,#10182a,transparent 69%) !important; }
+.picker-shell.lottery-weekly .picker-summary { border-color: rgba(240,204,118,.2); background: linear-gradient(120deg,rgba(24,35,57,.96),rgba(30,24,27,.92)); }
+.grand-fields { display: grid; gap: 11px; }
+.picker-shell.lottery-weekly .grand-fields .picker-board { border-color: rgba(240,204,118,.22); background: radial-gradient(circle at 84% 0,rgba(202,154,65,.1),transparent 32%),linear-gradient(155deg,#16233a,#091224); }
+.picker-shell.lottery-weekly .grand-special-field { border-color: rgba(207,157,239,.31); background: radial-gradient(circle at 50% 110%,rgba(146,81,171,.22),transparent 58%),linear-gradient(145deg,#211b34,#0d1428); }
+.grand-main-field .number-group { grid-template-columns: repeat(7,minmax(0,1fr)) !important; gap: 5px !important; }
+.grand-special-field .number-group { grid-template-columns: repeat(5,minmax(0,1fr)) !important; gap: 8px !important; }
+.picker-shell.lottery-weekly .grand-main-field .pick-number { aspect-ratio: 1; min-height: 0; border: 1px solid rgba(233,206,148,.18); border-radius: 50%; color: #d9d3c4; background: rgba(31,44,66,.72); }
+.picker-shell.lottery-weekly .grand-special-field .pick-number { position: relative; aspect-ratio: 1; min-height: 48px; border: 1px solid rgba(216,169,244,.28); border-radius: 13px 4px 13px 4px; color: #e9d9f2; background: rgba(54,37,69,.66); }
+.picker-shell.lottery-weekly .grand-special-field .pick-number > i { display: block; position: absolute; right: 4px; bottom: 2px; color: rgba(220,173,246,.35); font-size: 7px; font-style: normal; }
+.picker-shell.lottery-weekly .grand-special-field .pick-number.selected { color: #fff9e8; border-color: #e6bff5; background: linear-gradient(145deg,#9f66b3,#5a376e); box-shadow: 0 0 20px rgba(184,110,211,.22); }
+.grand-number-set { display: flex; min-width: 0; align-items: end; gap: 7px; }
+.grand-number-set > div { min-width: 0; }
+.grand-number-set > div > small { display: block; margin-bottom: 4px; color: #7785a1; font-size: 6px; letter-spacing: .09em; text-transform: uppercase; }
+.grand-number-set > span { padding-bottom: 8px; color: #b383c7; font-size: 13px; font-weight: 800; }
+.grand-number-set .number-row { flex-wrap: nowrap; gap: 4px; }
+.grand-number-set .number { width: 28px; height: 28px; font-size: 9px; }
+.grand-number-set .grand-special .number { border-color: rgba(211,158,236,.4); border-radius: 9px 3px 9px 3px; color: #eddcf5; background: rgba(89,52,105,.43); }
+.selected-combination > .grand-number-set { flex: 1; justify-content: flex-end; }
+.favorite-list .grand-number-set { transform: scale(.88); transform-origin: left center; }
+.cart-combination:has(.grand-number-set) { grid-template-columns: 18px minmax(0,1fr) 32px; min-height: 66px; }
+.cart-combination .grand-number-set .number { width: 21px; height: 21px; font-size: 7px; }
+.ticket-result.refunded strong { color: #aebbd5; }
+.grand-live-sequence i.special { border-color: #bd81d2; color: #ead7f1; background: rgba(91,49,109,.42); }
+.live-final-numbers + .grand-number-set,.live-result > .grand-number-set { justify-content: center; margin: 14px auto; }
+@media (max-width: 360px) {
+  .grand-main-field .number-group { gap: 4px !important; }
+  .picker-shell.lottery-weekly .grand-main-field .pick-number { font-size: 8px; }
+  .grand-number-set .number { width: 24px; height: 24px; }
+}

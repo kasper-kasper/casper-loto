@@ -47,11 +47,21 @@ const drawStatuses: Record<string, string> = { PENDING: "Ожидает", RUNNIN
 const transactionTypes: Record<string, string> = {
   ADMIN_BALANCE_ADJUSTMENT: "Изменение баланса администратором",
   TICKET_PURCHASE: "Покупка билета",
+  TICKET_REFUND: "Возврат билета",
   PRIZE_PAYOUT: "Выплата выигрыша",
   JACKPOT_PAYOUT: "Выплата джекпота",
   RESERVE_ADJUSTMENT: "Изменение резерва",
   SYSTEM_ADJUSTMENT: "Системное начисление",
 };
+
+function displayNumber(lotteryCode: string, number: number): string {
+  return lotteryCode === "weekly" && number > 35 ? `★${number - 35}` : String(number);
+}
+
+function displayMatches(lotteryCode: string, matches: number | null, grandFormat: boolean): string {
+  if (matches === null) return "—";
+  return lotteryCode === "weekly" && grandFormat ? `${Math.floor(matches / 10)}+${matches % 10}` : String(matches);
+}
 const accountKinds: Record<string, string> = {
   USER_BALANCE: "Баланс игрока", JACKPOT: "Джекпот", DISTRIBUTION: "Фонд распределения", RESERVE: "Резерв",
 };
@@ -296,7 +306,7 @@ function LotteryCard({ lottery, onSaved }: { lottery: Lottery; onSaved: () => Pr
 }
 
 function DrawTable({ draws, onOpen }: { draws: Draw[]; onOpen?: (id: string) => void }) {
-  return <div className="table-wrap"><table><thead><tr><th>Лотерея / тираж</th><th>Статус</th><th>По расписанию</th><th>Числа</th><th>Билеты</th><th>Продажи / выплаты</th></tr></thead><tbody>{draws.map((draw) => <tr key={draw.id} onClick={() => onOpen?.(draw.id)} className={onOpen ? "clickable" : ""}><td><b>{draw.lottery_name}</b> №{drawNumber(draw.public_number)}</td><td><span className={`tag ${draw.status.toLowerCase()}`}>{translated(draw.status, drawStatuses)}</span></td><td>{date(draw.scheduled_at)}</td><td><div className="number-line">{draw.winning_numbers?.map((n) => <i key={n}>{n}</i>) ?? "—"}</div></td><td>{draw.ticket_count}</td><td>{cas(draw.total_sales)}<small>{cas(draw.total_payout)}</small></td></tr>)}</tbody></table></div>;
+  return <div className="table-wrap"><table><thead><tr><th>Лотерея / тираж</th><th>Статус</th><th>По расписанию</th><th>Числа</th><th>Билеты</th><th>Продажи / выплаты</th></tr></thead><tbody>{draws.map((draw) => <tr key={draw.id} onClick={() => onOpen?.(draw.id)} className={onOpen ? "clickable" : ""}><td><b>{draw.lottery_name}</b> №{drawNumber(draw.public_number)}</td><td><span className={`tag ${draw.status.toLowerCase()}`}>{translated(draw.status, drawStatuses)}</span></td><td>{date(draw.scheduled_at)}</td><td><div className="number-line">{draw.winning_numbers?.map((n) => <i className={draw.lottery_code === "weekly" && n > 35 ? "special" : ""} key={n}>{displayNumber(draw.lottery_code, n)}</i>) ?? "—"}</div></td><td>{draw.ticket_count}</td><td>{cas(draw.total_sales)}<small>{cas(draw.total_payout)}</small></td></tr>)}</tbody></table></div>;
 }
 
 function TransactionTable({ rows }: { rows: Transaction[] }) {
@@ -305,7 +315,7 @@ function TransactionTable({ rows }: { rows: Transaction[] }) {
 
 function DrawDetailPanel({ detail, onClose }: { detail: DrawDetail; onClose: () => void }) {
   const draw = detail.draw;
-  return <div className="drawer"><button aria-label="Закрыть" className="close" onClick={onClose}>×</button><small>НЕИЗМЕНЯЕМАЯ ЗАПИСЬ ТИРАЖА</small><h2>{draw.lottery_name} №{drawNumber(draw.public_number)}</h2><div className="winning">{draw.winning_numbers?.map((n) => <i key={n}>{n}</i>) ?? "НЕТ РЕЗУЛЬТАТА"}</div><dl className="detail-list"><dt>Статус</dt><dd>{translated(draw.status, drawStatuses)}</dd><dt>По расписанию</dt><dd>{date(draw.scheduled_at)}</dd><dt>Проведён</dt><dd>{date(draw.executed_at)}</dd><dt>Продажи</dt><dd>{cas(draw.total_sales)}</dd><dt>Выплачено</dt><dd>{cas(draw.total_payout)}</dd><dt>Использовано из Фонда Каспера</dt><dd>{cas(draw.kasper_fund_used)}</dd><dt>Код связи</dt><dd><code>{draw.correlation_id}</code></dd></dl><h3>Билеты ({detail.tickets.length})</h3>{detail.tickets.map((ticket) => <div className="ticket-row" key={ticket.id}><b>№{drawNumber(ticket.public_number)}</b><span>{ticket.numbers.join(" · ")}</span><span>совпадений: {ticket.matches ?? "—"}</span><strong>{cas(ticket.prize_amount)}</strong></div>)}</div>;
+  return <div className="drawer"><button aria-label="Закрыть" className="close" onClick={onClose}>×</button><small>НЕИЗМЕНЯЕМАЯ ЗАПИСЬ ТИРАЖА</small><h2>{draw.lottery_name} №{drawNumber(draw.public_number)}</h2><div className="winning">{draw.winning_numbers?.map((n) => <i className={draw.lottery_code === "weekly" && n > 35 ? "special" : ""} key={n}>{displayNumber(draw.lottery_code, n)}</i>) ?? "НЕТ РЕЗУЛЬТАТА"}</div><dl className="detail-list"><dt>Статус</dt><dd>{translated(draw.status, drawStatuses)}</dd><dt>По расписанию</dt><dd>{date(draw.scheduled_at)}</dd><dt>Проведён</dt><dd>{date(draw.executed_at)}</dd><dt>Продажи</dt><dd>{cas(draw.total_sales)}</dd><dt>Выплачено</dt><dd>{cas(draw.total_payout)}</dd><dt>Использовано из Фонда Каспера</dt><dd>{cas(draw.kasper_fund_used)}</dd><dt>Код связи</dt><dd><code>{draw.correlation_id}</code></dd></dl><h3>Билеты ({detail.tickets.length})</h3>{detail.tickets.map((ticket) => <div className="ticket-row" key={ticket.id}><b>№{drawNumber(ticket.public_number)}</b><span>{ticket.numbers.map((number) => displayNumber(draw.lottery_code, number)).join(" · ")}</span><span>совпадений: {displayMatches(draw.lottery_code, ticket.matches, ticket.numbers.length === 7)}</span><strong>{cas(ticket.prize_amount)}</strong></div>)}</div>;
 }
 
 function DevelopmentView({ changelog, devlog }: { changelog: ReleaseNote[]; devlog: ReleaseNote[] }) {
@@ -459,6 +469,8 @@ function TransactionFilters({ onApply }: { onApply: (query: string) => void }) {
 }
 
 function StatisticsView({ lotteries, report, selectedLotteryId, windowSize, onLottery, onWindow }: { lotteries: Lottery[]; report: NumberStatisticsReport; selectedLotteryId: string; windowSize: number; onLottery: (id: string) => void; onWindow: (size: number) => void }) {
+  const selectedLottery = lotteries.find((lottery) => lottery.id === selectedLotteryId);
+  const numberLabel = (number: number) => displayNumber(selectedLottery?.code ?? "", number);
   const ranked = [...report.numbers].sort((left, right) => right.appearances - left.appearances || left.number - right.number);
   const hottest = ranked[0];
   const coldest = ranked.at(-1);
@@ -467,9 +479,9 @@ function StatisticsView({ lotteries, report, selectedLotteryId, windowSize, onLo
     <section className="statistics-brief">
       <div><span>АНАЛИТИЧЕСКОЕ ДОСЬЕ</span><h2>{report.lottery_name}</h2><p>Статистика начата заново с 1 сентября 2026 года. История тиражей и их номера не изменялись.</p></div>
       <article><small>УЧТЕНО ТИРАЖЕЙ</small><strong>{report.draw_count}</strong><span>{windowLabel}</span></article>
-      <article><small>ЧАЩЕ ВСЕГО</small><strong>{hottest?.appearances ? hottest.number : "—"}</strong><span>{hottest?.appearances ? `${hottest.appearances} выпадений` : "данные накапливаются"}</span></article>
-      <article><small>РЕЖЕ ВСЕГО</small><strong>{coldest?.appearances || report.draw_count ? coldest?.number ?? "—" : "—"}</strong><span>{coldest ? `${coldest.appearances} выпадений` : "данные накапливаются"}</span></article>
+      <article><small>ЧАЩЕ ВСЕГО</small><strong>{hottest?.appearances ? numberLabel(hottest.number) : "—"}</strong><span>{hottest?.appearances ? `${hottest.appearances} выпадений` : "данные накапливаются"}</span></article>
+      <article><small>РЕЖЕ ВСЕГО</small><strong>{coldest?.appearances || report.draw_count ? coldest ? numberLabel(coldest.number) : "—" : "—"}</strong><span>{coldest ? `${coldest.appearances} выпадений` : "данные накапливаются"}</span></article>
     </section>
-    <section className="panel statistics-panel"><header><div><h2>Выпавшие числа</h2><span>{report.draw_count ? `${date(report.first_draw_at)} — ${date(report.last_draw_at)}` : "ПОКА НЕТ ЗАВЕРШЁННЫХ ТИРАЖЕЙ В ПЕРИОДЕ"}</span></div><div className="statistics-controls"><select aria-label="Лотерея" value={selectedLotteryId} onChange={(e) => onLottery(e.target.value)}>{lotteries.map((lottery) => <option value={lottery.id} key={lottery.id}>{lottery.name}</option>)}</select><select aria-label="Количество тиражей" value={windowSize} onChange={(e) => onWindow(Number(e.target.value))}><option value={0}>Все</option><option value={10}>10 тиражей</option><option value={20}>20 тиражей</option><option value={50}>50 тиражей</option><option value={100}>100 тиражей</option></select></div></header><div className="stat-grid">{report.numbers.map((row) => <article key={row.number}><i>{row.number}</i><strong>{row.appearances}</strong><small>выпадений</small><div style={{ "--value": `${row.draw_percentage}%` } as CSSProperties}><span /></div><em>{row.draw_percentage}% тиражей</em><b>{row.draws_since_last === null ? "ещё не выпадало" : row.draws_since_last === 0 ? "в последнем тираже" : `${row.draws_since_last} тир. назад`}</b></article>)}</div><p className="source-note">Частота чисел нужна для наблюдения за историей, но не повышает вероятность следующего результата: каждый тираж использует независимый криптографически стойкий выбор.</p></section>
+    <section className="panel statistics-panel"><header><div><h2>Выпавшие числа</h2><span>{report.draw_count ? `${date(report.first_draw_at)} — ${date(report.last_draw_at)}` : "ПОКА НЕТ ЗАВЕРШЁННЫХ ТИРАЖЕЙ В ПЕРИОДЕ"}</span></div><div className="statistics-controls"><select aria-label="Лотерея" value={selectedLotteryId} onChange={(e) => onLottery(e.target.value)}>{lotteries.map((lottery) => <option value={lottery.id} key={lottery.id}>{lottery.name}</option>)}</select><select aria-label="Количество тиражей" value={windowSize} onChange={(e) => onWindow(Number(e.target.value))}><option value={0}>Все</option><option value={10}>10 тиражей</option><option value={20}>20 тиражей</option><option value={50}>50 тиражей</option><option value={100}>100 тиражей</option></select></div></header><div className="stat-grid">{report.numbers.map((row) => <article key={row.number}><i>{numberLabel(row.number)}</i><strong>{row.appearances}</strong><small>выпадений</small><div style={{ "--value": `${row.draw_percentage}%` } as CSSProperties}><span /></div><em>{row.draw_percentage}% тиражей</em><b>{row.draws_since_last === null ? "ещё не выпадало" : row.draws_since_last === 0 ? "в последнем тираже" : `${row.draws_since_last} тир. назад`}</b></article>)}</div><p className="source-note">Для Kasper Grand символ ★ обозначает специальное поле. Частота чисел нужна для наблюдения за историей, но не повышает вероятность следующего результата: каждый тираж использует независимый криптографически стойкий выбор.</p></section>
   </>;
 }

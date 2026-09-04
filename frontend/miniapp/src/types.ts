@@ -1,5 +1,5 @@
 export type LotteryKind = "WEEKLY" | "DAILY";
-export type TicketStatus = "PURCHASED" | "SETTLED";
+export type TicketStatus = "PURCHASED" | "SETTLED" | "REFUNDED";
 
 export interface Lottery {
   code: string;
@@ -7,6 +7,11 @@ export interface Lottery {
   kind: LotteryKind;
   numbers_to_pick: number;
   max_number: number;
+  primary_numbers_to_pick?: number;
+  primary_max_number?: number;
+  secondary_numbers_to_pick?: number;
+  secondary_max_number?: number;
+  secondary_storage_offset?: number;
   ticket_price: number | null;
   jackpot: number;
   draw_number: number | null;

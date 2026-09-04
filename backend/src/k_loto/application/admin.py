@@ -968,6 +968,7 @@ class AdminQueryService:
             Draw.lottery_id == lottery_id,
             Draw.status == DrawStatus.COMPLETED,
             Draw.winning_numbers.is_not(None),
+            Draw.configuration_snapshot["ruleset_code"].astext == lottery.ruleset_code,
         )
         if date_from is not None:
             statement = statement.where(Draw.scheduled_at >= date_from)

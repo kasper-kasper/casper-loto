@@ -12,7 +12,7 @@ const lotterySeed = [
   { code: "pll", name: "ПЛЛ-Лото", kind: "DAILY" as const, numbers_to_pick: 4, max_number: 15, ticket_price: 24_000, jackpot: 18_640_000, draw_number: 418, scheduled_at: future(145) },
   { code: "pss", name: "ПСС-Лото", kind: "DAILY" as const, numbers_to_pick: 4, max_number: 15, ticket_price: 24_000, jackpot: 24_000_000, draw_number: 219, scheduled_at: future(230) },
   { code: "khan", name: "ХАН-Лото", kind: "DAILY" as const, numbers_to_pick: 4, max_number: 15, ticket_price: 24_000, jackpot: 24_000_000, draw_number: 174, scheduled_at: future(310) },
-  { code: "weekly", name: "Weekly 5 из 20", kind: "WEEKLY" as const, numbers_to_pick: 5, max_number: 20, ticket_price: 50_000, jackpot: 71_250_000, draw_number: 54, scheduled_at: future(1_420) },
+  { code: "weekly", name: "Kasper Grand", kind: "WEEKLY" as const, numbers_to_pick: 7, max_number: 40, primary_numbers_to_pick: 5, primary_max_number: 35, secondary_numbers_to_pick: 2, secondary_max_number: 5, secondary_storage_offset: 35, ticket_price: 50_000, jackpot: 5_000_182_500, draw_number: 4, scheduled_at: future(1_420) },
 ];
 
 let balance = 100_000_000_000;

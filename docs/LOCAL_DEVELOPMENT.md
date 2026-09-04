@@ -52,7 +52,7 @@ On first authenticated browser request the backend idempotently creates:
 
 - `Local Test Player`;
 - 100,000 test CAS;
-- ЛСД-лото 5/20 and the unified three-slot Daily 4/15 game at 100 CAS per ticket;
+- Kasper Grand 5/35 + 2/5 and the configured Daily games at 100 CAS per ticket;
 - 10,000 CAS base jackpot and 100,000 CAS reserve;
 - the next draw for all four lotteries.
 

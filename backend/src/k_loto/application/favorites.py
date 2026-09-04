@@ -6,6 +6,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from k_loto.domain.lottery_rules import get_lottery_rules
 from k_loto.infrastructure.database.models import FavoriteCombination, Lottery, User
 
 
@@ -70,10 +71,8 @@ class FavoriteCombinationService:
             )
             if user is None or lottery is None:
                 raise LookupError("Игрок или лотерея больше недоступны.")
-            normalized = validate_favorite_numbers(
-                numbers,
-                numbers_to_pick=lottery.numbers_to_pick,
-                max_number=lottery.max_number,
+            normalized = get_lottery_rules(lottery.ruleset_code).validate_combination(
+                numbers
             )
             existing = await self._session.scalar(
                 select(FavoriteCombination).where(
@@ -110,10 +109,8 @@ class FavoriteCombinationService:
             )
             if user is None or lottery is None:
                 raise LookupError("Игрок или лотерея больше недоступны.")
-            normalized = validate_favorite_numbers(
-                numbers,
-                numbers_to_pick=lottery.numbers_to_pick,
-                max_number=lottery.max_number,
+            normalized = get_lottery_rules(lottery.ruleset_code).validate_combination(
+                numbers
             )
             existing = await self._session.scalar(
                 select(FavoriteCombination).where(

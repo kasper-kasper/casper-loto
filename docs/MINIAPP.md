@@ -8,7 +8,7 @@ player, delivers durable notifications and opens this signed HTTPS client.
 Milestone 5 provides a mobile-first React/TypeScript/Vite client with:
 
 - server-authoritative animated balance and a single focused lottery stage;
-- Weekly 5/20, Daily 4/15 and «3 СЕНТЯБРЯ» 3/33 number pickers with Web Crypto random pick;
+- Kasper Grand 5/35 + 2/5, Daily 4/15 and «3 СЕНТЯБРЯ» 3/33 number pickers with Web Crypto random pick;
 - single-ticket purchase and multi-ticket cart checkout;
 - duplicate combinations as independent cart tickets;
 - a «Моё» cabinet with player statistics, active tickets, completed ticket

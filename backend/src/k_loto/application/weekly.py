@@ -555,15 +555,16 @@ class WeeklySettlementService:
                 (
                     await self._session.scalars(
                         select(Ticket)
-                        .where(Ticket.draw_id == draw.id)
+                        .where(
+                            Ticket.draw_id == draw.id,
+                            Ticket.status == TicketStatus.PURCHASED,
+                        )
                         .order_by(Ticket.public_number)
                         .with_for_update()
                     )
                 ).all()
             )
-            winning = self._number_generator.draw(
-                rules.max_number, rules.numbers_to_pick
-            )
+            winning = rules.generate_combination(self._number_generator)
             plan = rules.calculate_settlement(
                 [
                     SettlementTicket(

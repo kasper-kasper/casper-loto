@@ -32,7 +32,6 @@ from k_loto.application.miniapp import (
 from k_loto.application.weekly import (
     MAX_TICKETS_PER_PURCHASE,
     LotteryTicketPurchaseService,
-    WeeklyTicketPurchaseService,
 )
 from k_loto.core.config import Settings, get_settings
 from k_loto.domain.enums import (
@@ -67,6 +66,11 @@ class LotteryResponse(BaseModel):
     kind: LotteryKind
     numbers_to_pick: int
     max_number: int
+    primary_numbers_to_pick: int
+    primary_max_number: int
+    secondary_numbers_to_pick: int
+    secondary_max_number: int
+    secondary_storage_offset: int
     ticket_price: int | None
     jackpot: int
     draw_number: int | None
@@ -283,6 +287,11 @@ def _lottery_response(item: MiniAppLottery) -> LotteryResponse:
         kind=item.kind,
         numbers_to_pick=item.numbers_to_pick,
         max_number=item.max_number,
+        primary_numbers_to_pick=item.primary_numbers_to_pick,
+        primary_max_number=item.primary_max_number,
+        secondary_numbers_to_pick=item.secondary_numbers_to_pick,
+        secondary_max_number=item.secondary_max_number,
+        secondary_storage_offset=item.secondary_storage_offset,
         ticket_price=item.ticket_price,
         jackpot=item.jackpot,
         draw_number=item.draw_number,
@@ -614,7 +623,9 @@ async def purchase_weekly_tickets(
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> PurchaseResponse:
     try:
-        result = await WeeklyTicketPurchaseService(session).purchase(
+        result = await LotteryTicketPurchaseService(
+            session, lottery_code="weekly"
+        ).purchase(
             user_id=user.id,
             combinations=[list(combination) for combination in request.combinations],
             idempotency_key=request.idempotency_key,
