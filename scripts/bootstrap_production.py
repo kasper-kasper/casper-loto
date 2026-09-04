@@ -103,6 +103,28 @@ async def main() -> None:
             {"slots": slots},
             "daily_4_15",
         )
+    for code, name, anchor_time, ruleset_code, pick, maximum in (
+        ("flash", "FLASH", "00:00", "fast_3_15", 3, 15),
+        ("shadow", "SHADOW", "00:03", "fast_3_15", 3, 15),
+        ("pulse", "PULSE", "00:06", "pulse_2_10_1_5", 3, 15),
+    ):
+        await ensure_lottery(
+            code,
+            name,
+            LotteryKind.DAILY,
+            pick,
+            maximum,
+            1,
+            {
+                "type": "interval",
+                "interval_minutes": 9,
+                "anchor_time": anchor_time,
+                "future_draw_count": 2,
+                "category": "fast",
+                "live_enabled": True,
+            },
+            ruleset_code,
+        )
     await engine.dispose()
 
 

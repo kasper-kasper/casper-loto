@@ -55,13 +55,16 @@ const transactionTypes: Record<string, string> = {
 };
 
 function displayNumber(lotteryCode: string, number: number): string {
-  return lotteryCode === "weekly" && number > 35 ? `★${number - 35}` : String(number);
+  if (lotteryCode === "weekly" && number > 35) return `★${number - 35}`;
+  if (lotteryCode === "pulse" && number > 10) return `P${number - 10}`;
+  return String(number);
 }
 
 function displayMatches(lotteryCode: string, matches: number | null, grandFormat: boolean): string {
   if (matches === null) return "—";
-  return lotteryCode === "weekly" && grandFormat ? `${Math.floor(matches / 10)}+${matches % 10}` : String(matches);
+  return (lotteryCode === "weekly" && grandFormat) || lotteryCode === "pulse" ? `${Math.floor(matches / 10)}+${matches % 10}` : String(matches);
 }
+
 const accountKinds: Record<string, string> = {
   USER_BALANCE: "Баланс игрока", JACKPOT: "Джекпот", DISTRIBUTION: "Фонд распределения", RESERVE: "Резерв",
 };

@@ -7,6 +7,7 @@ const future = (minutes: number) => new Date(Date.now() + minutes * 60_000).toIS
 const lotterySeed = [
   { code: "shadow", name: "SHADOW", kind: "DAILY" as const, numbers_to_pick: 3, max_number: 15, ticket_price: 888, jackpot: 888_888, draw_number: 38, scheduled_at: future(7) },
   { code: "flash", name: "FLASH", kind: "DAILY" as const, numbers_to_pick: 3, max_number: 15, ticket_price: 888, jackpot: 901_320, draw_number: 42, scheduled_at: future(17) },
+  { code: "pulse", name: "PULSE", kind: "DAILY" as const, numbers_to_pick: 3, max_number: 15, primary_numbers_to_pick: 2, primary_max_number: 10, secondary_numbers_to_pick: 1, secondary_max_number: 5, secondary_storage_offset: 10, ticket_price: 1_234, jackpot: 1_234_567, draw_number: 1, scheduled_at: future(10) },
   { code: "grob", name: "ГРОБ", kind: "DAILY" as const, numbers_to_pick: 3, max_number: 16, ticket_price: 6_666, jackpot: 6_666_666, draw_number: 1, scheduled_at: future(36) },
   { code: "september", name: "3 СЕНТЯБРЯ", kind: "DAILY" as const, numbers_to_pick: 3, max_number: 33, ticket_price: 333, jackpot: 33_333_333, draw_number: 1, scheduled_at: future(83) },
   { code: "pll", name: "ПЛЛ-Лото", kind: "DAILY" as const, numbers_to_pick: 4, max_number: 15, ticket_price: 24_000, jackpot: 18_640_000, draw_number: 418, scheduled_at: future(145) },
@@ -23,7 +24,7 @@ const dashboard = (): Dashboard => ({
   server_time: nowIso(),
   balance,
   active_ticket_count: purchasedTickets.length,
-  lotteries: lotterySeed.map((lottery) => ({ ...lottery, sales_close_at: new Date(new Date(lottery.scheduled_at).getTime() - (lottery.code === "flash" || lottery.code === "shadow" ? 60_000 : 120_000)).toISOString(), sales_open: true, purchase_available: true, player_ticket_count: purchasedTickets.filter((ticket) => ticket.lottery_code === lottery.code).length, sales_status: "OPEN" as const, max_tickets_per_purchase: lottery.code === "flash" || lottery.code === "shadow" ? 100 : 1_000, max_tickets_per_user_per_draw: lottery.code === "flash" || lottery.code === "shadow" ? 500 : 5_000 })),
+  lotteries: lotterySeed.map((lottery) => ({ ...lottery, sales_close_at: new Date(new Date(lottery.scheduled_at).getTime() - (["flash", "shadow", "pulse"].includes(lottery.code) ? 60_000 : 120_000)).toISOString(), sales_open: true, purchase_available: true, player_ticket_count: purchasedTickets.filter((ticket) => ticket.lottery_code === lottery.code).length, sales_status: "OPEN" as const, max_tickets_per_purchase: ["flash", "shadow", "pulse"].includes(lottery.code) ? 100 : 1_000, max_tickets_per_user_per_draw: ["flash", "shadow", "pulse"].includes(lottery.code) ? 500 : 5_000 })),
   recent_results: [],
   monthly_total_payout: 12_333_333,
 });

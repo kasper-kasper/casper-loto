@@ -65,9 +65,9 @@ jackpot refill. Purchase and settlement are code-agnostic. Schedule
 dispatch separately supports weekly, slot-based and interval strategies. See
 `docs/LOTTERY_STRATEGIES.md`.
 
-FLASH and SHADOW are independent interval lotteries presented in the separate
-Fast Mini App section. Each uses a twenty-minute schedule with a ten-minute
-offset, its own draw/ticket counters and jackpot. They do not enter the ordinary
+FLASH, SHADOW and PULSE are independent interval lotteries presented in the
+separate Fast Mini App section. Each repeats every nine minutes with three-minute
+offsets, its own draw/ticket counters and jackpot. They do not enter the ordinary
 broadcast screen or engagement reminders. A scoped SSE projection drives a
 short embedded Fast presentation only while the Fast section is open: 20 seconds
 of anticipation, the server-authored reveal sequence and a 12-second result.

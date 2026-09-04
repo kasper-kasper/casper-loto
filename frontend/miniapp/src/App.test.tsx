@@ -104,6 +104,29 @@ const dashboard: Dashboard = {
       max_tickets_per_purchase: 100,
       max_tickets_per_user_per_draw: 500,
     },
+    {
+      code: "pulse",
+      name: "PULSE",
+      kind: "DAILY",
+      numbers_to_pick: 3,
+      max_number: 15,
+      primary_numbers_to_pick: 2,
+      primary_max_number: 10,
+      secondary_numbers_to_pick: 1,
+      secondary_max_number: 5,
+      secondary_storage_offset: 10,
+      ticket_price: 1_234,
+      jackpot: 1_234_567,
+      draw_number: 1,
+      scheduled_at: "2026-08-15T12:06:00Z",
+      sales_close_at: "2026-08-15T12:05:00Z",
+      sales_open: true,
+      purchase_available: true,
+      player_ticket_count: 0,
+      sales_status: "OPEN",
+      max_tickets_per_purchase: 100,
+      max_tickets_per_user_per_draw: 500,
+    },
   ],
   recent_results: [],
   monthly_total_payout: 0,
@@ -381,6 +404,7 @@ it("opens the separate Fast section without replacing the nearest main draw", as
   expect(await screen.findByRole("heading", { name: "Fast" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "FLASH" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "SHADOW" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "PULSE" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /Собрать сигнал/ })).toBeInTheDocument();
 });
 

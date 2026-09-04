@@ -3,6 +3,7 @@ import type { CSSProperties, ReactNode } from "react";
 
 import { formatCas } from "./format";
 import { splitGrandNumbers } from "./grand";
+import { splitPulseNumbers } from "./fast";
 
 export type IconName = "home" | "ticket" | "profile" | "cart" | "live" | "fast" | "replay" | "arrow" | "spark" | "repeat" | "close";
 
@@ -112,7 +113,16 @@ export function GrandNumberSet({
   </div>;
 }
 
-export function SignalSet({ values, code, winning }: { values: number[]; code: "flash" | "shadow"; winning?: number[] | null }) {
+export function SignalSet({ values, code, winning }: { values: number[]; code: "flash" | "shadow" | "pulse"; winning?: number[] | null }) {
+  if (code === "pulse") {
+    const parts = splitPulseNumbers(values);
+    const won = winning ? splitPulseNumbers(winning) : null;
+    return <div className="signal-set signal-pulse" aria-label={`Основные числа: ${parts.main.join(", ")}; Pulse-число: ${parts.pulse.join(", ")}`}>
+      {parts.main.map((value) => <span className={won?.main.includes(value) ? "won" : ""} key={value}><i /><small>{String(value).padStart(2, "0")}</small></span>)}
+      <b aria-hidden="true">+</b>
+      {parts.pulse.map((value) => <span className={`pulse-special ${won?.pulse.includes(value) ? "won" : ""}`} key={`pulse-${value}`}><i /><small>P{value}</small></span>)}
+    </div>;
+  }
   return <div className={`signal-set signal-${code}`} aria-label={`Позиции: ${values.join(", ")}`}>{values.map((value) => <span className={winning?.includes(value) ? "won" : ""} key={value}><i /><small>{String(value).padStart(2, "0")}</small></span>)}</div>;
 }
 

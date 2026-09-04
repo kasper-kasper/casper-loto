@@ -20,11 +20,17 @@ def _display_numbers(numbers: list[int], lottery_code: str) -> str:
         main = [value for value in numbers if value <= 35]
         special = [value - 35 for value in numbers if value > 35]
         return f"{' · '.join(map(str, main))}  +  {' · '.join(map(str, special))}"
+    if lottery_code == "pulse" and len(numbers) == 3:
+        main = [value for value in numbers if value <= 10]
+        special = [value - 10 for value in numbers if value > 10]
+        return f"{' · '.join(map(str, main))}  +  P{' · P'.join(map(str, special))}"
     return " · ".join(str(value) for value in numbers)
 
 
 def _display_matches(matches: int, lottery_code: str, *, grand_format: bool) -> str:
     if lottery_code == "weekly" and grand_format:
+        return f"{matches // 10}+{matches % 10}"
+    if lottery_code == "pulse":
         return f"{matches // 10}+{matches % 10}"
     return str(matches)
 

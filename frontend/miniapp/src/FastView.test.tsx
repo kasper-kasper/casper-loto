@@ -1,12 +1,12 @@
-import { render } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
-import { FastView } from "./FastView";
+import { FastPicker, FastView } from "./FastView";
 import type { LiveDraw, LiveFeed, Lottery } from "./types";
 
 const drawTime = Date.parse("2026-09-04T08:30:00Z");
 
-function lottery(code: "flash" | "shadow", scheduledAt: string): Lottery {
+function lottery(code: "flash" | "shadow" | "pulse", scheduledAt: string): Lottery {
   return {
     code,
     name: code.toUpperCase(),
@@ -69,5 +69,32 @@ describe("Fast draw placement", () => {
     );
 
     expect(container.querySelector(".fast-view > div:first-of-type > article")).toHaveClass("fast-live-card", "fast-shadow");
+  });
+});
+
+describe("PULSE picker", () => {
+  it("submits two main numbers and one tagged Pulse number", () => {
+    const onBuy = vi.fn();
+    render(
+      <FastPicker
+        lottery={{
+          ...lottery("pulse", "2026-09-04T08:36:00Z"),
+          primary_numbers_to_pick: 2,
+          primary_max_number: 10,
+          secondary_numbers_to_pick: 1,
+          secondary_max_number: 5,
+          secondary_storage_offset: 10,
+        }}
+        purchasing={false}
+        success={false}
+        onBuy={onBuy}
+        onClose={() => undefined}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Позиция 1" }));
+    fireEvent.click(screen.getByRole("button", { name: "Позиция 10" }));
+    fireEvent.click(screen.getByRole("button", { name: "Pulse-число 5" }));
+    fireEvent.click(screen.getByRole("button", { name: /Запустить пульс/i }));
+    expect(onBuy).toHaveBeenCalledWith([1, 10, 15]);
   });
 });

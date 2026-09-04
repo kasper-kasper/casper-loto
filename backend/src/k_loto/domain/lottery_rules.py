@@ -403,6 +403,24 @@ FAST_RULES = LotteryRuleStrategy(
     MappingProxyType({1: 88, 2: 888}),
     True,
 )
+PULSE_RULES = LotteryRuleStrategy(
+    code="pulse_2_10_1_5",
+    label="PULSE",
+    numbers_to_pick=3,
+    max_number=15,
+    price_divisor=1,
+    jackpot_share=PayoutRatio(1),
+    guaranteed_payouts=MappingProxyType({}),
+    distribution_pool_match=None,
+    jackpot_match=21,
+    fixed_payouts=MappingProxyType({1: 88, 10: 88, 11: 888, 20: 888}),
+    jackpot_refill_from_reserve=True,
+    primary_numbers_to_pick=2,
+    primary_max_number=10,
+    secondary_numbers_to_pick=1,
+    secondary_max_number=5,
+    secondary_storage_offset=10,
+)
 LOTTERY_RULES: Mapping[str, LotteryRuleStrategy] = MappingProxyType(
     {
         rule.code: rule
@@ -413,6 +431,7 @@ LOTTERY_RULES: Mapping[str, LotteryRuleStrategy] = MappingProxyType(
             SEPTEMBER_RULES,
             GROB_RULES,
             FAST_RULES,
+            PULSE_RULES,
         )
     }
 )

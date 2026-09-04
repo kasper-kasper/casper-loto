@@ -9,6 +9,7 @@ from k_loto.domain.enums import LotteryKind
 from k_loto.domain.lottery_rules import (
     FAST_RULES,
     GROB_RULES,
+    PULSE_RULES,
     SEPTEMBER_RULES,
     LotteryRuleStrategy,
     PayoutRatio,
@@ -86,21 +87,52 @@ def test_fast_purchase_and_fixed_payouts_use_unified_funding() -> None:
     assert plan.reserve_used == 889_864
 
 
-def test_flash_and_shadow_schedules_alternate_every_ten_minutes() -> None:
+def test_fast_schedules_rotate_every_three_minutes_without_collisions() -> None:
     moscow = ZoneInfo("Europe/Moscow")
     after = datetime(2026, 9, 1, 12, 1, tzinfo=moscow)
     flash = next_draw_at(
         LotteryKind.DAILY,
         after,
-        {"type": "interval", "interval_minutes": 20, "anchor_time": "00:00"},
+        {"type": "interval", "interval_minutes": 9, "anchor_time": "00:00"},
     )
     shadow = next_draw_at(
         LotteryKind.DAILY,
         after,
-        {"type": "interval", "interval_minutes": 20, "anchor_time": "00:10"},
+        {"type": "interval", "interval_minutes": 9, "anchor_time": "00:03"},
     )
-    assert flash == datetime(2026, 9, 1, 9, 20, tzinfo=UTC)
-    assert shadow == datetime(2026, 9, 1, 9, 10, tzinfo=UTC)
+    pulse = next_draw_at(
+        LotteryKind.DAILY,
+        after,
+        {"type": "interval", "interval_minutes": 9, "anchor_time": "00:06"},
+    )
+    assert shadow == datetime(2026, 9, 1, 9, 3, tzinfo=UTC)
+    assert pulse == datetime(2026, 9, 1, 9, 6, tzinfo=UTC)
+    assert flash == datetime(2026, 9, 1, 9, 9, tzinfo=UTC)
+
+
+def test_pulse_two_field_format_and_fast_payouts() -> None:
+    assert PULSE_RULES.validate_combination([1, 10, 15]) == (1, 10, 15)
+    quote = PULSE_RULES.quote_purchase([[1, 10, 15]], 1_234, 2_000)
+    assert quote.jackpot_contribution == 1_234
+    assert quote.distribution_contribution == 0
+
+    tickets = [
+        SettlementTicket(UUID(int=81), 1, UUID(int=91), (1, 8, 12), 1_234),
+        SettlementTicket(UUID(int=82), 2, UUID(int=92), (1, 2, 15), 1_234),
+        SettlementTicket(UUID(int=83), 3, UUID(int=93), (1, 2, 12), 1_234),
+    ]
+    plan = PULSE_RULES.calculate_settlement(
+        tickets,
+        (1, 2, 12),
+        distribution_balance=0,
+        jackpot_balance=1_235_000,
+        reserve_balance=2_000_000,
+        base_jackpot=1_234_567,
+    )
+    assert [item.matches for item in plan.payouts] == [11, 20, 21]
+    assert [item.amount for item in plan.payouts] == [888, 888, 1_235_000]
+    assert plan.jackpot_closing == 1_234_567
+    assert plan.reserve_used == 1_236_343
 
 
 def test_september_fixed_payouts_and_shared_main_prize() -> None:

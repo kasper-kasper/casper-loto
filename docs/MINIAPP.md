@@ -78,10 +78,11 @@ The live feed uses authenticated SSE. Snapshots follow the server timeline;
 reconnecting or reopening never restarts the reveal locally.
 
 Fast uses the same read-only feed with `scope=fast`, but renders it directly in
-the FLASH or SHADOW card. The card changes 20 seconds before the draw, reveals
-the three immutable result numbers in sequence, holds the final result for 12
-seconds and then returns automatically. The SSE connection exists only while
-the Fast section is open.
+the FLASH, SHADOW or PULSE card. The card changes 20 seconds before the draw,
+reveals the three immutable stored result values in sequence, holds the final
+result for 12 seconds and then returns automatically. PULSE visually separates
+its two main values from the tagged Pulse value. The SSE connection exists only
+while the Fast section is open.
 
 ## Authentication and API
 
