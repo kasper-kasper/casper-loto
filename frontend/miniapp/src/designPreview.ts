@@ -24,7 +24,7 @@ const dashboard = (): Dashboard => ({
   server_time: nowIso(),
   balance,
   active_ticket_count: purchasedTickets.length,
-  lotteries: lotterySeed.map((lottery) => ({ ...lottery, sales_close_at: new Date(new Date(lottery.scheduled_at).getTime() - (["flash", "shadow", "pulse"].includes(lottery.code) ? 60_000 : 120_000)).toISOString(), sales_open: true, purchase_available: true, player_ticket_count: purchasedTickets.filter((ticket) => ticket.lottery_code === lottery.code).length, sales_status: "OPEN" as const, max_tickets_per_purchase: ["flash", "shadow", "pulse"].includes(lottery.code) ? 100 : 1_000, max_tickets_per_user_per_draw: ["flash", "shadow", "pulse"].includes(lottery.code) ? 500 : 5_000 })),
+  lotteries: lotterySeed.map((lottery) => ({ ...lottery, sales_close_at: new Date(new Date(lottery.scheduled_at).getTime() - (["flash", "shadow", "pulse"].includes(lottery.code) ? 8_000 : 120_000)).toISOString(), sales_open: true, purchase_available: true, player_ticket_count: purchasedTickets.filter((ticket) => ticket.lottery_code === lottery.code).length, sales_status: "OPEN" as const, max_tickets_per_purchase: ["flash", "shadow", "pulse"].includes(lottery.code) ? 100 : 1_000, max_tickets_per_user_per_draw: ["flash", "shadow", "pulse"].includes(lottery.code) ? 500 : 5_000 })),
   recent_results: [],
   monthly_total_payout: 12_333_333,
 });

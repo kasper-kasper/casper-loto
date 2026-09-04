@@ -5,9 +5,23 @@ from datetime import UTC, datetime, timedelta
 from k_loto.domain.enums import DrawStatus
 from k_loto.domain.live_timeline import (
     draw_timeline,
+    fast_presentation_timeline,
     presentation_timeline,
     sales_status,
 )
+
+
+def test_fast_timeline_reveals_three_numbers_in_three_and_a_half_seconds() -> None:
+    starts_at = datetime(2026, 9, 4, 12, tzinfo=UTC)
+
+    timeline = fast_presentation_timeline(starts_at, starts_at, 3)
+
+    assert timeline.reveal_at == (
+        starts_at + timedelta(milliseconds=500),
+        starts_at + timedelta(milliseconds=1500),
+        starts_at + timedelta(milliseconds=2500),
+    )
+    assert timeline.ends_at == starts_at + timedelta(milliseconds=3500)
 
 
 def test_timeline_assigns_stable_reveal_moments() -> None:

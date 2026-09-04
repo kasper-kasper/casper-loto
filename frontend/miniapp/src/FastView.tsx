@@ -25,8 +25,12 @@ function displayFastMatches(code: string, matches: number): string {
   return code === "pulse" ? `${Math.floor(matches / 10)}+${matches % 10}` : `${matches}/3`;
 }
 
+function PulseTrace({ className }: { className: string }) {
+  return <div className={className} aria-hidden="true"><svg viewBox="0 0 120 48"><path d="M0 25H24L31 21L37 25L44 7L53 41L61 25H120" pathLength="120" /><circle cx="44" cy="7" r="2" /></svg></div>;
+}
+
 function SignalPreview({ code }: { code: string }) {
-  if (code === "pulse") return <div className="fast-pulse-preview" aria-hidden="true"><i /><span /><i /><span /><i /></div>;
+  if (code === "pulse") return <PulseTrace className="fast-pulse-preview" />;
   const active = code === "flash" ? [1, 7, 12] : [2, 8, 14];
   return <div className="fast-signal-preview" aria-hidden="true">{Array.from({ length: 15 }, (_, index) => <i className={active.includes(index) ? "active" : ""} key={index} />)}</div>;
 }
@@ -64,7 +68,7 @@ function FastLiveCard({ feed, now }: { feed: LiveFeed; now: number }) {
   return <motion.article animate={{ opacity: 1, scale: 1 }} className={`fast-live-card fast-${code} phase-${state.phase}`} initial={{ opacity: 0, scale: .985 }} transition={{ duration: .28 }}>
     <img src={fastScene(code)} alt="" />
     <div className="fast-live-veil" aria-hidden="true" />
-    {code === "pulse" && <div className="pulse-live-ecg" aria-hidden="true"><i /></div>}
+    {code === "pulse" && <PulseTrace className="pulse-live-ecg" />}
     <header><span><i /> {waiting ? "СКОРО В ЭФИРЕ" : result ? "РАУНД ЗАВЕРШЁН" : "ПРЯМОЙ ЭФИР"}</span><small>{formatDrawLabel(draw.lottery_code, draw.draw_number)}</small></header>
     <div className="fast-live-title"><div><small>{draw.lottery_name}</small><h2>{waiting ? `Старт через ${countdown(draw.scheduled_at, now)}` : result ? (code === "pulse" ? "Ритм зафиксирован" : "Сигнал принят") : "Каспер выбирает числа"}</h2></div><b>{formatMoscowTime(draw.scheduled_at)} МСК</b></div>
     <section className="fast-live-ticket" aria-live="polite">
@@ -87,7 +91,7 @@ export function FastView({ lotteries, feed, now, onOpen }: { lotteries: Lottery[
   });
   return <section className="fast-view">
     <header className="fast-heading"><div><span>Ритм Каспера</span><h1>Fast</h1></div><p>Новый раунд каждые 3 минуты.<br />Каждая лотерея возвращается через 9.</p></header>
-    {ordered.map((lottery, index) => <div key={lottery.code}><AnimatePresence mode="wait">{liveCode === lottery.code && feed ? <FastLiveCard feed={feed} key={`live-${lottery.code}`} now={now} /> : <FastCard lottery={lottery} now={now} primary={index === 0} onOpen={() => onOpen(lottery.code)} key={`card-${lottery.code}`} />}</AnimatePresence>{index === 0 && ordered.length > 1 && <div className="fast-divider"><span><b>{lottery.scheduled_at ? formatMoscowTime(lottery.scheduled_at) : "—"}</b>{lottery.name}</span><i><Icon name="fast" /></i><span><b>{ordered[1].scheduled_at ? formatMoscowTime(ordered[1].scheduled_at) : "—"}</b>{ordered[1].name}</span></div>}</div>)}
+    {ordered.map((lottery, index) => <motion.div key={lottery.code} layout transition={{ layout: { duration: .42, ease: [0.2, 0.75, 0.25, 1] } }}><AnimatePresence mode="wait">{liveCode === lottery.code && feed ? <FastLiveCard feed={feed} key={`live-${lottery.code}`} now={now} /> : <FastCard lottery={lottery} now={now} primary={index === 0} onOpen={() => onOpen(lottery.code)} key={`card-${lottery.code}`} />}</AnimatePresence>{index === 0 && ordered.length > 1 && <div className="fast-divider"><span><b>{lottery.scheduled_at ? formatMoscowTime(lottery.scheduled_at) : "—"}</b>{lottery.name}</span><i><Icon name="fast" /></i><span><b>{ordered[1].scheduled_at ? formatMoscowTime(ordered[1].scheduled_at) : "—"}</b>{ordered[1].name}</span></div>}</motion.div>)}
     {!ordered.length && <div className="fast-unavailable"><Icon name="fast" /><strong>Расписание Fast готовится</strong><p>Экран обновится автоматически.</p></div>}
   </section>;
 }
@@ -116,7 +120,7 @@ export function FastPicker({ lottery, purchasing, success, onClose, onBuy }: { l
   return <div className={`fast-picker fast-${lottery.code}`}>
     <img className="fast-picker-scene" src={fastScene(lottery.code)} alt="" />
     <div className="fast-picker-overlay" aria-hidden="true" />
-    {pulse && <div className="pulse-picker-beat" aria-hidden="true"><i /></div>}
+    {pulse && <PulseTrace className="pulse-picker-beat" />}
     <button className="fast-picker-close" onClick={onClose} type="button" aria-label="Закрыть"><Icon name="arrow" /></button>
     <header><span>{lottery.name} · {formatDrawLabel(lottery.code, lottery.draw_number ?? 0)}</span><h1>{pulse ? "Соберите пульс" : lottery.code === "flash" ? "Соберите сигнал" : "Выберите 3 тени"}</h1><p>{pulse ? "2 основных числа + 1 Pulse-число" : "Отметьте 3 позиции из 15"}</p></header>
     <section className="fast-grid-panel"><div><strong>{pulse ? "ОСНОВНОЙ РИТМ · 2 ИЗ 10" : lottery.code === "flash" ? "ПОЛЕ ИМПУЛЬСОВ" : "ПОЛЕ ТЕНЕЙ"}</strong><span>Выбрано <b>{primarySelected.length}</b> / {primaryPick}</span></div><div className={`fast-grid ${pulse ? "pulse-main-grid" : ""}`}>{Array.from({ length: primaryMax }, (_, index) => index + 1).map((value) => <motion.button aria-label={`Позиция ${value}`} aria-pressed={selected.includes(value)} className={selected.includes(value) ? "selected" : ""} key={value} onClick={() => toggle(value)} type="button" whileTap={{ scale: .86 }}><i /><small>{String(value).padStart(2, "0")}</small></motion.button>)}</div></section>

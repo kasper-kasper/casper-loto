@@ -7,6 +7,8 @@ from k_loto.domain.enums import DrawStatus
 
 REVEAL_LEAD = timedelta(seconds=1)
 REVEAL_INTERVAL = timedelta(seconds=2)
+FAST_REVEAL_LEAD = timedelta(milliseconds=500)
+FAST_REVEAL_INTERVAL = timedelta(seconds=1)
 CUTOFF_SOON = timedelta(minutes=5)
 
 
@@ -37,6 +39,25 @@ def presentation_timeline(
 
     starts_at = max(scheduled_at, executed_at) if executed_at else scheduled_at
     return draw_timeline(starts_at, number_count)
+
+
+def fast_presentation_timeline(
+    scheduled_at: datetime,
+    executed_at: datetime | None,
+    number_count: int,
+) -> DrawTimeline:
+    """Return a compact reveal timeline for the three-number Fast draw."""
+    starts_at = max(scheduled_at, executed_at) if executed_at else scheduled_at
+    reveal_at = tuple(
+        starts_at + FAST_REVEAL_LEAD + FAST_REVEAL_INTERVAL * index
+        for index in range(number_count)
+    )
+    ends_at = (
+        reveal_at[-1] + FAST_REVEAL_INTERVAL
+        if reveal_at
+        else starts_at + FAST_REVEAL_LEAD
+    )
+    return DrawTimeline(starts_at, reveal_at, ends_at)
 
 
 def sales_status(

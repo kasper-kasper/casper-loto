@@ -109,6 +109,17 @@ def test_daily_sales_close_two_minutes_before_all_slots() -> None:
         ) == scheduled - timedelta(minutes=2)
 
 
+def test_configured_fast_sales_close_uses_seconds() -> None:
+    scheduled = local(2026, 9, 4, 12, 0).astimezone(UTC)
+
+    assert sales_close_at(
+        LotteryKind.DAILY,
+        scheduled,
+        1,
+        {"sales_cutoff_seconds": 8},
+    ) == scheduled - timedelta(seconds=8)
+
+
 @pytest.mark.parametrize(
     ("draw_time", "expected"),
     [

@@ -22,6 +22,7 @@ from k_loto.domain.enums import (
 )
 from k_loto.domain.live_timeline import (
     draw_timeline,
+    fast_presentation_timeline,
     presentation_timeline,
     sales_status,
 )
@@ -763,7 +764,12 @@ class MiniAppQueryService:
                 )
                 for ticket in tickets
             )
-        timeline = presentation_timeline(
+        timeline_factory = (
+            fast_presentation_timeline
+            if lottery.code in FAST_LOTTERY_CODES
+            else presentation_timeline
+        )
+        timeline = timeline_factory(
             draw.scheduled_at,
             draw.executed_at if draw.status == DrawStatus.COMPLETED else None,
             lottery.numbers_to_pick,

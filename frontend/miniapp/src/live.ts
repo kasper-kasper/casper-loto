@@ -3,8 +3,8 @@ import type { LiveDraw, LiveFeed } from "./types";
 export const LIVE_REVEAL_LEAD_MS = 1_000;
 export const LIVE_REVEAL_INTERVAL_MS = 2_000;
 export const LIVE_RESULT_HOLD_MS = 90_000;
-export const FAST_PRELIVE_MS = 20_000;
-export const FAST_RESULT_HOLD_MS = 12_000;
+export const FAST_PRELIVE_MS = 8_000;
+export const FAST_RESULT_HOLD_MS = 6_000;
 export const REPLAY_REVEAL_LEAD_MS = 700;
 export const REPLAY_REVEAL_INTERVAL_MS = 1_250;
 

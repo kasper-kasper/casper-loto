@@ -121,9 +121,16 @@ def sales_close_at(
     kind: LotteryKind,
     scheduled_at: datetime,
     cutoff_minutes: int | None = None,
+    schedule: dict[str, Any] | None = None,
 ) -> datetime:
     """Return the official sales close time for a prepared draw."""
     _aware(scheduled_at)
+    cutoff_seconds = (schedule or {}).get("sales_cutoff_seconds")
+    if cutoff_seconds is not None:
+        seconds = int(cutoff_seconds)
+        if not 0 <= seconds <= 86_400:
+            raise ValueError("Sales cutoff seconds are outside the valid range.")
+        return scheduled_at - timedelta(seconds=seconds)
     if cutoff_minutes is not None:
         if cutoff_minutes < 0:
             raise ValueError("Sales cutoff cannot be negative.")

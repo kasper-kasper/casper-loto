@@ -86,7 +86,10 @@ class DrawScheduleService:
                     status=DrawStatus.SCHEDULED,
                     scheduled_at=scheduled_at,
                     sales_close_at=sales_close_at(
-                        lottery.kind, scheduled_at, lottery.sales_cutoff_minutes
+                        lottery.kind,
+                        scheduled_at,
+                        lottery.sales_cutoff_minutes,
+                        lottery.schedule,
                     ),
                     correlation_id=uuid4(),
                     ticket_count=0,
