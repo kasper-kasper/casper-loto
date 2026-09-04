@@ -62,9 +62,13 @@ function FastLiveCard({ feed, now }: { feed: LiveFeed; now: number }) {
 }
 
 export function FastView({ lotteries, feed, now, onOpen }: { lotteries: Lottery[]; feed: LiveFeed | null; now: number; onOpen: (code: string) => void }) {
-  const ordered = [...lotteries].sort((left, right) => new Date(left.scheduled_at ?? 0).getTime() - new Date(right.scheduled_at ?? 0).getTime());
   const liveState = useMemo(() => fastLivePresentation(feed, now), [feed, now]);
   const liveCode = liveState?.draw?.lottery_code;
+  const ordered = [...lotteries].sort((left, right) => {
+    if (left.code === liveCode) return -1;
+    if (right.code === liveCode) return 1;
+    return new Date(left.scheduled_at ?? 0).getTime() - new Date(right.scheduled_at ?? 0).getTime();
+  });
   return <section className="fast-view">
     <header className="fast-heading"><div><span>Ритм Каспера</span><h1>Fast</h1></div><p>Новый раунд каждые 10 минут.<br />FLASH и SHADOW чередуются.</p></header>
     {ordered.map((lottery, index) => <div key={lottery.code}><AnimatePresence mode="wait">{liveCode === lottery.code && feed ? <FastLiveCard feed={feed} key={`live-${lottery.code}`} now={now} /> : <FastCard lottery={lottery} now={now} primary={index === 0} onOpen={() => onOpen(lottery.code)} key={`card-${lottery.code}`} />}</AnimatePresence>{index === 0 && ordered.length > 1 && <div className="fast-divider"><span><b>{lottery.scheduled_at ? formatMoscowTime(lottery.scheduled_at) : "—"}</b>{lottery.name}</span><i><Icon name="fast" /></i><span><b>{ordered[1].scheduled_at ? formatMoscowTime(ordered[1].scheduled_at) : "—"}</b>{ordered[1].name}</span></div>}</div>)}
