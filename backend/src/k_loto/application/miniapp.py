@@ -1,5 +1,6 @@
 """Read models for the Telegram Mini App."""
 
+from collections import Counter
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
@@ -84,6 +85,7 @@ class MiniAppTicket:
     matches: int | None
     prize_amount: int
     winning_numbers: tuple[int, ...] | None
+    draw_ticket_count: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -173,6 +175,9 @@ class MiniAppAccount:
     total_spent: int
     total_won: int
     best_win: int
+    favorite_lottery_code: str | None
+    favorite_lottery_name: str | None
+    favorite_numbers: tuple[int, ...]
     unread_notification_count: int
     notification_preferences: MiniAppNotificationPreferences
 
@@ -231,6 +236,33 @@ class MiniAppQueryService:
             )
             or 0
         )
+        favorite_lottery = (
+            await self._session.execute(
+                select(Lottery.code, Lottery.name, func.count(Ticket.id).label("uses"))
+                .join(Ticket, Ticket.lottery_id == Lottery.id)
+                .where(
+                    Ticket.user_id == user_id,
+                    Ticket.status != TicketStatus.REFUNDED,
+                )
+                .group_by(Lottery.id)
+                .order_by(func.count(Ticket.id).desc(), Lottery.code)
+                .limit(1)
+            )
+        ).first()
+        favorite_numbers: tuple[int, ...] = ()
+        if favorite_lottery is not None:
+            number_rows = await self._session.scalars(
+                select(Ticket.numbers).where(
+                    Ticket.user_id == user_id,
+                    Ticket.lottery_id
+                    == select(Lottery.id)
+                    .where(Lottery.code == favorite_lottery.code)
+                    .scalar_subquery(),
+                    Ticket.status != TicketStatus.REFUNDED,
+                )
+            )
+            counts = Counter(number for numbers in number_rows for number in numbers)
+            favorite_numbers = tuple(number for number, _ in counts.most_common(7))
         return MiniAppAccount(
             display_name=user.display_name,
             balance=balance,
@@ -240,6 +272,19 @@ class MiniAppQueryService:
             total_spent=int(stats[3]),
             total_won=int(stats[4]),
             best_win=int(stats[5]),
+            favorite_lottery_code=(
+                str(favorite_lottery.code) if favorite_lottery is not None else None
+            ),
+            favorite_lottery_name=(
+                draw_display_name(
+                    str(favorite_lottery.code),
+                    str(favorite_lottery.name),
+                    datetime.now(UTC),
+                )
+                if favorite_lottery is not None
+                else None
+            ),
+            favorite_numbers=favorite_numbers,
             unread_notification_count=unread,
             notification_preferences=MiniAppNotificationPreferences(
                 telegram_enabled=bool(preference and preference.telegram_enabled),
@@ -483,6 +528,7 @@ class MiniAppQueryService:
         *,
         active: bool,
         limit: int = 100,
+        offset: int = 0,
         lottery_code: str | None = None,
         wins_only: bool = False,
     ) -> tuple[MiniAppTicket, ...]:
@@ -497,14 +543,25 @@ class MiniAppQueryService:
             filters.append(Lottery.code == lottery_code)
         if wins_only:
             filters.append(Ticket.prize_amount > 0)
+        ordering = (
+            (Draw.scheduled_at.asc(), Ticket.public_number.desc())
+            if active
+            else (Draw.scheduled_at.desc(), Ticket.public_number.desc())
+        )
         rows = (
             await self._session.execute(
-                select(Ticket, Draw, Lottery)
+                select(
+                    Ticket,
+                    Draw,
+                    Lottery,
+                    func.count(Ticket.id).over(partition_by=Ticket.draw_id),
+                )
                 .join(Draw, Draw.id == Ticket.draw_id)
                 .join(Lottery, Lottery.id == Ticket.lottery_id)
                 .where(*filters)
-                .order_by(Draw.scheduled_at.desc(), Ticket.public_number.desc())
+                .order_by(*ordering)
                 .limit(limit)
+                .offset(offset)
             )
         ).all()
         return tuple(
@@ -526,8 +583,37 @@ class MiniAppQueryService:
                 winning_numbers=(
                     tuple(draw.winning_numbers) if draw.winning_numbers else None
                 ),
+                draw_ticket_count=int(draw_ticket_count),
             )
-            for ticket, draw, lottery in rows
+            for ticket, draw, lottery, draw_ticket_count in rows
+        )
+
+    async def ticket_count(
+        self,
+        user_id: UUID,
+        *,
+        active: bool,
+        lottery_code: str | None = None,
+        wins_only: bool = False,
+    ) -> int:
+        filters = [Ticket.user_id == user_id]
+        if active:
+            filters.append(Ticket.status == TicketStatus.PURCHASED)
+        else:
+            filters.append(
+                Ticket.status.in_((TicketStatus.SETTLED, TicketStatus.REFUNDED))
+            )
+        if lottery_code:
+            filters.append(Lottery.code == lottery_code)
+        if wins_only:
+            filters.append(Ticket.prize_amount > 0)
+        return int(
+            await self._session.scalar(
+                select(func.count(Ticket.id))
+                .join(Lottery, Lottery.id == Ticket.lottery_id)
+                .where(*filters)
+            )
+            or 0
         )
 
     async def results(self, *, limit: int = 50) -> tuple[MiniAppDrawResult, ...]:

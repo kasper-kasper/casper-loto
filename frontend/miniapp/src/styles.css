@@ -1572,6 +1572,70 @@ body::before, body::after { opacity: .12; }
   .storefront-copy { max-width: 88%; }
   .storefront-weekly { min-height: 336px; }
 }
+
+/* 1.15.0 — ticket archive, player statistics and compact pickers. */
+.picker-shell .picker-heading,
+.picker-shell.lottery-weekly .picker-heading { min-height: 94px !important; padding: 43px 12px 10px 56px !important; }
+.picker-shell .picker-scene { opacity: .78; }
+.picker-shell .picker-heading h1 { font-size: clamp(19px,5.8vw,24px); }
+.picker-shell.lottery-weekly .grand-main-field .pick-number.selected {
+  color: #171108 !important;
+  border-color: #ffe29c !important;
+  background: linear-gradient(145deg,#ffe7a9,#d9a343) !important;
+  box-shadow: 0 0 0 3px rgba(244,205,118,.13),0 8px 22px rgba(201,144,42,.28) !important;
+}
+.picker-shell.lottery-weekly .grand-main-field .pick-number.selected::after { content: "✓"; position: absolute; right: 2px; bottom: 0; color: #5b3a08; font-size: 7px; font-weight: 900; }
+.picker-shell.lottery-weekly .grand-special-field .pick-number.selected { color: white !important; border-color: #f0c9ff !important; background: linear-gradient(145deg,#b06fc5,#663c7b) !important; box-shadow: 0 0 0 3px rgba(207,157,239,.12),0 0 22px rgba(184,110,211,.28) !important; }
+
+.ticket-filters > span { margin-left: auto; color: var(--text-muted); font-size: 9px; white-space: nowrap; }
+.ticket-draw-group.next-ticket-group { border-color: color-mix(in srgb,var(--lottery-accent) 43%,var(--border)); box-shadow: 0 0 28px color-mix(in srgb,var(--lottery-glow) 11%,transparent); }
+.ticket-draw-group > header > div:first-child > b { display: inline-block; margin-bottom: 5px; padding: 4px 7px; border-radius: 6px; color: #171107; background: var(--gold); font-size: 7px; letter-spacing: .1em; text-transform: uppercase; }
+.ticket-draw-group > header time { display: block; margin-top: 5px; color: var(--text-muted); font-size: 8px; }
+.compact-ticket { width: 100%; color: inherit; text-align: left; cursor: pointer; }
+.compact-ticket .ticket-meta { margin: 0; }
+.compact-ticket .eyebrow { font-size: 6px; }
+.compact-ticket h3 { font-size: 14px; }
+.compact-combination { display: flex; min-height: 36px; margin-top: 7px; align-items: center; justify-content: space-between; gap: 10px; color: #dfe6f5; font-size: 11px; font-weight: 760; letter-spacing: .08em; }
+.compact-combination > span { color: var(--lottery-accent); font-size: 7px; font-weight: 700; letter-spacing: 0; white-space: nowrap; }
+.compact-ticket .ticket-result { margin-top: 3px; }
+.load-more-tickets { width: 100%; min-height: 48px; border: 1px solid var(--border-strong); border-radius: 14px; color: var(--text-secondary); background: var(--surface); font-weight: 750; }
+
+.ticket-detail-backdrop { position: fixed; z-index: 100; inset: 0; display: grid; padding: max(18px,env(safe-area-inset-top)) 14px max(18px,env(safe-area-inset-bottom)); place-items: center; overflow-y: auto; background: rgba(2,6,18,.84); backdrop-filter: blur(12px); }
+.paper-ticket { --paper-accent: var(--lottery-accent,#efc76e); position: relative; width: min(100%,430px); margin: auto; overflow: hidden; border: 1px solid color-mix(in srgb,var(--paper-accent) 42%,#33405a); border-radius: 8px 8px 25px 8px; color: #e8edf8; background: radial-gradient(circle at 92% 4%,color-mix(in srgb,var(--lottery-glow,#94702c) 18%,transparent),transparent 27%),linear-gradient(155deg,#17223a,#091225 58%,#11172a); box-shadow: 0 34px 90px rgba(0,0,0,.54); }
+.paper-ticket::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .16; background-image: repeating-linear-gradient(0deg,transparent 0 7px,rgba(255,255,255,.025) 8px); }
+.paper-close { position: absolute; z-index: 3; top: 11px; right: 11px; display: grid; width: 38px; height: 38px; padding: 0; place-items: center; border: 1px solid rgba(255,255,255,.12); border-radius: 50%; color: white; background: rgba(5,10,24,.55); }
+.paper-close svg { width: 15px; }
+.paper-ticket > header { position: relative; padding: 24px 58px 20px 20px; }
+.paper-ticket > header span,.paper-ticket > header strong,.paper-ticket > header small { display: block; }
+.paper-ticket > header span { color: var(--paper-accent); font-size: 8px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+.paper-ticket > header strong { margin-top: 7px; font: 600 clamp(25px,8vw,38px)/1 Georgia,"Times New Roman",serif; }
+.paper-ticket > header small { margin-top: 7px; color: #8793ad; font-size: 8px; }
+.paper-perforation { position: relative; height: 1px; margin-inline: 17px; border-top: 1px dashed rgba(202,214,239,.2); }
+.paper-perforation::before,.paper-perforation::after { content: ""; position: absolute; top: -8px; width: 15px; height: 15px; border-radius: 50%; background: #030817; }.paper-perforation::before { left: -25px; }.paper-perforation::after { right: -25px; }
+.paper-ticket > section { position: relative; padding: 17px 19px 4px; }
+.paper-field-title { display: flex; margin-bottom: 11px; align-items: end; justify-content: space-between; gap: 12px; }
+.paper-field-title b { font-size: 9px; letter-spacing: .08em; text-transform: uppercase; }.paper-field-title small { color: var(--paper-accent); font-size: 8px; }
+.paper-number-field { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 6px; }
+.paper-number-field i { display: grid; aspect-ratio: 1; place-items: center; border: 1px solid rgba(142,160,197,.14); border-radius: 50%; color: #63708b; background: rgba(18,30,56,.52); font-size: 8px; font-style: normal; }
+.paper-number-field i.selected { color: #171107; border-color: var(--paper-accent); background: var(--paper-accent); box-shadow: 0 0 15px color-mix(in srgb,var(--paper-accent) 25%,transparent); }
+.paper-number-field i.winning:not(.matched) { color: #e7eaf1; border-color: #76839e; box-shadow: inset 0 0 0 2px rgba(133,147,178,.13); }
+.paper-number-field i.matched { color: #102116; border-color: #a8ffc1; background: #72e79a; box-shadow: 0 0 18px rgba(83,226,131,.32); }
+.paper-special .paper-number-field { grid-template-columns: repeat(5,minmax(0,48px)); justify-content: center; }
+.paper-result { margin: 17px 17px 0; padding: 15px !important; border: 1px solid rgba(145,165,207,.13); border-radius: 12px; background: rgba(4,10,25,.42); }
+.paper-result div { display: flex; justify-content: space-between; gap: 10px; }.paper-result span { color: #77849f; font-size: 7px; }.paper-result div strong { color: #d9dfed; font-size: 9px; }.paper-result p { margin: 13px 0 5px; color: #aab4ca; font-size: 9px; }.paper-result > b { font-size: 15px; }.paper-result > b.win { color: var(--gold); }.paper-result > b.loss { color: #7c879f; }
+.paper-ticket > footer { position: relative; display: grid; grid-template-columns: 1fr auto; margin-top: 17px; padding: 15px 19px 19px; border-top: 1px dashed rgba(202,214,239,.18); }.paper-ticket > footer span { color: #78849d; font-size: 7px; }.paper-ticket > footer strong { color: var(--paper-accent); font-size: 12px; }.paper-ticket > footer small { grid-column: 1/-1; margin-top: 5px; color: #4e5b75; font-size: 6px; letter-spacing: .18em; }
+
+.account-scoreline strong.positive { color: #78e49c; }.account-scoreline strong.negative { color: #d88191; }
+.account-favorites { padding: 13px 17px 16px; border-top: 1px solid var(--hairline); }
+.account-favorites header,.account-favorites > div { display: flex; min-height: 43px; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid rgba(145,166,211,.09); }
+.account-favorites header span { color: #e4e9f4; font-size: 10px; font-weight: 780; }.account-favorites header small,.account-favorites > div > span { color: #71809f; font-size: 8px; }.account-favorites > div > strong { color: #d7ddeb; font-size: 9px; text-align: right; }
+.account-favorites p { display: flex; margin: 0; gap: 4px; }.account-favorites p i { display: grid; min-width: 25px; height: 25px; padding: 0 4px; place-items: center; border: 1px solid rgba(239,199,110,.25); border-radius: 50%; color: #efc76e; background: rgba(239,199,110,.07); font-size: 7px; font-style: normal; }
+
+@media (max-width: 360px) {
+  .paper-number-field { gap: 4px; }
+  .paper-ticket > section { padding-inline: 14px; }
+  .ticket-filters > span { display: none; }
+}
 @media (prefers-reduced-motion: reduce) {
   .fast-card > img,.fast-live-card > img,.fast-live-card > header i,.fast-live-scan i,.fast-picker-scene,.fast-divider::after,.fast-divider > i,.storefront-rail > i,.storefront-card,.storefront-card::after { animation: none; }
 }
@@ -1621,3 +1685,9 @@ body::before, body::after { opacity: .12; }
   .picker-shell.lottery-weekly .grand-main-field .pick-number { font-size: 8px; }
   .grand-number-set .number { width: 24px; height: 24px; }
 }
+
+/* Final compact-picker overrides must follow the flagship theme. */
+.picker-shell .picker-heading,
+.picker-shell.lottery-weekly .picker-heading { min-height: 94px !important; padding: 43px 12px 10px 56px !important; }
+.picker-shell.lottery-weekly .grand-main-field .pick-number.selected { color: #171108 !important; border-color: #ffe29c !important; background: linear-gradient(145deg,#ffe7a9,#d9a343) !important; box-shadow: 0 0 0 3px rgba(244,205,118,.13),0 8px 22px rgba(201,144,42,.28) !important; }
+.picker-shell.lottery-weekly .grand-special-field .pick-number.selected { color: white !important; border-color: #f0c9ff !important; background: linear-gradient(145deg,#b06fc5,#663c7b) !important; box-shadow: 0 0 0 3px rgba(207,157,239,.12),0 0 22px rgba(184,110,211,.28) !important; }

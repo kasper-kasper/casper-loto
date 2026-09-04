@@ -11,7 +11,6 @@ import {
   Icon,
   NumberSet,
   PrimaryButton,
-  SignalSet,
   Skeleton,
   StatusBadge,
 } from "./components";
@@ -57,35 +56,72 @@ const salesLabels: Record<Lottery["sales_status"], string> = {
   COMPLETED: "Тираж завершён",
 };
 
-function TicketCard({ ticket, index = 0 }: { ticket: Ticket; index?: number }) {
+function compactCombination(ticket: Ticket, lottery?: Lottery): string {
+  const offset = lottery?.secondary_storage_offset;
+  if (!offset) return ticket.numbers.join("  ");
+  const main = ticket.numbers.filter((value) => value <= offset).join("  ");
+  const special = ticket.numbers.filter((value) => value > offset).map((value) => value - offset).join("  ");
+  return `${main}  +  ${special}`;
+}
+
+function TicketCard({ ticket, lottery, index = 0, onOpen }: { ticket: Ticket; lottery?: Lottery; index?: number; onOpen: () => void }) {
   const refunded = ticket.status === "REFUNDED";
   const complete = ticket.status !== "PURCHASED";
   const winner = complete && ticket.prize_amount > 0;
   const matches = ticket.matches ?? 0;
-  return <article className={`ticket-card ${winner ? "winner" : ""}`} style={{ "--item-index": index } as CSSProperties}>
+  return <button className={`ticket-card compact-ticket ${winner ? "winner" : ""}`} onClick={onOpen} style={{ "--item-index": index } as CSSProperties} type="button">
     <div className="ticket-meta">
       <div><span className="eyebrow">{ticket.lottery_name}{ticket.source === "AUTO_PLAY" ? " · АВТОБИЛЕТ" : ""}</span><h3>{formatTicketLabel(ticket.lottery_code, ticket.public_number)}</h3></div>
       <StatusBadge active={!complete} label={refunded ? "Возврат" : undefined} />
     </div>
-    {isFastLottery(ticket.lottery_code) ? <SignalSet values={ticket.numbers} winning={ticket.winning_numbers} code={ticket.lottery_code as "flash" | "shadow" | "pulse"} /> : isGrandLottery(ticket.lottery_code) && ticket.numbers.length === 7 ? <GrandNumberSet values={ticket.numbers} winning={ticket.winning_numbers} animate={winner} /> : <NumberSet values={ticket.numbers} winning={ticket.winning_numbers} animate={winner} />}
-    <div className="ticket-footer"><span>{formatDrawLabel(ticket.lottery_code, ticket.draw_number)}</span><span>{formatMoscow(ticket.scheduled_at)} МСК</span></div>
+    <div className="compact-combination">{compactCombination(ticket, lottery)}<span>Открыть билет →</span></div>
     {complete && <div className={`ticket-result ${winner ? "win" : "loss"} ${refunded ? "refunded" : ""}`}>
       <div><span>{refunded ? "Билет возвращён" : matches > 0 ? `Совпадений: ${matchLabel(ticket.lottery_code, matches, ticket.numbers.length === 7)}` : "Совпадений нет"}</span><small>{refunded ? "Стоимость зачислена на баланс" : winner ? "Выигрыш зачислен" : "Без выигрыша"}</small></div>
       <strong>{refunded ? `+${formatCas(ticket.purchase_price)}` : winner ? `+${formatCas(ticket.prize_amount)}` : "0 CAS"}</strong>
     </div>}
-  </article>;
+  </button>;
 }
 
-function TicketGroups({ tickets }: { tickets: Ticket[] }) {
+function TicketGroups({ tickets, lotteries, now, active, onOpen }: { tickets: Ticket[]; lotteries: Lottery[]; now: number; active: boolean; onOpen: (ticket: Ticket) => void }) {
   const groups = new Map<string, Ticket[]>();
   for (const ticket of tickets) {
     const key = `${ticket.lottery_code}:${ticket.draw_number}`;
     groups.set(key, [...(groups.get(key) ?? []), ticket]);
   }
-  return <div className="ticket-groups">{Array.from(groups.entries()).map(([key, items]) => {
+  return <div className="ticket-groups">{Array.from(groups.entries()).map(([key, items], groupIndex) => {
     const first = items[0];
-    return <section className={`ticket-draw-group lottery-${first.lottery_code}`} key={key}><header><div><span className="eyebrow">{first.lottery_name}</span><h2>{formatDrawLabel(first.lottery_code, first.draw_number)}</h2></div><div><strong>{items.length}</strong><small>{plural(items.length, "билет", "билета", "билетов")}</small></div></header><div className="ticket-group-list">{items.map((ticket, index) => <TicketCard index={index} key={ticket.id} ticket={ticket} />)}</div></section>;
+    const total = first.draw_ticket_count ?? items.length;
+    const lottery = lotteries.find((item) => item.code === first.lottery_code);
+    return <section className={`ticket-draw-group lottery-${first.lottery_code} ${active && groupIndex === 0 ? "next-ticket-group" : ""}`} key={key}><header><div>{active && groupIndex === 0 && <b>Следующий</b>}<span className="eyebrow">{first.lottery_name}</span><h2>{formatDrawLabel(first.lottery_code, first.draw_number)}</h2><time>{formatMoscow(first.scheduled_at)} МСК{active ? ` · через ${countdown(first.scheduled_at, now)}` : ""}</time></div><div><strong>{total}</strong><small>{plural(total, "билет", "билета", "билетов")}</small></div></header><div className="ticket-group-list">{items.map((ticket, index) => <TicketCard index={index} key={ticket.id} lottery={lottery} onOpen={() => onOpen(ticket)} ticket={ticket} />)}</div></section>;
   })}</div>;
+}
+
+function TicketDetail({ ticket, lottery, onClose }: { ticket: Ticket; lottery?: Lottery; onClose: () => void }) {
+  const completed = ticket.status !== "PURCHASED";
+  const winning = new Set(ticket.winning_numbers ?? []);
+  const selected = new Set(ticket.numbers);
+  const matched = new Set(ticket.numbers.filter((value) => winning.has(value)));
+  const offset = lottery?.secondary_storage_offset ?? 0;
+  const primaryMax = lottery?.primary_max_number ?? lottery?.max_number ?? Math.max(...ticket.numbers, ...(ticket.winning_numbers ?? []));
+  const secondaryMax = lottery?.secondary_max_number ?? 0;
+  const renderField = (max: number, valueOffset = 0) => <div className="paper-number-field">{Array.from({ length: max }, (_, index) => index + 1).map((display) => {
+    const value = display + valueOffset;
+    return <i className={`${selected.has(value) ? "selected" : ""} ${winning.has(value) ? "winning" : ""} ${matched.has(value) ? "matched" : ""}`} key={value}>{display}</i>;
+  })}</div>;
+  useEffect(() => {
+    const close = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, [onClose]);
+  return <div className="ticket-detail-backdrop" onClick={onClose} role="presentation"><motion.article animate={{ opacity: 1, y: 0, scale: 1 }} aria-label={`Билет ${ticket.public_number}`} aria-modal="true" className={`paper-ticket lottery-${ticket.lottery_code}`} initial={{ opacity: 0, y: 18, scale: .97 }} onClick={(event) => event.stopPropagation()} role="dialog">
+    <button aria-label="Закрыть билет" className="paper-close" onClick={onClose} type="button"><Icon name="close" /></button>
+    <header><span>{ticket.lottery_name}</span><strong>{formatTicketLabel(ticket.lottery_code, ticket.public_number)}</strong><small>{formatDrawLabel(ticket.lottery_code, ticket.draw_number)} · {formatMoscow(ticket.scheduled_at)} МСК</small></header>
+    <div className="paper-perforation" />
+    <section><div className="paper-field-title"><b>{secondaryMax ? "Основное поле" : "Комбинация"}</b><small>{ticket.numbers.filter((value) => !offset || value <= offset).join(" · ")}</small></div>{renderField(primaryMax)}</section>
+    {secondaryMax > 0 && <section className="paper-special"><div className="paper-field-title"><b>Специальное поле</b><small>{ticket.numbers.filter((value) => value > offset).map((value) => value - offset).join(" · ")}</small></div>{renderField(secondaryMax, offset)}</section>}
+    {completed && <section className="paper-result"><div><span>Выпавшие числа</span><strong>{compactCombination({ ...ticket, numbers: ticket.winning_numbers ?? [] }, lottery)}</strong></div><p>{ticket.matches ? `Совпало ${matchLabel(ticket.lottery_code, ticket.matches, ticket.numbers.length === 7)}` : "Совпадений нет"}</p><b className={ticket.prize_amount > 0 ? "win" : "loss"}>{ticket.prize_amount > 0 ? `Выигрыш: ${formatCas(ticket.prize_amount)}` : "Без выигрыша"}</b></section>}
+    <footer><span>Стоимость</span><strong>{formatCas(ticket.purchase_price)}</strong><small>CAS · KASPER LOTO</small></footer>
+  </motion.article></div>;
 }
 
 function NextDraw({ lottery, now, nearest, onLive, onPlay }: { lottery: Lottery; now: number; nearest: boolean; onLive: () => void; onPlay: () => void }) {
@@ -193,11 +229,14 @@ function BottomNavigation({ view, unreadNotifications, onChange }: { view: View;
 function AccountOverview({ account, onEnableTelegram, onSavePreferences }: { account: Account; onEnableTelegram: () => void; onSavePreferences: (preferences: NotificationPreferences) => void }) {
   const preferences = account.notification_preferences;
   const winRate = account.ticket_count ? Math.round((account.winning_ticket_count / account.ticket_count) * 100) : 0;
+  const net = account.total_won - account.total_spent;
+  const favoriteOffset = account.favorite_lottery_code === "weekly" ? 35 : account.favorite_lottery_code === "pulse" ? 10 : 0;
   return <div className="account-overview">
     <section className="account-identity"><div className="account-monogram"><span>{account.display_name.slice(0, 1)}</span><i /></div><div className="account-name"><span>{copy.account.playerLabel}</span><h2>{account.display_name}</h2><small>Участник клуба · {account.ticket_count} {plural(account.ticket_count, "билет", "билета", "билетов")}</small></div><div className="account-balance"><span>Доступно</span><strong>{formatCas(account.balance)}</strong></div></section>
     <section className="account-highlight"><div><span>Главный результат</span><strong>{formatCas(account.best_win)}</strong><small>ваш лучший выигрыш</small></div><div className="account-highlight-art" aria-hidden="true"><i /><i /><b /></div></section>
-    <section className="account-scoreline"><article><span>В игре сейчас</span><strong>{account.active_ticket_count}</strong></article><article><span>Выигрышных</span><strong>{winRate}%</strong></article><article><span>Получено</span><strong>{formatCas(account.total_won)}</strong></article></section>
-    <section className="account-ledger"><header><span>Ваша игровая история</span><small>За всё время</small></header><div><span>Куплено билетов</span><strong>{account.ticket_count}</strong></div><div><span>Выигрышных билетов</span><strong>{account.winning_ticket_count}</strong></div><div><span>Участие в тиражах</span><strong>{formatCas(account.total_spent)}</strong></div></section>
+    <section className="account-scoreline"><article><span>В игре сейчас</span><strong>{account.active_ticket_count}</strong></article><article><span>Процент выигрышей</span><strong>{winRate}%</strong></article><article><span>Итог</span><strong className={net >= 0 ? "positive" : "negative"}>{net >= 0 ? "+" : "−"}{formatCas(Math.abs(net))}</strong></article></section>
+    <section className="account-ledger"><header><span>Ваша игровая история</span><small>За всё время</small></header><div><span>Всего билетов</span><strong>{account.ticket_count}</strong></div><div><span>Выигрышных билетов</span><strong>{account.winning_ticket_count}</strong></div><div><span>Потрачено</span><strong>{formatCas(account.total_spent)}</strong></div><div><span>Выиграно</span><strong>{formatCas(account.total_won)}</strong></div><div><span>Самый крупный выигрыш</span><strong>{formatCas(account.best_win)}</strong></div></section>
+    <section className="account-favorites"><header><span>Ваш игровой почерк</span><small>По всем билетам</small></header><div><span>Любимая лотерея</span><strong>{account.favorite_lottery_name ?? "Пока определяется"}</strong></div><div><span>Чаще всего выбираете</span>{account.favorite_numbers?.length ? <p>{account.favorite_numbers.map((value) => <i key={value}>{favoriteOffset && value > favoriteOffset ? `★${value - favoriteOffset}` : value}</i>)}</p> : <strong>Пока мало данных</strong>}</div></section>
     <section className="notification-settings"><header><div><span>{copy.notifications.title}</span><strong>{preferences.telegram_enabled ? copy.notifications.enabled : copy.notifications.disabled}</strong></div><i className={preferences.telegram_enabled ? "enabled" : ""} /></header><p>{copy.notifications.explanation}</p>{preferences.telegram_enabled ? <button className="secondary-button notification-toggle" onClick={() => onSavePreferences({ telegram_enabled: false, draw_results_enabled: true, inactivity_reminders_enabled: true })} type="button">{copy.notifications.disable}</button> : <PrimaryButton onClick={onEnableTelegram}>{copy.notifications.enable}</PrimaryButton>}</section>
   </div>;
 }
@@ -247,6 +286,9 @@ export default function App({ initData, localDev = false }: AppProps) {
   const [liveFeed, setLiveFeed] = useState<LiveFeed | null>(null);
   const [fastFeed, setFastFeed] = useState<LiveFeed | null>(null);
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [ticketTotal, setTicketTotal] = useState(0);
+  const [ticketsHaveMore, setTicketsHaveMore] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [cart, setCart] = useState<CartTicket[]>(() => loadCart(cartTtl));
   const [pickerLottery, setPickerLottery] = useState<Lottery | null>(null);
   const [pickerInitialNumbers, setPickerInitialNumbers] = useState<number[]>([]);
@@ -333,8 +375,26 @@ export default function App({ initData, localDev = false }: AppProps) {
   }, [authenticated, refreshDashboard]);
   useEffect(() => {
     if (view !== "account" || accountView !== "tickets" || !authenticated) return;
-    miniAppApi.tickets(initData, ticketView, ticketLotteryFilter, ticketWinsOnly).then(setTickets).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Не удалось загрузить билеты.")).finally(() => setTicketsLoading(false));
+    miniAppApi.tickets(initData, ticketView, ticketLotteryFilter, ticketWinsOnly).then((page) => {
+      setTickets(page.tickets);
+      setTicketTotal(page.total);
+      setTicketsHaveMore(page.has_more);
+    }).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Не удалось загрузить билеты.")).finally(() => setTicketsLoading(false));
   }, [accountView, authenticated, initData, ticketLotteryFilter, ticketView, ticketWinsOnly, view]);
+
+  const loadMoreTickets = async () => {
+    setTicketsLoading(true);
+    try {
+      const page = await miniAppApi.tickets(initData, ticketView, ticketLotteryFilter, ticketWinsOnly, tickets.length);
+      setTickets((current) => [...current, ...page.tickets]);
+      setTicketTotal(page.total);
+      setTicketsHaveMore(page.has_more);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Не удалось загрузить следующую страницу билетов.");
+    } finally {
+      setTicketsLoading(false);
+    }
+  };
   useEffect(() => {
     if (view !== "account" || accountView !== "notifications" || !authenticated) return;
     miniAppApi.notifications(initData).then(async (items) => {
@@ -573,6 +633,7 @@ export default function App({ initData, localDev = false }: AppProps) {
     {(error || notice) && <button className={`toast ${error ? "error" : "success"}`} onClick={() => { setError(null); setNotice(null); }} type="button"><span>{error ? "!" : "✓"}</span>{error ?? notice}<Icon name="close" /></button>}
     {showNotificationPrompt && <div className="permission-backdrop"><section className="permission-card"><div className="permission-mark"><Icon name="profile" /></div><span className="eyebrow">{copy.notifications.promptEyebrow}</span><h2>{copy.notifications.promptTitle}</h2><p>{copy.notifications.promptText}</p><PrimaryButton onClick={() => void enableTelegramNotifications()}>{copy.notifications.enable}</PrimaryButton><button className="permission-later" onClick={dismissNotificationPrompt} type="button">{copy.notifications.promptLater}</button></section></div>}
     {purchaseConfirmation && <PurchaseConfirmation count={purchaseConfirmation.count} cost={purchaseConfirmation.cost} onClose={() => setPurchaseConfirmation(null)} onHome={() => { setPurchaseConfirmation(null); setPickerLottery(null); setView("home"); }} onTickets={() => { setPurchaseConfirmation(null); setTicketsLoading(true); setView("account"); setAccountView("tickets"); setTicketView("active"); }} />}
+    {selectedTicket && <TicketDetail lottery={dashboard.lotteries.find((item) => item.code === selectedTicket.lottery_code)} onClose={() => setSelectedTicket(null)} ticket={selectedTicket} />}
 
     {view === "home" && <section className="view-content home-view" key="home">
       {nearestLottery && <NextDraw key={nearestLottery.code} lottery={nearestLottery} nearest now={serverNow} onLive={() => { setLiveLoading(true); setView("live"); }} onPlay={() => void openLottery(nearestLottery.code)} />}
@@ -595,7 +656,7 @@ export default function App({ initData, localDev = false }: AppProps) {
       <div className="page-title account-title"><h1>{copy.account.title}</h1><p>{copy.account.subtitle}</p></div>
       <div className="account-tabs"><button className={accountView === "overview" ? "selected" : ""} onClick={() => { selectionHaptic(); setAccountView("overview"); void refreshAccount(); }} type="button">Обзор</button><button className={accountView === "tickets" ? "selected" : ""} onClick={() => { selectionHaptic(); setTicketsLoading(true); setAccountView("tickets"); }} type="button">Билеты{account?.active_ticket_count ? <small>{account.active_ticket_count}</small> : null}</button><button aria-label={account?.unread_notification_count ? "Уведомления: есть непрочитанные" : "Уведомления"} className={accountView === "notifications" ? "selected" : ""} onClick={() => { selectionHaptic(); setAccountView("notifications"); }} type="button">Уведомления{account?.unread_notification_count ? <small className="notification-dot" /> : null}</button></div>
       {accountView === "overview" && (account ? <AccountOverview account={account} onEnableTelegram={() => void enableTelegramNotifications()} onSavePreferences={(preferences) => void saveNotificationPreferences(preferences)} /> : <div className="skeleton account-skeleton" />)}
-      {accountView === "tickets" && <><div className={`segmented-control ${ticketView}`}><i /><button className={ticketView === "active" ? "selected" : ""} onClick={() => { selectionHaptic(); setTicketsLoading(true); setTicketView("active"); }} type="button">Активные</button><button className={ticketView === "history" ? "selected" : ""} onClick={() => { selectionHaptic(); setTicketsLoading(true); setTicketView("history"); }} type="button">История</button></div><div className="ticket-filters"><select aria-label="Фильтр по лотерее" value={ticketLotteryFilter} onChange={(event) => { setTicketsLoading(true); setTicketLotteryFilter(event.target.value); }}><option value="">Все лотереи</option>{dashboard.lotteries.map((lottery) => <option key={lottery.code} value={lottery.code}>{lottery.name}</option>)}</select>{ticketView === "history" && <button aria-pressed={ticketWinsOnly} className={ticketWinsOnly ? "active" : ""} onClick={() => { setTicketsLoading(true); setTicketWinsOnly((value) => !value); }} type="button">Только выигрыши</button>}</div>{ticketsLoading ? <div className="ticket-skeletons"><div className="skeleton ticket-skeleton" /><div className="skeleton ticket-skeleton" /></div> : tickets.length ? <TicketGroups tickets={tickets} /> : <EmptyState title={ticketView === "active" ? "Нет активных билетов" : "История пока пуста"} text={ticketView === "active" ? "Выберите лотерею и соберите свою комбинацию." : "Завершённые билеты появятся после розыгрыша."} action={ticketView === "active" && firstAvailable ? { label: "Выбрать лотерею", onClick: () => setView("home") } : undefined} />}{ticketView === "active" && firstAvailable && !ticketsLoading && tickets.length > 0 && <PrimaryButton className="sticky-action" onClick={() => void openLottery(firstAvailable.code)}>Ещё один билет</PrimaryButton>}</>}
+      {accountView === "tickets" && <><div className={`segmented-control ${ticketView}`}><i /><button className={ticketView === "active" ? "selected" : ""} onClick={() => { selectionHaptic(); setTicketsLoading(true); setTicketView("active"); }} type="button">Активные</button><button className={ticketView === "history" ? "selected" : ""} onClick={() => { selectionHaptic(); setTicketsLoading(true); setTicketView("history"); }} type="button">История</button></div><div className="ticket-filters"><select aria-label="Фильтр по лотерее" value={ticketLotteryFilter} onChange={(event) => { setTicketsLoading(true); setTicketLotteryFilter(event.target.value); }}><option value="">Все лотереи</option>{dashboard.lotteries.map((lottery) => <option key={lottery.code} value={lottery.code}>{lottery.name}</option>)}</select>{ticketView === "history" && <button aria-pressed={ticketWinsOnly} className={ticketWinsOnly ? "active" : ""} onClick={() => { setTicketsLoading(true); setTicketWinsOnly((value) => !value); }} type="button">Только выигрыши</button>}<span>{ticketTotal} {plural(ticketTotal, "билет", "билета", "билетов")}</span></div>{ticketsLoading && !tickets.length ? <div className="ticket-skeletons"><div className="skeleton ticket-skeleton" /><div className="skeleton ticket-skeleton" /></div> : tickets.length ? <><TicketGroups active={ticketView === "active"} lotteries={dashboard.lotteries} now={serverNow} onOpen={setSelectedTicket} tickets={tickets} />{ticketsHaveMore && <button className="load-more-tickets" disabled={ticketsLoading} onClick={() => void loadMoreTickets()} type="button">{ticketsLoading ? "Загружаем…" : `Показать ещё · ${tickets.length} из ${ticketTotal}`}</button>}</> : <EmptyState title={ticketView === "active" ? "Нет активных билетов" : "История пока пуста"} text={ticketView === "active" ? "Выберите лотерею и соберите свою комбинацию." : "Завершённые билеты появятся после розыгрыша."} action={ticketView === "active" && firstAvailable ? { label: "Выбрать лотерею", onClick: () => setView("home") } : undefined} />}{ticketView === "active" && firstAvailable && !ticketsLoading && tickets.length > 0 && <PrimaryButton className="sticky-action" onClick={() => void openLottery(firstAvailable.code)}>Ещё один билет</PrimaryButton>}</>}
       {accountView === "notifications" && <NotificationCenter notifications={notifications} onPlay={() => firstAvailable ? void openLottery(firstAvailable.code) : setView("home")} onTickets={() => { setTicketsLoading(true); setAccountView("tickets"); }} />}
     </section>}
 

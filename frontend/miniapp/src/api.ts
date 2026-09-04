@@ -1,4 +1,4 @@
-import type { Account, Dashboard, Favorite, LiveFeed, NotificationPreferences, PurchaseResult, Ticket, UserNotification } from "./types";
+import type { Account, Dashboard, Favorite, LiveFeed, NotificationPreferences, PurchaseResult, TicketPage, UserNotification } from "./types";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "";
 
@@ -80,15 +80,16 @@ export const miniAppApi = {
       }
     }
   },
-  tickets: async (initData: string, state: "active" | "history", lotteryCode = "", winsOnly = false) => {
+  tickets: async (initData: string, state: "active" | "history", lotteryCode = "", winsOnly = false, offset = 0) => {
     const params = new URLSearchParams({ state });
     if (lotteryCode) params.set("lottery_code", lotteryCode);
     if (winsOnly) params.set("wins_only", "true");
-    const response = await request<{ tickets: Ticket[] }>(
+    params.set("limit", "100");
+    params.set("offset", String(offset));
+    return request<TicketPage>(
       `/api/v1/miniapp/tickets?${params.toString()}`,
       initData,
     );
-    return response.tickets;
   },
   purchase: (
     initData: string,

@@ -159,7 +159,7 @@ beforeEach(() => {
   vi.mocked(miniAppApi.markNotificationsRead).mockResolvedValue();
   vi.mocked(miniAppApi.live).mockResolvedValue({ server_time: new Date().toISOString(), latest_completed: null, next_scheduled: null, recent_completed: [] });
   vi.mocked(miniAppApi.liveStream).mockImplementation(async () => undefined);
-  vi.mocked(miniAppApi.tickets).mockResolvedValue([]);
+  vi.mocked(miniAppApi.tickets).mockResolvedValue({ tickets: [], total: 0, has_more: false });
   vi.mocked(miniAppApi.favorites).mockResolvedValue([]);
   vi.mocked(miniAppApi.purchase).mockResolvedValue({
     operation_id: "operation",
@@ -433,7 +433,7 @@ it("renders losing history as neutral and winning history as rewarded", async ()
       winning_numbers: [5, 6, 7, 8],
     },
   ];
-  vi.mocked(miniAppApi.tickets).mockResolvedValue(history);
+  vi.mocked(miniAppApi.tickets).mockResolvedValue({ tickets: history, total: history.length, has_more: false });
   render(<App initData="signed" />);
   fireEvent.click(await screen.findByRole("button", { name: "Моё" }));
   fireEvent.click(await screen.findByRole("button", { name: "Билеты" }));
@@ -444,4 +444,10 @@ it("renders losing history as neutral and winning history as rewarded", async ()
   const winningTicket = screen.getByText("Билет #0466").closest(".ticket-card");
   expect(within(losingTicket as HTMLElement).getByText("0 CAS").closest(".ticket-result")).toHaveClass("loss");
   expect(within(winningTicket as HTMLElement).getByText("+300 CAS").closest(".ticket-result")).toHaveClass("win");
+  fireEvent.click(winningTicket as HTMLElement);
+  const fullTicket = await screen.findByRole("dialog", { name: "Билет 466" });
+  expect(within(fullTicket).getByText("Выигрыш: 300 CAS")).toBeInTheDocument();
+  expect(fullTicket.querySelectorAll(".paper-number-field i.matched")).toHaveLength(3);
+  fireEvent.click(within(fullTicket).getByRole("button", { name: "Закрыть билет" }));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });

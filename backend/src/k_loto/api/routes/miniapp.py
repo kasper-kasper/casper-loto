@@ -98,6 +98,7 @@ class TicketResponse(BaseModel):
     matches: int | None
     prize_amount: int
     winning_numbers: list[int] | None
+    draw_ticket_count: int
 
 
 class DashboardResponse(BaseModel):
@@ -129,6 +130,9 @@ class AccountResponse(BaseModel):
     total_spent: int
     total_won: int
     best_win: int
+    favorite_lottery_code: str | None
+    favorite_lottery_name: str | None
+    favorite_numbers: list[int]
     unread_notification_count: int
     notification_preferences: NotificationPreferencesResponse
 
@@ -149,6 +153,8 @@ class ReadNotificationsRequest(BaseModel):
 
 class TicketListResponse(BaseModel):
     tickets: list[TicketResponse]
+    total: int
+    has_more: bool
 
 
 class FavoriteRequest(BaseModel):
@@ -321,6 +327,7 @@ def _ticket_response(item: MiniAppTicket) -> TicketResponse:
         matches=item.matches,
         prize_amount=item.prize_amount,
         winning_numbers=(list(item.winning_numbers) if item.winning_numbers else None),
+        draw_ticket_count=item.draw_ticket_count,
     )
 
 
@@ -405,6 +412,9 @@ async def account(
         total_spent=item.total_spent,
         total_won=item.total_won,
         best_win=item.best_win,
+        favorite_lottery_code=item.favorite_lottery_code,
+        favorite_lottery_name=item.favorite_lottery_name,
+        favorite_numbers=list(item.favorite_numbers),
         unread_notification_count=item.unread_notification_count,
         notification_preferences=NotificationPreferencesResponse(
             telegram_enabled=item.notification_preferences.telegram_enabled,
@@ -533,14 +543,29 @@ async def tickets(
     state: Annotated[Literal["active", "history"], Query()] = "active",
     lottery_code: Annotated[str | None, Query(max_length=32)] = None,
     wins_only: Annotated[bool, Query()] = False,
+    limit: Annotated[int, Query(ge=1, le=200)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ) -> TicketListResponse:
-    items = await MiniAppQueryService(session).tickets(
+    service = MiniAppQueryService(session)
+    items = await service.tickets(
+        user.id,
+        active=state == "active",
+        limit=limit,
+        offset=offset,
+        lottery_code=lottery_code,
+        wins_only=wins_only,
+    )
+    total = await service.ticket_count(
         user.id,
         active=state == "active",
         lottery_code=lottery_code,
         wins_only=wins_only,
     )
-    return TicketListResponse(tickets=[_ticket_response(item) for item in items])
+    return TicketListResponse(
+        tickets=[_ticket_response(item) for item in items],
+        total=total,
+        has_more=offset + len(items) < total,
+    )
 
 
 async def _favorite_lottery(session: AsyncSession, lottery_code: str) -> UUID:

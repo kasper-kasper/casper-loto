@@ -39,6 +39,7 @@ export interface Ticket {
   matches: number | null;
   prize_amount: number;
   winning_numbers: number[] | null;
+  draw_ticket_count?: number;
 }
 
 export interface Dashboard {
@@ -126,8 +127,17 @@ export interface Account {
   total_spent: number;
   total_won: number;
   best_win: number;
+  favorite_lottery_code?: string | null;
+  favorite_lottery_name?: string | null;
+  favorite_numbers?: number[];
   unread_notification_count: number;
   notification_preferences: NotificationPreferences;
+}
+
+export interface TicketPage {
+  tickets: Ticket[];
+  total: number;
+  has_more: boolean;
 }
 
 export interface UserNotification {
