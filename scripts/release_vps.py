@@ -242,11 +242,14 @@ def main() -> None:
             run_remote(
                 client,
                 "Production health",
-                f"cd /opt/k-loto && {compose} exec -T api python -c "
+                "set -eu; cd /opt/k-loto; attempt=0; "
+                f"until {compose} exec -T api python -c "
                 '"import urllib.request; '
-                "urllib.request.urlopen('http://localhost:8000/health', timeout=5)"
-                + '" '
-                f"&& {compose} ps",
+                "urllib.request.urlopen('http://localhost:8000/health', timeout=3)"
+                + '" >/dev/null 2>&1; do '
+                "attempt=$((attempt + 1)); "
+                'test "$attempt" -lt 30 || exit 1; sleep 2; done; '
+                f"{compose} ps",
                 timeout=120,
             )
         finally:
