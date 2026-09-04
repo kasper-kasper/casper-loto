@@ -16,6 +16,21 @@ from k_loto.infrastructure.database.models import (
 )
 from k_loto.infrastructure.database.session import engine, session_factory
 
+FAST_SALES_CUTOFF_SECONDS = 8
+
+
+def fast_schedule(anchor_time: str) -> dict[str, object]:
+    """Return the canonical Fast schedule without losing its short cutoff."""
+    return {
+        "type": "interval",
+        "interval_minutes": 9,
+        "anchor_time": anchor_time,
+        "future_draw_count": 2,
+        "category": "fast",
+        "live_enabled": True,
+        "sales_cutoff_seconds": FAST_SALES_CUTOFF_SECONDS,
+    }
+
 
 async def ensure_lottery(
     code: str,
@@ -115,14 +130,7 @@ async def main() -> None:
             pick,
             maximum,
             1,
-            {
-                "type": "interval",
-                "interval_minutes": 9,
-                "anchor_time": anchor_time,
-                "future_draw_count": 2,
-                "category": "fast",
-                "live_enabled": True,
-            },
+            fast_schedule(anchor_time),
             ruleset_code,
         )
     await engine.dispose()

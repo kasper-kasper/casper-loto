@@ -187,7 +187,7 @@ async function openWeeklyFromStorefront(): Promise<void> {
 it("requires a signed Telegram launch", () => {
   render(<App initData="" />);
 
-  expect(screen.getByText("Откройте K-Loto в Telegram")).toBeInTheDocument();
+  expect(screen.getByText("Откройте Kasper Loto в Telegram")).toBeInTheDocument();
 });
 
 it("opens a loopback development session outside Telegram", async () => {
