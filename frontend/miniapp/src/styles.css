@@ -60,6 +60,10 @@ button:disabled { cursor: not-allowed; opacity: .42; }
 .balance span { display: block; color: var(--text-muted); font-size: 8px; font-weight: 750; letter-spacing: .11em; text-transform: uppercase; }
 .balance strong { display: block; margin-top: 2px; overflow: hidden; color: var(--gold-bright); font-size: clamp(10px, 3vw, 13px); font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
 .dev-badge { min-height: 36px; padding: 0 8px; border: 1px solid rgba(239,199,110,.2); border-radius: 11px; color: var(--gold); background: rgba(239,199,110,.07); font-size: 8px; font-weight: 850; }
+.brand-lockup { display: flex; width: 138px; height: 42px; flex: 0 0 auto; align-items: center; }
+.brand-logo-horizontal { display: block; width: 138px; height: auto; }
+.brand-logo-symbol { display: none; width: 40px; height: 40px; }
+.standalone-brand-mark { width: 64px; height: 64px; }
 
 .view-content { display: grid; gap: 14px; animation: page-in var(--normal) var(--ease) both; }
 .hero-copy { margin: 2px 2px 8px; }
@@ -360,6 +364,9 @@ h1, h2, h3, p { margin-top: 0; }
 }
 @media (max-width: 359px) {
   :root { --space: 14px; }
+  .brand-lockup { width: 40px; }
+  .brand-logo-horizontal { display: none; }
+  .brand-logo-symbol { display: block; }
   .wordmark > span { width: 35px; height: 35px; font-size: 18px; }
   .wordmark > div { padding: 7px 9px 7px 10px; font-size: 16px; }
   .balance { min-width: 100px; padding-inline: 8px; }

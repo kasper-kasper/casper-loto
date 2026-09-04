@@ -202,8 +202,8 @@ it("renders server-authoritative balance and lottery states", async () => {
   const { container } = render(<App initData="signed" />);
 
   expect(await screen.findByText("5 000 CAS")).toBeInTheDocument();
-  expect(screen.getByLabelText("Каспер")).toBeInTheDocument();
-  expect(container.querySelector(".wordmark")?.textContent).toBe("Каспер");
+  expect(screen.getByLabelText("Kasper Loto")).toBeInTheDocument();
+  expect(container.querySelector(".brand-logo-horizontal")).toHaveAttribute("src", "/brand/kasper-loto-horizontal.svg");
   expect(screen.getAllByText("10 000 CAS").length).toBeGreaterThan(0);
   expect(screen.getByRole("button", { name: "Weekly 5/20: выбрать числа" })).toBeEnabled();
   expect(screen.getByRole("button", { name: /Проверить продажи.*—/ })).toBeDisabled();
