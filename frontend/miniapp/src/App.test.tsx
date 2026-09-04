@@ -261,6 +261,9 @@ it("selects five numbers, adds a ticket and buys the cart atomically", async () 
   fireEvent.click(screen.getByRole("button", { name: "В корзину" }));
 
   expect(screen.getByText("1 комбинация")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Добавить комбинацию" }));
+  expect(screen.getByLabelText("Расписание лотерей")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Корзина: 1 комбинация" }));
   fireEvent.click(screen.getByRole("button", { name: "Купить 1 комб." }));
 
   await waitFor(() =>
@@ -273,8 +276,11 @@ it("selects five numbers, adds a ticket and buys the cart atomically", async () 
     ),
   );
   expect(await screen.findByText("Билет уже участвует")).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Купить ещё" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "На главную" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Мои билеты" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "На главную" }));
+  expect(screen.getByLabelText("Расписание лотерей")).toBeInTheDocument();
+  expect(document.querySelector(".number-grid")).toBeNull();
 });
 
 it("builds a large cart and sends one hundred tickets in one operation", async () => {
@@ -285,6 +291,7 @@ it("builds a large cart and sends one hundred tickets in one operation", async (
   expect(await screen.findByText("50 комбинаций")).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "Добавить комбинацию" }));
+  fireEvent.click(screen.getByRole("button", { name: /Выбрать числа.*100 CAS/ }));
   fireEvent.click(await screen.findByRole("button", { name: "+50" }));
   expect(await screen.findByText("100 комбинаций")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Купить 100 комб." }));

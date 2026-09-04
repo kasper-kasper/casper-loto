@@ -47,7 +47,7 @@ export const MINIAPP_TEXTS = {
     eyebrow: "Сегодня у нас",
     headlineFirst: "Выберите числа.",
     headlineSecond: "Остальное — за мной.",
-    monthlyPayout: "Бабла скинул бы на карту",
+    monthlyPayout: "Каспер выплатил игрокам за месяц",
     recentResultEyebrow: "Последний результат",
     recentResultTitle: "Недавний тираж",
   },
