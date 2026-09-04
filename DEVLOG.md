@@ -23,7 +23,7 @@
 - migration: `0030_fast_cutoff_fix`;
 - tests: 170 backend + 39 Mini App + 12 Admin Panel passed; Ruff, mypy, lint,
   typecheck и production builds passed;
-- commit: будет указан после фиксации релиза.
+- commit: `49ca81f`.
 
 ## [1.16.2] - 2026-09-04
 
