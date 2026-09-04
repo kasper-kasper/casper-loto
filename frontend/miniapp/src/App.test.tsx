@@ -157,8 +157,8 @@ beforeEach(() => {
 
 afterEach(() => vi.unstubAllGlobals());
 
-async function selectWeekly(): Promise<void> {
-  fireEvent.click(await screen.findByRole("button", { name: /^Weekly 5\/20/ }));
+async function openWeeklyFromStorefront(): Promise<void> {
+  fireEvent.click(await screen.findByRole("button", { name: "Weekly 5/20: выбрать числа" }));
 }
 
 it("requires a signed Telegram launch", () => {
@@ -181,11 +181,42 @@ it("renders server-authoritative balance and lottery states", async () => {
   expect(await screen.findByText("5 000 CAS")).toBeInTheDocument();
   expect(screen.getByLabelText("Каспер")).toBeInTheDocument();
   expect(container.querySelector(".wordmark")?.textContent).toBe("Каспер");
-  await selectWeekly();
   expect(screen.getAllByText("10 000 CAS").length).toBeGreaterThan(0);
-  expect(screen.getByRole("button", { name: /Выбрать числа.*100 CAS/ })).toBeEnabled();
-  fireEvent.click(screen.getByRole("button", { name: /^ПЛЛ/ }));
+  expect(screen.getByRole("button", { name: "Weekly 5/20: выбрать числа" })).toBeEnabled();
   expect(screen.getByRole("button", { name: /Проверить продажи.*—/ })).toBeDisabled();
+});
+
+it("orders the storefront chronologically and keeps Weekly as the final showcase", async () => {
+  const template = dashboard.lotteries[0];
+  const showcaseDashboard: Dashboard = {
+    ...dashboard,
+    lotteries: [
+      template,
+      dashboard.lotteries[1],
+      { ...template, code: "pss", name: "ПСС-Лото", scheduled_at: "2026-08-15T16:00:00Z" },
+      { ...template, code: "khan", name: "ХАН-Лото", scheduled_at: "2026-08-15T17:00:00Z" },
+      { ...template, code: "grob", name: "ГРОБ", scheduled_at: "2026-08-15T18:00:00Z" },
+      { ...template, code: "september", name: "3 сентября", scheduled_at: "2026-08-15T19:00:00Z" },
+      ...dashboard.lotteries.slice(2),
+    ],
+  };
+  vi.mocked(miniAppApi.dashboard).mockResolvedValue(showcaseDashboard);
+  render(<App initData="signed" />);
+
+  const storefront = await screen.findByLabelText("Витрина лотерей");
+  expect(within(storefront).getAllByRole("heading").map((heading) => heading.textContent)).toEqual([
+    "ПСС-Лото", "ХАН-Лото", "ГРОБ", "3 сентября", "Weekly 5/20",
+  ]);
+  expect(screen.queryByText("Каспер выплатил игрокам за месяц")).not.toBeInTheDocument();
+  expect(screen.queryByText("Случайная комбинация")).not.toBeInTheDocument();
+});
+
+it("shows unread notifications as a red dot without exposing the count", async () => {
+  vi.mocked(miniAppApi.account).mockResolvedValue({ ...account, unread_notification_count: 7 });
+  const { container } = render(<App initData="signed" />);
+
+  expect(await screen.findByRole("button", { name: "Моё: есть непрочитанные уведомления" })).toBeInTheDocument();
+  expect(container.querySelector(".bottom-nav .notification-dot")?.textContent).toBe("");
 });
 
 it("renders the GROB identity and its three-of-sixteen picker", async () => {
@@ -232,8 +263,7 @@ it("refreshes a stale sales state before opening the number picker", async () =>
   vi.mocked(miniAppApi.dashboard).mockResolvedValueOnce(stale).mockResolvedValue(dashboard);
   render(<App initData="signed" />);
 
-  await selectWeekly();
-  fireEvent.click(await screen.findByRole("button", { name: /Проверить продажи.*100 CAS/ }));
+  fireEvent.click(await screen.findByRole("button", { name: "Weekly 5/20: проверить продажи" }));
 
   expect(await screen.findByRole("button", { name: "Случайные числа" })).toBeInTheDocument();
   expect(miniAppApi.dashboard).toHaveBeenCalledTimes(2);
@@ -249,8 +279,7 @@ it("opens the permanent live tab and requests the server clock", async () => {
 
 it("selects five numbers, adds a ticket and buys the cart atomically", async () => {
   render(<App initData="signed" />);
-  await selectWeekly();
-  fireEvent.click(await screen.findByRole("button", { name: /Выбрать числа.*100 CAS/ }));
+  await openWeeklyFromStorefront();
 
   await waitFor(() => expect(document.querySelector(".number-grid")).not.toBeNull());
   const grid = document.querySelector(".number-grid");
@@ -262,7 +291,7 @@ it("selects five numbers, adds a ticket and buys the cart atomically", async () 
 
   expect(screen.getByText("1 комбинация")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Добавить комбинацию" }));
-  expect(screen.getByLabelText("Расписание лотерей")).toBeInTheDocument();
+  expect(screen.getByLabelText("Витрина лотерей")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Корзина: 1 комбинация" }));
   fireEvent.click(screen.getByRole("button", { name: "Купить 1 комб." }));
 
@@ -279,19 +308,18 @@ it("selects five numbers, adds a ticket and buys the cart atomically", async () 
   expect(screen.getByRole("button", { name: "На главную" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Мои билеты" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "На главную" }));
-  expect(screen.getByLabelText("Расписание лотерей")).toBeInTheDocument();
+  expect(screen.getByLabelText("Витрина лотерей")).toBeInTheDocument();
   expect(document.querySelector(".number-grid")).toBeNull();
 });
 
 it("builds a large cart and sends one hundred tickets in one operation", async () => {
   render(<App initData="signed" />);
-  await selectWeekly();
-  fireEvent.click(await screen.findByRole("button", { name: /Выбрать числа.*100 CAS/ }));
+  await openWeeklyFromStorefront();
   fireEvent.click(await screen.findByRole("button", { name: "+50" }));
   expect(await screen.findByText("50 комбинаций")).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "Добавить комбинацию" }));
-  fireEvent.click(screen.getByRole("button", { name: /Выбрать числа.*100 CAS/ }));
+  fireEvent.click(screen.getByRole("button", { name: "Weekly 5/20: выбрать числа" }));
   fireEvent.click(await screen.findByRole("button", { name: "+50" }));
   expect(await screen.findByText("100 комбинаций")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Купить 100 комб." }));
@@ -302,8 +330,7 @@ it("builds a large cart and sends one hundred tickets in one operation", async (
 
 it("offers an explicit prepaid five-draw purchase without enabling it by default", async () => {
   render(<App initData="signed" />);
-  await selectWeekly();
-  fireEvent.click(await screen.findByRole("button", { name: /Выбрать числа.*100 CAS/ }));
+  await openWeeklyFromStorefront();
   fireEvent.click(await screen.findByRole("button", { name: "5 тиражей" }));
   const grid = document.querySelector(".number-grid") as HTMLElement;
   for (const number of [1, 2, 3, 4, 5]) fireEvent.click(within(grid).getByRole("button", { name: String(number) }));
