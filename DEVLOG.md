@@ -29,7 +29,7 @@
 - tests: 171 backend + 40 Mini App + 12 Admin Panel passed; Ruff, mypy, lint,
   typecheck и production builds passed;
 - Alembic: единственная head `0032_classic_prizes`;
-- commit: `pending`.
+- commit: `33ee3be`.
 
 ## [1.17.0] - 2026-09-04
 
