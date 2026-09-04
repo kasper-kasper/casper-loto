@@ -36,7 +36,7 @@
 
 - migration: не требуется, схема базы данных не менялась;
 - tests: 169 backend + 39 Mini App + 12 Admin Panel passed;
-- commit: будет зафиксирован после проверки.
+- commit: `c38d42a`.
 
 ## [1.16.0] - 2026-09-04
 
