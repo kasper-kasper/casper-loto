@@ -288,7 +288,7 @@ it("renders the classic 6 of 36 identity and complete number field", async () =>
       kind: "DAILY",
       numbers_to_pick: 6,
       max_number: 36,
-      ticket_price: 24_000,
+      ticket_price: 48_000,
       jackpot: 33_456_000,
     }],
   };

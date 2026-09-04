@@ -47,7 +47,7 @@ def test_new_three_of_thirty_three_format_needs_no_new_service_math() -> None:
     assert plan.jackpot_closing == 1_000
 
 
-def test_classic_six_of_thirty_six_preserves_daily_payouts() -> None:
+def test_classic_six_of_thirty_six_uses_classic_prize_ladder() -> None:
     assert CLASSIC_6_36_RULES.validate_combination([1, 8, 17, 23, 31, 36]) == (
         1,
         8,
@@ -58,26 +58,33 @@ def test_classic_six_of_thirty_six_preserves_daily_payouts() -> None:
     )
     tickets = [
         SettlementTicket(
-            UUID(int=101), 1, UUID(int=201), (1, 2, 9, 10, 11, 12), 24_000
+            UUID(int=101), 1, UUID(int=201), (1, 2, 9, 10, 11, 12), 48_000
         ),
         SettlementTicket(
-            UUID(int=102), 2, UUID(int=202), (1, 2, 3, 10, 11, 12), 24_000
+            UUID(int=102), 2, UUID(int=202), (1, 2, 3, 10, 11, 12), 48_000
         ),
-        SettlementTicket(UUID(int=103), 3, UUID(int=203), (1, 2, 3, 4, 5, 12), 24_000),
-        SettlementTicket(UUID(int=104), 4, UUID(int=204), (1, 2, 3, 4, 5, 6), 24_000),
+        SettlementTicket(UUID(int=103), 3, UUID(int=203), (1, 2, 3, 4, 11, 12), 48_000),
+        SettlementTicket(UUID(int=104), 4, UUID(int=204), (1, 2, 3, 4, 5, 12), 48_000),
+        SettlementTicket(UUID(int=105), 5, UUID(int=205), (1, 2, 3, 4, 5, 6), 48_000),
     ]
     plan = CLASSIC_6_36_RULES.calculate_settlement(
         tickets,
         (1, 2, 3, 4, 5, 6),
         distribution_balance=0,
         jackpot_balance=33_456_000,
-        reserve_balance=34_000_000,
-        base_jackpot=24_000_000,
+        reserve_balance=40_000_000,
+        base_jackpot=30_000_000,
     )
 
-    assert [item.matches for item in plan.payouts] == [2, 3, 5, 6]
-    assert [item.amount for item in plan.payouts] == [12_000, 72_000, 0, 33_456_000]
-    assert plan.jackpot_closing == 24_000_000
+    assert [item.matches for item in plan.payouts] == [2, 3, 4, 5, 6]
+    assert [item.amount for item in plan.payouts] == [
+        12_000,
+        48_000,
+        480_000,
+        4_800_000,
+        33_456_000,
+    ]
+    assert plan.jackpot_closing == 30_000_000
 
 
 def test_interval_schedule_is_server_anchored_in_moscow() -> None:

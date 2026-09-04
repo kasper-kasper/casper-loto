@@ -1,6 +1,6 @@
 # K-Loto
 
-Current version: **1.17.0 — Классика 6 из 36**.
+Current version: **1.18.0 — Призовая лестница 6 из 36**.
 
 K-Loto is a multi-user lottery platform with integer CAS accounting, an
 immutable transaction ledger, recoverable draw scheduling and nine independent

@@ -371,7 +371,14 @@ CLASSIC_6_36_RULES = LotteryRuleStrategy(
     36,
     2,
     PayoutRatio(1),
-    MappingProxyType({2: PayoutRatio(1, 2), 3: PayoutRatio(3)}),
+    MappingProxyType(
+        {
+            2: PayoutRatio(1, 4),
+            3: PayoutRatio(1),
+            4: PayoutRatio(10),
+            5: PayoutRatio(100),
+        }
+    ),
     None,
     6,
     jackpot_refill_from_reserve=True,

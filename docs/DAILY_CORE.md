@@ -15,10 +15,9 @@ lottery's Admin-configured base.
 
 `khan` keeps its independent draw and ticket numbering but uses the classic
 6/36 format from version 1.17.0. A ticket contains exactly six unique numbers
-from 1 through 36 and retains the existing 24,000 CAS price. Two matches pay
-50% of the ticket price, three pay 300%, four and five pay zero, and all 6/6
-tickets split the current jackpot. The transition jackpot is 33,456,000 CAS;
-the Admin-configured base remains 24,000,000 CAS.
+from 1 through 36 and costs 48,000 CAS. Two matches pay 12,000 CAS, three pay
+48,000 CAS, four pay 480,000 CAS, five pay 4,800,000 CAS, and all 6/6 tickets
+split the current jackpot. The Admin-configured base jackpot is 30,000,000 CAS.
 
 Identical combinations are allowed as separate tickets. RNG uses
 `secrets.SystemRandom`. Empty draws still complete, carry all funds and generate
