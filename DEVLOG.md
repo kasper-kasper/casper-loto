@@ -37,7 +37,7 @@
   typecheck и production builds passed;
 - Alembic: единственная head `0031_khan_classic`; локальный `alembic check`
   недоступен без локального `DATABASE_URL`, миграция будет проверена при релизе;
-- commit: `pending`.
+- commit: `dba77d3`.
 
 ## [1.16.3] - 2026-09-04
 
