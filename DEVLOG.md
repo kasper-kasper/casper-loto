@@ -26,7 +26,7 @@
 
 - migration: не требуется, схема базы данных не менялась;
 - tests: 39 Mini App + 4 точечных backend passed; Mini App lint, typecheck и build passed;
-- commit: будет указан после фиксации релиза.
+- commit: `e3a1f3c`.
 
 ## [1.16.1] - 2026-09-04
 
