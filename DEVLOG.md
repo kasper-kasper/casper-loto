@@ -39,7 +39,7 @@
 - Mini App tests: 37 passed;
 - Admin Panel tests: 11 passed;
 - Ruff, mypy, frontend lint/typecheck/build: passed;
-- commit: `06ed284`.
+- commits: `06ed284`, migration fix `5c450a1`.
 
 ## [1.12.2] - 2026-09-04
 
