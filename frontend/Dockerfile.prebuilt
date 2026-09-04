@@ -1,0 +1,5 @@
+FROM caddy:2.10-alpine
+
+COPY infrastructure/Caddyfile /etc/caddy/Caddyfile
+COPY frontend/admin/dist /srv/admin
+COPY frontend/miniapp/dist /srv/miniapp

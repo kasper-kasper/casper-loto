@@ -352,8 +352,20 @@ export default function App({ initData, localDev = false }: AppProps) {
   }, [authenticated, initData]);
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1_000);
-    return () => window.clearInterval(timer);
+    let timer: number | null = null;
+    const syncClock = () => {
+      if (timer !== null) window.clearInterval(timer);
+      timer = null;
+      if (document.visibilityState !== "visible") return;
+      setNow(Date.now());
+      timer = window.setInterval(() => setNow(Date.now()), 1_000);
+    };
+    syncClock();
+    document.addEventListener("visibilitychange", syncClock);
+    return () => {
+      if (timer !== null) window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", syncClock);
+    };
   }, []);
   useEffect(() => saveCart(cart, cartTtl), [cart, cartTtl]);
   useEffect(() => {
@@ -368,7 +380,9 @@ export default function App({ initData, localDev = false }: AppProps) {
   }, [authenticated, initData, localDev, refreshAccount, refreshDashboard]);
   useEffect(() => {
     if (!authenticated) return;
-    const timer = window.setInterval(() => void refreshDashboard().catch(() => undefined), 15_000);
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") void refreshDashboard().catch(() => undefined);
+    }, 15_000);
     const resync = () => { if (document.visibilityState === "visible") void refreshDashboard().catch(() => undefined); };
     document.addEventListener("visibilitychange", resync);
     return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", resync); };

@@ -5,11 +5,11 @@ Telegram Mini App and Web Admin with Docker Compose in `/opt/k-loto`. The existi
 sslip.io HTTPS endpoint and VPS are sufficient; no extra host or domain is
 required. Port 9443 is used because the VPS VPN owns the standard TLS ports.
 
-Before every schema release, run `scripts/backup_production.sh` and verify a
-non-empty PostgreSQL custom-format dump in the private backup volume. Deployment
-then uploads the reviewed repository, runs `docker compose build` and starts the
-stack. The API container applies Alembic and the idempotent production bootstrap
-before serving traffic.
+Перед каждым выпуском сценарий создаёт PostgreSQL backup. Web-интерфейсы
+компилируются локально и отправляются на VPS уже готовыми: малый сервер больше не
+запускает одновременно TypeScript/Vite и не упирается в память. Backend при
+необходимости по-прежнему собирается на VPS. На сервере настроен swap 2 ГБ как
+страховка от редких пиков; в обычной работе он не используется.
 
 Обычный выпуск выполняется из чистого commit одной командой:
 
@@ -18,9 +18,21 @@ before serving traffic.
 ```
 
 Для выпуска только изменённых сервисов можно указать, например,
-`--services api bot` или `--services gateway`. Сценарий не печатает пароли и
-сам создаёт backup до замены файлов. План без подключения проверяется ключом
-`--dry-run`.
+`--services api bot` или `--services gateway`. Сценарий не печатает пароли,
+показывает каждый этап, ограничивает время зависшей операции и сам создаёт backup
+до замены файлов. Для `gateway` он собирает Mini App и Admin на локальном
+компьютере, а на VPS формирует только лёгкий Caddy-образ. План без подключения
+проверяется ключом `--dry-run`.
+
+Обычное визуальное обновление публикуется так:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\release_vps.py --services gateway
+```
+
+Проверка списка backup через `pg_restore --list` выполняется при backend-релизе.
+Полное пробное восстановление остаётся отдельной периодической проверкой: оно не
+нужно при каждой правке CSS или текста.
 
 Резервная копия считается проверенной только после пробного восстановления в
 одноразовую БД. На VPS команда запускается из `/opt/k-loto`:

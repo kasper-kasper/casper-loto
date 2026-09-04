@@ -1129,6 +1129,16 @@ body::before, body::after { opacity: .12; }
 }
 @media (prefers-reduced-motion: reduce) { .lottery-visual * { animation: none !important; transition: none !important; } }
 
+/* Preserve every visible scene, but stop hidden/off-screen work in Telegram WebView. */
+html.app-backgrounded *, .motion-paused, .motion-paused * { animation-play-state: paused !important; }
+.motion-paused.raster-visual > img, .motion-paused .raster-visual > img { will-change: auto; }
+.storefront-card, .ticket-draw-group, .fast-card { content-visibility: auto; contain-intrinsic-size: auto 440px; }
+
+@media (hover: none) and (pointer: coarse) {
+  .raster-visual .scene-grain { animation-duration: 1.1s; opacity: .05; }
+  .scene-particles > i { animation-duration: 7s; }
+}
+
 /* Cinematic scene layers. Generated artwork stays under a tiny WebP budget. */
 .raster-visual { position: relative; overflow: hidden; isolation: isolate; background: #081026; }
 .raster-visual > img { position: absolute; z-index: 0; inset: -2%; width: 104%; height: 104%; object-fit: cover; object-position: center; will-change: transform; }

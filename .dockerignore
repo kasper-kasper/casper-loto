@@ -9,6 +9,10 @@
 **/*.pyc
 **/node_modules
 **/dist
+!frontend/admin/dist
+!frontend/admin/dist/**
+!frontend/miniapp/dist
+!frontend/miniapp/dist/**
 .env
 .env.*
 !.env.example
