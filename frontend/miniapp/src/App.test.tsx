@@ -278,6 +278,30 @@ it("renders the GROB identity and its three-of-sixteen picker", async () => {
   expect(screen.getByText("Поле захоронений")).toBeInTheDocument();
 });
 
+it("renders the classic 6 of 36 identity and complete number field", async () => {
+  const classicDashboard: Dashboard = {
+    ...dashboard,
+    lotteries: [{
+      ...dashboard.lotteries[0],
+      code: "khan",
+      name: "6 из 36",
+      kind: "DAILY",
+      numbers_to_pick: 6,
+      max_number: 36,
+      ticket_price: 24_000,
+      jackpot: 33_456_000,
+    }],
+  };
+  vi.mocked(miniAppApi.dashboard).mockResolvedValue(classicDashboard);
+  const { container } = render(<App initData="signed" />);
+
+  expect(await screen.findByText("Классика")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: /Выбрать числа/ }));
+  await waitFor(() => expect(container.querySelector(".number-grid")).not.toBeNull());
+  expect(within(container.querySelector(".number-grid") as HTMLElement).getAllByRole("button")).toHaveLength(36);
+  expect(screen.getByText("Выберите 6 чисел")).toBeInTheDocument();
+});
+
 it("refreshes a stale sales state before opening the number picker", async () => {
   const stale: Dashboard = {
     ...dashboard,

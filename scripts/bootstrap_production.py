@@ -106,7 +106,6 @@ async def main() -> None:
     for code, name, slots in (
         ("pll", "ПЛЛ-лото", ["02:22", "13:45"]),
         ("pss", "ПСС-Лото", ["12:00", "20:30"]),
-        ("khan", "ХАН-Лото", ["09:00", "18:00"]),
     ):
         await ensure_lottery(
             code,
@@ -118,6 +117,16 @@ async def main() -> None:
             {"slots": slots},
             "daily_4_15",
         )
+    await ensure_lottery(
+        "khan",
+        "6 из 36",
+        LotteryKind.DAILY,
+        6,
+        36,
+        2,
+        {"slots": ["09:00", "18:00"]},
+        "classic_6_36",
+    )
     for code, name, anchor_time, ruleset_code, pick, maximum in (
         ("flash", "FLASH", "00:00", "fast_3_15", 3, 15),
         ("shadow", "SHADOW", "00:03", "fast_3_15", 3, 15),

@@ -10,8 +10,10 @@ These rules apply to every human or AI change in this repository.
    redact them from logs and documentation.
 3. Do not invent unresolved business requirements. Record them in
    `docs/OPEN_DECISIONS.md` and wait for the owner.
-4. Business history is immutable. Purchased tickets and completed draws are
-   never edited or deleted. Corrections use explicit compensating/audit records.
+4. Completed business history is immutable. Purchased tickets are never deleted.
+   With explicit owner approval, tickets in future draws may receive a full
+   ledgered refund and move to `REFUNDED` during a format transition. Every such
+   correction must use explicit compensating ledger and audit records.
 5. A completed draw is never modified, including by an administrator.
 6. Draw recovery is mandatory. Process missed draws chronologically and make
    scheduler/draw invocations idempotent with database transactions, locks and

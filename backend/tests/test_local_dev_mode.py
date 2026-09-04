@@ -178,6 +178,9 @@ async def test_dev_bootstrap_creates_playable_ledgered_fixture() -> None:
     draws = [item for item in fake.added if isinstance(item, Draw)]
     ledger = [item for item in fake.added if isinstance(item, LedgerTransaction)]
     assert {item.code for item in lotteries} == {"weekly", "pll", "pss", "khan"}
+    khan = next(item for item in lotteries if item.code == "khan")
+    assert (khan.name, khan.ruleset_code) == ("6 из 36", "classic_6_36")
+    assert (khan.numbers_to_pick, khan.max_number) == (6, 36)
     assert len(draws) == 4
     assert balance.amount == 100_000
     assert len(ledger) == 10

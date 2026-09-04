@@ -128,6 +128,7 @@ function NextDraw({ lottery, now, nearest, onLive, onPlay }: { lottery: Lottery;
   const startsIn = lottery.scheduled_at ? new Date(lottery.scheduled_at).getTime() - now : Infinity;
   return <motion.section animate={{ opacity: 1, y: 0 }} className={`next-draw featured-draw lottery-${lottery.code}`} initial={{ opacity: 0, y: 10 }} transition={{ duration: .34, ease: [0.2, 0.75, 0.25, 1] }}>
     <div className="hero-scene"><LotteryVisual code={lottery.code} /></div>
+    {lottery.code === "khan" && <span className="classic-badge">Классика</span>}
     <header className="draw-product-bar"><span><i />{nearest ? "Ближайший тираж" : "Выбранная лотерея"}</span><b>{lotteryKindLabel(lottery)} · {lotteryFormat(lottery)}</b></header>
     <div className="draw-product-title"><div><strong>{lottery.name}</strong><span>{lottery.draw_number ? formatDrawLabel(lottery.code, lottery.draw_number) : "Расписание готовится"}</span></div></div>
     <div className="featured-jackpot"><span>{lottery.code === "september" ? copy.september.mainPrizeLabel : "Джекпот"}</span><strong>{formatCas(lottery.jackpot)}</strong></div>
@@ -147,6 +148,7 @@ function LotteryStorefront({ lotteries, now, onPlay }: { lotteries: Lottery[]; n
       return <article className={`storefront-card lottery-${lottery.code} ${weekly ? "storefront-weekly" : ""}`} key={lottery.code}>
         <div className="storefront-scene"><LotteryVisual animated={false} code={lottery.code} /></div>
         <div className="storefront-veil" />
+        {lottery.code === "khan" && <span className="classic-badge">Классика</span>}
         <header><span>{weekly ? "Главная лотерея недели" : `Далее · ${String(index + 1).padStart(2, "0")}`}</span><time>{lottery.scheduled_at ? formatMoscowTime(lottery.scheduled_at) : "—"}</time></header>
         <div className="storefront-copy"><small>{lotteryKindLabel(lottery)} · {lotteryFormat(lottery)}</small><h2>{lottery.name}</h2><p>{lottery.draw_number ? formatDrawLabel(lottery.code, lottery.draw_number) : "Расписание готовится"}</p></div>
         <div className="storefront-stats"><div><span>{lottery.code === "september" ? copy.september.mainPrizeLabel : "Джекпот"}</span><strong>{formatCas(lottery.jackpot)}</strong></div><div><span>До тиража</span><strong>{countdown(lottery.scheduled_at, now)}</strong></div></div>
@@ -192,7 +194,7 @@ function NumberPicker({ lottery, purchasing, success, initialNumbers = [], favor
     september: "Три главы одного сентябрьского вечера",
     pll: "Ночная координатная сетка",
     pss: "Тишина северного озера перед грозой",
-    khan: "Четыре знака для одного тиража",
+    khan: "Классический тираж: шесть чисел из тридцати шести",
     weekly: "Два независимых поля. Один грандиозный шанс.",
     grob: "Три числа. Одна аккуратно оформленная могила.",
   };
@@ -311,6 +313,12 @@ export default function App({ initData, localDev = false }: AppProps) {
 
   const applyDashboard = useCallback((value: Dashboard) => {
     setDashboard(value);
+    setCart((current) => current.filter((ticket) => {
+      const lottery = value.lotteries.find((item) => item.code === ticket.lotteryCode);
+      return lottery !== undefined
+        && ticket.numbers.length === lottery.numbers_to_pick
+        && ticket.numbers.every((number) => number >= 1 && number <= lottery.max_number);
+    }));
     if (import.meta.env.VITE_DESIGN_PREVIEW === "true" && new URLSearchParams(window.location.search).get("screen") === "picker") {
       const requestedCode = new URLSearchParams(window.location.search).get("lottery") ?? "september";
       setPickerLottery(value.lotteries.find((item) => item.code === requestedCode) ?? null);

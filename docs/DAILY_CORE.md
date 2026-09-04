@@ -1,22 +1,30 @@
-# Daily Lottery 4/15
+# Daily lotteries
 
-ПЛЛ-лото (`pll`), ПСС-Лото (`pss`) and ХАН-Лото (`khan`) are independent
+ПЛЛ-лото (`pll`), ПСС-Лото (`pss`) and «6 из 36» (`khan`) are independent
 lottery entities. Their Moscow slots are PLL 02:22/13:45, PSS 12:00/20:30 and
-KHAN 09:00/18:00;
-sales close two minutes before each draw. Each has independent draw and ticket
-number sequences and independent jackpot accounts.
+«6 из 36» 09:00/18:00. Sales close two minutes before each draw. Each has
+independent draw and ticket number sequences and independent jackpot accounts.
 
-For each new ticket, 100% of price enters jackpot.
-Payouts are 0 for 0/4 and 1/4, 50% of ticket price for 2/4, 300% for 3/4, and
-the entire jackpot split equally among 4/4 tickets. Lower-tier payouts use the
-central Kasper Fund and never jackpot. After a
-4/4 win, jackpot resets to that lottery's Admin-configured base.
+For each new ticket, 100% of price enters jackpot. In PLL and PSS, payouts are
+0 for 0/4 and 1/4, 50% of ticket price for 2/4, 300% for 3/4, and the entire
+jackpot is split equally among 4/4 tickets. Lower-tier payouts use the central
+Kasper Fund and never jackpot. After a jackpot win, jackpot resets to that
+lottery's Admin-configured base.
+
+## «6 из 36»
+
+`khan` keeps its independent draw and ticket numbering but uses the classic
+6/36 format from version 1.17.0. A ticket contains exactly six unique numbers
+from 1 through 36 and retains the existing 24,000 CAS price. Two matches pay
+50% of the ticket price, three pay 300%, four and five pay zero, and all 6/6
+tickets split the current jackpot. The transition jackpot is 33,456,000 CAS;
+the Admin-configured base remains 24,000,000 CAS.
 
 Identical combinations are allowed as separate tickets. RNG uses
 `secrets.SystemRandom`. Empty draws still complete, carry all funds and generate
 an idempotent Telegram broadcast.
 
-At v0.14.0 PSS and KHAN start with 24,000,000 CAS base/current jackpots and zero
+At v0.14.0 PSS and the former KHAN format started with 24,000,000 CAS base/current jackpots and zero
 distribution/reserve. PLL inherits the shared Daily balances after its already
 purchased legacy draw settles. All transfers use paired ledger entries.
 

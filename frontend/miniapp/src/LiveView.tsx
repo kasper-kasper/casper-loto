@@ -62,7 +62,7 @@ export function LiveView({ feed, now, loading, onPlay, onTickets }: LiveViewProp
   const finalMinute = !isReplay && state.phase === "waiting" && startsIn <= 60_000;
   const finalMinuteProgress = finalMinute ? Math.max(0, Math.min(100, ((60_000 - startsIn) / 60_000) * 100)) : 0;
   const grand = isGrandLottery(draw.lottery_code) && (draw.winning_numbers?.length ?? 7) === 7;
-  const resultSize = draw.lottery_code === "september" || draw.lottery_code === "grob" ? 3 : draw.lottery_kind === "WEEKLY" ? 7 : 4;
+  const resultSize = draw.lottery_code === "september" || draw.lottery_code === "grob" ? 3 : draw.lottery_code === "khan" ? 6 : draw.lottery_kind === "WEEKLY" ? 7 : 4;
 
   return <div className="live-experience">
     <section className={`live-stage lottery-${draw.lottery_code} phase-${state.phase} ${finalMinute ? "final-minute" : ""} ${isReplay ? "is-replay" : "is-live"}`}>

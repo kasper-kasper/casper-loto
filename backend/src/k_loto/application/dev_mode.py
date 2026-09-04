@@ -250,10 +250,10 @@ class DevBootstrapService:
         return jackpot
 
     async def _ensure_daily(self, now: datetime) -> None:
-        for code, name, slots in (
-            ("pll", "ПЛЛ-лото", ["02:22", "13:45"]),
-            ("pss", "ПСС-Лото", ["12:00", "20:30"]),
-            ("khan", "ХАН-Лото", ["09:00", "18:00"]),
+        for code, name, slots, ruleset_code, numbers_to_pick, max_number in (
+            ("pll", "ПЛЛ-лото", ["02:22", "13:45"], "daily_4_15", 4, 15),
+            ("pss", "ПСС-Лото", ["12:00", "20:30"], "daily_4_15", 4, 15),
+            ("khan", "6 из 36", ["09:00", "18:00"], "classic_6_36", 6, 36),
         ):
             lottery = await self._session.scalar(
                 select(Lottery).where(Lottery.code == code).with_for_update()
@@ -265,9 +265,9 @@ class DevBootstrapService:
                     code=code,
                     name=name,
                     kind=LotteryKind.DAILY,
-                    ruleset_code="daily_4_15",
-                    numbers_to_pick=4,
-                    max_number=15,
+                    ruleset_code=ruleset_code,
+                    numbers_to_pick=numbers_to_pick,
+                    max_number=max_number,
                     ticket_price=self._config.weekly_ticket_price,
                     timezone="Europe/Moscow",
                     schedule={"slots": slots},

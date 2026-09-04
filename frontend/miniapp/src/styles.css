@@ -1611,6 +1611,33 @@ html.app-backgrounded *, .motion-paused, .motion-paused * { animation-play-state
 .picker-shell.lottery-weekly .grand-main-field .pick-number.selected::after { content: "✓"; position: absolute; right: 2px; bottom: 0; color: #5b3a08; font-size: 7px; font-weight: 900; }
 .picker-shell.lottery-weekly .grand-special-field .pick-number.selected { color: white !important; border-color: #f0c9ff !important; background: linear-gradient(145deg,#b06fc5,#663c7b) !important; box-shadow: 0 0 0 3px rgba(207,157,239,.12),0 0 22px rgba(184,110,211,.28) !important; }
 
+/* 6 из 36 — a deliberately traditional lottery identity used nowhere else. */
+.lottery-khan { --lottery-accent: #73b4ff; --lottery-glow: #1d67c6; --picker-accent: #8fc6ff; --picker-scene-base: #071a38; }
+.featured-draw.lottery-khan { border-color: rgba(105,174,255,.38); background: radial-gradient(circle at 82% 28%,rgba(42,126,231,.24),transparent 34%),linear-gradient(148deg,#0b2852,#071730 62%,#061020); box-shadow: 0 28px 68px rgba(0,0,0,.4),0 0 44px rgba(31,105,199,.1),inset 0 1px rgba(194,225,255,.08); }
+.classic-badge { position: absolute; z-index: 7; display: inline-flex; align-items: center; justify-content: center; min-height: 23px; padding: 0 11px; border: 1px solid rgba(123,190,255,.62); border-radius: 999px; color: #d9ecff; background: linear-gradient(105deg,rgba(18,73,143,.91),rgba(7,31,68,.88)); box-shadow: 0 0 18px rgba(57,145,242,.22),inset 0 1px rgba(255,255,255,.13); font-size: 7px; font-weight: 850; letter-spacing: .18em; line-height: 1; text-transform: uppercase; }
+.featured-draw.lottery-khan > .classic-badge { top: 47px; right: 16px; }
+.storefront-card.lottery-khan > .classic-badge { top: 48px; right: 14px; }
+.storefront-card.lottery-khan { border-color: rgba(91,160,241,.3); background: #07162f; }
+.storefront-card.lottery-khan .storefront-copy h2 { color: #eef7ff; text-shadow: 0 4px 28px rgba(39,126,226,.2); }
+.visual-khan > img { object-position: 67% center; }
+.visual-khan .scene-light { right: 16%; background: radial-gradient(ellipse,rgba(104,181,255,.3),transparent 67%); }
+.visual-khan .scene-weather { opacity: .2; background-image: radial-gradient(circle at 18% 72%,#b9dcff 0 2px,transparent 3px),radial-gradient(circle at 57% 63%,#4e9def 0 2px,transparent 3px),radial-gradient(circle at 78% 74%,#e2c778 0 1px,transparent 2px); background-size: 43px 43px,57px 57px,71px 71px; animation: classic-ball-drift 10s linear infinite; mask-image: linear-gradient(0deg,#000,transparent 78%); }
+.visual-khan .scene-particles > i { width: 4px; height: 4px; border: 1px solid rgba(211,235,255,.5); background: #3c8fe9; }
+.picker-shell.lottery-khan .picker-heading { border-color: rgba(100,173,255,.28) !important; background: #071a38 !important; }
+.picker-shell.lottery-khan .picker-scene::after { background: linear-gradient(90deg,rgba(3,13,31,.88),rgba(5,20,45,.32) 66%,transparent),linear-gradient(0deg,#071a38,transparent 70%) !important; }
+.picker-shell.lottery-khan .number-grid { padding: 13px 10px; border-color: rgba(105,176,255,.2); border-radius: 20px; background: radial-gradient(circle at 50% -10%,rgba(46,122,213,.17),transparent 38%),linear-gradient(145deg,#0b2449,#06152e); }
+.picker-shell.lottery-khan .number-grid > .number-group { grid-template-columns: repeat(6,minmax(0,1fr)) !important; gap: 7px !important; }
+.picker-shell.lottery-khan .pick-number { aspect-ratio: 1; min-height: 0; border: 1px solid rgba(128,188,247,.29); border-radius: 50%; color: #dbeeff; background: radial-gradient(circle at 36% 28%,rgba(255,255,255,.12),transparent 22%),linear-gradient(145deg,#184b88,#0a2857 68%); box-shadow: inset 0 1px rgba(255,255,255,.09),0 5px 12px rgba(0,5,18,.25); }
+.picker-shell.lottery-khan .pick-number::before { content: none; }
+.picker-shell.lottery-khan .pick-number.selected { color: #07152c; border-color: #eff8ff; background: radial-gradient(circle at 35% 28%,#fff 0 10%,transparent 24%),linear-gradient(145deg,#e9f6ff,#71b4fa 58%,#2d76cf); box-shadow: 0 0 0 3px rgba(86,162,248,.15),0 0 19px rgba(69,151,245,.35),0 8px 17px rgba(0,19,53,.32); }
+.picker-shell.lottery-khan .pick-number.selected > i { display: none; }
+.ticket-draw-group.lottery-khan,.paper-ticket.lottery-khan { --lottery-accent: #68aef8; --lottery-glow: #1d62b2; }
+@keyframes classic-ball-drift { to { background-position: 86px -38px,114px -51px,142px -62px; } }
+@media (max-width: 360px) {
+  .picker-shell.lottery-khan .number-grid > .number-group { gap: 5px !important; }
+  .picker-shell.lottery-khan .pick-number { font-size: 9px; }
+}
+
 .ticket-filters > span { margin-left: auto; color: var(--text-muted); font-size: 9px; white-space: nowrap; }
 .ticket-draw-group.next-ticket-group { border-color: color-mix(in srgb,var(--lottery-accent) 43%,var(--border)); box-shadow: 0 0 28px color-mix(in srgb,var(--lottery-glow) 11%,transparent); }
 .ticket-draw-group > header > div:first-child > b { display: inline-block; margin-bottom: 5px; padding: 4px 7px; border-radius: 6px; color: #171107; background: var(--gold); font-size: 7px; letter-spacing: .1em; text-transform: uppercase; }

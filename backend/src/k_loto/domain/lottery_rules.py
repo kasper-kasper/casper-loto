@@ -364,6 +364,18 @@ DAILY_RULES = LotteryRuleStrategy(
     4,
     jackpot_refill_from_reserve=True,
 )
+CLASSIC_6_36_RULES = LotteryRuleStrategy(
+    "classic_6_36",
+    "6 из 36",
+    6,
+    36,
+    2,
+    PayoutRatio(1),
+    MappingProxyType({2: PayoutRatio(1, 2), 3: PayoutRatio(3)}),
+    None,
+    6,
+    jackpot_refill_from_reserve=True,
+)
 SEPTEMBER_RULES = LotteryRuleStrategy(
     "september_3_33",
     "3 СЕНТЯБРЯ",
@@ -428,6 +440,7 @@ LOTTERY_RULES: Mapping[str, LotteryRuleStrategy] = MappingProxyType(
             WEEKLY_RULES,
             KASPER_GRAND_RULES,
             DAILY_RULES,
+            CLASSIC_6_36_RULES,
             SEPTEMBER_RULES,
             GROB_RULES,
             FAST_RULES,
