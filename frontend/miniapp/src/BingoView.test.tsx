@@ -47,3 +47,13 @@ test("the detailed ticket preserves three rows and marks only revealed numbers",
   expect(screen.getByText("KB-000001-000001")).toBeInTheDocument();
   expect(screen.getByText("Совпало 10 из 12")).toBeInTheDocument();
 });
+
+test("tapping a paper ticket selects it while inspect opens its detail", async () => {
+  render(<BingoView lottery={lottery} initData="auth" now={0} balance={100000} onClose={vi.fn()} onPurchased={vi.fn()} />);
+  const paper = await screen.findByRole("button", { name: "Выбрать билет 1" });
+  fireEvent.click(paper);
+  expect(paper).toHaveAttribute("aria-pressed", "true");
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  fireEvent.click(screen.getAllByRole("button", { name: /Рассмотреть/ })[0]);
+  expect(screen.getByRole("dialog")).toBeInTheDocument();
+});

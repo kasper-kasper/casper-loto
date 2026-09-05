@@ -256,5 +256,18 @@ it.each([null, 200])("uses the recorded jackpot event in draw details, amount=%s
   else expect(within(dialog).queryByText("ДЖЕКПОТ ЭТОГО ТИРАЖА СОРВАН")).not.toBeInTheDocument();
   expect(within(dialog).queryByText("internal-correlation")).not.toBeInTheDocument();
   fireEvent.keyDown(window, { key: "Escape" });
-  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+});
+
+it("scopes the owner overview and requests a bounded Fast draw page", async () => {
+  render(<App />);
+  await screen.findByText("Всего сорвано джекпотов");
+  expect(adminApi.dashboard).toHaveBeenCalledWith("standard");
+  fireEvent.click(within(screen.getByRole("tablist", { name: "Тип игр" })).getByRole("tab", { name: "Fast" }));
+  await waitFor(() => expect(adminApi.dashboard).toHaveBeenCalledWith("fast"));
+  expect(adminApi.ticketAnalytics).toHaveBeenCalledWith("fast");
+  fireEvent.click(screen.getByRole("button", { name: /Тиражи/ }));
+  await waitFor(() => expect(adminApi.draws).toHaveBeenCalledWith("scope=fast&period=today&limit=100&offset=0"));
+  fireEvent.click(screen.getByRole("tab", { name: "Завершённые" }));
+  await waitFor(() => expect(adminApi.draws).toHaveBeenLastCalledWith("scope=fast&period=completed&limit=100&offset=0"));
 });

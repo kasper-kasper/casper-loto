@@ -1,3 +1,4 @@
+import type { Highlights } from "./Discovery";
 import type { BingoFeed, BingoInventory } from "./BingoView";
 import type { Account, Dashboard, Favorite, LiveFeed, NotificationPreferences, PurchaseResult, TicketPage, UserNotification } from "./types";
 
@@ -37,6 +38,7 @@ async function request<T>(path: string, initData: string, init?: RequestInit): P
 }
 
 export const miniAppApi = {
+  highlights: (initData: string, scope: "standard" | "fast" = "standard") => request<Highlights>(`/api/v1/miniapp/highlights?scope=${scope}`, initData),
   bingoInventory: (initData: string, offset = 0) => request<BingoInventory>(`/api/v1/miniapp/bingo/inventory?offset=${offset}`, initData),
   bingoLive: (initData: string) => request<BingoFeed>("/api/v1/miniapp/bingo/live", initData),
   bingoPurchase: (initData: string, drawId: string, ticketIds: string[], key: string) => request<PurchaseResult>("/api/v1/miniapp/bingo/purchases", initData, { method: "POST", body: JSON.stringify({ draw_id: drawId, ticket_ids: ticketIds, idempotency_key: key }) }),
@@ -62,8 +64,8 @@ export const miniAppApi = {
     request<void>("/api/v1/miniapp/notifications/read", initData, { method: "POST", body: JSON.stringify({ notification_id: notificationId ?? null }) }),
   testNotification: (initData: string) =>
     request<{ queued: boolean }>("/api/v1/miniapp/notifications/test", initData, { method: "POST" }),
-  live: (initData: string, scope: "standard" | "fast" = "standard") =>
-    request<LiveFeed>(`/api/v1/miniapp/live?scope=${scope}`, initData),
+  live: (initData: string, scope: "standard" | "fast" = "standard", lotteryCode = "") =>
+    request<LiveFeed>(`/api/v1/miniapp/live?scope=${scope}${lotteryCode ? `&lottery_code=${encodeURIComponent(lotteryCode)}` : ""}`, initData),
   liveStream: async (initData: string, onSnapshot: (feed: LiveFeed) => void, signal: AbortSignal, scope: "standard" | "fast" = "standard") => {
     const headers = new Headers({ Accept: "text/event-stream" });
     if (initData) headers.set("X-Telegram-Init-Data", initData);
@@ -86,7 +88,8 @@ export const miniAppApi = {
   },
   tickets: async (initData: string, state: "active" | "history", lotteryCode = "", winsOnly = false, offset = 0) => {
     const params = new URLSearchParams({ state });
-    if (lotteryCode) params.set("lottery_code", lotteryCode);
+    if (lotteryCode.startsWith("scope:")) params.set("scope", lotteryCode.slice(6));
+    else if (lotteryCode) params.set("lottery_code", lotteryCode);
     if (winsOnly) params.set("wins_only", "true");
     params.set("limit", "100");
     params.set("offset", String(offset));

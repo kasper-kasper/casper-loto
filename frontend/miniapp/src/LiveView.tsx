@@ -23,6 +23,7 @@ function drawKey(draw: LiveDraw): string {
 }
 
 function lotteryFormat(draw: LiveDraw): string {
+  if (draw.lottery_code === "khan") return "ЕЖЕДНЕВНАЯ · 6 ИЗ 36";
   if (draw.lottery_code === "september") return "DAILY · 3 ИЗ 33";
   if (draw.lottery_code === "grob") return "DAILY · 3 ИЗ 16";
   return draw.lottery_kind === "WEEKLY" ? "ЕЖЕНЕДЕЛЬНАЯ · 5 ИЗ 35 + 2 ИЗ 5" : "DAILY · 4 ИЗ 15";
@@ -88,7 +89,7 @@ export function LiveView({ feed, now, loading, onPlay, onTickets }: LiveViewProp
       {state.phase === "revealing" && <div className="live-reveal" aria-live="polite">
         <span>{isReplay ? "В записи выпало число" : "Выпадает число"}</span>
         <motion.strong animate={{ opacity: 1, scale: 1, y: 0 }} initial={{ opacity: 0, scale: .76, y: 12 }} key={state.currentNumber} transition={{ type: "spring", stiffness: 280, damping: 22 }}>{grand && (state.currentNumber ?? 0) > 35 ? (state.currentNumber ?? 0) - 35 : state.currentNumber}</motion.strong>
-        <div className={`live-sequence ${grand ? "grand-live-sequence" : ""}`}>{draw.winning_numbers?.map((number, index) => <i className={`${number > 35 ? "special" : ""} ${index < state.revealedNumbers.length ? `shown ${index === state.revealedNumbers.length - 1 ? "recent" : ""}` : ""}`} key={`${number}-${index}`}>{index < state.revealedNumbers.length ? (number > 35 ? number - 35 : number) : "·"}</i>)}</div>
+        <div className={`live-sequence ${grand ? "grand-live-sequence" : ""}`}>{draw.winning_numbers?.map((number, index) => <i className={`${grand && number > 35 ? "special" : ""} ${index < state.revealedNumbers.length ? `shown ${index === state.revealedNumbers.length - 1 ? "recent" : ""}` : ""}`} key={`${number}-${index}`}>{index < state.revealedNumbers.length ? (grand && number > 35 ? number - 35 : number) : "·"}</i>)}</div>
       </div>}
 
       {state.phase === "result" && <motion.div animate={{ opacity: 1, y: 0 }} className={`live-result ${winner ? "winner" : "neutral"}`} initial={{ opacity: 0, y: 10 }}>

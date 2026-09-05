@@ -53,6 +53,7 @@ export function installDesignPreview(): void {
     if (path.includes("/bingo/live")) return json({ server_time: nowIso(), rules: { total_moves: 58, jackpot_move: 28, tour_prizes: [100000, 500000], pool_size: 2000 }, draw: null });
     if (path.endsWith("/dev/session")) return json({ mode: "design-preview" });
     if (path.endsWith("/dev/refill")) { balance = 100_000_000_000; return json({ balance }); }
+    if (path.endsWith("/highlights")) return json({ last_jackpot: null, next_event: null });
     if (path.endsWith("/dashboard")) return json(dashboard());
     if (path.endsWith("/account")) return json(account());
     if (path.endsWith("/live/stream")) {

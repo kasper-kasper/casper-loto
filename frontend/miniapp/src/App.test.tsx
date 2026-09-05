@@ -12,6 +12,7 @@ vi.mock("./api", () => ({
     devSession: vi.fn(),
     devRefill: vi.fn(),
     dashboard: vi.fn(),
+    highlights: vi.fn(),
     account: vi.fn(),
     notifications: vi.fn(),
     notificationPreferences: vi.fn(),
@@ -150,6 +151,7 @@ const account: Account = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(miniAppApi.highlights).mockResolvedValue({ last_jackpot: null });
   vi.mocked(miniAppApi.devSession).mockResolvedValue({ mode: "local-development" });
   vi.mocked(miniAppApi.devRefill).mockResolvedValue({ balance: 105_000 });
   vi.mocked(miniAppApi.dashboard).mockResolvedValue(dashboard);
@@ -181,7 +183,8 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 async function openWeeklyFromStorefront(): Promise<void> {
-  fireEvent.click(await screen.findByRole("button", { name: "Weekly 5/20: выбрать числа" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Лотереи" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Открыть Weekly 5/20" }));
 }
 
 it("requires a signed Telegram launch", () => {
@@ -204,17 +207,18 @@ it("renders server-authoritative balance and lottery states", async () => {
   expect(await screen.findByText("5 000 CAS")).toBeInTheDocument();
   expect(screen.getByLabelText("Kasper Loto")).toBeInTheDocument();
   expect(container.querySelector(".brand-logo-horizontal")).toHaveAttribute("src", "/brand/kasper-loto-horizontal.svg");
-  expect(screen.getAllByText("10 000 CAS").length).toBeGreaterThan(0);
-  expect(screen.getByRole("button", { name: "Weekly 5/20: выбрать числа" })).toBeEnabled();
-  expect(screen.getByRole("button", { name: /Проверить продажи.*—/ })).toBeDisabled();
+  expect(within(container.querySelector(".bottom-nav") as HTMLElement).getAllByRole("button").map(b => b.textContent)).toEqual(["Сегодня", "Лотереи", "Fast", "Моё"]);
+  fireEvent.click(screen.getByRole("button", { name: "Лотереи" }));
+  expect(screen.getByRole("button", { name: "Открыть Weekly 5/20" })).toBeEnabled();
 });
 
-it("orders the storefront chronologically and keeps Weekly as the final showcase", async () => {
+it("keeps the home short and separates the catalog from Fast", async () => {
   const template = dashboard.lotteries[0];
   const showcaseDashboard: Dashboard = {
     ...dashboard,
     lotteries: [
       template,
+      { ...template, code: "bingo", name: "Kasper Bingo", jackpot: 10_000_000_000, numbers_to_pick: 12, max_number: 60 },
       dashboard.lotteries[1],
       { ...template, code: "pss", name: "ПСС-Лото", scheduled_at: "2026-08-15T16:00:00Z" },
       { ...template, code: "khan", name: "ХАН-Лото", scheduled_at: "2026-08-15T17:00:00Z" },
@@ -226,9 +230,12 @@ it("orders the storefront chronologically and keeps Weekly as the final showcase
   vi.mocked(miniAppApi.dashboard).mockResolvedValue(showcaseDashboard);
   render(<App initData="signed" />);
 
+  await screen.findByRole("button", { name: "Лотереи" });
+  expect(screen.queryByLabelText("Витрина лотерей")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Лотереи" }));
   const storefront = await screen.findByLabelText("Витрина лотерей");
   expect(within(storefront).getAllByRole("heading").map((heading) => heading.textContent)).toEqual([
-    "ПСС-Лото", "ХАН-Лото", "ГРОБ", "3 сентября", "Weekly 5/20",
+    "Kasper Bingo", "Weekly 5/20", "ПСС-Лото", "ХАН-Лото", "ГРОБ", "3 сентября", "ПЛЛ-лото",
   ]);
   expect(screen.queryByText("Каспер выплатил игрокам за месяц")).not.toBeInTheDocument();
   expect(screen.queryByText("Случайная комбинация")).not.toBeInTheDocument();
@@ -267,9 +274,8 @@ it("renders the GROB identity and its three-of-sixteen picker", async () => {
   vi.mocked(miniAppApi.dashboard).mockResolvedValue(grobDashboard);
   const { container } = render(<App initData="signed" />);
 
-  expect(await screen.findByText("RIP 0001")).toBeInTheDocument();
-  expect(screen.getByText(MINIAPP_TEXTS.grob.moodline)).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: /Выбрать числа/ }));
+  expect(await screen.findByRole("heading", { name: "ГРОБ" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Открыть лотерею" }));
 
   await waitFor(() => expect(container.querySelector(".number-grid")).not.toBeNull());
   const grid = container.querySelector(".number-grid");
@@ -295,8 +301,8 @@ it("renders the classic 6 of 36 identity and complete number field", async () =>
   vi.mocked(miniAppApi.dashboard).mockResolvedValue(classicDashboard);
   const { container } = render(<App initData="signed" />);
 
-  expect(await screen.findByText("Классика")).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: /Выбрать числа/ }));
+  expect(await screen.findByRole("heading", { name: "6 из 36" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Моя лотерея" }));
   await waitFor(() => expect(container.querySelector(".number-grid")).not.toBeNull());
   expect(within(container.querySelector(".number-grid") as HTMLElement).getAllByRole("button")).toHaveLength(36);
   expect(screen.getByText("Выберите 6 чисел")).toBeInTheDocument();
@@ -310,18 +316,19 @@ it("refreshes a stale sales state before opening the number picker", async () =>
   vi.mocked(miniAppApi.dashboard).mockResolvedValueOnce(stale).mockResolvedValue(dashboard);
   render(<App initData="signed" />);
 
-  fireEvent.click(await screen.findByRole("button", { name: "Weekly 5/20: проверить продажи" }));
+  await openWeeklyFromStorefront();
 
   expect(await screen.findByRole("button", { name: "Случайные числа" })).toBeInTheDocument();
   expect(miniAppApi.dashboard).toHaveBeenCalledTimes(2);
 });
 
-it("opens the permanent live tab and requests the server clock", async () => {
+it("opens the selected lottery live room", async () => {
   render(<App initData="signed" />);
-  fireEvent.click(await screen.findByRole("button", { name: "Эфир" }));
+  await openWeeklyFromStorefront();
+  fireEvent.click(await screen.findByRole("button", { name: "Эфир и результаты" }));
 
   expect(await screen.findByText("Расписание готовится")).toBeInTheDocument();
-  expect(miniAppApi.live).toHaveBeenCalledWith("signed");
+  expect(miniAppApi.live).toHaveBeenCalledWith("signed", "standard", "weekly");
 });
 
 it("selects five numbers, adds a ticket and buys the cart atomically", async () => {
@@ -355,7 +362,7 @@ it("selects five numbers, adds a ticket and buys the cart atomically", async () 
   expect(screen.getByRole("button", { name: "На главную" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Мои билеты" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "На главную" }));
-  expect(screen.getByLabelText("Витрина лотерей")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Сегодня может повезти." })).toBeInTheDocument();
   expect(document.querySelector(".number-grid")).toBeNull();
 });
 
@@ -377,7 +384,7 @@ it("keeps Kasper Grand main and special number fields independent", async () => 
   vi.mocked(miniAppApi.dashboard).mockResolvedValue(grandDashboard);
   render(<App initData="signed" />);
 
-  fireEvent.click(await screen.findByRole("button", { name: /Выбрать числа.*100 CAS/ }));
+  fireEvent.click(await screen.findByRole("button", { name: "Моя лотерея" }));
   const main = (await screen.findByText("Поле №1 · Основные числа")).closest("section") as HTMLElement;
   const special = screen.getByText("Поле №2 · Специальные числа").closest("section") as HTMLElement;
   for (const number of [1, 2, 3, 4, 5]) fireEvent.click(within(main).getByRole("button", { name: String(number) }));
@@ -397,7 +404,7 @@ it("builds a large cart and sends one hundred tickets in one operation", async (
   expect(await screen.findByText("50 комбинаций")).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "Добавить комбинацию" }));
-  fireEvent.click(screen.getByRole("button", { name: "Weekly 5/20: выбрать числа" }));
+  fireEvent.click(screen.getByRole("button", { name: "Открыть Weekly 5/20" }));
   fireEvent.click(await screen.findByRole("button", { name: "+50" }));
   expect(await screen.findByText("100 комбинаций")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Купить 100 комб." }));
@@ -422,7 +429,7 @@ it("offers an explicit prepaid five-draw purchase without enabling it by default
 
 it("opens the separate Fast section without replacing the nearest main draw", async () => {
   render(<App initData="signed" />);
-  expect(await screen.findByText("Ближайший тираж")).toBeInTheDocument();
+  expect(await screen.findByText(/Ближайший тираж/i)).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Fast" }));
 
   expect(await screen.findByRole("heading", { name: "Fast" })).toBeInTheDocument();
@@ -500,7 +507,7 @@ it("opens completed tickets directly from the account overview", async () => {
   render(<App initData="test" />);
   fireEvent.click(await screen.findByRole("button", { name: "Моё" }));
   fireEvent.click(await screen.findByRole("button", { name: /История участия/ }));
-  await waitFor(() => expect(miniAppApi.tickets).toHaveBeenCalledWith("test", "history", "", false));
+  await waitFor(() => expect(miniAppApi.tickets).toHaveBeenCalledWith("test", "history", "scope:standard", false));
 });
 
 
@@ -534,9 +541,9 @@ it("does not apply the wins-only filter to active tickets", async () => {
   fireEvent.click(await screen.findByRole("button", { name: "Моё" }));
   fireEvent.click(await screen.findByRole("button", { name: /История участия/ }));
   fireEvent.click(await screen.findByRole("button", { name: "Только выигрыши" }));
-  await waitFor(() => expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "history", "", true));
+  await waitFor(() => expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "history", "scope:standard", true));
   fireEvent.click(screen.getByRole("button", { name: "Активные" }));
-  await waitFor(() => expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "active", "", false));
+  await waitFor(() => expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "active", "scope:standard", false));
 });
 
 it("does not replace history with a late active-ticket response", async () => {
@@ -551,4 +558,13 @@ it("does not replace history with a late active-ticket response", async () => {
   expect(await screen.findByText("История пока пуста")).toBeInTheDocument();
   await act(async () => { complete?.({ tickets: [], total: 7, has_more: false }); });
   expect(screen.getByText("0 билетов")).toBeInTheDocument();
+});
+
+it("keeps Fast tickets accessible through a separate server filter", async () => {
+  render(<App initData="test" />);
+  fireEvent.click(await screen.findByRole("button", { name: "Fast" }));
+  fireEvent.click(screen.getByRole("button", { name: "Билеты Fast →" }));
+  await waitFor(() => expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "active", "scope:fast", false));
+  fireEvent.change(screen.getByLabelText("Фильтр по лотерее"), { target: { value: "scope:standard" } });
+  await waitFor(() => expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "active", "scope:standard", false));
 });

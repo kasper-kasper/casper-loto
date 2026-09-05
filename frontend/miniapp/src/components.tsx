@@ -5,10 +5,11 @@ import { formatCas } from "./format";
 import { splitGrandNumbers } from "./grand";
 import { splitPulseNumbers } from "./fast";
 
-export type IconName = "home" | "ticket" | "profile" | "cart" | "live" | "fast" | "replay" | "arrow" | "spark" | "repeat" | "close";
+export type IconName = "catalog" | "home" | "ticket" | "profile" | "cart" | "live" | "fast" | "replay" | "arrow" | "spark" | "repeat" | "close";
 
 export function Icon({ name }: { name: IconName }) {
   const paths: Record<IconName, ReactNode> = {
+    catalog: <><rect x="3" y="3" width="7" height="7" rx="2" /><rect x="14" y="3" width="7" height="7" rx="2" /><rect x="3" y="14" width="7" height="7" rx="2" /><rect x="14" y="14" width="7" height="7" rx="2" /></>,
     home: <><path d="M4 11.5 12 4l8 7.5v8H4Z" /><path d="M8 15h8M12 11v8" /><path d="M4 11.5h16" /></>,
     ticket: <><path d="m5 7 13-2 1 12-13 2Z" /><path d="M9 9.5 10 16M13 9l3-.5M13.5 12l3-.5M14 15l2.5-.5" /></>,
     profile: <><path d="M12 4 16 8l-4 4-4-4Z" /><path d="M5 20c.8-4.3 3.1-6.5 7-6.5s6.2 2.2 7 6.5" /><path d="M7.5 20h9" /></>,

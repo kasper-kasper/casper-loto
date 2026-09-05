@@ -85,17 +85,12 @@ function rememberSession(session: AdminSession): AdminSession {
   return session;
 }
 
-async function allDraws(query = ""): Promise<Draw[]> {
-  const pageSize = 500;
+export type LotteryScope = "standard" | "fast" | "all";
+
+async function drawPage(query = ""): Promise<Draw[]> {
   const params = new URLSearchParams(query);
-  const rows: Draw[] = [];
-  for (let offset = 0; ; offset += pageSize) {
-    params.set("limit", String(pageSize));
-    params.set("offset", String(offset));
-    const page = await request<Draw[]>(`/draws?${params.toString()}`);
-    rows.push(...page);
-    if (page.length < pageSize) return rows;
-  }
+  if (!params.has("limit")) params.set("limit", "100");
+  return request<Draw[]>(`/draws?${params.toString()}`);
 }
 
 export const adminApi = {
@@ -106,11 +101,11 @@ export const adminApi = {
     }).then(rememberSession),
   session: () => request<AdminSession>("/auth/session").then(rememberSession),
   logout: () => request<void>("/auth/logout", { method: "POST" }),
-  dashboard: () => request<Dashboard>("/dashboard"),
+  dashboard: (scope: LotteryScope = "all") => request<Dashboard>(`/dashboard?scope=${scope}`),
   players: () => request<Player[]>("/players"),
   lotteries: () => request<Lottery[]>("/lotteries"),
-  draws: allDraws,
-  schedule: () => request<ScheduleEntry[]>("/schedule"),
+  draws: drawPage,
+  schedule: (scope: LotteryScope = "all") => request<ScheduleEntry[]>(`/schedule?scope=${scope}`),
   draw: (id: string) => request<DrawDetail>(`/draws/${id}`),
   transactions: (query = "") =>
     request<Transaction[]>(`/transactions${query ? `?${query}` : ""}`),
@@ -118,8 +113,8 @@ export const adminApi = {
     const params = new URLSearchParams({ limit: String(limit), date_from: dateFrom });
     return request<NumberStatisticsReport>(`/lotteries/${lotteryId}/number-statistics?${params.toString()}`);
   },
-  ticketAnalytics: () => request<TicketAnalytics>("/ticket-analytics"),
-  activity: (periodDays = 1) => request<ActivityPoint[]>(`/activity?period_days=${periodDays}`),
+  ticketAnalytics: (scope: LotteryScope = "all") => request<TicketAnalytics>(`/ticket-analytics?scope=${scope}`),
+  activity: (periodDays = 1, scope: LotteryScope = "all") => request<ActivityPoint[]>(`/activity?period_days=${periodDays}&scope=${scope}`),
   audit: () => request<AuditEntry[]>("/audit"),
   notifications: () => request<NotificationItem[]>("/notifications"),
   releaseNotes: (kind: "changelog" | "devlog") =>
