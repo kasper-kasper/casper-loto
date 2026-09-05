@@ -2342,4 +2342,11 @@ Known limitations:
   added missed-draw case), Mini App lint/typecheck/build and 51 tests passed.
   Admin typecheck/lint/build and all 18 tests passed (251 tests total).
   The focused PostgreSQL smoke also verifies that next-draw purchases made during
-  a broadcast survive the current jackpot payout. Deployment pending.
+  a broadcast survive the current jackpot payout.
+- Deployed API + gateway after a production backup. Alembic schema/backup checks
+  passed, API/DB healthy. Public Mini App and Admin HTTPS/health return 200, CSS/JS
+  match local artifacts, Mini App manifest 1.20.0, Admin anonymous dashboard 401.
+- Production read-only verification: first Bingo draw 2026-09-05 22:00 Moscow,
+  cutoff 21:58; inventory 2,000 tickets; owner auto-play bought five tickets;
+  jackpot 10,000,250,000 CAS; base 10bn; paired startup ledger sums to zero;
+  scheduler has no error. Admin remains 1.19.0; existing bot process preserved.
