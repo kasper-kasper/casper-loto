@@ -19,9 +19,9 @@ import type {
   Transaction,
 } from "./types";
 
-type View = "dashboard" | "lotteries" | "schedule" | "draws" | "players" | "analytics" | "system" | "development";
+type View = "dashboard" | "lotteries" | "schedule" | "draws" | "players" | "analytics" | "system";
 type AnalyticsTab = "lotteries" | "tickets" | "numbers" | "finances";
-type SystemTab = "ledger" | "notifications" | "audit";
+type SystemTab = "health" | "ledger" | "notifications" | "audit" | "development";
 
 const navigation: { id: View; label: string; code: string }[] = [
   { id: "dashboard", label: "Обзор", code: "01" },
@@ -31,7 +31,6 @@ const navigation: { id: View; label: string; code: string }[] = [
   { id: "players", label: "Игроки", code: "05" },
   { id: "analytics", label: "Аналитика", code: "06" },
   { id: "system", label: "Система", code: "07" },
-  { id: "development", label: "Разработка", code: "08" },
 ];
 
 const viewStorageKey = "k-loto:admin-view";
@@ -40,7 +39,7 @@ function storedView(): View {
   const path = window.location.pathname.split("/").filter(Boolean).at(-1);
   const remembered = window.localStorage.getItem(viewStorageKey);
   const legacy: Record<string, View> = {
-    ledger: "system", notifications: "system", audit: "system",
+    ledger: "system", notifications: "system", audit: "system", development: "system",
     statistics: "analytics", "ticket-analytics": "analytics",
   };
   const raw = path || remembered || "dashboard";
@@ -48,7 +47,7 @@ function storedView(): View {
   return navigation.some((item) => item.id === candidate) ? candidate as View : "dashboard";
 }
 
-const drawStatuses: Record<string, string> = { PENDING: "Ожидает", RUNNING: "Выполняется", COMPLETED: "Завершён", FAILED: "Ошибка" };
+const drawStatuses: Record<string, string> = { SCHEDULED: "Запланирован", CLOSED: "Продажи закрыты", DRAWING: "Розыгрыш", SETTLING: "Начисление выигрышей", PENDING: "Ожидает", RUNNING: "Выполняется", COMPLETED: "Завершён", FAILED: "Ошибка" };
 const transactionTypes: Record<string, string> = {
   ADMIN_BALANCE_ADJUSTMENT: "Изменение баланса администратором",
   TICKET_PURCHASE: "Покупка билета",
@@ -84,6 +83,7 @@ function translated(value: string, dictionary: Record<string, string>): string {
 }
 
 function schedule(value: Record<string, unknown>): string {
+  if (typeof value.interval_minutes === "number") return `Каждые ${value.interval_minutes} минут · МСК`;
   const weekday = value.weekday === "sunday" ? "воскресенье" : String(value.weekday ?? "");
   const time = String(value.draw_time ?? "");
   const slots = Array.isArray(value.slots) ? value.slots.map(String).join(" · ") : "";
@@ -105,7 +105,7 @@ function compactCas(value: number | null | undefined): string {
 }
 
 function date(value: string | null): string {
-  return value ? new Intl.DateTimeFormat("ru-RU", { dateStyle: "short", timeStyle: "short" }).format(new Date(value)) : "—";
+  return value ? new Intl.DateTimeFormat("ru-RU", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Moscow" }).format(new Date(value)) : "—";
 }
 
 function drawNumber(value: number): string {
@@ -143,7 +143,7 @@ function ScheduleView({ entries, lotteries, loadedAt }: { entries: ScheduleEntry
 
   return <section className="schedule-room">
     <header className="schedule-command">
-      <div><small>ОПЕРАЦИЯ // СУТОЧНЫЙ ПЛАН</small><h2>{day}</h2></div>
+      <div><small>Расписание на день</small><h2>{day}</h2></div>
       <label>ЛОТЕРЕЯ<select aria-label="Лотерея расписания" value={lotteryId} onChange={(event) => setLotteryId(event.target.value)}><option value="">Все лотереи</option>{lotteries.filter((lottery) => lottery.is_active).map((lottery) => <option key={lottery.id} value={lottery.id}>{lottery.name}</option>)}</select></label>
     </header>
     <SectionTabs value={category} label="Тип расписания" items={[{ id: "all", label: "Все" }, { id: "daily", label: "Daily" }, { id: "fast", label: "Fast" }, { id: "weekly", label: "Weekly / Special" }]} onChange={setCategory} />
@@ -151,7 +151,7 @@ function ScheduleView({ entries, lotteries, loadedAt }: { entries: ScheduleEntry
     <div className="schedule-board">
       {visible.map((entry) => { const lottery = lotteryById.get(entry.lottery_id); const isFocused = entry.id === focused?.id; const passed = new Date(entry.scheduled_at).getTime() < now; return <div className={`schedule-row lottery-${lottery?.code ?? "unknown"} ${isFocused ? "focused" : ""}`} key={entry.id} ref={isFocused ? focusRef : undefined}>
         <strong>№{drawNumber(entry.public_number)}</strong>
-        <b>{entry.lottery_name}<small>{isFocused ? "БЛИЖАЙШИЙ" : passed ? "ЗАВЕРШЁН" : "ПО РАСПИСАНИЮ"}</small></b>
+        <b>{entry.lottery_name}<small>{isFocused ? (passed ? "СЕЙЧАС ПО РАСПИСАНИЮ" : "БЛИЖАЙШИЙ") : passed ? "ВРЕМЯ ПРОШЛО" : "ПО РАСПИСАНИЮ"}</small></b>
         <time>{new Intl.DateTimeFormat("ru-RU", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Europe/Moscow" }).format(new Date(entry.scheduled_at))}</time>
       </div>; })}
       {!visible.length && <div className="schedule-empty">НА СЕГОДНЯ ТИРАЖЕЙ НЕТ</div>}
@@ -163,16 +163,22 @@ function Status({ active, children }: { active: boolean; children: ReactNode }) 
   return <span className={`status ${active ? "ok" : "warn"}`}><i />{children}</span>;
 }
 
-function ActivityChart() {
+function ActivityChart({ refreshedAt }: { refreshedAt: number }) {
   const [period, setPeriod] = useState<1 | 7 | 30>(1);
   const [points, setPoints] = useState<ActivityPoint[]>([]);
-  useEffect(() => { void adminApi.activity(period).then(setPoints).catch(() => setPoints([])); }, [period]);
+  const [chartError, setChartError] = useState(false);
+  useEffect(() => {
+    let active = true;
+    void adminApi.activity(period).then((rows) => { if (active) { setPoints(rows); setChartError(false); } }).catch(() => { if (active) setChartError(true); });
+    return () => { active = false; };
+  }, [period, refreshedAt]);
   const maximum = Math.max(1, ...points.flatMap((point) => [point.total_sales, point.total_payout]));
   return <section className="panel activity-panel">
-    <header><div><h2>Продажи и выплаты</h2><span>ДАННЫЕ ЗАГРУЖАЮТСЯ ТОЛЬКО ПРИ ОТКРЫТИИ ОБЗОРА</span></div><div className="activity-periods">{([1, 7, 30] as const).map((days) => <button className={period === days ? "active" : ""} key={days} onClick={() => setPeriod(days)}>{days === 1 ? "24 часа" : `${days} дней`}</button>)}</div></header>
+    <header><div><h2>Продажи и выплаты</h2><span>Стоимость билетов и выплаты в завершённых тиражах · МСК</span></div><div className="activity-periods">{([1, 7, 30] as const).map((days) => <button className={period === days ? "active" : ""} key={days} onClick={() => setPeriod(days)}>{days === 1 ? "24 часа" : `${days} дней`}</button>)}</div></header>
     <div className="activity-legend"><span><i className="sales" />Продажи</span><span><i className="payout" />Выплаты</span></div>
-    <div className="activity-chart">{points.map((point) => <div className="activity-column" key={point.bucket_at} title={`Продажи: ${cas(point.total_sales)} · Выплаты: ${cas(point.total_payout)}`}><div><i className="sales" style={{ height: `${Math.max(2, (point.total_sales / maximum) * 100)}%` }} /><i className="payout" style={{ height: `${Math.max(2, (point.total_payout / maximum) * 100)}%` }} /></div><small>{new Intl.DateTimeFormat("ru-RU", period === 1 ? { hour: "2-digit", timeZone: "Europe/Moscow" } : { day: "2-digit", month: "2-digit", timeZone: "Europe/Moscow" }).format(new Date(point.bucket_at))}</small></div>)}</div>
-    {!points.length && <p className="source-note">За выбранный период завершённых тиражей пока нет.</p>}
+    <div className="activity-chart">{points.map((point) => <div className="activity-column" key={point.bucket_at} title={`Продажи: ${cas(point.total_sales)} · Выплаты: ${cas(point.total_payout)}`}><div><i className="sales" style={{ height: `${(point.total_sales / maximum) * 100}%` }} /><i className="payout" style={{ height: `${(point.total_payout / maximum) * 100}%` }} /></div><small>{new Intl.DateTimeFormat("ru-RU", period === 1 ? { hour: "2-digit", timeZone: "Europe/Moscow" } : { day: "2-digit", month: "2-digit", timeZone: "Europe/Moscow" }).format(new Date(point.bucket_at))}</small></div>)}</div>
+    {chartError && <p role="alert" className="source-note">Не удалось обновить график. Попробуйте обновить страницу.</p>}
+    {!chartError && !points.length && <p className="source-note">За выбранный период завершённых тиражей пока нет.</p>}
   </section>;
 }
 
@@ -198,8 +204,8 @@ function Login({ onAuthenticated }: { onAuthenticated: (session: AdminSession) =
   return (
     <main className="login-shell">
       <section className="login-card">
-        <div className="brand"><span>K</span><div>CASPER CONTROL<small>PRIVATE OPERATIONS</small></div></div>
-        <div className="secure-line"><i /> ЗАЩИЩЁННЫЙ КАНАЛ · ДОПУСК 007</div>
+        <div className="brand"><span>K</span><div>Kasper Loto<small>Панель владельца</small></div></div>
+        <div className="secure-line"><i /> Вход для владельца</div>
         <h1>Идентификация агента</h1>
         <p>Закрытое пространство владельца K-Loto. Доступ к оперативной сводке и управлению системой.</p>
         <form onSubmit={(event) => void submit(event)}>
@@ -213,60 +219,58 @@ function Login({ onAuthenticated }: { onAuthenticated: (session: AdminSession) =
   );
 }
 
-function DashboardView({ data, analytics }: { data: Dashboard; analytics: TicketAnalytics }) {
+function DashboardView({ data, analytics, refreshedAt, onOpen, onNavigate }: { data: Dashboard; analytics: TicketAnalytics; refreshedAt: number; onOpen: (id: string) => void; onNavigate: (view: View) => void }) {
   const overall = analytics.overall;
-  const playerResult = overall.total_payout - overall.total_sales;
+  const attention = data.operations.stuck_draw_count > 0 || !data.database_healthy || !data.scheduler_enabled || !!data.operations.scheduler.last_error;
   return <>
-    <div className="system-strip">
-      <Status active={data.database_healthy}>БАЗА ДАННЫХ РАБОТАЕТ</Status>
-      <Status active={data.scheduler_enabled}>ПЛАНИРОВЩИК {data.scheduler_enabled ? "АКТИВЕН" : "ОТКЛЮЧЁН"}</Status>
-      <Status active={data.bot_configured}>БОТ {data.bot_configured ? "НАСТРОЕН" : "НЕ НАСТРОЕН"}</Status>
-      <span>v{data.version} · работает {Math.floor(data.uptime_seconds / 60)} мин.</span>
-    </div>
-    <section className="command-hero">
-      <div className="command-copy"><span>ДОСЬЕ ВЛАДЕЛЬЦА · AGENT 007</span><h2>Оперативная сводка</h2><p>Вся игровая система на одном экране. Только факты, фонды и состояние миссии.</p></div>
-      <div className="command-total"><small>БИЛЕТОВ КУПЛЕНО ЗА ВСЁ ВРЕМЯ</small><strong>{overall.total_tickets.toLocaleString("ru-RU")}</strong><span>{overall.active_tickets.toLocaleString("ru-RU")} сейчас участвуют в тиражах</span></div>
-      <div className="command-score"><article><small>ВЫИГРЫШНЫХ</small><strong>{percentage(overall.winning_tickets, overall.settled_tickets)}</strong><span>{overall.winning_tickets.toLocaleString("ru-RU")} из {overall.settled_tickets.toLocaleString("ru-RU")} рассчитанных</span></article><article><small>РЕЗУЛЬТАТ ИГРОКОВ</small><strong className={playerResult >= 0 ? "positive" : "negative"}>{playerResult > 0 ? "+" : ""}{compactCas(playerResult)}</strong><span>выплаты минус стоимость билетов</span></article></div>
-      <div className="command-scan" />
+    <section className="owner-intro"><div><span>Вся картина на одном экране</span><h2>Лотереи, игроки и выигрыши</h2><p>Джекпоты и итоги — за всё время. Ближайшие тиражи и активные билеты — на момент обновления.</p></div><button className={attention ? "attention-button warning" : "attention-button"} onClick={() => onNavigate("system")}>{attention ? "Требует внимания" : "Проверить состояние системы"}<span>→</span></button></section>
+    <JackpotPanel data={data} analytics={analytics} onOpen={onOpen} />
+    <section className="metric-grid business-metrics">
+      <article className="metric"><small>Игроки</small><strong>{data.counts.users.toLocaleString("ru-RU")}</strong><em>{overall.participants} покупали билеты</em></article>
+      <article className="metric"><small>Куплено билетов</small><strong>{overall.total_tickets.toLocaleString("ru-RU")}</strong><em>{overall.active_tickets.toLocaleString("ru-RU")} участвуют сейчас</em></article>
+      <article className="metric"><small>Стоимость купленных билетов</small><strong title={cas(overall.total_sales)}>{compactCas(overall.total_sales)}</strong><em>за всю историю</em></article>
+      <article className="metric"><small>Выплачено игрокам</small><strong title={cas(overall.total_payout)}>{compactCas(overall.total_payout)}</strong><em>включая джекпоты</em></article>
+      <article className="metric"><small>Фонд Каспера</small><strong title={cas(data.jackpots.kasper_fund_balance)}>{compactCas(data.jackpots.kasper_fund_balance)}</strong><em>обычные призы и восстановление джекпотов</em></article>
     </section>
-    <section className="metric-grid overview-metrics">
-      <article className="metric"><small>ПРОВЕДЕНО ТИРАЖЕЙ</small><strong>{data.counts.completed_draws.toLocaleString("ru-RU")}</strong><em>все лотереи</em></article>
-      <article className="metric"><small>ПОТРАЧЕНО НА БИЛЕТЫ</small><strong>{compactCas(overall.total_sales)}</strong><em>виртуальные CAS</em></article>
-      <article className="metric"><small>ВЫПЛАЧЕНО ИГРОКАМ</small><strong>{compactCas(overall.total_payout)}</strong><em>{percentage(overall.total_payout, overall.total_sales)} от стоимости билетов</em></article>
-      <article className="metric"><small>ИГРОКОВ В СИСТЕМЕ</small><strong>{data.counts.users.toLocaleString("ru-RU")}</strong><em>{overall.participants.toLocaleString("ru-RU")} покупали билеты</em></article>
-    </section>
-    <ActivityChart />
-    <JackpotPanel data={data} />
-    <section className="panel control-room"><header><h2>Оперативный пульт</h2><span>ТОЛЬКО ЧТЕНИЕ · ОБНОВЛЯЕТСЯ ПРИ ОТКРЫТИИ</span></header><div className="control-status"><article><small>ПОСЛЕДНЯЯ УСПЕШНАЯ ПРОВЕРКА</small><strong>{date(data.operations.scheduler.last_succeeded_at)}</strong><span>{data.operations.scheduler.last_error ? `ОШИБКА: ${data.operations.scheduler.last_error}` : "ПЛАНИРОВЩИК В НОРМЕ"}</span></article><article><small>ЗАВИСШИЕ ТИРАЖИ</small><strong className={data.operations.stuck_draw_count ? "negative" : "positive"}>{data.operations.stuck_draw_count}</strong><span>ОЖИДАЮТ ДОСТАВКИ: {data.operations.notifications.PENDING ?? 0} · ОШИБКИ: {data.operations.notifications.FAILED ?? 0}</span></article></div><div className="operations-table"><table><thead><tr><th>Ближайший тираж</th><th>Время / cutoff</th><th>Участники</th><th>Билеты</th><th>Продажи</th><th>Статус</th></tr></thead><tbody>{data.operations.next_draws.map((draw) => <tr key={draw.id}><td><b>{draw.lottery_name}</b> №{drawNumber(draw.draw_number)}</td><td>{date(draw.scheduled_at)}<small>{date(draw.sales_close_at)}</small></td><td>{draw.participant_count}</td><td>{draw.ticket_count}</td><td>{cas(draw.total_sales)}</td><td><span className={`tag ${draw.status.toLowerCase()}`}>{translated(draw.status, drawStatuses)}</span></td></tr>)}</tbody></table></div></section>
-    <section className="panel"><header><h2>Контроль фондов</h2><span>ТЕКУЩЕЕ СОСТОЯНИЕ</span></header>
-      <div className="fund-list">{data.lotteries.filter((lottery) => lottery.is_active).map((lottery) => <article key={lottery.id}><div><b>{lottery.name}</b><small>ТИРАЖ {lottery.next_draw_number ? drawNumber(lottery.next_draw_number) : "—"}</small></div><dl><dt>ДЖЕКПОТ</dt><dd>{cas(lottery.current_jackpot)}</dd><dt>РАСПРЕДЕЛЕНИЕ</dt><dd>{cas(lottery.distribution_fund)}</dd><dt>РЕЗЕРВ</dt><dd>{cas(lottery.reserve)}</dd></dl></article>)}</div>
-    </section>
+    <div className="owner-shortcuts"><button onClick={() => onNavigate("players")}>Найти игрока <span>→</span></button><button onClick={() => onNavigate("lotteries")}>Настроить лотереи <span>→</span></button><button onClick={() => onNavigate("draws")}>Посмотреть тиражи <span>→</span></button><button onClick={() => onNavigate("analytics")}>Сравнить результаты <span>→</span></button></div>
+    <ActivityChart refreshedAt={refreshedAt} />
+    <section className="panel"><header><div><h2>Ближайшие тиражи</h2><span>Когда играем и сколько билетов уже куплено · МСК</span></div><button className="text-action" onClick={() => onNavigate("schedule")}>Всё расписание →</button></header><div className="table-wrap"><table><thead><tr><th>Лотерея / тираж</th><th>Розыгрыш</th><th>Продажи до</th><th>Игроки</th><th>Билеты</th><th>Стоимость билетов</th></tr></thead><tbody>{data.operations.next_draws.map((draw) => <tr key={draw.id}><td><button className="text-action" onClick={() => onOpen(draw.id)}>{draw.lottery_name} №{drawNumber(draw.draw_number)}</button></td><td>{date(draw.scheduled_at)}</td><td>{date(draw.sales_close_at)}</td><td>{draw.participant_count}</td><td>{draw.ticket_count}</td><td>{cas(draw.total_sales)}</td></tr>)}</tbody></table></div>{!data.operations.next_draws.length && <p className="source-note">Ближайших тиражей пока нет.</p>}</section>
+  </>;
+}
+
+function SystemHealth({ data }: { data: Dashboard }) {
+  return <>
+    <div className="system-strip"><Status active={data.database_healthy}>БАЗА ДАННЫХ {data.database_healthy ? "РАБОТАЕТ" : "НЕДОСТУПНА"}</Status><Status active={data.scheduler_enabled}>ПЛАНИРОВЩИК {data.scheduler_enabled ? "АКТИВЕН" : "ОТКЛЮЧЁН"}</Status><Status active={data.bot_configured}>БОТ {data.bot_configured ? "НАСТРОЕН" : "НЕ НАСТРОЕН"}</Status><span>v{data.version} · работает {Math.floor(data.uptime_seconds / 60)} мин.</span></div>
+    <section className="panel"><header><h2>Работа расписания и доставки</h2><span>Техническая диагностика</span></header><div className="control-status"><article><small>Последняя успешная проверка</small><strong>{date(data.operations.scheduler.last_succeeded_at)}</strong><span>{data.operations.scheduler.last_error ?? "Нет сохранённой ошибки планировщика"}</span></article><article><small>Задержанные тиражи</small><strong>{data.operations.stuck_draw_count}</strong><span>Ожидают доставки: {data.operations.notifications.PENDING ?? 0} · ошибки: {data.operations.notifications.FAILED ?? 0}</span></article></div></section>
+    <section className="panel"><header><h2>Счета и фонды</h2><span>Текущее состояние</span></header><div className="table-wrap"><table><thead><tr><th>Лотерея</th><th>Джекпот</th><th>Распределение</th><th>Резерв</th></tr></thead><tbody>{data.lotteries.map((lottery) => <tr key={lottery.id}><td>{lottery.name}</td><td>{cas(lottery.current_jackpot)}</td><td>{cas(lottery.distribution_fund)}</td><td>{cas(lottery.reserve)}</td></tr>)}</tbody></table></div></section>
   </>;
 }
 
 function PlayerCard({ player, onSaved }: { player: Player; onSaved: () => Promise<void> }) {
+  const [formError, setFormError] = useState("");
   const [amount, setAmount] = useState(String(player.balance));
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [autoReason, setAutoReason] = useState("");
   const [autoBusy, setAutoBusy] = useState(false);
   const save = async () => {
-    setBusy(true);
+    setBusy(true); setFormError("");
     try {
       await adminApi.setBalance(player.id, Number(amount), reason);
       setReason("");
       await onSaved();
-    } finally { setBusy(false); }
+    } catch (reason) { setFormError(reason instanceof Error ? reason.message : "Не удалось изменить баланс."); } finally { setBusy(false); }
   };
   const toggleAutoPlay = async () => {
-    setAutoBusy(true);
+    setAutoBusy(true); setFormError("");
     try {
       await adminApi.setAutoPlay(player.id, !player.auto_play_enabled, autoReason);
       setAutoReason("");
       await onSaved();
-    } finally { setAutoBusy(false); }
+    } catch (reason) { setFormError(reason instanceof Error ? reason.message : "Не удалось изменить автоучастие."); } finally { setAutoBusy(false); }
   };
   return <article className="player-card">
+    {formError && <p className="error" role="alert">{formError}</p>}
     <div className="player-head"><div className="avatar">{player.display_name.slice(0, 1)}</div><div><h3>{player.display_name}</h3><small>@{player.username ?? "без_логина"} · TG {player.telegram_id ?? "—"}</small></div><Status active={player.is_active}>{player.is_active ? "АКТИВЕН" : "ОТКЛЮЧЁН"}</Status></div>
     <div className="player-stats"><span><small>БАЛАНС</small><b>{cas(player.balance)}</b></span><span><small>БИЛЕТЫ</small><b>{player.ticket_count}</b></span><span><small>ПОТРАЧЕНО</small><b>{cas(player.spent)}</b></span><span><small>ВЫИГРАНО</small><b>{cas(player.won)}</b></span><span><small>ИТОГ</small><b className={player.net >= 0 ? "positive" : "negative"}>{cas(player.net)}</b></span></div>
     <div className="player-automation"><div><small>АВТОУЧАСТИЕ</small><b>{player.auto_play_enabled ? "5 случайных билетов на каждый тираж" : "Отключено"}</b><span>Telegram: {player.telegram_notifications_enabled ? "разрешён" : "не разрешён"} · последний успех: {date(player.auto_play_last_succeeded_at)}{player.auto_play_last_error ? ` · ошибка: ${player.auto_play_last_error}` : ""}</span></div><label>Причина автоучастия<input value={autoReason} onChange={(event) => setAutoReason(event.target.value)} placeholder="Почему меняется автоучастие?" /></label><button disabled={autoBusy || !autoReason.trim()} onClick={() => void toggleAutoPlay()}>{player.auto_play_enabled ? "ОТКЛЮЧИТЬ" : "ВКЛЮЧИТЬ 5 БИЛЕТОВ"}</button></div>
@@ -314,13 +318,13 @@ function LotteryCard({ lottery, onSaved }: { lottery: Lottery; onSaved: () => Pr
     }
   };
   return <article className="lottery-card">
-    <header><div><small>{lottery.kind === "WEEKLY" ? "ЕЖЕНЕДЕЛЬНАЯ" : "ЕЖЕДНЕВНАЯ"}</small><h2>{lottery.name}</h2></div><Status active={lottery.is_active}>{lottery.is_active ? "АКТИВНА" : "НЕАКТИВНА"}</Status></header>
+    <header><div><small>{["flash", "shadow", "pulse"].includes(lottery.code) ? "БЫСТРАЯ" : lottery.kind === "WEEKLY" ? "ЕЖЕНЕДЕЛЬНАЯ" : "ЕЖЕДНЕВНАЯ"}</small><h2>{lottery.name}</h2></div><Status active={lottery.is_active}>{lottery.is_active ? "АКТИВНА" : "НЕАКТИВНА"}</Status></header>
     <div className="fund-matrix"><span><small>ТЕКУЩИЙ ДЖЕКПОТ</small><b>{cas(lottery.current_jackpot)}</b></span><span><small>СХЕМА ПОКУПКИ</small><b>100% в джекпот</b></span><span><small>СЛЕДУЮЩИЙ ТИРАЖ</small><b>{lottery.next_draw_number ? `№${drawNumber(lottery.next_draw_number)}` : "—"}</b><em>{date(lottery.next_draw_at)}</em></span></div>
-    <div className="config-grid"><label>Цена билета, CAS<input type="number" min="1" value={price} onChange={(e) => setPrice(e.target.value)} /></label><label>Базовый джекпот после выигрыша, CAS<input type="number" min="0" value={base} onChange={(e) => setBase(e.target.value)} /></label><label>Cutoff, минут<input type="number" min="0" max="1440" value={cutoff} onChange={(e) => setCutoff(e.target.value)} /></label><label>Лимит одной покупки<input type="number" min="1" max="1000" value={purchaseLimit} onChange={(e) => setPurchaseLimit(e.target.value)} /></label><label>Лимит игрока на тираж<input type="number" min="1" max="100000" value={playerLimit} onChange={(e) => setPlayerLimit(e.target.value)} /></label></div>
+    <div className="config-grid"><label>Цена билета, CAS<input type="number" min="1" value={price} onChange={(e) => setPrice(e.target.value)} /></label><label>Базовый джекпот после выигрыша, CAS<input type="number" min="0" value={base} onChange={(e) => setBase(e.target.value)} /></label><label>Закрыть продажи за, минут<input type="number" min="0" max="1440" value={cutoff} onChange={(e) => setCutoff(e.target.value)} /></label><label>Лимит одной покупки<input type="number" min="1" max="1000" value={purchaseLimit} onChange={(e) => setPurchaseLimit(e.target.value)} /></label><label>Лимит игрока на тираж<input type="number" min="1" max="100000" value={playerLimit} onChange={(e) => setPlayerLimit(e.target.value)} /></label></div>
     <label className="reason">Обязательная причина для аудита<input value={reason} onChange={(e) => setReason(e.target.value)} /></label>
     <div className="lottery-actions"><div className="actions"><button disabled={busy || jackpotBusy || !reason.trim()} onClick={() => void saveAll()}>{busy ? "СОХРАНЯЕМ…" : "СОХРАНИТЬ НАСТРОЙКИ"}</button></div><div className="jackpot-adjust"><label>Текущий джекпот, CAS<input type="number" min="0" value={currentJackpot} onChange={(e) => setCurrentJackpot(e.target.value)} /></label><button disabled={busy || jackpotBusy || !reason.trim()} onClick={() => void saveJackpot()}>{jackpotBusy ? "МЕНЯЕМ…" : "ИЗМЕНИТЬ ЧЕРЕЗ ЖУРНАЛ"}</button></div></div>
     {message && <p className={message.includes("сохранен") || message.includes("изменён") ? "save-message" : "save-message error"}>{message}</p>}
-    <footer>Расписание: <code>{schedule(lottery.schedule)}</code> · новые значения cutoff применяются при подготовке следующих тиражей. Завершённые тиражи и купленные билеты не изменяются.</footer>
+    <footer>Расписание: <code>{schedule(lottery.schedule)}</code> · новое время закрытия продаж применяются при подготовке следующих тиражей. Завершённые тиражи и купленные билеты не изменяются.</footer>
   </article>;
 }
 
@@ -334,8 +338,13 @@ function TransactionTable({ rows }: { rows: Transaction[] }) {
 
 function DrawDetailPanel({ detail, onClose }: { detail: DrawDetail; onClose: () => void }) {
   const draw = detail.draw;
-  const jackpotWon = draw.jackpot_opening !== null && draw.jackpot_closing !== null && draw.jackpot_closing < draw.jackpot_opening;
-  return <div className="drawer"><button aria-label="Закрыть" className="close" onClick={onClose}>×</button><small>НЕИЗМЕНЯЕМАЯ ЗАПИСЬ ТИРАЖА</small><h2>{draw.lottery_name} №{drawNumber(draw.public_number)}</h2><div className="winning">{draw.winning_numbers?.map((n) => <i className={draw.lottery_code === "weekly" && n > 35 ? "special" : ""} key={n}>{displayNumber(draw.lottery_code, n)}</i>) ?? "НЕТ РЕЗУЛЬТАТА"}</div>{jackpotWon && <div className="jackpot-hit"><small>ДЖЕКПОТ ЭТОГО ТИРАЖА СОРВАН</small><strong>{cas(draw.jackpot_opening)}</strong><span>Эта сумма делится между билетами джекпот-категории. Общая выплата тиража указана отдельно.</span></div>}<dl className="detail-list"><dt>Статус</dt><dd>{translated(draw.status, drawStatuses)}</dd><dt>По расписанию</dt><dd>{date(draw.scheduled_at)}</dd><dt>Проведён</dt><dd>{date(draw.executed_at)}</dd><dt>Билетов</dt><dd>{draw.ticket_count.toLocaleString("ru-RU")}</dd><dt>Продажи</dt><dd>{cas(draw.total_sales)}</dd><dt>Все выплаты тиража</dt><dd>{cas(draw.total_payout)}</dd><dt>Джекпот до тиража</dt><dd>{cas(draw.jackpot_opening)}</dd><dt>Джекпот после тиража</dt><dd>{cas(draw.jackpot_closing)}</dd><dt>Использовано из Фонда Каспера</dt><dd>{cas(draw.kasper_fund_used)}</dd><dt>Код связи</dt><dd><code>{draw.correlation_id}</code></dd></dl><h3>Билеты ({detail.tickets.length})</h3>{detail.tickets.map((ticket) => <div className="ticket-row" key={ticket.id}><b>№{drawNumber(ticket.public_number)}</b><span>{ticket.numbers.map((number) => displayNumber(draw.lottery_code, number)).join(" · ")}</span><span>совпадений: {displayMatches(draw.lottery_code, ticket.matches, ticket.numbers.length === 7)}</span><strong>{cas(ticket.prize_amount)}</strong></div>)}</div>;
+  const jackpotWon = (draw.jackpot_amount ?? 0) > 0;
+  useEffect(() => {
+    const close = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, [onClose]);
+  return <div className="drawer" role="dialog" aria-modal="true" aria-label={`Тираж ${draw.lottery_name} №${drawNumber(draw.public_number)}`}><button aria-label="Закрыть" className="close" onClick={onClose}>×</button><small>НЕИЗМЕНЯЕМАЯ ЗАПИСЬ ТИРАЖА</small><h2>{draw.lottery_name} №{drawNumber(draw.public_number)}</h2><div className="winning">{draw.winning_numbers?.map((n) => <i className={draw.lottery_code === "weekly" && n > 35 ? "special" : ""} key={n}>{displayNumber(draw.lottery_code, n)}</i>) ?? "НЕТ РЕЗУЛЬТАТА"}</div>{jackpotWon && <div className="jackpot-hit"><small>ДЖЕКПОТ ЭТОГО ТИРАЖА СОРВАН</small><strong>{cas(draw.jackpot_amount)}</strong><span>Эта сумма делится между билетами джекпот-категории. Общая выплата тиража указана отдельно.</span></div>}<dl className="detail-list"><dt>Статус</dt><dd>{translated(draw.status, drawStatuses)}</dd><dt>По расписанию</dt><dd>{date(draw.scheduled_at)}</dd><dt>Проведён</dt><dd>{date(draw.executed_at)}</dd><dt>Билетов</dt><dd>{draw.ticket_count.toLocaleString("ru-RU")}</dd><dt>Продажи</dt><dd>{cas(draw.total_sales)}</dd><dt>Все выплаты тиража</dt><dd>{cas(draw.total_payout)}</dd><dt>Джекпот до тиража</dt><dd>{cas(draw.jackpot_opening)}</dd><dt>Джекпот после тиража</dt><dd>{cas(draw.jackpot_closing)}</dd><dt>Использовано из Фонда Каспера</dt><dd>{cas(draw.kasper_fund_used)}</dd></dl><h3>Билеты ({detail.tickets.length})</h3>{detail.tickets.map((ticket) => <div className="ticket-row" key={ticket.id}><b>№{drawNumber(ticket.public_number)}</b><span>{ticket.numbers.map((number) => displayNumber(draw.lottery_code, number)).join(" · ")}</span><span>совпадений: {displayMatches(draw.lottery_code, ticket.matches, ticket.numbers.length === 7)}</span><strong>{cas(ticket.prize_amount)}</strong></div>)}</div>;
 }
 
 function DevelopmentView({ changelog, devlog }: { changelog: ReleaseNote[]; devlog: ReleaseNote[] }) {
@@ -380,29 +389,40 @@ function DrawsView({ draws, lotteries, onOpen }: { draws: Draw[]; lotteries: Lot
   </>;
 }
 
-function JackpotPanel({ data }: { data: Dashboard }) {
+function JackpotPanel({ data, analytics, onOpen }: { data: Dashboard; analytics?: TicketAnalytics; onOpen?: (id: string) => void }) {
+  const last = data.jackpots.last_win ?? data.jackpots.history[0];
+  const [showHistory, setShowHistory] = useState(false);
+  const [lotteryFilter, setLotteryFilter] = useState("");
+  const history = data.jackpots.history.filter((event) => !lotteryFilter || event.lottery_code === lotteryFilter);
   return <section className="panel jackpot-command">
-    <header><h2>Джекпот-контроль</h2><span>ФАКТИЧЕСКИЕ ВЫПЛАТЫ · ВСЁ ВРЕМЯ</span></header>
-    <div className="metric-grid">
-      <article className="metric"><small>ФОНД КАСПЕРА</small><strong>{compactCas(data.jackpots.kasper_fund_balance)}</strong><em>обычные выигрыши и восстановление джекпотов</em></article>
-      <article className="metric"><small>ДЖЕКПОТОВ СОРВАНО</small><strong>{data.jackpots.total_wins}</strong><em>количество тиражей с джекпотом</em></article>
-      <article className="metric"><small>ВСЕГО ВЫПЛАЧЕНО ДЖЕКПОТАМИ</small><strong>{compactCas(data.jackpots.total_paid)}</strong><em>сумма за всю историю, не последний выигрыш</em></article>
-      <article className="metric"><small>КРУПНЕЙШИЙ ДЖЕКПОТ</small><strong>{compactCas(data.jackpots.largest_win)}</strong></article>
+    <header><div><h2>Джекпоты</h2><span>За всю историю · один сорванный джекпот = один тираж, даже если победителей несколько</span></div></header>
+    <div className="metric-grid jackpot-metrics">
+      <article className="metric jackpot-count"><small>Всего сорвано джекпотов</small><strong>{data.jackpots.total_wins.toLocaleString("ru-RU")}</strong><em>тиражей с выплатой джекпота</em></article>
+      <article className="metric"><small>Общая сумма джекпотов</small><strong>{cas(data.jackpots.total_paid)}</strong><em>действительно выплачено игрокам</em></article>
+      <article className="metric latest-jackpot"><small>Последний выигрыш джекпота</small><strong>{last ? cas(last.jackpot_amount) : "Пока не сорван"}</strong><em>{last ? `${last.lottery_name} · ${date(last.occurred_at)} МСК` : "Здесь появится первая выплата"}</em>{last && onOpen && <button className="text-action" onClick={() => onOpen(last.draw_id)}>Тираж {last.draw_number ? `№${drawNumber(last.draw_number)}` : "и билеты"} →</button>}</article>
+      <article className="metric"><small>Самый крупный джекпот</small><strong>{cas(data.jackpots.largest_win)}</strong><em>рекорд одного тиража за всё время</em></article>
     </div>
-    <div className="table-wrap"><table><thead><tr><th>Лотерея</th><th>Сорвано раз</th><th>Выплачено за всё время</th><th>Последний джекпот</th></tr></thead><tbody>{data.jackpots.lotteries.map((row) => <tr key={row.code}><td><b>{row.name}</b></td><td>{row.win_count}</td><td>{cas(row.total_paid)}</td><td>{date(row.last_win_at)}</td></tr>)}</tbody></table></div>
-    {data.jackpots.history.length > 0 && <><h3 className="subheading">Последние сорванные джекпоты</h3><div className="table-wrap"><table><thead><tr><th>Дата</th><th>Лотерея</th><th>Джекпот этого тиража</th><th>Выигрышных билетов / игроков</th><th>Джекпот после расчёта</th></tr></thead><tbody>{data.jackpots.history.map((row) => <tr key={row.id}><td>{date(row.occurred_at)}</td><td>{row.lottery_name}</td><td className="positive"><b>{cas(row.jackpot_amount)}</b></td><td>{row.winner_ticket_count} / {row.winner_user_count}</td><td>{cas(row.base_jackpot_after)}</td></tr>)}</tbody></table></div></>}
+    <h3 className="subheading">По каждой лотерее</h3>
+    <div className="table-wrap"><table className="jackpot-lotteries"><thead><tr><th>Лотерея</th><th>Сейчас разыгрывается</th><th>Сорвано</th><th>Выплачено за всё время</th><th>Последний выигрыш</th>{analytics && <th>Билетов рассчитано</th>}</tr></thead><tbody>{data.jackpots.lotteries.map((row) => {
+      const lottery = data.lotteries.find((item) => item.code === row.code);
+      const ticketRow = analytics?.lotteries.find((item) => item.lottery_id === (row.lottery_id ?? lottery?.id));
+      return <tr key={row.code} className={`lottery-row lottery-${row.code}`}><td><b>{row.name}</b><small>{row.is_active === false ? "В архиве" : ["flash", "shadow", "pulse"].includes(row.code) ? "Fast" : lottery?.kind === "WEEKLY" ? "Еженедельная" : "Ежедневная"}</small></td><td>{lottery?.is_active ? cas(lottery.current_jackpot) : "—"}<small>{lottery?.is_active ? date(lottery.next_draw_at) : "Нет продаж"}</small></td><td><b className="win-count">{row.win_count}</b></td><td>{cas(row.total_paid)}</td><td>{row.last_win_amount != null ? <><b>{cas(row.last_win_amount)}</b><small>{date(row.last_win_at)} МСК</small>{row.last_draw_id && onOpen && <button className="text-action" onClick={() => onOpen(row.last_draw_id!)}>Открыть тираж №{drawNumber(row.last_draw_number ?? 0)} →</button>}</> : row.win_count ? <span>Сумма недоступна<small>{date(row.last_win_at)}</small></span> : <span className="muted">Ещё не сорван</span>}</td>{analytics && <td>{ticketRow?.settled_tickets.toLocaleString("ru-RU") ?? "—"}<small>{ticketRow?.active_tickets.toLocaleString("ru-RU") ?? "—"} активных сейчас</small></td>}</tr>;
+    })}</tbody></table></div>
+    <p className="source-note">Сумма джекпота относится ко всему тиражу и может делиться между несколькими билетами. Количество билетов помогает сравнить объём участия; прошлые выигрыши не определяют следующий результат.</p>
+    <button className="history-toggle" aria-expanded={showHistory} onClick={() => setShowHistory((value) => !value)}>{showHistory ? "Скрыть историю джекпотов" : `Показать последние выигрыши (${data.jackpots.history.length})`} <span>{showHistory ? "−" : "+"}</span></button>
+    {showHistory && <div className="jackpot-history"><label>Лотерея в истории джекпотов<select value={lotteryFilter} onChange={(event) => setLotteryFilter(event.target.value)}><option value="">Все лотереи</option>{data.jackpots.lotteries.map((lottery) => <option key={lottery.code} value={lottery.code}>{lottery.name}</option>)}</select></label><p className="source-note">Последние 50 джекпотов системы. Итоги выше учитывают всю историю.</p><div className="table-wrap"><table><thead><tr><th>Дата, МСК</th><th>Лотерея / тираж</th><th>Джекпот этого тиража</th><th>Выигрышных билетов</th><th>Игроков-победителей</th></tr></thead><tbody>{history.map((row) => <tr key={row.id}><td>{date(row.occurred_at)}</td><td>{onOpen ? <button className="text-action" onClick={() => onOpen(row.draw_id)}>{row.lottery_name} {row.draw_number ? `№${drawNumber(row.draw_number)}` : "→"}</button> : row.lottery_name}</td><td className="positive">{cas(row.jackpot_amount)}</td><td>{row.winner_ticket_count}</td><td>{row.winner_user_count}</td></tr>)}</tbody></table></div>{!history.length && <p className="source-note">В показанной части истории нет джекпотов этой лотереи.</p>}</div>}
   </section>;
 }
 
 function AnalyticsView({ tab, onTab, dashboard, analytics, lotteries, statistics, selectedLotteryId, windowSize, onLottery, onWindow }: { tab: AnalyticsTab; onTab: (tab: AnalyticsTab) => void; dashboard: Dashboard; analytics: TicketAnalytics; lotteries: Lottery[]; statistics: NumberStatisticsReport | null; selectedLotteryId: string; windowSize: number; onLottery: (id: string) => void; onWindow: (size: number) => void }) {
-  const jackpotByName = new Map(dashboard.jackpots.lotteries.map((row) => [row.name, row]));
-  const rows = analytics.lotteries.map((row) => ({ ...row, jackpot: jackpotByName.get(row.lottery_name) }));
-  const fast = rows.filter((row) => ["FLASH", "SHADOW", "PULSE"].includes(row.lottery_name.toUpperCase()));
+  const jackpotById = new Map(dashboard.jackpots.lotteries.map((row) => [row.lottery_id ?? dashboard.lotteries.find((item) => item.code === row.code)?.id, row]));
+  const rows = analytics.lotteries.map((row) => ({ ...row, jackpot: jackpotById.get(row.lottery_id ?? undefined) }));
+  const fast = rows.filter((row) => ["flash", "shadow", "pulse"].includes(row.jackpot?.code ?? ""));
   const regular = rows.filter((row) => !fast.includes(row));
-  const renderComparison = (items: typeof rows, title: string) => <section className="panel analytics-panel"><header><h2>{title}</h2><span>ФАКТИЧЕСКАЯ ИСТОРИЯ</span></header><div className="table-wrap"><table><thead><tr><th>Лотерея</th><th>Тиражей с джекпотом</th><th>Билеты / выигрышные</th><th>Win Rate</th><th>Потрачено</th><th>Выплачено</th><th>RTP</th><th>Крупнейший выигрыш</th></tr></thead><tbody>{items.map((row) => <tr key={row.lottery_id}><td><b>{row.lottery_name}</b></td><td>{row.jackpot?.win_count ?? 0}</td><td>{row.settled_tickets.toLocaleString("ru-RU")} / {row.winning_tickets.toLocaleString("ru-RU")}</td><td>{percentage(row.winning_tickets, row.settled_tickets)}</td><td>{compactCas(row.total_sales)}</td><td>{compactCas(row.total_payout)}</td><td>{percentage(row.total_payout, row.total_sales)}</td><td>{compactCas(row.jackpot?.total_paid ? Math.max(...dashboard.jackpots.history.filter((event) => event.lottery_name === row.lottery_name).map((event) => event.jackpot_amount), 0) : 0)}</td></tr>)}</tbody></table></div></section>;
+  const renderComparison = (items: typeof rows, title: string) => <section className="panel analytics-panel"><header><h2>{title}</h2><span>ФАКТИЧЕСКАЯ ИСТОРИЯ</span></header><div className="table-wrap"><table><thead><tr><th>Лотерея</th><th>Тиражей с джекпотом</th><th>Билеты / выигрышные</th><th>Выигрышных билетов</th><th>Потрачено</th><th>Выплачено</th><th>Выплаты / покупки</th><th>Крупнейший джекпот</th></tr></thead><tbody>{items.map((row) => <tr key={row.lottery_id}><td><b>{row.lottery_name}</b></td><td>{row.jackpot?.win_count ?? 0}</td><td>{row.settled_tickets.toLocaleString("ru-RU")} / {row.winning_tickets.toLocaleString("ru-RU")}</td><td>{percentage(row.winning_tickets, row.settled_tickets)}</td><td>{compactCas(row.total_sales)}</td><td>{compactCas(row.total_payout)}</td><td>{percentage(row.total_payout, row.total_sales)}</td><td>{compactCas(row.jackpot?.largest_win ?? 0)}</td></tr>)}</tbody></table></div></section>;
   return <>
     <SectionTabs value={tab} label="Разделы аналитики" items={[{ id: "lotteries", label: "Лотереи" }, { id: "tickets", label: "Билеты" }, { id: "numbers", label: "Числа" }, { id: "finances", label: "Финансы" }]} onChange={onTab} />
-    {tab === "lotteries" && <>{fast.length > 0 && renderComparison(fast, "Fast: сравнение цикла")}{renderComparison(regular, "Daily, Weekly и Special")}</>}
+    {tab === "lotteries" && <>{fast.length > 0 && renderComparison(fast, "Fast: результаты за всё время")}{renderComparison(regular, "Daily, Weekly и Special")}</>}
     {tab === "tickets" && <TicketAnalyticsView data={analytics} />}
     {tab === "numbers" && statistics && <StatisticsView lotteries={lotteries} report={statistics} selectedLotteryId={selectedLotteryId} windowSize={windowSize} onLottery={onLottery} onWindow={onWindow} />}
     {tab === "numbers" && !statistics && <div className="loading">ЗАГРУЖАЕМ СТАТИСТИКУ ЧИСЕЛ…</div>}
@@ -410,9 +430,11 @@ function AnalyticsView({ tab, onTab, dashboard, analytics, lotteries, statistics
   </>;
 }
 
-function SystemView({ tab, onTab, transactions, notifications, audit, onTransactions }: { tab: SystemTab; onTab: (tab: SystemTab) => void; transactions: Transaction[]; notifications: NotificationItem[]; audit: AuditEntry[]; onTransactions: (query: string) => void }) {
+function SystemView({ tab, onTab, transactions, notifications, audit, onTransactions, dashboard, releaseNotes }: { dashboard: Dashboard | null; releaseNotes: { changelog: ReleaseNote[]; devlog: ReleaseNote[] }; tab: SystemTab; onTab: (tab: SystemTab) => void; transactions: Transaction[]; notifications: NotificationItem[]; audit: AuditEntry[]; onTransactions: (query: string) => void }) {
   return <>
-    <SectionTabs value={tab} label="Системные журналы" items={[{ id: "ledger", label: "Журнал CAS" }, { id: "notifications", label: "Уведомления" }, { id: "audit", label: "Аудит действий" }]} onChange={onTab} />
+    <SectionTabs value={tab} label="Системные журналы" items={[{ id: "health", label: "Состояние" }, { id: "ledger", label: "Журнал CAS" }, { id: "notifications", label: "Уведомления" }, { id: "audit", label: "Аудит действий" }, { id: "development", label: "Разработка" }]} onChange={onTab} />
+    {tab === "health" && dashboard && <SystemHealth data={dashboard} />}
+    {tab === "development" && <DevelopmentView changelog={releaseNotes.changelog} devlog={releaseNotes.devlog} />}
     {tab === "ledger" && <><TransactionFilters onApply={onTransactions} /><section className="panel"><header><h2>Неизменяемый журнал CAS</h2><span>ЗАПИСЕЙ: {transactions.length}</span></header><TransactionTable rows={transactions} /></section></>}
     {tab === "notifications" && <section className="panel"><header><h2>Очередь уведомлений</h2><span>ДОСТАВЛЕНО · ОШИБКА · ОЖИДАЕТ</span></header><div className="table-wrap"><table><thead><tr><th>Создано</th><th>Тип</th><th>Игрок</th><th>Статус</th><th>Попытки</th><th>Ошибка</th></tr></thead><tbody>{notifications.map((item) => <tr key={item.id}><td>{date(item.created_at)}</td><td>{translated(item.type, transactionTypes)}</td><td><code>{item.user_id.slice(0, 8)}</code></td><td><span className={`tag ${item.status.toLowerCase()}`}>{translated(item.status, { PENDING: "ожидает", PROCESSING: "отправляется", SENT: "доставлено", FAILED: "ошибка", CANCELLED: "отменено" })}</span></td><td>{item.attempts}</td><td>{item.last_error ?? "—"}</td></tr>)}</tbody></table></div></section>}
     {tab === "audit" && <section className="panel"><header><h2>Аудит действий администратора</h2><span>ХРАНИТСЯ ПОСТОЯННО</span></header><div className="audit-list">{audit.map((item) => <article key={item.id}><time>{date(item.created_at)}</time><b>{translated(item.action, auditActions)} · {translated(item.entity_type, entityTypes)}</b><p>{item.reason ?? "Причина не указана"}</p><code>{JSON.stringify(item.old_values)} → {JSON.stringify(item.new_values)}</code></article>)}</div></section>}
@@ -442,7 +464,10 @@ export default function App() {
   const [releaseNotes, setReleaseNotes] = useState<{ changelog: ReleaseNote[]; devlog: ReleaseNote[] }>({ changelog: [], devlog: [] });
   const [ticketAnalytics, setTicketAnalytics] = useState<TicketAnalytics | null>(null);
   const [analyticsTab, setAnalyticsTab] = useState<AnalyticsTab>("lotteries");
-  const [systemTab, setSystemTab] = useState<SystemTab>("ledger");
+  const [systemTab, setSystemTab] = useState<SystemTab>(() => window.location.pathname === "/development" ? "development" : "health");
+  const [loadedAt, setLoadedAt] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const loadGeneration = useRef(0);
 
   const navigate = useCallback((target: View) => {
     window.localStorage.setItem(viewStorageKey, target);
@@ -457,50 +482,49 @@ export default function App() {
     return () => window.removeEventListener("popstate", restore);
   }, []);
 
-  const load = useCallback(async (target: View) => {
-    setLoading(true); setError("");
+  const load = useCallback(async (target: View, silent = false) => {
+    const generation = ++loadGeneration.current;
+    const apply = (update: () => void) => { if (generation === loadGeneration.current) update(); };
+    if (!silent) setLoading(true);
+    setRefreshing(true);
+    setError("");
     try {
       if (target === "dashboard") {
         const [dashboardData, analyticsData] = await Promise.all([adminApi.dashboard(), adminApi.ticketAnalytics()]);
-        setDashboard(dashboardData);
-        setTicketAnalytics(analyticsData);
+        apply(() => { setDashboard(dashboardData); });
+        apply(() => { setTicketAnalytics(analyticsData); });
       }
-      if (target === "players") setPlayers(await adminApi.players());
-      if (target === "lotteries") setLotteries(await adminApi.lotteries());
+      if (target === "players") { const rows = await adminApi.players(); apply(() => setPlayers(rows)); }
+      if (target === "lotteries") { const rows = await adminApi.lotteries(); apply(() => setLotteries(rows)); }
       if (target === "schedule") {
         const [entries, available] = await Promise.all([adminApi.schedule(), adminApi.lotteries()]);
-        setScheduleEntries(entries);
-        setLotteries(available);
-        setScheduleLoadedAt(Date.now());
+        apply(() => { setScheduleEntries(entries); });
+        apply(() => { setLotteries(available); });
+        apply(() => { setScheduleLoadedAt(Date.now()); });
       }
       if (target === "draws") {
         const [drawRows, available] = await Promise.all([adminApi.draws(), adminApi.lotteries()]);
-        setDraws(drawRows);
-        setLotteries(available);
+        apply(() => { setDraws(drawRows); });
+        apply(() => { setLotteries(available); });
       }
       if (target === "system") {
-        const [ledgerRows, notificationRows, auditRows] = await Promise.all([adminApi.transactions(), adminApi.notifications(), adminApi.audit()]);
-        setTransactions(ledgerRows);
-        setNotifications(notificationRows);
-        setAudit(auditRows);
-      }
-      if (target === "development") {
-        const [changelog, devlog] = await Promise.all([adminApi.releaseNotes("changelog"), adminApi.releaseNotes("devlog")]);
-        setReleaseNotes({ changelog, devlog });
+        const [ledgerRows, notificationRows, auditRows, dashboardData, changelog, devlog] = await Promise.all([adminApi.transactions(), adminApi.notifications(), adminApi.audit(), adminApi.dashboard(), adminApi.releaseNotes("changelog"), adminApi.releaseNotes("devlog")]);
+        apply(() => { setTransactions(ledgerRows); setNotifications(notificationRows); setAudit(auditRows); setDashboard(dashboardData); setReleaseNotes({ changelog, devlog }); });
       }
       if (target === "analytics") {
         const [available, dashboardData, analyticsData] = await Promise.all([adminApi.lotteries(), adminApi.dashboard(), adminApi.ticketAnalytics()]);
-        setLotteries(available);
-        setDashboard(dashboardData);
-        setTicketAnalytics(analyticsData);
+        apply(() => { setLotteries(available); });
+        apply(() => { setDashboard(dashboardData); });
+        apply(() => { setTicketAnalytics(analyticsData); });
         const selectedId = statisticsLotteryId || available[0]?.id || "";
-        setStatisticsLotteryId(selectedId);
-        if (selectedId) setStatistics(await adminApi.statistics(selectedId, statisticsWindow));
+        apply(() => { setStatisticsLotteryId(selectedId); });
+        if (selectedId) { const report = await adminApi.statistics(selectedId, statisticsWindow); apply(() => setStatistics(report)); }
       }
+      apply(() => setLoadedAt(Date.now()));
     } catch (reason) {
       if (reason instanceof ApiError && reason.status === 401) setSession(null);
-      setError(reason instanceof Error ? reason.message : "Не удалось выполнить запрос администратора.");
-    } finally { setLoading(false); }
+      apply(() => setError(reason instanceof Error ? reason.message : "Не удалось выполнить запрос администратора."));
+    } finally { apply(() => { setLoading(false); setRefreshing(false); }); }
   }, [statisticsLotteryId, statisticsWindow]);
 
   useEffect(() => {
@@ -509,22 +533,29 @@ export default function App() {
     return () => window.clearTimeout(task);
   }, [session, view, load]);
 
+  useEffect(() => {
+    if (!session || view !== "dashboard") return;
+    const timer = window.setInterval(() => { if (document.visibilityState === "visible") void load("dashboard", true); }, 30_000);
+    return () => window.clearInterval(timer);
+  }, [session, view, load]);
+
+  const openDraw = (id: string) => { void adminApi.draw(id).then(setDrawDetail).catch((reason: Error) => setError(reason.message)); };
+
   if (checking) return <main className="boot">K-LOTO // ПРОВЕРКА СЕССИИ</main>;
   if (!session) return <Login onAuthenticated={setSession} />;
 
   const title = navigation.find((item) => item.id === view)?.label ?? "Управление";
   return <div className="admin-shell">
-    <aside><div className="brand"><span>K</span><div>CASPER CONTROL<small>PRIVATE OPERATIONS</small></div></div><nav>{navigation.map((item) => <button className={view === item.id ? "active" : ""} key={item.id} onClick={() => navigate(item.id)}><small>{item.code}</small>{item.label}</button>)}</nav><div className="operator"><small>AGENT 007 · ВЛАДЕЛЕЦ</small><b>{session.username}</b><button onClick={() => void adminApi.logout().finally(() => setSession(null))}>ЗАВЕРШИТЬ СЕАНС</button></div></aside>
-    <main className="workspace"><header className="topbar"><div><small>СЕКРЕТНО // K-LOTO // {title.toUpperCase()}</small><h1>{title}</h1></div><div className="agent-clearance"><span>AGENT</span><strong>007</strong><small>МСК {new Intl.DateTimeFormat("ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Europe/Moscow" }).format(new Date())}</small></div></header>
+    <aside><div className="brand"><span>K</span><div>Kasper Loto<small>Панель владельца</small></div></div><nav>{navigation.map((item) => <button className={view === item.id ? "active" : ""} key={item.id} onClick={() => navigate(item.id)}><small>{item.code}</small>{item.label}</button>)}</nav><div className="operator"><small>ВЛАДЕЛЕЦ</small><b>{session.username}</b><button onClick={() => void adminApi.logout().finally(() => setSession(null))}>ЗАВЕРШИТЬ СЕАНС</button></div></aside>
+    <main className="workspace"><header className="topbar"><div><small>Kasper Loto · управление</small><h1>{title}</h1></div><div className="refresh-control"><span>{loadedAt ? `Обновлено ${date(new Date(loadedAt).toISOString())} МСК` : "Загружаем данные"}</span><button disabled={loading || refreshing} onClick={() => void load(view, true)}>{refreshing ? "Обновляем…" : "Обновить данные"}</button></div></header>
       {error && <div className="error banner">{error}</div>}{loading && <div className="loading">ЗАГРУЖАЕМ ДАННЫЕ…</div>}
-      {!loading && view === "dashboard" && dashboard && ticketAnalytics && <DashboardView data={dashboard} analytics={ticketAnalytics} />}
-      {!loading && view === "players" && <><div className="owner-search"><input aria-label="Поиск игрока" placeholder="Имя, username, Telegram ID или UUID" value={playerSearch} onChange={(event) => setPlayerSearch(event.target.value)} /></div><section className="stack">{players.filter((player) => { const query = playerSearch.trim().toLowerCase(); return !query || `${player.display_name} ${player.username ?? ""} ${player.telegram_id ?? ""} ${player.id}`.toLowerCase().includes(query); }).map((player) => <PlayerCard key={player.id} player={player} onSaved={() => load("players")} />)}</section></>}
+      {!loading && view === "dashboard" && dashboard && ticketAnalytics && <DashboardView data={dashboard} analytics={ticketAnalytics} refreshedAt={loadedAt} onOpen={openDraw} onNavigate={navigate} />}
+      {!loading && view === "players" && <><div className="owner-search"><input aria-label="Поиск игрока" placeholder="Имя, @username или Telegram ID" value={playerSearch} onChange={(event) => setPlayerSearch(event.target.value)} /></div><section className="stack">{players.filter((player) => { const query = playerSearch.trim().toLowerCase(); return !query || `${player.display_name} ${player.username ?? ""} ${player.telegram_id ?? ""} ${player.id}`.toLowerCase().includes(query); }).map((player) => <PlayerCard key={player.id} player={player} onSaved={() => load("players")} />)}</section></>}
       {!loading && view === "lotteries" && <section className="stack">{lotteries.filter((lottery) => lottery.is_active).map((lottery) => <LotteryCard key={lottery.id} lottery={lottery} onSaved={() => load("lotteries")} />)}</section>}
       {!loading && view === "schedule" && <ScheduleView entries={scheduleEntries} lotteries={lotteries} loadedAt={scheduleLoadedAt} />}
-      {!loading && view === "draws" && <DrawsView draws={draws} lotteries={lotteries} onOpen={(id) => void adminApi.draw(id).then(setDrawDetail)} />}
+      {!loading && view === "draws" && <DrawsView draws={draws} lotteries={lotteries} onOpen={openDraw} />}
       {!loading && view === "analytics" && dashboard && ticketAnalytics && <AnalyticsView tab={analyticsTab} onTab={setAnalyticsTab} dashboard={dashboard} analytics={ticketAnalytics} lotteries={lotteries} statistics={statistics} selectedLotteryId={statisticsLotteryId} windowSize={statisticsWindow} onLottery={setStatisticsLotteryId} onWindow={setStatisticsWindow} />}
-      {!loading && view === "system" && <SystemView tab={systemTab} onTab={setSystemTab} transactions={transactions} notifications={notifications} audit={audit} onTransactions={(query) => void adminApi.transactions(query).then(setTransactions).catch((reason: Error) => setError(reason.message))} />}
-      {!loading && view === "development" && <DevelopmentView changelog={releaseNotes.changelog} devlog={releaseNotes.devlog} />}
+      {!loading && view === "system" && <SystemView dashboard={dashboard} releaseNotes={releaseNotes} tab={systemTab} onTab={setSystemTab} transactions={transactions} notifications={notifications} audit={audit} onTransactions={(query) => void adminApi.transactions(query).then(setTransactions).catch((reason: Error) => setError(reason.message))} />}
     </main>{drawDetail && <DrawDetailPanel detail={drawDetail} onClose={() => setDrawDetail(null)} />}
   </div>;
 }
@@ -535,13 +566,6 @@ function percentage(part: number, total: number): string {
 
 function TicketAnalyticsView({ data }: { data: TicketAnalytics }) {
   const overall = data.overall;
-  const difficulty = (wins: number, settled: number) => {
-    const rate = settled ? (wins / settled) * 100 : 0;
-    if (rate >= 25) return "выигрывают часто";
-    if (rate >= 10) return "умеренная сложность";
-    if (rate >= 2) return "выигрыш редкий";
-    return "особенно сложная";
-  };
   return <>
     <section className="metric-grid analytics-metrics">
       <article className="metric"><small>ВСЕГО БИЛЕТОВ</small><strong>{overall.total_tickets.toLocaleString("ru-RU")}</strong></article>
@@ -549,7 +573,7 @@ function TicketAnalyticsView({ data }: { data: TicketAnalytics }) {
       <article className="metric"><small>ВЫИГРЫШНЫЕ БИЛЕТЫ</small><strong>{overall.winning_tickets.toLocaleString("ru-RU")}</strong><em>{percentage(overall.winning_tickets, overall.settled_tickets)} от рассчитанных</em></article>
       <article className="metric"><small>ВЫПЛАЧЕНО</small><strong>{cas(overall.total_payout)}</strong><em>{percentage(overall.total_payout, overall.total_sales)} от продаж</em></article>
     </section>
-    <section className="panel analytics-panel"><header><h2>Результаты по каждой лотерее</h2><span>СРАВНЕНИЕ СЛОЖНОСТИ · КЭШ 60 СЕКУНД</span></header><div className="table-wrap"><table><thead><tr><th>Лотерея</th><th>Билеты</th><th>Рассчитано</th><th>Выигрышные</th><th>Фактический шанс</th><th>Оценка по истории</th><th>Потрачено</th><th>Выплачено</th></tr></thead><tbody>{data.lotteries.map((row) => <tr key={row.lottery_id}><td><b>{row.lottery_name}</b><small>{row.is_active ? "активна" : "архивная"}</small></td><td>{row.total_tickets.toLocaleString("ru-RU")}<small>{row.active_tickets.toLocaleString("ru-RU")} активных</small></td><td>{row.settled_tickets.toLocaleString("ru-RU")}</td><td className={row.winning_tickets ? "positive" : ""}>{row.winning_tickets.toLocaleString("ru-RU")}</td><td><b>{percentage(row.winning_tickets, row.settled_tickets)}</b></td><td><span className="difficulty">{difficulty(row.winning_tickets, row.settled_tickets)}</span></td><td>{compactCas(row.total_sales)}</td><td>{compactCas(row.total_payout)}<small>{percentage(row.total_payout, row.total_sales)} возврата</small></td></tr>)}</tbody></table></div><p className="source-note">«Фактический шанс» показывает долю выигрышных билетов в уже завершённых тиражах, а не обещание будущего выигрыша. Так видно, где по реальной истории выигрывали чаще и сколько CAS возвращалось игрокам.</p></section>
+    <section className="panel analytics-panel"><header><h2>Результаты по каждой лотерее</h2><span>Доля выигрышных билетов среди рассчитанных</span></header><div className="table-wrap"><table><thead><tr><th>Лотерея</th><th>Билеты</th><th>Рассчитано</th><th>Выигрышные</th><th>Доля выигрышных</th><th>Потрачено</th><th>Выплачено</th></tr></thead><tbody>{data.lotteries.map((row) => <tr key={row.lottery_id}><td><b>{row.lottery_name}</b><small>{row.is_active ? "активна" : "архивная"}</small></td><td>{row.total_tickets.toLocaleString("ru-RU")}<small>{row.active_tickets.toLocaleString("ru-RU")} активных</small></td><td>{row.settled_tickets.toLocaleString("ru-RU")}</td><td className={row.winning_tickets ? "positive" : ""}>{row.winning_tickets.toLocaleString("ru-RU")}</td><td><b>{percentage(row.winning_tickets, row.settled_tickets)}</b></td><td>{compactCas(row.total_sales)}</td><td>{compactCas(row.total_payout)}<small>{percentage(row.total_payout, row.total_sales)} возврата</small></td></tr>)}</tbody></table></div><p className="source-note">«Доля выигрышных» показывает долю выигрышных билетов в уже завершённых тиражах, а не обещание будущего выигрыша. Так видно, где по реальной истории выигрывали чаще и сколько CAS возвращалось игрокам.</p></section>
   </>;
 }
 
@@ -569,7 +593,7 @@ function StatisticsView({ lotteries, report, selectedLotteryId, windowSize, onLo
   const windowLabel = windowSize === 0 ? "все доступные" : `последние ${windowSize}`;
   return <>
     <section className="statistics-brief">
-      <div><span>АНАЛИТИЧЕСКОЕ ДОСЬЕ</span><h2>{report.lottery_name}</h2><p>Статистика начата заново с 1 сентября 2026 года. История тиражей и их номера не изменялись.</p></div>
+      <div><span>История выпадений</span><h2>{report.lottery_name}</h2><p>Статистика начата заново с 1 сентября 2026 года. История тиражей и их номера не изменялись.</p></div>
       <article><small>УЧТЕНО ТИРАЖЕЙ</small><strong>{report.draw_count}</strong><span>{windowLabel}</span></article>
       <article><small>ЧАЩЕ ВСЕГО</small><strong>{hottest?.appearances ? numberLabel(hottest.number) : "—"}</strong><span>{hottest?.appearances ? `${hottest.appearances} выпадений` : "данные накапливаются"}</span></article>
       <article><small>РЕЖЕ ВСЕГО</small><strong>{coldest?.appearances || report.draw_count ? coldest ? numberLabel(coldest.number) : "—" : "—"}</strong><span>{coldest ? `${coldest.appearances} выпадений` : "данные накапливаются"}</span></article>

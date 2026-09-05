@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { vi } from "vitest";
 
 import App from "./App";
@@ -56,8 +56,11 @@ beforeEach(() => {
 it("restores an authenticated session and renders Russian system truth", async () => {
   render(<App />);
 
-  expect(await screen.findByText("БАЗА ДАННЫХ РАБОТАЕТ")).toBeInTheDocument();
+  expect(await screen.findByText("Всего сорвано джекпотов")).toBeInTheDocument();
   expect(screen.getByText("12 000 CAS")).toBeInTheDocument();
+  expect(screen.queryByText("v0.8.0 · работает 2 мин.")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: /Система/ }));
+  expect(await screen.findByText("БАЗА ДАННЫХ РАБОТАЕТ")).toBeInTheDocument();
   expect(screen.getByText("v0.8.0 · работает 2 мин.")).toBeInTheDocument();
 });
 
@@ -75,8 +78,9 @@ it("distinguishes one draw jackpot from the all-time lottery total", async () =>
   render(<App />);
 
   expect(await screen.findByText("Выплачено за всё время")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: /Показать последние выигрыши/ }));
   expect(screen.getByText("Джекпот этого тиража")).toBeInTheDocument();
-  expect(screen.getByText("1 019 980 CAS")).toBeInTheDocument();
+  expect(screen.getAllByText("1 019 980 CAS")).toHaveLength(2);
 });
 
 it("shows login and authenticates when no session exists", async () => {
@@ -88,7 +92,7 @@ it("shows login and authenticates when no session exists", async () => {
   fireEvent.click(screen.getByRole("button", { name: "ВОЙТИ" }));
 
   await waitFor(() => expect(adminApi.login).toHaveBeenCalledWith("owner", "password"));
-  expect(await screen.findByText("БАЗА ДАННЫХ РАБОТАЕТ")).toBeInTheDocument();
+  expect(await screen.findByText("Всего сорвано джекпотов")).toBeInTheDocument();
 });
 
 it("adjusts a player balance only with a mandatory reason", async () => {
@@ -104,11 +108,11 @@ it("adjusts a player balance only with a mandatory reason", async () => {
   await waitFor(() => expect(adminApi.setBalance).toHaveBeenCalledWith("player", 9000, "Тестовое начисление"));
 });
 
-it("groups administration into eight task-oriented sections", async () => {
+it("groups administration into seven owner-oriented sections", async () => {
   render(<App />);
-  await screen.findByText("БАЗА ДАННЫХ РАБОТАЕТ");
+  await screen.findByText("Всего сорвано джекпотов");
 
-  for (const label of ["Обзор", "Лотереи", "Расписание", "Тиражи", "Игроки", "Аналитика", "Система", "Разработка"]) {
+  for (const label of ["Обзор", "Лотереи", "Расписание", "Тиражи", "Игроки", "Аналитика", "Система"]) {
     expect(screen.getByRole("button", { name: new RegExp(label) })).toBeInTheDocument();
   }
   fireEvent.click(screen.getByRole("button", { name: /Система/ }));
@@ -119,7 +123,7 @@ it("groups administration into eight task-oriented sections", async () => {
 
 it("loads the daily schedule only after opening its section", async () => {
   render(<App />);
-  await screen.findByText("БАЗА ДАННЫХ РАБОТАЕТ");
+  await screen.findByText("Всего сорвано джекпотов");
   expect(adminApi.schedule).not.toHaveBeenCalled();
 
   fireEvent.click(screen.getByRole("button", { name: /Расписание/ }));
@@ -132,7 +136,8 @@ it("loads the daily schedule only after opening its section", async () => {
 
 it("shows complete changelog and devlog in separate protected tabs", async () => {
   render(<App />);
-  fireEvent.click(await screen.findByRole("button", { name: /Разработка/ }));
+  fireEvent.click(await screen.findByRole("button", { name: /Система/ }));
+  fireEvent.click(await screen.findByRole("tab", { name: "Разработка" }));
 
   expect(await screen.findByText("Публичное изменение")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("tab", { name: "DEVLOG" }));
@@ -197,4 +202,59 @@ it("adjusts the current jackpot through the ledger action", async () => {
 
   await waitFor(() => expect(adminApi.setJackpot).toHaveBeenCalledWith("lottery", 999999, "Решение владельца"));
   expect(await screen.findByText("Текущий джекпот изменён через журнал CAS.")).toBeInTheDocument();
+});
+
+
+it("shows a lottery's last amount even when its event is outside the history window", async () => {
+  vi.mocked(adminApi.dashboard).mockResolvedValue({ ...dashboard, jackpots: { ...dashboard.jackpots,
+    total_wins: 90, total_paid: 99_000_000, largest_win: 88_000_000,
+    lotteries: [{ lottery_id: "lottery", code: "weekly", name: "Weekly 5/20", win_count: 90, total_paid: 99_000_000, last_win_at: "2026-09-04T12:00:00Z", last_win_amount: 12_345, largest_win: 88_000_000, last_draw_number: 8, last_draw_id: "old-draw" }], history: [],
+  } });
+  render(<App />);
+  expect(await screen.findByText("12 345 CAS")).toBeInTheDocument();
+  expect(screen.getByText("Открыть тираж №0008 →")).toBeInTheDocument();
+  expect(screen.getAllByText("99 000 000 CAS")).toHaveLength(2);
+  fireEvent.click(screen.getByRole("button", { name: /Аналитика/ }));
+  expect(await screen.findByText("88 млн CAS")).toBeInTheDocument();
+});
+
+it("keeps expanded jackpot history when the owner refreshes data", async () => {
+  render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /Показать последние выигрыши/ }));
+  fireEvent.click(await screen.findByRole("button", { name: "Обновить данные" }));
+  await waitFor(() => expect(adminApi.dashboard).toHaveBeenCalledTimes(2));
+  expect(screen.getByRole("button", { name: /Скрыть историю джекпотов/ })).toHaveAttribute("aria-expanded", "true");
+});
+
+it("restores an old development URL inside System", async () => {
+  window.history.replaceState({}, "", "/development");
+  render(<App />);
+  expect(await screen.findByText("Публичное изменение")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Система" })).toBeInTheDocument();
+  expect(screen.getByRole("tab", { name: "Разработка" })).toHaveAttribute("aria-selected", "true");
+});
+
+it("reports a failed owner balance change without pretending it succeeded", async () => {
+  vi.mocked(adminApi.setBalance).mockRejectedValueOnce(new Error("Не удалось сохранить баланс"));
+  render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /Игроки/ }));
+  fireEvent.change(await screen.findByLabelText("Обязательная причина"), { target: { value: "Уточнение" } });
+  fireEvent.click(screen.getByRole("button", { name: "ИЗМЕНИТЬ ЧЕРЕЗ ЖУРНАЛ" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("Не удалось сохранить баланс");
+});
+
+it.each([null, 200])("uses the recorded jackpot event in draw details, amount=%s", async (amount) => {
+  const event = { id: "event", lottery_code: "weekly", lottery_name: "Weekly 5/20", draw_id: "draw", draw_number: 7, jackpot_amount: 200, winner_ticket_count: 1, winner_user_count: 1, base_jackpot_after: 500, occurred_at: "2026-09-04T12:00:00Z" };
+  vi.mocked(adminApi.dashboard).mockResolvedValue({ ...dashboard, jackpots: { ...dashboard.jackpots, last_win: event } });
+  vi.mocked(adminApi.draw).mockResolvedValue({ draw: {
+    id: "draw", lottery_id: "lottery", lottery_code: "weekly", lottery_name: "Weekly 5/20", public_number: 7, status: "COMPLETED", scheduled_at: event.occurred_at, sales_close_at: event.occurred_at, executed_at: event.occurred_at, winning_numbers: [1,2,3,4,5], ticket_count: 1, total_sales: 100, total_payout: 200, jackpot_opening: 200, jackpot_closing: amount ? 500 : 100, distribution_opening: 0, distribution_closing: 0, reserve_used: 0, kasper_fund_used: 0, correlation_id: "internal-correlation", jackpot_amount: amount,
+  }, tickets: [] });
+  render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: "Тираж №0007 →" }));
+  const dialog = await screen.findByRole("dialog");
+  if (amount) expect(within(dialog).getByText("ДЖЕКПОТ ЭТОГО ТИРАЖА СОРВАН")).toBeInTheDocument();
+  else expect(within(dialog).queryByText("ДЖЕКПОТ ЭТОГО ТИРАЖА СОРВАН")).not.toBeInTheDocument();
+  expect(within(dialog).queryByText("internal-correlation")).not.toBeInTheDocument();
+  fireEvent.keyDown(window, { key: "Escape" });
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });

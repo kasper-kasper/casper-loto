@@ -168,6 +168,7 @@ class DrawResponse(ApiModel):
     reserve_used: int
     kasper_fund_used: int
     correlation_id: UUID
+    jackpot_amount: int | None = None
 
 
 class ScheduleEntryResponse(ApiModel):

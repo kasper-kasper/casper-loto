@@ -27,6 +27,7 @@ from k_loto.infrastructure.database.models import (
     Balance,
     Draw,
     JackpotAccount,
+    JackpotWinEvent,
     LedgerTransaction,
     Lottery,
     LotteryReserve,
@@ -56,6 +57,9 @@ class RowResult:
         self._value = value
 
     def one_or_none(self) -> Any:
+        return self._value
+
+    def one(self) -> Any:
         return self._value
 
     def all(self) -> Any:
@@ -589,3 +593,73 @@ def test_alembic_revision_ids_fit_the_version_table() -> None:
             if line.startswith("revision: str = "):
                 revision = line.split('"')[1]
                 assert len(revision) <= 32, path.name
+
+
+async def test_jackpot_totals_and_latest_ignore_history_limit() -> None:
+    now = datetime(2026, 9, 5, tzinfo=UTC)
+    shadow_id, flash_id, empty_id = UUID(int=301), UUID(int=302), UUID(int=303)
+    shadow = Lottery(id=shadow_id, code="shadow", name="SHADOW", is_active=True)
+    recent = JackpotWinEvent(
+        id=UUID(int=401),
+        lottery_id=shadow_id,
+        draw_id=UUID(int=501),
+        jackpot_amount=100,
+        winner_ticket_count=2,
+        winner_user_count=1,
+        base_jackpot_after=1_000,
+        occurred_at=now,
+    )
+    archived = JackpotWinEvent(
+        id=UUID(int=402),
+        lottery_id=flash_id,
+        draw_id=UUID(int=502),
+        jackpot_amount=900,
+        winner_ticket_count=1,
+        winner_user_count=1,
+        base_jackpot_after=1_000,
+        occurred_at=now - timedelta(days=1),
+    )
+    fake = FakeSession(
+        scalar_values=[None],
+        execute_rows=[
+            [(recent, shadow, 25)],
+            (7, 20_000, 8_800),
+            [
+                (shadow_id, "shadow", "SHADOW", True, 5, 15_000, now, 8_800),
+                (
+                    flash_id,
+                    "flash",
+                    "FLASH",
+                    False,
+                    2,
+                    5_000,
+                    archived.occurred_at,
+                    4_100,
+                ),
+                (empty_id, "pll", "PLL", True, 0, 0, None, 0),
+            ],
+            [(recent, 25), (archived, 12)],
+        ],
+    )
+    report = await AdminQueryService(cast(AsyncSession, fake)).jackpot_analytics()
+    assert report["total_wins"] == 7
+    assert report["total_paid"] == 20_000
+    assert report["largest_win"] == 8_800
+    assert len(report["history"]) == 1
+    assert report["last_win"]["jackpot_amount"] == 100
+    assert report["last_win"]["winner_ticket_count"] == 2
+    assert report["last_win"]["draw_number"] == 25
+    by_code = {row["code"]: row for row in report["lotteries"]}
+    assert by_code["shadow"]["largest_win"] == 8_800
+    assert by_code["flash"]["is_active"] is False
+    assert by_code["flash"]["last_win_amount"] == 900
+    assert by_code["flash"]["last_draw_number"] == 12
+    assert by_code["pll"]["last_win_amount"] is None
+    assert sum(row["win_count"] for row in by_code.values()) == report["total_wins"]
+
+
+async def test_jackpot_empty_history_has_no_invented_last_win() -> None:
+    fake = FakeSession(scalar_values=[None], execute_rows=[[], (0, 0, 0), [], []])
+    report = await AdminQueryService(cast(AsyncSession, fake)).jackpot_analytics()
+    assert report["last_win"] is None
+    assert report["total_wins"] == report["total_paid"] == 0

@@ -128,6 +128,7 @@ class AdminDraw:
     reserve_used: int
     kasper_fund_used: int
     correlation_id: UUID
+    jackpot_amount: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -907,14 +908,15 @@ class AdminQueryService:
     ) -> tuple[AdminDraw, tuple[AdminDrawTicket, ...]]:
         row = (
             await self._session.execute(
-                select(Draw, Lottery)
+                select(Draw, Lottery, JackpotWinEvent.jackpot_amount)
                 .join(Lottery, Lottery.id == Draw.lottery_id)
+                .outerjoin(JackpotWinEvent, JackpotWinEvent.draw_id == Draw.id)
                 .where(Draw.id == draw_id)
             )
         ).one_or_none()
         if row is None:
             raise LookupError("Draw does not exist.")
-        draw, lottery = row
+        draw, lottery, jackpot_amount = row
         tickets = (
             await self._session.scalars(
                 select(Ticket)
@@ -922,7 +924,7 @@ class AdminQueryService:
                 .order_by(Ticket.public_number)
             )
         ).all()
-        return self._draw(draw, lottery), tuple(
+        return self._draw(draw, lottery, jackpot_amount), tuple(
             AdminDrawTicket(
                 ticket.id,
                 ticket.public_number,
@@ -936,7 +938,9 @@ class AdminQueryService:
         )
 
     @staticmethod
-    def _draw(draw: Draw, lottery: Lottery) -> AdminDraw:
+    def _draw(
+        draw: Draw, lottery: Lottery, jackpot_amount: int | None = None
+    ) -> AdminDraw:
         return AdminDraw(
             draw.id,
             draw.lottery_id,
@@ -958,6 +962,7 @@ class AdminQueryService:
             draw.reserve_used,
             draw.kasper_fund_used,
             draw.correlation_id,
+            jackpot_amount,
         )
 
     async def number_statistics(
@@ -1152,13 +1157,14 @@ class AdminQueryService:
         }
 
     async def jackpot_analytics(self) -> dict[str, Any]:
-        """Return the central fund and immutable jackpot-win history."""
+        """Aggregate all events independently of the bounded history."""
         fund = await self._session.scalar(select(KasperFundAccount).limit(1))
         events = (
             await self._session.execute(
-                select(JackpotWinEvent, Lottery)
+                select(JackpotWinEvent, Lottery, Draw.public_number)
                 .join(Lottery, Lottery.id == JackpotWinEvent.lottery_id)
-                .order_by(JackpotWinEvent.occurred_at.desc())
+                .join(Draw, Draw.id == JackpotWinEvent.draw_id)
+                .order_by(JackpotWinEvent.occurred_at.desc(), JackpotWinEvent.id.desc())
                 .limit(50)
             )
         ).all()
@@ -1174,47 +1180,84 @@ class AdminQueryService:
         grouped = (
             await self._session.execute(
                 select(
+                    Lottery.id,
                     Lottery.code,
                     Lottery.name,
+                    Lottery.is_active,
                     func.count(JackpotWinEvent.id),
                     func.coalesce(func.sum(JackpotWinEvent.jackpot_amount), 0),
                     func.max(JackpotWinEvent.occurred_at),
+                    func.coalesce(func.max(JackpotWinEvent.jackpot_amount), 0),
                 )
                 .outerjoin(JackpotWinEvent, JackpotWinEvent.lottery_id == Lottery.id)
-                .where(Lottery.is_active.is_(True))
                 .group_by(Lottery.id)
-                .order_by(Lottery.code)
+                .order_by(Lottery.is_active.desc(), Lottery.code)
             )
         ).all()
+        ranked = select(
+            JackpotWinEvent.id.label("event_id"),
+            func.row_number()
+            .over(
+                partition_by=JackpotWinEvent.lottery_id,
+                order_by=(
+                    JackpotWinEvent.occurred_at.desc(),
+                    JackpotWinEvent.id.desc(),
+                ),
+            )
+            .label("position"),
+        ).subquery()
+        last_rows = (
+            await self._session.execute(
+                select(JackpotWinEvent, Draw.public_number)
+                .join(ranked, ranked.c.event_id == JackpotWinEvent.id)
+                .join(Draw, Draw.id == JackpotWinEvent.draw_id)
+                .where(ranked.c.position == 1)
+            )
+        ).all()
+        last_by_lottery = {
+            event.lottery_id: (event, number) for event, number in last_rows
+        }
+        history = [
+            {
+                "id": str(event.id),
+                "lottery_code": lottery.code,
+                "lottery_name": lottery.name,
+                "draw_id": str(event.draw_id),
+                "draw_number": number,
+                "jackpot_amount": event.jackpot_amount,
+                "winner_ticket_count": event.winner_ticket_count,
+                "winner_user_count": event.winner_user_count,
+                "base_jackpot_after": event.base_jackpot_after,
+                "occurred_at": event.occurred_at,
+            }
+            for event, lottery, number in events
+        ]
+        lottery_rows = []
+        for lottery_id, code, name, active, count, total, last_at, largest in grouped:
+            latest = last_by_lottery.get(lottery_id)
+            lottery_rows.append(
+                {
+                    "lottery_id": str(lottery_id),
+                    "code": code,
+                    "name": name,
+                    "is_active": active,
+                    "win_count": int(count),
+                    "total_paid": int(total),
+                    "last_win_at": last_at,
+                    "largest_win": int(largest),
+                    "last_win_amount": latest[0].jackpot_amount if latest else None,
+                    "last_draw_id": str(latest[0].draw_id) if latest else None,
+                    "last_draw_number": latest[1] if latest else None,
+                }
+            )
         return {
             "kasper_fund_balance": fund.balance if fund else 0,
             "total_wins": int(totals[0]),
             "total_paid": int(totals[1]),
             "largest_win": int(totals[2]),
-            "lotteries": [
-                {
-                    "code": code,
-                    "name": name,
-                    "win_count": int(count),
-                    "total_paid": int(total),
-                    "last_win_at": last_at,
-                }
-                for code, name, count, total, last_at in grouped
-            ],
-            "history": [
-                {
-                    "id": str(event.id),
-                    "lottery_code": lottery.code,
-                    "lottery_name": lottery.name,
-                    "draw_id": str(event.draw_id),
-                    "jackpot_amount": event.jackpot_amount,
-                    "winner_ticket_count": event.winner_ticket_count,
-                    "winner_user_count": event.winner_user_count,
-                    "base_jackpot_after": event.base_jackpot_after,
-                    "occurred_at": event.occurred_at,
-                }
-                for event, lottery in events
-            ],
+            "lotteries": lottery_rows,
+            "last_win": history[0] if history else None,
+            "history": history,
         }
 
     async def operational_status(self) -> dict[str, Any]:

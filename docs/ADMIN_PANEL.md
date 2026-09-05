@@ -95,3 +95,27 @@ They are rendered as text, so journal content cannot inject executable HTML.
 The historical `0.x` entries remain unchanged. Starting with `1.0.0`, product
 versions use `MAJOR.MINOR.PATCH`: minor for compatible features, patch for fixes,
 and major only for an incompatible platform change.
+
+
+## Owner dashboard — 1.19.0
+
+The primary navigation is Overview, Lotteries, Schedule, Draws, Players,
+Analytics and System. System owns service diagnostics, CAS ledger, notification
+queue, audit and the Development tab (CHANGELOG/DEVLOG). The old /development URL
+opens that tab. All displayed dates use Europe/Moscow.
+
+The overview puts lifetime jackpot totals, the latest jackpot and the all-time
+record together. Per-lottery rows combine current jackpots, lifetime wins/payouts,
+latest jackpot amounts/draw links and ticket counts. Jackpot counts mean draws
+with a jackpot payout, not winning tickets or unique players. Inactive lotteries
+remain in the lifetime breakdown. The collapsible history contains the latest
+50 events only; it never supplies lifetime maxima or per-lottery latest amounts.
+
+Dashboard data refreshes every 30 seconds while visible. Ticket analytics may lag
+by its existing 60-second server cache. Manual refresh preserves expanded history.
+Responsive tables scroll within their panels instead of widening the entire page.
+Draw details use JackpotWinEvent as evidence of a jackpot payout. They never infer
+a win merely from the jackpot balance falling.
+
+The 2026-09-05 SHADOW/FLASH audit is recorded in
+[the read-only investigation](FAST_RANDOM_AUDIT_2026-09-05.md).

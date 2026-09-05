@@ -1,4 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700&display=swap");
 
 :root { color-scheme: dark; font-family: Manrope, sans-serif; background: #050908; color: #dce8e3; font-synthesis: none; --green: #78f5b5; --line: #1b3029; --panel: #0a1210; --muted: #71857d; }
 * { box-sizing: border-box; }

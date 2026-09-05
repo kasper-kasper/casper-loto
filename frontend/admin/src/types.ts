@@ -78,6 +78,7 @@ export interface Draw {
   reserve_used: number;
   kasper_fund_used: number;
   correlation_id: string;
+  jackpot_amount?: number | null;
 }
 
 export interface DrawTicket {
@@ -177,8 +178,9 @@ export interface Dashboard {
     total_wins: number;
     total_paid: number;
     largest_win: number;
-    lotteries: Array<{ code: string; name: string; win_count: number; total_paid: number; last_win_at: string | null }>;
-    history: Array<{ id: string; lottery_code: string; lottery_name: string; draw_id: string; jackpot_amount: number; winner_ticket_count: number; winner_user_count: number; base_jackpot_after: number; occurred_at: string }>;
+    lotteries: Array<{ lottery_id?: string; code: string; name: string; is_active?: boolean; win_count: number; total_paid: number; last_win_at: string | null; largest_win?: number; last_win_amount?: number | null; last_draw_id?: string | null; last_draw_number?: number | null }>;
+    last_win?: JackpotEvent | null;
+    history: JackpotEvent[];
   };
 }
 
@@ -226,4 +228,18 @@ export interface NotificationItem {
   sent_at: string | null;
   last_error: string | null;
   created_at: string;
+}
+
+
+export interface JackpotEvent {
+  id: string;
+  lottery_code: string;
+  lottery_name: string;
+  draw_id: string;
+  draw_number?: number;
+  jackpot_amount: number;
+  winner_ticket_count: number;
+  winner_user_count: number;
+  base_jackpot_after: number;
+  occurred_at: string;
 }
