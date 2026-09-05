@@ -197,9 +197,10 @@ async def register(
                 select(WebAccount.id).where(WebAccount.username == username)
             ):
                 raise HTTPException(status_code=409, detail="Такой логин уже занят.")
+            session.add(user)
+            await session.flush()
             session.add_all(
                 [
-                    user,
                     Balance(user_id=user.id, amount=0, version=1),
                     UserNotificationPreference(user_id=user.id),
                     account,
