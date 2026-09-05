@@ -495,6 +495,36 @@ it("ignores backend version mismatch when the served frontend is current", async
   } finally { fetchMock.mockRestore(); }
 });
 
+it.each([
+  ["pll", "2:22", 4, 15],
+  ["pss", "ПСС-Лото", 4, 15],
+  ["september", "3 сентября", 3, 33],
+] as const)("keeps number selection usable for %s", async (code, name, pick, max) => {
+  const ordinaryDashboard: Dashboard = {
+    ...dashboard,
+    lotteries: [{
+      ...dashboard.lotteries[0],
+      code,
+      name,
+      kind: "DAILY",
+      numbers_to_pick: pick,
+      max_number: max,
+      ticket_price: 24_000,
+    }],
+  };
+  vi.mocked(miniAppApi.dashboard).mockResolvedValue(ordinaryDashboard);
+  const { container } = render(<App initData="signed" />);
+
+  fireEvent.click(await screen.findByRole("button", { name: /Открыть лотерею|Моя лотерея/ }));
+  await waitFor(() => expect(container.querySelector(".number-grid")).not.toBeNull());
+  const grid = container.querySelector(".number-grid") as HTMLElement;
+  const numbers = within(grid).getAllByRole("button");
+  expect(numbers).toHaveLength(max);
+  for (let index = 0; index < pick; index += 1) fireEvent.click(numbers[index]);
+  for (let index = 0; index < pick; index += 1) expect(numbers[index]).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByRole("button", { name: "Купить билет" })).toBeEnabled();
+});
+
 it("offers an update only for a different served frontend", async () => {
   const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ version: "99.0.0" })));
   try {
