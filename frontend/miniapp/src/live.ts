@@ -87,6 +87,9 @@ export function fastLivePresentation(feed: LiveFeed | null, now: number): LivePr
   const completed = feed.latest_completed;
   if (completed?.winning_numbers?.length) {
     const liveEndsAt = new Date(completed.live_ends_at).getTime();
+    if (now >= new Date(completed.scheduled_at).getTime() && now < new Date(completed.live_starts_at).getTime()) {
+      return { phase: "starting", draw: completed, revealedNumbers: [], currentNumber: null, nextDraw: feed.next_scheduled };
+    }
     if (now >= new Date(completed.live_starts_at).getTime() && now < liveEndsAt + FAST_RESULT_HOLD_MS) {
       return livePresentation(feed, now);
     }
@@ -96,4 +99,9 @@ export function fastLivePresentation(feed: LiveFeed | null, now: number): LivePr
   const startsIn = new Date(next.scheduled_at).getTime() - now;
   if (startsIn > FAST_PRELIVE_MS || startsIn < -120_000) return null;
   return livePresentation({ ...feed, latest_completed: null }, now);
+}
+
+// HTTP and stream snapshots can arrive in a different order from their creation.
+export function newestLiveFeed(current: LiveFeed | null, incoming: LiveFeed): LiveFeed {
+  return current && Date.parse(current.server_time) > Date.parse(incoming.server_time) ? current : incoming;
 }

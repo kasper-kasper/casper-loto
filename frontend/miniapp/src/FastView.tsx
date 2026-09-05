@@ -36,7 +36,7 @@ function SignalPreview({ code }: { code: string }) {
 }
 
 function FastCard({ lottery, now, primary, onOpen }: { lottery: Lottery; now: number; primary: boolean; onOpen: () => void }) {
-  return <motion.article className={`fast-card fast-${lottery.code} ${primary ? "primary" : ""}`} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .34 }}>
+  return <motion.article className={`fast-card fast-${lottery.code} ${primary ? "primary" : ""}`} initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: .34 }}>
     <img src={fastScene(lottery.code)} alt="" />
     <div className="fast-card-sheen" aria-hidden="true" />
     <header><span><i /> БЫСТРАЯ ЛОТЕРЕЯ</span><small>{formatDrawLabel(lottery.code, lottery.draw_number ?? 0)}</small></header>
@@ -65,7 +65,7 @@ function FastLiveCard({ feed, now }: { feed: LiveFeed; now: number }) {
   const waiting = state.phase === "waiting";
   const result = state.phase === "result";
   const winner = draw.player_total_prize > 0;
-  return <motion.article animate={{ opacity: 1, scale: 1 }} className={`fast-live-card fast-${code} phase-${state.phase}`} initial={{ opacity: 0, scale: .985 }} transition={{ duration: .28 }}>
+  return <motion.article animate={{ opacity: 1, scale: 1 }} className={`fast-live-card fast-${code} phase-${state.phase}`} initial={false} transition={{ duration: .28 }}>
     <img src={fastScene(code)} alt="" />
     <div className="fast-live-veil" aria-hidden="true" />
     {code === "pulse" && <PulseTrace className="pulse-live-ecg" />}

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { vi } from "vitest";
 
 import App from "./App";
@@ -474,4 +474,81 @@ it("renders losing history as neutral and winning history as rewarded", async ()
   expect(fullTicket.querySelectorAll(".paper-number-field i.matched")).toHaveLength(3);
   fireEvent.click(within(fullTicket).getByRole("button", { name: "Закрыть билет" }));
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+});
+
+
+it("ignores backend version mismatch when the served frontend is current", async () => {
+  vi.mocked(miniAppApi.dashboard).mockResolvedValue({ ...dashboard, app_version: "0.0.1" });
+  const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ version: __APP_VERSION__ })));
+  try {
+    render(<App initData="test" />);
+    await screen.findByRole("button", { name: "Моё" });
+    expect(screen.queryByText("Доступно обновление")).not.toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/version.json?"), { cache: "no-store" });
+  } finally { fetchMock.mockRestore(); }
+});
+
+it("offers an update only for a different served frontend", async () => {
+  const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ version: "99.0.0" })));
+  try {
+    render(<App initData="test" />);
+    expect(await screen.findByText("Доступно обновление")).toBeInTheDocument();
+  } finally { fetchMock.mockRestore(); }
+});
+
+it("opens completed tickets directly from the account overview", async () => {
+  render(<App initData="test" />);
+  fireEvent.click(await screen.findByRole("button", { name: "Моё" }));
+  fireEvent.click(await screen.findByRole("button", { name: /История участия/ }));
+  await waitFor(() => expect(miniAppApi.tickets).toHaveBeenCalledWith("test", "history", "", false));
+});
+
+
+it("keeps the Fast countdown steady when a stream snapshot has a different clock", async () => {
+  vi.useFakeTimers({ toFake: ["Date", "performance", "setInterval", "clearInterval", "setTimeout", "clearTimeout"] });
+  vi.setSystemTime(Date.parse(dashboard.server_time));
+  const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ version: __APP_VERSION__ })));
+  let push: ((feed: import("./types").LiveFeed) => void) | undefined;
+  vi.mocked(miniAppApi.liveStream).mockImplementation(async (_init, callback) => { push = callback; });
+  let unmount: (() => void) | undefined;
+  try {
+    let container: HTMLElement;
+    await act(async () => { const app = render(<App initData="test" />); container = app.container; unmount = app.unmount; });
+    fireEvent.click(screen.getByRole("button", { name: "Fast" }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(1_000); });
+    const timer = () => container!.querySelector(".fast-shadow .fast-card-main strong")?.textContent;
+    const before = timer();
+    expect(before).toBe("00:09:59");
+    await act(async () => {
+      push?.({ server_time: "2026-08-15T12:00:09Z", latest_completed: null, next_scheduled: null, recent_completed: [] });
+    });
+    expect(timer()).toBe(before);
+    await act(async () => { await vi.advanceTimersByTimeAsync(1_000); });
+    expect(timer()).toBe("00:09:58");
+  } finally { unmount?.(); vi.useRealTimers(); fetchMock.mockRestore(); }
+});
+
+
+it("does not apply the wins-only filter to active tickets", async () => {
+  render(<App initData="test" />);
+  fireEvent.click(await screen.findByRole("button", { name: "Моё" }));
+  fireEvent.click(await screen.findByRole("button", { name: /История участия/ }));
+  fireEvent.click(await screen.findByRole("button", { name: "Только выигрыши" }));
+  await waitFor(() => expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "history", "", true));
+  fireEvent.click(screen.getByRole("button", { name: "Активные" }));
+  await waitFor(() => expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "active", "", false));
+});
+
+it("does not replace history with a late active-ticket response", async () => {
+  let complete: ((page: { tickets: Ticket[]; total: number; has_more: boolean }) => void) | undefined;
+  vi.mocked(miniAppApi.tickets).mockImplementation(async (_init, status) => status === "active"
+    ? new Promise((resolve) => { complete = resolve; })
+    : { tickets: [], total: 0, has_more: false });
+  render(<App initData="test" />);
+  fireEvent.click(await screen.findByRole("button", { name: "Моё" }));
+  fireEvent.click(await screen.findByRole("button", { name: /Активные билеты/ }));
+  fireEvent.click(screen.getByRole("button", { name: "История" }));
+  expect(await screen.findByText("История пока пуста")).toBeInTheDocument();
+  await act(async () => { complete?.({ tickets: [], total: 7, has_more: false }); });
+  expect(screen.getByText("0 билетов")).toBeInTheDocument();
 });

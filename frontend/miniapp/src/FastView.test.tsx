@@ -49,6 +49,18 @@ const completedShadow: LiveDraw = {
 };
 
 describe("Fast draw placement", () => {
+  it("does not demote the round in the gap between settlement and broadcast", () => {
+    const feed: LiveFeed = { server_time: new Date(drawTime).toISOString(), latest_completed: completedShadow, next_scheduled: null, recent_completed: [completedShadow] };
+    const lotteries = [lottery("flash", "2026-09-04T08:40:00Z"), lottery("shadow", "2026-09-04T08:50:00Z")];
+    const { container, rerender } = render(<FastView feed={feed} lotteries={lotteries} now={drawTime} onOpen={() => undefined} />);
+    expect(container.querySelector(".fast-view > div:first-of-type > article")).toHaveClass("fast-live-card", "fast-shadow");
+    expect(screen.getByText("Каспер выбирает числа")).toBeInTheDocument();
+    expect(container.querySelectorAll(".fast-live-slots .lit")).toHaveLength(0);
+    rerender(<FastView feed={feed} lotteries={lotteries} now={drawTime + 6_500} onOpen={() => undefined} />);
+    expect(container.querySelector(".fast-view > div:first-of-type > article")).toHaveClass("fast-shadow");
+    expect(container.querySelectorAll(".fast-live-slots .lit")).toHaveLength(1);
+  });
+
   it("keeps the active broadcast first when the dashboard advances to later draws", () => {
     const feed: LiveFeed = {
       server_time: new Date(drawTime + 8_500).toISOString(),

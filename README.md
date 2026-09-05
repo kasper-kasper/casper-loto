@@ -1,6 +1,7 @@
 # K-Loto
 
-Current version: **1.18.0 — Призовая лестница 6 из 36**.
+Current release: **1.18.1 — Fast и личный кабинет Mini App**.
+Backend/Admin: **1.18.0**; Mini App: **1.18.1**.
 
 K-Loto is a multi-user lottery platform with integer CAS accounting, an
 immutable transaction ledger, recoverable draw scheduling and nine independent

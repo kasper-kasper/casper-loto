@@ -1,3 +1,4 @@
+import { newestLiveFeed } from "./live";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -94,4 +95,13 @@ describe("digital replay", () => {
     expect(state.phase).toBe("result");
     expect(state.revealedNumbers).toEqual(completed.winning_numbers);
   });
+});
+
+
+it("ignores a delayed HTTP snapshot after a newer stream event", () => {
+  const current = { ...feed, server_time: "2026-09-05T12:00:02Z" };
+  const old = { ...feed, server_time: "2026-09-05T12:00:01Z", latest_completed: null };
+  expect(newestLiveFeed(current, old)).toBe(current);
+  expect(newestLiveFeed(old, current)).toBe(current);
+  expect(newestLiveFeed(null, current)).toBe(current);
 });

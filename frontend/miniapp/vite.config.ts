@@ -5,7 +5,12 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version ?? "development"),
   },
-  plugins: [react()],
+  plugins: [react(), {
+    name: "miniapp-version",
+    generateBundle() {
+      this.emitFile({ type: "asset", fileName: "version.json", source: JSON.stringify({ version: process.env.npm_package_version ?? "development" }) });
+    },
+  }],
   server: {
     host: "127.0.0.1",
     port: 5173,

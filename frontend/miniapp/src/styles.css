@@ -1139,7 +1139,7 @@ body::before, body::after { opacity: .12; }
 /* Preserve every visible scene, but stop hidden/off-screen work in Telegram WebView. */
 html.app-backgrounded *, .motion-paused, .motion-paused * { animation-play-state: paused !important; }
 .motion-paused.raster-visual > img, .motion-paused .raster-visual > img { will-change: auto; }
-.storefront-card, .ticket-draw-group, .fast-card { content-visibility: auto; contain-intrinsic-size: auto 440px; }
+.storefront-card, .ticket-draw-group { content-visibility: auto; contain-intrinsic-size: auto 440px; }
 
 @media (hover: none) and (pointer: coarse) {
   .raster-visual .scene-grain { animation-duration: 1.1s; opacity: .05; }
@@ -1742,3 +1742,53 @@ html.app-backgrounded *, .motion-paused, .motion-paused * { animation-play-state
 .picker-shell.lottery-weekly .picker-heading { min-height: 94px !important; padding: 43px 12px 10px 56px !important; }
 .picker-shell.lottery-weekly .grand-main-field .pick-number.selected { color: #171108 !important; border-color: #ffe29c !important; background: linear-gradient(145deg,#ffe7a9,#d9a343) !important; box-shadow: 0 0 0 3px rgba(244,205,118,.13),0 8px 22px rgba(201,144,42,.28) !important; }
 .picker-shell.lottery-weekly .grand-special-field .pick-number.selected { color: white !important; border-color: #f0c9ff !important; background: linear-gradient(145deg,#b06fc5,#663c7b) !important; box-shadow: 0 0 0 3px rgba(207,157,239,.12),0 0 22px rgba(184,110,211,.28) !important; }
+
+/* Stable mobile geometry across picker, purchase and broadcast states. */
+html { overflow-x: clip; scrollbar-gutter: stable; }
+.app-shell, .view-content, .fast-view > div { min-width: 0; }
+.toast { grid-template-columns: 24px minmax(0,1fr) 18px; }
+.toast > .toast-message { display: block; width: auto; height: auto; min-width: 0; overflow-wrap: anywhere; border-radius: 0; color: inherit; background: transparent; font-weight: 500; }
+.fast-card, .fast-live-card { min-height: 354px; content-visibility: visible; overflow-anchor: none; }
+.fast-card-main { grid-template-columns: minmax(0,1fr) 95px; }
+.fast-card-bottom { grid-template-columns: 78px minmax(0,1fr); }
+.fast-card-bottom button { grid-template-columns: 18px minmax(0,1fr); padding-inline: 9px; font-size: 11px; }
+.fast-card-bottom button small { grid-column: 2; }
+.fast-live-title { min-height: 66px; }
+.fast-live-ticket { min-height: 136px; }
+.fast-live-title h2 { font-variant-numeric: tabular-nums; }
+.account-tabs { gap: 5px; margin: 0 0 18px; padding: 5px; border: 1px solid var(--hairline); border-radius: 16px; background: #0a1730; }
+.account-tabs button { display: flex; min-width: 0; min-height: 58px; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border-radius: 11px; font-size: 10px; }
+.account-tabs button .icon { width: 19px; height: 19px; }
+.account-tabs button.selected { background: #1a2a47; color: #f4d48a; }
+.account-tabs button.selected::after { content: none; }
+.account-shortcuts { display: grid; gap: 8px; padding: 16px; }
+.account-shortcuts button { display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--hairline); border-radius: 12px; background: #0c1b34; color: #e8edf8; text-align: left; }
+.account-shortcuts button > .icon { width: 23px; color: #efc76e; }
+.account-shortcuts button span { flex: 1; min-width: 0; }
+.account-shortcuts strong, .account-shortcuts small { display: block; }
+.account-shortcuts strong { font-size: 13px; }
+.account-shortcuts small { margin-top: 5px; color: #9baac4; font-size: 11px; }
+.account-identity { flex-wrap: wrap; }
+.account-name { min-width: 0; }
+.account-name h2 { overflow-wrap: anywhere; }
+.account-balance { flex: 1 0 100%; max-width: none; padding-top: 14px; border-top: 1px solid var(--hairline); text-align: left; }
+.account-balance strong { font-size: 25px; }
+.account-scoreline { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.account-scoreline article:last-child { grid-column: 1 / -1; }
+.account-scoreline span { font-size: 10px; }
+.account-ledger header span, .account-favorites header span { font-size: 13px; }
+.account-ledger > div span, .account-favorites > div > span { font-size: 11px; }
+.account-ledger > div strong, .account-favorites > div > strong { font-size: 12px; }
+.account-favorites p { flex-wrap: wrap; justify-content: flex-end; }
+.ticket-filters { flex-wrap: wrap; }
+.ticket-filters select { min-width: 0; max-width: 100%; }
+
+.fast-live-card { display: grid; grid-template-rows: 12px 66px 136px 72px; gap: 8px; }
+.fast-live-title { min-width: 0; margin: 0; align-items: center; }
+.fast-live-title > div { min-width: 0; }
+.fast-live-title h2 { font-size: clamp(19px,5.5vw,26px); }
+.fast-live-ticket { margin: 0; }
+.fast-live-note, .fast-live-result { margin: 0; align-self: center; }
+.account-name h2 { white-space: normal; }
+.account-name span, .account-name small, .account-balance span { font-size: 10px; }
+.account-scoreline strong { font-size: 19px; }

@@ -9,6 +9,7 @@
     handle {
         root * /srv/miniapp
         try_files {path} /index.html
+        header Cache-Control "no-cache, must-revalidate"
         file_server
     }
 }
@@ -24,6 +25,7 @@
     handle {
         root * /srv/admin
         try_files {path} /index.html
+        header Cache-Control "no-cache, must-revalidate"
         file_server
     }
 }
