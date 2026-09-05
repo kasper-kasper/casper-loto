@@ -4,7 +4,7 @@ import asyncio
 import hmac
 from datetime import datetime
 from time import monotonic
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from fastapi import (
@@ -27,6 +27,7 @@ from k_loto.application.admin import (
     AdminQueryService,
     ensure_admin_user,
 )
+from k_loto.application.query_scope import LotteryScope
 from k_loto.application.release_notes import ReleaseNoteKind, load_release_notes
 from k_loto.core.config import Settings, get_settings
 from k_loto.domain.enums import (
@@ -407,8 +408,9 @@ async def dashboard(
     _admin: Annotated[CurrentAdmin, Depends(get_current_admin)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
     settings: Annotated[Settings, Depends(get_settings)],
+    scope: LotteryScope = "all",
 ) -> DashboardResponse:
-    service = AdminQueryService(session)
+    service = AdminQueryService(session, scope=scope)
     lotteries = await service.lotteries()
     draws = await service.draws(limit=5)
     transactions = await service.transactions(limit=8)
@@ -645,9 +647,15 @@ async def draws(
     draw_status: Annotated[DrawStatus | None, Query(alias="status")] = None,
     limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
+    scope: LotteryScope = "all",
+    period: Literal["today", "future", "completed", "failed"] | None = None,
 ) -> list[DrawResponse]:
-    items = await AdminQueryService(session).draws(
-        lottery_id=lottery_id, status=draw_status, limit=limit, offset=offset
+    items = await AdminQueryService(session, scope=scope).draws(
+        lottery_id=lottery_id,
+        status=draw_status,
+        limit=limit,
+        offset=offset,
+        period=period,
     )
     return [DrawResponse.model_validate(item) for item in items]
 
@@ -657,8 +665,11 @@ async def daily_schedule(
     _admin: Annotated[CurrentAdmin, Depends(get_current_admin)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
     lottery_id: UUID | None = None,
+    scope: LotteryScope = "all",
 ) -> list[ScheduleEntryResponse]:
-    items = await AdminQueryService(session).daily_schedule(lottery_id=lottery_id)
+    items = await AdminQueryService(session, scope=scope).daily_schedule(
+        lottery_id=lottery_id
+    )
     return [ScheduleEntryResponse.model_validate(item) for item in items]
 
 
@@ -716,10 +727,15 @@ async def audit(
 async def ticket_analytics(
     _admin: Annotated[CurrentAdmin, Depends(get_current_admin)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
+    scope: LotteryScope = "all",
 ) -> TicketAnalyticsResponse:
     """Return ticket outcome statistics cached for one minute per API worker."""
 
     global ticket_analytics_cache
+    if scope != "all":
+        return TicketAnalyticsResponse.model_validate(
+            await AdminQueryService(session, scope=scope).ticket_analytics()
+        )
     now = monotonic()
     if ticket_analytics_cache and now - ticket_analytics_cache[0] < 60:
         return ticket_analytics_cache[1]
@@ -728,7 +744,7 @@ async def ticket_analytics(
         if ticket_analytics_cache and now - ticket_analytics_cache[0] < 60:
             return ticket_analytics_cache[1]
         result = TicketAnalyticsResponse.model_validate(
-            await AdminQueryService(session).ticket_analytics()
+            await AdminQueryService(session, scope=scope).ticket_analytics()
         )
         ticket_analytics_cache = (now, result)
         return result
@@ -739,10 +755,13 @@ async def activity(
     _admin: Annotated[CurrentAdmin, Depends(get_current_admin)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
     period_days: int = Query(default=1, ge=1, le=30),
+    scope: LotteryScope = "all",
 ) -> list[ActivityPointResponse]:
     """Return lightweight sales and payout buckets when the dashboard is opened."""
 
-    rows = await AdminQueryService(session).activity(period_days=period_days)
+    rows = await AdminQueryService(session, scope=scope).activity(
+        period_days=period_days
+    )
     return [ActivityPointResponse.model_validate(item) for item in rows]
 
 

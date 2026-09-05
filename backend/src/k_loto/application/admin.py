@@ -9,6 +9,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from k_loto.application.query_scope import LotteryScope, lottery_scope
 from k_loto.domain.enums import (
     AuditAction,
     DrawStatus,
@@ -627,8 +628,9 @@ def _validate_adjustment(target: int, reason: str, key: str) -> None:
 class AdminQueryService:
     """Read immutable business history and current operational projections."""
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, *, scope: LotteryScope = "all") -> None:
         self._session = session
+        self._scope = scope
 
     async def players(self) -> tuple[AdminPlayer, ...]:
         rows = (
@@ -706,7 +708,11 @@ class AdminQueryService:
 
     async def lotteries(self) -> tuple[AdminLottery, ...]:
         ids = (
-            await self._session.scalars(select(Lottery.id).order_by(Lottery.code))
+            await self._session.scalars(
+                select(Lottery.id)
+                .where(lottery_scope(self._scope))
+                .order_by(Lottery.code)
+            )
         ).all()
         return tuple([await self.lottery(lottery_id) for lottery_id in ids])
 
@@ -815,8 +821,30 @@ class AdminQueryService:
         status: DrawStatus | None = None,
         limit: int = 100,
         offset: int = 0,
+        period: str | None = None,
     ) -> tuple[AdminDraw, ...]:
-        statement = select(Draw, Lottery).join(Lottery, Lottery.id == Draw.lottery_id)
+        statement = (
+            select(Draw, Lottery)
+            .join(Lottery, Lottery.id == Draw.lottery_id)
+            .where(lottery_scope(self._scope))
+        )
+        now = datetime.now(UTC)
+        if period == "today":
+            start = datetime.combine(
+                now.astimezone(MOSCOW).date(), datetime.min.time(), tzinfo=MOSCOW
+            ).astimezone(UTC)
+            statement = statement.where(
+                Draw.scheduled_at >= start,
+                Draw.scheduled_at < start + timedelta(days=1),
+            )
+        elif period == "future":
+            statement = statement.where(
+                Draw.scheduled_at > now, Draw.status != DrawStatus.COMPLETED
+            )
+        elif period == "completed":
+            statement = statement.where(Draw.status == DrawStatus.COMPLETED)
+        elif period == "failed":
+            statement = statement.where(Draw.status == DrawStatus.FAILED)
         if lottery_id:
             statement = statement.where(Draw.lottery_id == lottery_id)
         if status:
@@ -845,6 +873,7 @@ class AdminQueryService:
             .join(Lottery, Lottery.id == Draw.lottery_id)
             .where(
                 Lottery.is_active.is_(True),
+                lottery_scope(self._scope),
                 Draw.scheduled_at >= start,
                 Draw.scheduled_at < end,
             )
@@ -1030,11 +1059,19 @@ class AdminQueryService:
             func.coalesce(func.sum(Ticket.purchase_price), 0),
             func.coalesce(func.sum(Ticket.prize_amount), 0),
         )
-        overall_values = (await self._session.execute(select(*metrics))).all()[0]
+        overall_values = (
+            await self._session.execute(
+                select(*metrics)
+                .select_from(Ticket)
+                .join(Lottery, Lottery.id == Ticket.lottery_id)
+                .where(lottery_scope(self._scope))
+            )
+        ).all()[0]
         lottery_values = (
             await self._session.execute(
                 select(Lottery.id, Lottery.name, Lottery.is_active, *metrics)
                 .outerjoin(Ticket, Ticket.lottery_id == Lottery.id)
+                .where(lottery_scope(self._scope))
                 .group_by(Lottery.id, Lottery.name, Lottery.is_active)
                 .order_by(Lottery.is_active.desc(), Lottery.name)
             )
@@ -1088,7 +1125,9 @@ class AdminQueryService:
                     func.coalesce(func.sum(Draw.total_sales), 0),
                     func.coalesce(func.sum(Draw.total_payout), 0),
                 )
+                .join(Lottery, Lottery.id == Draw.lottery_id)
                 .where(
+                    lottery_scope(self._scope),
                     Draw.status == DrawStatus.COMPLETED,
                     Draw.scheduled_at
                     >= datetime.now(UTC) - timedelta(days=period_days),
@@ -1164,6 +1203,7 @@ class AdminQueryService:
                 select(JackpotWinEvent, Lottery, Draw.public_number)
                 .join(Lottery, Lottery.id == JackpotWinEvent.lottery_id)
                 .join(Draw, Draw.id == JackpotWinEvent.draw_id)
+                .where(lottery_scope(self._scope))
                 .order_by(JackpotWinEvent.occurred_at.desc(), JackpotWinEvent.id.desc())
                 .limit(50)
             )
@@ -1175,6 +1215,8 @@ class AdminQueryService:
                     func.coalesce(func.sum(JackpotWinEvent.jackpot_amount), 0),
                     func.coalesce(func.max(JackpotWinEvent.jackpot_amount), 0),
                 )
+                .join(Lottery, Lottery.id == JackpotWinEvent.lottery_id)
+                .where(lottery_scope(self._scope))
             )
         ).one()
         grouped = (
@@ -1190,6 +1232,7 @@ class AdminQueryService:
                     func.coalesce(func.max(JackpotWinEvent.jackpot_amount), 0),
                 )
                 .outerjoin(JackpotWinEvent, JackpotWinEvent.lottery_id == Lottery.id)
+                .where(lottery_scope(self._scope))
                 .group_by(Lottery.id)
                 .order_by(Lottery.is_active.desc(), Lottery.code)
             )
@@ -1274,7 +1317,7 @@ class AdminQueryService:
                 )
                 .join(Lottery, Lottery.id == Draw.lottery_id)
                 .outerjoin(Ticket, Ticket.draw_id == Draw.id)
-                .where(Draw.status != DrawStatus.COMPLETED)
+                .where(Draw.status != DrawStatus.COMPLETED, lottery_scope(self._scope))
                 .group_by(Draw.id, Lottery.id)
                 .order_by(Draw.scheduled_at)
                 .limit(8)

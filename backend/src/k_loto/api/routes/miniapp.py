@@ -30,6 +30,7 @@ from k_loto.application.miniapp import (
     MiniAppQueryService,
     MiniAppTicket,
 )
+from k_loto.application.query_scope import LotteryScope
 from k_loto.application.weekly import (
     MAX_TICKETS_PER_PURCHASE,
     LotteryTicketPurchaseService,
@@ -505,9 +506,12 @@ async def live(
     user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
     scope: Annotated[Literal["standard", "fast"], Query()] = "standard",
+    lottery_code: Annotated[str | None, Query(max_length=32)] = None,
 ) -> LiveFeedResponse:
     return _live_response(
-        await MiniAppQueryService(session).live(user.id, fast_only=scope == "fast")
+        await MiniAppQueryService(session).live(
+            user.id, fast_only=scope == "fast", lottery_code=lottery_code
+        )
     )
 
 
@@ -516,6 +520,7 @@ async def live_stream(
     request: Request,
     user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
     scope: Annotated[Literal["standard", "fast"], Query()] = "standard",
+    lottery_code: Annotated[str | None, Query(max_length=32)] = None,
 ) -> StreamingResponse:
     """Push the authoritative live snapshot; fetch streaming keeps auth in headers."""
 
@@ -525,7 +530,7 @@ async def live_stream(
             async with session_factory() as session:
                 payload = _live_response(
                     await MiniAppQueryService(session).live(
-                        user.id, fast_only=scope == "fast"
+                        user.id, fast_only=scope == "fast", lottery_code=lottery_code
                     )
                 ).model_dump_json()
             if payload != previous:
@@ -552,6 +557,7 @@ async def tickets(
     state: Annotated[Literal["active", "history"], Query()] = "active",
     lottery_code: Annotated[str | None, Query(max_length=32)] = None,
     wins_only: Annotated[bool, Query()] = False,
+    scope: LotteryScope = "all",
     limit: Annotated[int, Query(ge=1, le=200)] = 100,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> TicketListResponse:
@@ -563,12 +569,14 @@ async def tickets(
         offset=offset,
         lottery_code=lottery_code,
         wins_only=wins_only,
+        scope=scope,
     )
     total = await service.ticket_count(
         user.id,
         active=state == "active",
         lottery_code=lottery_code,
         wins_only=wins_only,
+        scope=scope,
     )
     return TicketListResponse(
         tickets=[_ticket_response(item) for item in items],
@@ -853,3 +861,12 @@ async def bingo_purchase(
         balance_after=result.balance_after,
         already_processed=result.already_processed,
     )
+
+
+@router.get("/highlights")
+async def highlights(
+    user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    scope: LotteryScope = "standard",
+) -> dict[str, Any]:
+    return await MiniAppQueryService(session).highlights(user.id, scope=scope)

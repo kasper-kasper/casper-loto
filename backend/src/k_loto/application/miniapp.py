@@ -7,9 +7,11 @@ from typing import Any
 from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import func, select, update
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.elements import ColumnElement
 
+from k_loto.application.query_scope import LotteryScope, lottery_scope
 from k_loto.domain.enums import (
     DrawStatus,
     InAppNotificationType,
@@ -37,6 +39,7 @@ from k_loto.infrastructure.database.models import (
     Balance,
     Draw,
     JackpotAccount,
+    JackpotWinEvent,
     LedgerTransaction,
     Lottery,
     NotificationOutbox,
@@ -199,6 +202,74 @@ class MiniAppNotification:
 class MiniAppQueryService:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
+
+    async def highlights(
+        self, user_id: UUID, *, scope: LotteryScope = "standard"
+    ) -> dict[str, Any]:
+        row = (
+            await self._session.execute(
+                select(JackpotWinEvent, Lottery, Draw.public_number)
+                .join(Lottery, Lottery.id == JackpotWinEvent.lottery_id)
+                .join(Draw, Draw.id == JackpotWinEvent.draw_id)
+                .where(lottery_scope(scope))
+                .order_by(JackpotWinEvent.occurred_at.desc(), JackpotWinEvent.id.desc())
+                .limit(1)
+            )
+        ).first()
+        last = None
+        if row is not None:
+            event, lottery, number = row
+            last = {
+                "lottery_code": lottery.code,
+                "lottery_name": lottery.name,
+                "draw_number": number,
+                "jackpot_amount": event.jackpot_amount,
+                "occurred_at": event.occurred_at,
+            }
+        now = datetime.now(UTC)
+        upcoming = (
+            await self._session.execute(
+                select(Draw, Lottery.code, JackpotAccount.balance)
+                .join(Lottery, Lottery.id == Draw.lottery_id)
+                .join(JackpotAccount, JackpotAccount.lottery_id == Lottery.id)
+                .where(
+                    lottery_scope(scope),
+                    Lottery.is_active.is_(True),
+                    or_(
+                        Draw.status != DrawStatus.COMPLETED,
+                        Draw.executed_at >= now - timedelta(seconds=150),
+                    ),
+                )
+                .order_by(Draw.scheduled_at)
+                .limit(1)
+            )
+        ).first()
+        next_event = None
+        if upcoming:
+            draw, code, jackpot = upcoming
+            count = await self._session.scalar(
+                select(func.count(Ticket.id)).where(
+                    Ticket.draw_id == draw.id, Ticket.user_id == user_id
+                )
+            )
+            phase = (
+                "result"
+                if draw.status == DrawStatus.COMPLETED
+                else "live"
+                if now >= draw.scheduled_at
+                else "waiting"
+            )
+            next_event = {
+                "lottery_code": code,
+                "scheduled_at": draw.scheduled_at,
+                "draw_number": draw.public_number,
+                "player_ticket_count": int(count or 0),
+                "jackpot": draw.jackpot_opening
+                if phase != "waiting" and draw.jackpot_opening is not None
+                else jackpot,
+                "phase": phase,
+            }
+        return {"last_jackpot": last, "next_event": next_event}
 
     async def account(self, user_id: UUID) -> MiniAppAccount:
         user = await self._session.get(User, user_id)
@@ -534,8 +605,9 @@ class MiniAppQueryService:
         offset: int = 0,
         lottery_code: str | None = None,
         wins_only: bool = False,
+        scope: LotteryScope = "all",
     ) -> tuple[MiniAppTicket, ...]:
-        filters = [Ticket.user_id == user_id]
+        filters = [Ticket.user_id == user_id, lottery_scope(scope)]
         if active:
             filters.append(Ticket.status == TicketStatus.PURCHASED)
         else:
@@ -602,8 +674,9 @@ class MiniAppQueryService:
         active: bool,
         lottery_code: str | None = None,
         wins_only: bool = False,
+        scope: LotteryScope = "all",
     ) -> int:
-        filters = [Ticket.user_id == user_id]
+        filters = [Ticket.user_id == user_id, lottery_scope(scope)]
         if active:
             filters.append(Ticket.status == TicketStatus.PURCHASED)
         else:
@@ -653,14 +726,17 @@ class MiniAppQueryService:
         *,
         now: datetime | None = None,
         fast_only: bool = False,
+        lottery_code: str | None = None,
     ) -> MiniAppLiveFeed:
         """Return immutable draw facts and a server clock for visual playback."""
         timestamp = now or datetime.now(UTC)
-        lottery_filter = (
+        lottery_filter: ColumnElement[bool] = (
             Lottery.code.in_(FAST_LOTTERY_CODES)
             if fast_only
             else Lottery.code.not_in((*FAST_LOTTERY_CODES, "bingo"))
         )
+        if lottery_code:
+            lottery_filter = lottery_filter & (Lottery.code == lottery_code)
         completed_rows = (
             await self._session.execute(
                 select(Draw, Lottery, JackpotAccount.balance)
