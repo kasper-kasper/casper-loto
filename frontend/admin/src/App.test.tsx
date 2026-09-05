@@ -57,6 +57,8 @@ it("restores an authenticated session and renders Russian system truth", async (
   render(<App />);
 
   expect(await screen.findByText("Всего сорвано джекпотов")).toBeInTheDocument();
+  expect(screen.getByText("Всего тиражей")).toBeInTheDocument();
+  expect(screen.getByText("проведено по всем лотереям")).toBeInTheDocument();
   expect(screen.getByText("12 000 CAS")).toBeInTheDocument();
   expect(screen.queryByText("v0.8.0 · работает 2 мин.")).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /Система/ }));

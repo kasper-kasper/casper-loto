@@ -228,6 +228,7 @@ function DashboardView({ data, analytics, refreshedAt, onOpen, onNavigate, scope
     <JackpotPanel data={data} analytics={analytics} onOpen={onOpen} />
     <section className="metric-grid business-metrics">
       <article className="metric"><small>Игроки</small><strong>{data.counts.users.toLocaleString("ru-RU")}</strong><em>{overall.participants} покупали билеты</em></article>
+      <article className="metric"><small>Всего тиражей</small><strong>{data.counts.completed_draws.toLocaleString("ru-RU")}</strong><em>проведено по всем лотереям</em></article>
       <article className="metric"><small>Куплено билетов</small><strong>{overall.total_tickets.toLocaleString("ru-RU")}</strong><em>{overall.active_tickets.toLocaleString("ru-RU")} участвуют сейчас</em></article>
       <article className="metric"><small>Стоимость купленных билетов</small><strong title={cas(overall.total_sales)}>{compactCas(overall.total_sales)}</strong><em>за всю историю</em></article>
       <article className="metric"><small>Выплачено игрокам</small><strong title={cas(overall.total_payout)}>{compactCas(overall.total_payout)}</strong><em>включая джекпоты</em></article>
