@@ -1,3 +1,4 @@
+import { BingoInvitation, BingoTicketDetail, BingoView } from "./BingoView";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { motion } from "motion/react";
@@ -303,6 +304,7 @@ export default function App({ initData, localDev = false }: AppProps) {
   const [ticketsLoading, setTicketsLoading] = useState(false);
   const [liveLoading, setLiveLoading] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
+  const [bingoOpen, setBingoOpen] = useState(import.meta.env.VITE_DESIGN_PREVIEW === "true" && new URLSearchParams(window.location.search).get("screen") === "bingo");
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
   const [purchaseConfirmation, setPurchaseConfirmation] = useState<{ lotteryCode: string | null; count: number; cost: number } | null>(null);
   const [purchaseProgress, setPurchaseProgress] = useState<{ done: number; total: number } | null>(null);
@@ -486,7 +488,7 @@ export default function App({ initData, localDev = false }: AppProps) {
     return () => { window.clearTimeout(initial); controller.abort(); };
   }, [authenticated, initData, refreshDashboard, refreshFastLive, view]);
 
-  const standardLotteries = useMemo(() => dashboard?.lotteries.filter((item) => !isFastLottery(item.code)) ?? [], [dashboard]);
+  const standardLotteries = useMemo(() => dashboard?.lotteries.filter((item) => !isFastLottery(item.code) && item.code !== "bingo") ?? [], [dashboard]);
   const fastLotteries = useMemo(() => dashboard?.lotteries.filter((item) => isFastLottery(item.code)) ?? [], [dashboard]);
   const nearestLottery = useMemo(() => standardLotteries.filter((item) => item.scheduled_at && new Date(item.scheduled_at).getTime() > now).sort((left, right) => new Date(left.scheduled_at ?? 0).getTime() - new Date(right.scheduled_at ?? 0).getTime())[0] ?? null, [now, standardLotteries]);
   const storefrontLotteries = useMemo(() => {
@@ -495,8 +497,8 @@ export default function App({ initData, localDev = false }: AppProps) {
     return [...chronological, ...remaining.filter((item) => item.code === "weekly")];
   }, [nearestLottery?.code, standardLotteries]);
   const firstAvailable = standardLotteries.find((item) => item.purchase_available) ?? null;
-  const repeatTicket = dashboard?.recent_results.find((ticket) => !isFastLottery(ticket.lottery_code) && standardLotteries.some((lottery) => lottery.code === ticket.lottery_code && lottery.purchase_available)) ?? null;
-  const standardRecentResult = dashboard?.recent_results.find((ticket) => !isFastLottery(ticket.lottery_code)) ?? null;
+  const repeatTicket = dashboard?.recent_results.find((ticket) => ticket.lottery_code !== "bingo" && !isFastLottery(ticket.lottery_code) && standardLotteries.some((lottery) => lottery.code === ticket.lottery_code && lottery.purchase_available)) ?? null;
+  const standardRecentResult = dashboard?.recent_results.find((ticket) => ticket.lottery_code !== "bingo" && !isFastLottery(ticket.lottery_code)) ?? null;
   const cartGroups = useMemo(() => {
     const groups = new Map<string, CartTicket[]>();
     for (const ticket of cart) {
@@ -508,6 +510,7 @@ export default function App({ initData, localDev = false }: AppProps) {
   const serverNow = now;
 
   const openLottery = async (lotteryCode: string, initialNumbers: number[] = []) => {
+    if (lotteryCode === "bingo") { setBingoOpen(true); return; }
     setError(null);
     try {
       const fresh = await refreshDashboard();
@@ -674,6 +677,8 @@ export default function App({ initData, localDev = false }: AppProps) {
   if (!authenticated) return <main className="centered-message"><img alt="Kasper Loto" className="standalone-brand-mark" src="/brand/kasper-symbol.svg" /><h1>Откройте Kasper Loto в Telegram</h1><p>Безопасный вход выполняется автоматически при запуске Mini App.</p></main>;
   if (loading) return <Skeleton />;
   if (!dashboard) return <main className="centered-message"><div className="offline-mark">!</div><h1>Нет связи с K-Loto</h1><p>{error}</p></main>;
+  const bingoLottery = dashboard.lotteries.find(item => item.code === "bingo");
+  if (bingoOpen && bingoLottery) return <BingoView lottery={bingoLottery} initData={initData} now={serverNow} balance={dashboard.balance} onClose={() => setBingoOpen(false)} onPurchased={refreshDashboard} />;
   if (pickerLottery) return <main className="app-shell picker-page">{isFastLottery(pickerLottery.code) ? <FastPicker lottery={pickerLottery} purchasing={purchasing} success={purchaseSuccess} onBuy={(numbers) => void purchaseSingle(pickerLottery.code, numbers, 1)} onClose={() => { setPickerLottery(null); setView("fast"); }} /> : <NumberPicker lottery={pickerLottery} purchasing={purchasing} success={purchaseSuccess} initialNumbers={pickerInitialNumbers} favorites={favorites} cartRemaining={CART_MAX_TICKETS - cart.length} onAdd={(numbers, drawCount) => addManyToCart(pickerLottery, [numbers], drawCount)} onAddMany={(combinations, drawCount) => addManyToCart(pickerLottery, combinations, drawCount)} onBuy={(numbers, drawCount) => void purchaseSingle(pickerLottery.code, numbers, drawCount)} onSaveFavorite={(numbers) => void saveFavorite(numbers)} onDeleteFavorite={(id) => void deleteFavorite(id)} onClose={() => setPickerLottery(null)} />}</main>;
 
   return <main className="app-shell">
@@ -682,9 +687,10 @@ export default function App({ initData, localDev = false }: AppProps) {
     {(error || notice) && <button className={`toast ${error ? "error" : "success"}`} onClick={() => { setError(null); setNotice(null); }} type="button"><span>{error ? "!" : "✓"}</span><span className="toast-message">{error ?? notice}</span><Icon name="close" /></button>}
     {showNotificationPrompt && <div className="permission-backdrop"><section className="permission-card"><div className="permission-mark"><Icon name="profile" /></div><span className="eyebrow">{copy.notifications.promptEyebrow}</span><h2>{copy.notifications.promptTitle}</h2><p>{copy.notifications.promptText}</p><PrimaryButton onClick={() => void enableTelegramNotifications()}>{copy.notifications.enable}</PrimaryButton><button className="permission-later" onClick={dismissNotificationPrompt} type="button">{copy.notifications.promptLater}</button></section></div>}
     {purchaseConfirmation && <PurchaseConfirmation count={purchaseConfirmation.count} cost={purchaseConfirmation.cost} onClose={() => setPurchaseConfirmation(null)} onHome={() => { setPurchaseConfirmation(null); setPickerLottery(null); setView("home"); }} onTickets={() => { setPurchaseConfirmation(null); setTicketsLoading(true); setView("account"); setAccountView("tickets"); setTicketView("active"); }} />}
-    {selectedTicket && <TicketDetail lottery={dashboard.lotteries.find((item) => item.code === selectedTicket.lottery_code)} onClose={() => setSelectedTicket(null)} ticket={selectedTicket} />}
+    {selectedTicket && (selectedTicket.lottery_code === "bingo" ? <BingoTicketDetail ticket={selectedTicket} onClose={() => setSelectedTicket(null)} /> : <TicketDetail lottery={dashboard.lotteries.find((item) => item.code === selectedTicket.lottery_code)} onClose={() => setSelectedTicket(null)} ticket={selectedTicket} />)}
 
     {view === "home" && <section className="view-content home-view" key="home">
+      {bingoLottery && <BingoInvitation lottery={bingoLottery} now={serverNow} onOpen={() => setBingoOpen(true)} />}
       {nearestLottery && <NextDraw key={nearestLottery.code} lottery={nearestLottery} nearest now={serverNow} onLive={() => { setLiveLoading(true); setView("live"); }} onPlay={() => void openLottery(nearestLottery.code)} />}
       <LotteryStorefront lotteries={storefrontLotteries} now={serverNow} onPlay={(code) => void openLottery(code)} />
       <div className="home-action-row" aria-label="Быстрые действия">
@@ -696,6 +702,7 @@ export default function App({ initData, localDev = false }: AppProps) {
     </section>}
 
     {view === "live" && <section className="view-content live-view" key="live">
+      {bingoLottery && <BingoInvitation lottery={bingoLottery} now={serverNow} onOpen={() => setBingoOpen(true)} />}
       <LiveView feed={liveFeed} now={serverNow} loading={liveLoading} onPlay={(code) => void openLottery(code)} onTickets={() => { setTicketsLoading(accountView !== "tickets"); setAccountView("tickets"); setView("account"); }} />
     </section>}
 

@@ -1,3 +1,4 @@
+import type { BingoFeed, BingoInventory } from "./BingoView";
 import type { Account, Dashboard, Favorite, LiveFeed, NotificationPreferences, PurchaseResult, TicketPage, UserNotification } from "./types";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "";
@@ -36,6 +37,9 @@ async function request<T>(path: string, initData: string, init?: RequestInit): P
 }
 
 export const miniAppApi = {
+  bingoInventory: (initData: string, offset = 0) => request<BingoInventory>(`/api/v1/miniapp/bingo/inventory?offset=${offset}`, initData),
+  bingoLive: (initData: string) => request<BingoFeed>("/api/v1/miniapp/bingo/live", initData),
+  bingoPurchase: (initData: string, drawId: string, ticketIds: string[], key: string) => request<PurchaseResult>("/api/v1/miniapp/bingo/purchases", initData, { method: "POST", body: JSON.stringify({ draw_id: drawId, ticket_ids: ticketIds, idempotency_key: key }) }),
   devSession: () =>
     request<{ mode: "local-development" }>(
       "/api/v1/miniapp/dev/session",

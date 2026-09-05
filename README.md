@@ -1,7 +1,7 @@
 # K-Loto
 
-Current release: **1.19.0 — Понятная админка и точная история джекпотов**.
-Backend/Admin: **1.19.0**; Mini App: **1.18.1**.
+Current release: **1.20.0 — Kasper Bingo**.
+Backend/Mini App: **1.20.0**; Admin: **1.19.0**.
 
 K-Loto is a multi-user lottery platform with integer CAS accounting, an
 immutable transaction ledger, recoverable draw scheduling and nine independent

@@ -5,6 +5,7 @@ const nowIso = () => new Date().toISOString();
 const future = (minutes: number) => new Date(Date.now() + minutes * 60_000).toISOString();
 
 const lotterySeed = [
+  { code: "bingo", name: "Kasper Bingo", kind: "DAILY" as const, numbers_to_pick: 12, max_number: 60, ticket_price: 50_000, jackpot: 10_000_250_000, draw_number: 1, scheduled_at: future(180) },
   { code: "shadow", name: "SHADOW", kind: "DAILY" as const, numbers_to_pick: 3, max_number: 15, ticket_price: 888, jackpot: 888_888, draw_number: 38, scheduled_at: future(7) },
   { code: "flash", name: "FLASH", kind: "DAILY" as const, numbers_to_pick: 3, max_number: 15, ticket_price: 888, jackpot: 901_320, draw_number: 42, scheduled_at: future(17) },
   { code: "pulse", name: "PULSE", kind: "DAILY" as const, numbers_to_pick: 3, max_number: 15, primary_numbers_to_pick: 2, primary_max_number: 10, secondary_numbers_to_pick: 1, secondary_max_number: 5, secondary_storage_offset: 10, ticket_price: 1_234, jackpot: 1_234_567, draw_number: 1, scheduled_at: future(10) },
@@ -48,6 +49,8 @@ export function installDesignPreview(): void {
     const url = new URL(raw, window.location.origin);
     const path = url.pathname;
     if (!path.startsWith("/api/v1/miniapp/")) return nativeFetch(input, init);
+    if (path.includes("/bingo/inventory")) return json({ draw_id: "preview-bingo", draw_number: 1, scheduled_at: future(180), price: 50000, has_more: true, tickets: Array.from({ length: 6 }, (_, i) => ({ id: `bingo-${i}`, public_number: i + 1, numbers: [2, 14, 27, 41, 8, 22, 36, 52, 11, 25, 43, 59].map(n => (n + i - 1) % 60 + 1) })) });
+    if (path.includes("/bingo/live")) return json({ server_time: nowIso(), rules: { total_moves: 58, jackpot_move: 28, tour_prizes: [100000, 500000], pool_size: 2000 }, draw: null });
     if (path.endsWith("/dev/session")) return json({ mode: "design-preview" });
     if (path.endsWith("/dev/refill")) { balance = 100_000_000_000; return json({ balance }); }
     if (path.endsWith("/dashboard")) return json(dashboard());

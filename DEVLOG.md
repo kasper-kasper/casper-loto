@@ -2315,3 +2315,31 @@ Known limitations:
 - no domain tables or gameplay logic are included before Milestone 1;
 - frontend and bot directories are architectural boundaries only;
 - production deployment was intentionally not attempted.
+
+
+## 2026-09-05 — Kasper Bingo 1.20.0
+
+- Owner confirmed daily 22:00 Moscow, 58/60 draw, 28 inclusive jackpot cutoff,
+  50 tickets/player/draw, 50,000 CAS price, 100,000/500,000 CAS shared tour pools,
+  and 10bn base jackpot. See OD-019; the earlier weekly concept is superseded.
+- Added 2,000 preprinted tickets/draw, immutable row order and atomic inventory
+  claims using the existing purchase ledger. Migration 0033 pairs initial jackpot
+  funding with a Kasper Fund debit; purchased/completed history is untouched.
+- Bingo persists its random sequence at broadcast start, only publishes a prefix,
+  and settles after 58 two-second reveals. Recovery reuses the stored sequence.
+  Jackpot at broadcast start is frozen; later sales remain in the next jackpot.
+- Added a dedicated responsive Bingo page, real DOM paper tickets, selection,
+  serial numbers, detailed tickets, individual live switching and a manual best
+  ticket action. No barcode, raster mockup, external font or mass ticket rendering.
+- Focused PostgreSQL smoke runs against a disposable restored database only:
+  pool uniqueness, concurrent claim, retry, 50-ticket limit, hidden sequence,
+  settlement retry and ledger conservation passed. It caught and resolved an
+  inventory FK flush-order issue before production.
+- Browser QA unavailable: CUA returned no browsers. Automatic approval review
+  rejected headless Chrome screenshot launch with "blocked by policy". No visual
+  browser verification is claimed.
+- Release validation: Ruff, formatting, mypy, backend suite (181 tests plus the
+  added missed-draw case), Mini App lint/typecheck/build and 51 tests passed.
+  Admin typecheck/lint/build and all 18 tests passed (251 tests total).
+  The focused PostgreSQL smoke also verifies that next-draw purchases made during
+  a broadcast survive the current jackpot payout. Deployment pending.
