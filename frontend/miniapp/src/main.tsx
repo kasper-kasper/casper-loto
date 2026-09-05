@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import { installMotionBudget } from "./performance";
 import "./styles.css";
+import "./lottery-themes.css";
 import { initializeTelegram, isLocalDevMode } from "./telegram";
 
 async function start(): Promise<void> {

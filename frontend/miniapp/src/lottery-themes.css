@@ -1,0 +1,108 @@
+
+/* Each game owns its palette. Fast deliberately does not use these selectors. */
+.catalog-game,.today-event,.lottery-room {
+  --game-accent:#a8bcff; --game-rgb:133,160,237; --game-base:#10192c;
+}
+.lottery-pll,.room-pll { --game-accent:#c8adff; --game-rgb:162,124,249; --game-base:#14172f; }
+.lottery-september,.room-september { --game-accent:#f2bc7e; --game-rgb:201,101,64; --game-base:#25131e; }
+.lottery-pss,.room-pss { --game-accent:#9ed8e4; --game-rgb:91,160,185; --game-base:#0c2330; }
+.lottery-khan,.room-khan { --game-accent:#d8e6ff; --game-rgb:140,176,230; --game-base:#111e35; }
+.lottery-weekly,.room-weekly { --game-accent:#f4d99c; --game-rgb:216,175,98; --game-base:#201a30; }
+.lottery-grob,.room-grob { --game-accent:#c5b4a9; --game-rgb:154,121,117; --game-base:#211b23; }
+.lottery-bingo { --game-accent:#f3d597; --game-rgb:143,174,108; --game-base:#183429; }
+
+.catalog-game { background:var(--game-base); border-color:rgba(var(--game-rgb),.35); box-shadow:0 12px 26px #0004; transition:transform .22s,border-color .22s; }
+.catalog-game:active { transform:scale(.975); }
+.catalog-art { height:132px; background:var(--game-base); }
+.catalog-art>.lottery-visual { opacity:1; }
+.catalog-art:after,.largest-prize .catalog-art:after { background:linear-gradient(0deg,var(--game-base),transparent 70%); }
+.catalog-art>span { color:var(--game-accent); font-size:8px; }
+.catalog-game-body { padding:10px 13px 0; }
+.catalog-game h2 { color:#faf2e8; font-family:Georgia,serif; font-size:23px; min-height:54px; letter-spacing:-.7px; }
+.catalog-game.lottery-pll h2 { font-size:37px; letter-spacing:1px; }
+.catalog-game-body>strong,.largest-prize .catalog-game-body>strong { color:var(--game-accent); }
+.catalog-game-body>small,.catalog-game time { color:#a4acbe; }
+.catalog-game footer span { color:#d0d2dc; }
+.catalog-game footer i { color:var(--game-accent); }
+.catalog-game.largest-prize { background:var(--game-base); border-color:rgba(var(--game-rgb),.7); }
+.today-event { background:var(--game-base); border-color:rgba(var(--game-rgb),.38); padding-top:150px; }
+.today-event-art { opacity:1; }
+.today-event-art:after { background:linear-gradient(0deg,var(--game-base) 14%,transparent 95%); }
+.today-event-art>.lottery-visual { height:310px; }
+.today-event h2 { color:#fff3e5; margin:15px 0 23px; text-shadow:0 3px 25px #000; }
+.today-event.lottery-pll h2 { font-size:72px; color:#e7dbff; }
+.today-eyebrow,.today-event>strong { color:var(--game-accent,#d3bc87); }
+.today-event>button { color:#111623; background:linear-gradient(120deg,#ffedb2,#dca944); }
+.today-event-time { border-color:rgba(var(--game-rgb),.24); }
+.today-event-time b { color:#f0effb; }
+.today-heading h1,.discovery-heading h1 { color:#f3eff6; }
+.today-personal,.today-jackpot { background:#101a2a; border-color:#8494bf30; }
+.today-personal strong,.today-fast-link b { color:#d8deee; }
+.discovery-filters button[aria-pressed=true] { background:#a6b8ed17; border-color:#a6b8ed65; color:#dee7ff; }
+.discovery-filters button { color:#929eb8; }
+.lottery-room { padding-bottom:20px; }
+.lottery-room .room-topbar { display:flex; padding:5px 0 17px; gap:12px; align-items:center; }
+.lottery-room .room-topbar>button { width:32px; height:32px; border-color:rgba(var(--game-rgb),.25); color:var(--game-accent); font-size:20px; flex-shrink:0; }
+.room-topbar>img { width:125px; max-width:33%; }
+.room-topbar>span { margin-left:auto; color:#e0d9c6; font-size:11px; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.room-masthead { position:relative; isolation:isolate; overflow:hidden; border-radius:22px; border:1px solid rgba(var(--game-rgb),.4); background:var(--game-base); min-height:365px; box-shadow:0 18px 40px #0004,inset 0 1px #ffffff10; }
+.room-masthead>.lottery-visual { position:absolute; inset:0; height:290px; width:100%; z-index:-2; opacity:1; }
+.room-masthead:after { content:""; position:absolute; inset:0; z-index:-1; background:linear-gradient(0deg,var(--game-base) 8%,transparent 97%); pointer-events:none; }
+.room-masthead-copy { padding:145px 22px 18px; text-shadow:0 2px 20px #0009; }
+.room-masthead-copy>span { font-size:8px; letter-spacing:2.3px; color:var(--game-accent); }
+.room-masthead-copy h1 { margin:10px 0 8px; font:400 44px/1.05 Georgia,serif; letter-spacing:-1.5px; color:#fff6e9; }
+.room-pll .room-masthead-copy h1 { font-size:82px; line-height:.95; letter-spacing:2px; color:#e7ddff; text-shadow:0 0 30px #a98cff60; }
+.room-september .room-masthead-copy h1 { font-size:46px; color:#ffdfb7; }
+.room-masthead-copy p { margin:0; color:#acb3cb; font-size:10px; letter-spacing:.4px; }
+.room-prize { margin:0 14px 14px; padding:17px; border:1px solid rgba(var(--game-rgb),.27); background:linear-gradient(120deg,rgba(var(--game-rgb),.12),#060e20a8); border-radius:14px; backdrop-filter:blur(12px); }
+.room-prize>span { font-size:8px; letter-spacing:2px; color:#b6bfda; }
+.room-prize>strong { display:block; margin:7px 0 14px; font-size:clamp(22px,6.5vw,32px); font-weight:650; color:#f6d486; letter-spacing:-.8px; line-height:1.2; font-variant-numeric:tabular-nums; }
+.room-prize>small { display:flex; align-items:center; justify-content:space-between; gap:12px; border-top:1px solid rgba(var(--game-rgb),.2); padding-top:12px; color:#9da7c1; font-size:10px; }
+.room-prize b { color:#e6eafa; font-size:18px; font-weight:500; font-variant-numeric:tabular-nums; }
+.lottery-room>nav { margin:16px 0 0; border:0; background:transparent; padding:0; gap:10px; }
+.lottery-room>nav>button { padding:15px 8px; border:1px solid rgba(var(--game-rgb),.3); background:#0b1426; color:#afb7ce; border-radius:12px; font-size:12px; }
+.lottery-room>nav>button[aria-pressed=true] { background:linear-gradient(135deg,rgba(var(--game-rgb),.26),rgba(var(--game-rgb),.1)); border-color:rgba(var(--game-rgb),.75); color:#f4edff; box-shadow:inset 0 1px #ffffff15; }
+.lottery-room .picker-shell { margin-top:20px; padding:0; background:none; border:0; box-shadow:none; overflow:visible; }
+.selection-heading { padding:7px 3px 20px; }
+.selection-heading>span { font-size:8px; letter-spacing:1.7px; color:var(--game-accent); }
+.selection-heading h1 { margin:10px 0 8px; font:500 28px/1.15 Georgia,serif; letter-spacing:-.7px; color:#f2eef6; }
+.selection-heading p { margin:0; color:#909cb6; font-size:11px; line-height:1.6; }
+.lottery-room .picker-summary { margin:0 0 12px; padding:17px; border-radius:14px; border:1px solid rgba(var(--game-rgb),.3); background:linear-gradient(115deg,rgba(var(--game-rgb),.11),#091225); }
+.lottery-room .picker-summary strong { color:#f2effb; }
+.lottery-room .selection-meter strong { color:var(--game-accent); }
+.lottery-room .picker-board { border:1px solid rgba(var(--game-rgb),.25); border-radius:17px; background:linear-gradient(150deg,rgba(var(--game-rgb),.085),#080f20); padding:17px 13px; box-shadow:0 14px 25px #0002; }
+.lottery-room .picker-board-label { color:var(--game-accent); }
+.lottery-room .pick-number { border:1px solid rgba(var(--game-rgb),.35); color:#e4e5f4; background:linear-gradient(145deg,rgba(var(--game-rgb),.18),#0a1429); box-shadow:inset 0 1px #ffffff08; font-weight:600; transition:background .18s,box-shadow .18s,transform .18s; }
+.lottery-room .pick-number.selected { color:#100e1c; border-color:var(--game-accent); background:linear-gradient(130deg,#eee6ff,var(--game-accent)); box-shadow:0 0 0 3px rgba(var(--game-rgb),.15),0 6px 18px rgba(var(--game-rgb),.2); }
+.room-pll .number-group { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.room-pll .pick-number { min-height:55px; aspect-ratio:auto; border-radius:12px; font-size:21px; }
+.room-september .number-group { display:flex; flex-wrap:wrap; justify-content:center; gap:9px; padding:13px 0 18px; border-bottom:1px solid #ca927035; }
+.room-september .number-group:last-child { border:0; padding-bottom:0; }
+.room-september .number-group-label { flex-basis:100%; text-align:left; color:#bba3aa; margin-bottom:4px; letter-spacing:2px; }
+.room-september .pick-number { width:calc((100% - 45px)/6); flex:none; aspect-ratio:1; min-height:0; padding:0; border-radius:50%; border-color:#c64f5480; background:radial-gradient(circle at 35% 20%,#762b37,#2b1521 70%); color:#fae9df; font-size:18px; }
+.room-september .pick-number.selected { background:linear-gradient(135deg,#ffe4a9,#ce8f44); border-color:#ffdc97; color:#34160f; box-shadow:0 0 0 3px #e5b26722,0 0 18px #e2973740; }
+.room-khan .pick-number { border-radius:50%; }
+.room-grob .pick-number { border-radius:17px 17px 5px 5px; }
+.lottery-room .selected-combination { margin-top:15px; border-color:rgba(var(--game-rgb),.3); background:#0b1426; border-radius:14px; padding:16px; }
+.lottery-room .selected-combination i.filled { background:rgba(var(--game-rgb),.2); color:var(--game-accent); border-color:var(--game-accent); }
+.lottery-room .random-button { min-height:54px; border-radius:13px; border-color:rgba(var(--game-rgb),.75); background:linear-gradient(130deg,rgba(var(--game-rgb),.3),#10192e); color:#f0ecfc; font-size:15px; box-shadow:inset 0 1px #ffffff20,0 7px 22px #0003; }
+.room-september .random-button { background:linear-gradient(115deg,#ffe7a1,#dca63f); color:#251507; border-color:#ffe5a4; }
+.lottery-room .multi-draw-choice,.lottery-room .quick-batches { background:#0d1729; border-color:rgba(var(--game-rgb),.22); border-radius:14px; }
+.lottery-room .picker-actions { margin-top:20px; }
+.lottery-room .live-experience { margin-top:20px; }
+.room-september .scene-light { background:radial-gradient(ellipse,#ffbf6b55,transparent 65%); }
+.room-pll .scene-light { background:radial-gradient(ellipse,#ba99ff55,transparent 65%); }
+@media (max-width:360px) {
+ .room-topbar>span { font-size:9px; } .room-masthead-copy { padding-inline:17px; }
+ .room-september .room-masthead-copy h1 { font-size:39px; }
+ .room-september .pick-number { font-size:16px; } .room-prize { padding:13px; }
+}
+@media (prefers-reduced-motion:reduce) {
+ .lottery-room *, .catalog-game, .today-event * { animation:none !important; transition:none !important; }
+}
+
+.visual-pll.raster-visual>img { object-position:50% 43%; }
+.visual-september.raster-visual>img { object-position:48% 42%; }
+.visual-pll.raster-visual>.scene-foreground,.visual-september.raster-visual>.scene-foreground { display:none; }
+.visual-pll .scene-weather { display:none; }
+.room-september .room-masthead-copy h1 { text-transform:uppercase; font-size:clamp(34px,9.6vw,46px); }

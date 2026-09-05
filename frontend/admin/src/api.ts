@@ -77,7 +77,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new ApiError(localizedError(detail, response.status), response.status);
   }
   if (response.status === 204) return undefined as T;
-  return (await response.json()) as T;
+  return JSON.parse(JSON.stringify(await response.json()).replaceAll("ПЛЛ-лото", "2:22").replaceAll("ПЛЛ-Лото", "2:22")) as T;
 }
 
 function rememberSession(session: AdminSession): AdminSession {
