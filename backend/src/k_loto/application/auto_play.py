@@ -9,7 +9,7 @@ from sqlalchemy import exists, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from k_loto.application.weekly import LotteryTicketPurchaseService
-from k_loto.domain.enums import DrawStatus, LotteryKind, TicketSource
+from k_loto.domain.enums import DrawStatus, LotteryKind, TicketSource, TicketStatus
 from k_loto.domain.errors import (
     ConfigurationError,
     InsufficientBalance,
@@ -82,6 +82,7 @@ class AutoPlayService:
                             Ticket.user_id == AutoPlaySetting.user_id,
                             Ticket.draw_id == Draw.id,
                             Ticket.source == TicketSource.AUTO_PLAY,
+                            Ticket.status == TicketStatus.PURCHASED,
                         )
                     ),
                 )
@@ -136,7 +137,8 @@ class AutoPlayService:
                         user_id=candidate.user_id,
                         combinations=combinations,
                         idempotency_key=(
-                            f"auto:{candidate.user_id.hex}:{candidate.draw_id.hex}"
+                            f"auto:{candidate.user_id.hex}:{candidate.draw_id.hex}:"
+                            f"{candidate.ruleset_code}"
                         ),
                         source=TicketSource.AUTO_PLAY,
                         now=timestamp,
