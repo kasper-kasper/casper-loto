@@ -17,7 +17,11 @@ import paramiko
 
 ROOT = Path(__file__).resolve().parents[1]
 ALL_SERVICES = ("api", "bot", "gateway")
-FRONTENDS = (ROOT / "frontend" / "miniapp", ROOT / "frontend" / "admin")
+FRONTENDS = (
+    ROOT / "frontend" / "miniapp",
+    ROOT / "frontend" / "admin",
+    ROOT / "frontend" / "web",
+)
 
 
 def load_local_env(path: Path) -> dict[str, str]:
@@ -193,7 +197,7 @@ def main() -> None:
                 client,
                 "Release upload",
                 "set -eu; rm -rf -- /opt/k-loto/frontend/admin/dist "
-                "/opt/k-loto/frontend/miniapp/dist; "
+                "/opt/k-loto/frontend/miniapp/dist /opt/k-loto/frontend/web/dist; "
                 f"tar -xzf {remote_archive} -C /opt/k-loto; "
                 f"rm -f {remote_archive}",
                 timeout=120,

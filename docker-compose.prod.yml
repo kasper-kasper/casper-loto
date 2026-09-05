@@ -34,6 +34,8 @@ services:
       ADMIN_USERNAME: ${ADMIN_USERNAME:?required}
       ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH:?required}
       ADMIN_SESSION_MAX_AGE_SECONDS: ${ADMIN_SESSION_MAX_AGE_SECONDS:-28800}
+      WEB_SESSION_SECRET: ${WEB_SESSION_SECRET:?required}
+      WEB_SESSION_MAX_AGE_SECONDS: ${WEB_SESSION_MAX_AGE_SECONDS:-604800}
     command: ["sh", "-c", "alembic upgrade head && python -m scripts.bootstrap_production && uvicorn k_loto.main:app --host 0.0.0.0 --port 8000"]
     depends_on:
       db:

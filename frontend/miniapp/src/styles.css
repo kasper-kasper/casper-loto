@@ -1254,6 +1254,25 @@ html.app-backgrounded *, .motion-paused, .motion-paused * { animation-play-state
 .number-grid { padding: 9px; }
 .picker-shell.lottery-september .number-grid { padding: 7px; }
 .picker-shell.lottery-september .number-group { gap: 5px; padding: 6px; }
+.picker-shell.lottery-september .picker-board,
+.picker-shell.lottery-september .number-grid,
+.picker-shell.lottery-september .number-group {
+  min-height: 1px;
+  overflow: visible;
+  visibility: visible;
+  opacity: 1;
+}
+.picker-shell.lottery-september .number-group {
+  display: grid !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+}
+.picker-shell.lottery-september .pick-number {
+  display: grid !important;
+  min-width: 0;
+  min-height: 44px;
+  visibility: visible;
+  opacity: 1;
+}
 .picker-shell.lottery-pll .number-grid > .number-group,
 .picker-shell.lottery-khan .number-grid > .number-group { gap: 6px; }
 .picker-shell.lottery-pss .number-grid > .number-group,

@@ -45,6 +45,8 @@ class Settings(BaseSettings):
     admin_username: str | None = None
     admin_password_hash: SecretStr | None = None
     admin_session_max_age_seconds: int = Field(default=28_800, ge=300, le=86_400)
+    web_session_secret: SecretStr | None = None
+    web_session_max_age_seconds: int = Field(default=604_800, ge=300, le=2_592_000)
 
     @property
     def docs_enabled(self) -> bool:
@@ -70,6 +72,14 @@ class Settings(BaseSettings):
             and self.admin_username is not None
             and bool(self.admin_username.strip())
             and self.admin_password_hash is not None
+        )
+
+    @property
+    def web_auth_available(self) -> bool:
+        """Enable ordinary browser accounts only with an independent strong secret."""
+        return (
+            self.web_session_secret is not None
+            and len(self.web_session_secret.get_secret_value()) >= 32
         )
 
 

@@ -1,5 +1,25 @@
 # Development log
 
+## [1.23.0] - 2026-09-05
+
+### Desktop Web и поле «3 СЕНТЯБРЯ»
+
+- Возвращён отдельный desktop-only React/Vite-клиент на `/web/`. Он использует
+  существующие application services и production-базу: отдельной копии игровой
+  логики, балансов или тиражей нет.
+- Реализованы самостоятельная регистрация, Argon2-пароли, подписанная
+  Secure/HttpOnly cookie, CSRF-защита мутаций и welcome grant через immutable
+  ledger. Существующая таблица `web_accounts` позволила обойтись без миграции.
+- Web API покрывает dashboard, account, пагинированные tickets, live feed,
+  универсальную покупку стратегий и пул Kasper Bingo. Fast-эфир следует
+  серверным `live_starts_at`, `reveal_at` и `live_ends_at`.
+- Gateway и единый release-скрипт теперь собирают и публикуют третий frontend;
+  Mini App остаётся корневым Telegram-интерфейсом, Web изолирован в `/web/`.
+- В CSS «3 СЕНТЯБРЯ» устранён конфликт старых theme-правил: board, groups и
+  buttons имеют явные display/visibility/min-size, поэтому поле не схлопывается.
+- Проверки релиза: Ruff/format и mypy — чисто; backend — 195 passed; Mini App —
+  57 passed; Admin — 19 passed; Web — lint/typecheck/build и 1 passed.
+
 ## [1.22.1] - 2026-09-05
 
 ### Auto-play после смены формата
