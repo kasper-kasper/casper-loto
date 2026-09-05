@@ -80,6 +80,10 @@ class PayoutRatio:
 class NumberGenerator(Protocol):
     def draw(self, population_size: int, numbers_to_pick: int) -> tuple[int, ...]: ...
 
+    def draw_sequence(
+        self, minimum: int, maximum: int, length: int
+    ) -> tuple[int, ...]: ...
+
 
 @dataclass(frozen=True, slots=True)
 class LotteryRuleStrategy:
@@ -106,6 +110,9 @@ class LotteryRuleStrategy:
     tier_pool_payouts: Mapping[int, PayoutRatio] = field(
         default_factory=lambda: MappingProxyType({})
     )
+    minimum_number: int = 1
+    allow_repeats: bool = False
+    ordered: bool = False
 
     @property
     def display_primary_numbers_to_pick(self) -> int:
@@ -126,15 +133,18 @@ class LotteryRuleStrategy:
             raise InvalidTicket(
                 f"{self.label} tickets require exactly {self.numbers_to_pick} numbers."
             )
-        if len(set(numbers)) != self.numbers_to_pick:
-            raise InvalidTicket("Ticket numbers must be unique.")
         if any(
             isinstance(value, bool) or not isinstance(value, int) for value in numbers
         ):
             raise InvalidTicket("Ticket numbers must be integers.")
-        if any(value < 1 or value > self.max_number for value in numbers):
+        if not self.allow_repeats and len(set(numbers)) != self.numbers_to_pick:
+            raise InvalidTicket("Ticket numbers must be unique.")
+        if any(
+            value < self.minimum_number or value > self.max_number for value in numbers
+        ):
             raise InvalidTicket(
-                f"{self.label} ticket numbers must be between 1 and {self.max_number}."
+                f"{self.label} ticket numbers must be between "
+                f"{self.minimum_number} and {self.max_number}."
             )
         if self.secondary_numbers_to_pick:
             primary = [
@@ -157,13 +167,17 @@ class LotteryRuleStrategy:
                     f"{self.display_primary_numbers_to_pick} main and "
                     f"{self.secondary_numbers_to_pick} special numbers."
                 )
-        return tuple(sorted(numbers))
+        return tuple(numbers) if self.ordered else tuple(sorted(numbers))
 
     def generate_combination(self, generator: NumberGenerator) -> tuple[int, ...]:
         if self.code == "bingo_12_60":
             from k_loto.domain.bingo import generate_ticket
 
             return generate_ticket()
+        if self.ordered and self.allow_repeats:
+            return generator.draw_sequence(
+                self.minimum_number, self.max_number, self.numbers_to_pick
+            )
         if not self.secondary_numbers_to_pick:
             return generator.draw(self.max_number, self.numbers_to_pick)
         primary = generator.draw(
@@ -180,6 +194,11 @@ class LotteryRuleStrategy:
     def match_count(
         self, ticket_numbers: tuple[int, ...], winning_numbers: tuple[int, ...]
     ) -> int:
+        if self.ordered:
+            return sum(
+                ticket == winning
+                for ticket, winning in zip(ticket_numbers, winning_numbers, strict=True)
+            )
         if not self.secondary_numbers_to_pick:
             return len(set(ticket_numbers).intersection(winning_numbers))
         main_matches = len(
@@ -369,6 +388,11 @@ class SystemRandomNumberGenerator:
             sorted(self._random.sample(range(1, population_size + 1), numbers_to_pick))
         )
 
+    def draw_sequence(self, minimum: int, maximum: int, length: int) -> tuple[int, ...]:
+        if length <= 0 or minimum > maximum:
+            raise ValueError("Invalid draw sequence configuration.")
+        return tuple(self._random.randint(minimum, maximum) for _ in range(length))
+
 
 WEEKLY_RULES = LotteryRuleStrategy(
     "weekly_5_20",
@@ -497,6 +521,21 @@ PULSE_RULES = LotteryRuleStrategy(
     secondary_max_number=5,
     secondary_storage_offset=10,
 )
+CODE_RULES = LotteryRuleStrategy(
+    code="code_4_digits",
+    label="CODE",
+    numbers_to_pick=4,
+    max_number=9,
+    price_divisor=1,
+    jackpot_share=PayoutRatio(1),
+    guaranteed_payouts=MappingProxyType({}),
+    distribution_pool_match=None,
+    jackpot_match=4,
+    jackpot_refill_from_reserve=True,
+    minimum_number=0,
+    allow_repeats=True,
+    ordered=True,
+)
 BINGO_RULES = LotteryRuleStrategy(
     "bingo_12_60",
     "Kasper Bingo",
@@ -522,6 +561,7 @@ LOTTERY_RULES: Mapping[str, LotteryRuleStrategy] = MappingProxyType(
             GROB_RULES,
             FAST_RULES,
             PULSE_RULES,
+            CODE_RULES,
         )
     }
 )

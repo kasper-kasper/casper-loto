@@ -10,6 +10,10 @@ from uuid import UUID
 class SecureNumberGenerator(Protocol):
     def draw(self, population_size: int, numbers_to_pick: int) -> tuple[int, ...]: ...
 
+    def draw_sequence(
+        self, minimum: int, maximum: int, length: int
+    ) -> tuple[int, ...]: ...
+
 
 class Clock(Protocol):
     def now(self) -> datetime: ...

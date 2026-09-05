@@ -4,6 +4,7 @@ export type TicketStatus = "PURCHASED" | "SETTLED" | "REFUNDED";
 export interface Lottery {
   code: string;
   name: string;
+  ruleset_code?: string;
   kind: LotteryKind;
   numbers_to_pick: number;
   max_number: number;

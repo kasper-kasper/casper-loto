@@ -65,6 +65,7 @@ router = APIRouter(prefix="/api/v1/miniapp", tags=["miniapp"])
 class LotteryResponse(BaseModel):
     code: str
     name: str
+    ruleset_code: str
     kind: LotteryKind
     numbers_to_pick: int
     max_number: int
@@ -299,6 +300,7 @@ def _lottery_response(item: MiniAppLottery) -> LotteryResponse:
     return LotteryResponse(
         code=item.code,
         name=item.name,
+        ruleset_code=item.ruleset_code,
         kind=item.kind,
         numbers_to_pick=item.numbers_to_pick,
         max_number=item.max_number,

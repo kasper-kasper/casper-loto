@@ -54,6 +54,7 @@ from k_loto.infrastructure.database.models import (
 class MiniAppLottery:
     code: str
     name: str
+    ruleset_code: str
     kind: LotteryKind
     numbers_to_pick: int
     max_number: int
@@ -542,6 +543,7 @@ class MiniAppQueryService:
                         if draw
                         else lottery.name
                     ),
+                    ruleset_code=lottery.ruleset_code,
                     kind=lottery.kind,
                     numbers_to_pick=lottery.numbers_to_pick,
                     max_number=lottery.max_number,

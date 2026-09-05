@@ -78,7 +78,7 @@ The live feed uses authenticated SSE. Snapshots follow the server timeline;
 reconnecting or reopening never restarts the reveal locally.
 
 Fast uses the same read-only feed with `scope=fast`, but renders it directly in
-the FLASH, SHADOW or PULSE card. Sales close and the nearest card changes into
+the FLASH, CODE or PULSE card. Sales close and the nearest card changes into
 the broadcast together eight seconds before the draw. The three immutable stored
 result values appear in a compact 3.5-second sequence, the final result remains
 for six seconds and then the card smoothly moves below the new nearest draw. PULSE visually separates

@@ -5,7 +5,7 @@ UTC timestamps. The authoritative human-readable table is
 [`LOTTERY_SCHEDULE.md`](LOTTERY_SCHEDULE.md).
 
 Slot lotteries keep enough future draws for their configured daily schedule.
-FLASH, SHADOW and PULSE use the same generic interval strategy with two future draws
+FLASH, CODE and PULSE use the same generic interval strategy with two future draws
 prepared per lottery. Their ten-minute alternation is produced by two separate
 twenty-minute schedules anchored at `00:00` and `00:10` Moscow.
 

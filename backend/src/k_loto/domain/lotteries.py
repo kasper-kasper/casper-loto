@@ -24,7 +24,7 @@ LOTTERY_DEFINITIONS = (
     LotteryDefinition("september", "3 СЕНТЯБРЯ", LotteryKind.DAILY, "03:33 / 15:33"),
     LotteryDefinition("grob", "ГРОБ", LotteryKind.DAILY, "06:06 / 23:06"),
     LotteryDefinition("flash", "FLASH", LotteryKind.DAILY, "каждые 9 минут"),
-    LotteryDefinition("shadow", "SHADOW", LotteryKind.DAILY, "каждые 9 минут"),
+    LotteryDefinition("shadow", "CODE", LotteryKind.DAILY, "каждые 9 минут"),
     LotteryDefinition("pulse", "PULSE", LotteryKind.DAILY, "каждые 9 минут"),
 )
 

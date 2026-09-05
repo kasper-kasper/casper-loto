@@ -110,3 +110,30 @@ describe("PULSE picker", () => {
     expect(onBuy).toHaveBeenCalledWith([1, 10, 15]);
   });
 });
+
+describe("CODE picker", () => {
+  it("submits four ordered digits including zero and repeats", () => {
+    const onBuy = vi.fn();
+    render(
+      <FastPicker
+        lottery={{
+          ...lottery("shadow", "2026-09-04T08:33:00Z"),
+          name: "CODE",
+          ruleset_code: "code_4_digits",
+          numbers_to_pick: 4,
+          max_number: 9,
+        }}
+        purchasing={false}
+        success={false}
+        onBuy={onBuy}
+        onClose={() => undefined}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Цифра 0" }));
+    fireEvent.click(screen.getByRole("button", { name: "Цифра 7" }));
+    fireEvent.click(screen.getByRole("button", { name: "Цифра 0" }));
+    fireEvent.click(screen.getByRole("button", { name: "Цифра 3" }));
+    fireEvent.click(screen.getByRole("button", { name: /Подтвердить код/i }));
+    expect(onBuy).toHaveBeenCalledWith([0, 7, 0, 3]);
+  });
+});
