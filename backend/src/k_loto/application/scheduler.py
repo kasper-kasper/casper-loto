@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 import structlog
-from sqlalchemy import select
+from sqlalchemy import or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from k_loto.application.daily_transition import DailyTransitionService
@@ -103,6 +103,10 @@ class DrawScheduleService:
                 )
                 lottery.next_draw_number += 1
                 self._session.add(draw)
+                if lottery.code == "bingo":
+                    from k_loto.application.bingo import ensure_pool
+
+                    await ensure_pool(self._session, lottery, draw)
                 pending_draws.append(draw)
                 created.append(draw)
                 schedule_base = scheduled_at
@@ -135,6 +139,11 @@ class DrawRecoveryService:
                 .where(
                     Draw.status != DrawStatus.COMPLETED,
                     Draw.scheduled_at <= now,
+                    or_(
+                        Lottery.code != "bingo",
+                        Draw.status != DrawStatus.DRAWING,
+                        Draw.executed_at + text("INTERVAL '118 seconds'") <= now,
+                    ),
                 )
                 .order_by(Draw.scheduled_at, Draw.public_number)
                 .limit(1)

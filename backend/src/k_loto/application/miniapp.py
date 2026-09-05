@@ -3,6 +3,7 @@
 from collections import Counter
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from typing import Any
 from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
 
@@ -87,6 +88,7 @@ class MiniAppTicket:
     prize_amount: int
     winning_numbers: tuple[int, ...] | None
     draw_ticket_count: int
+    bingo_result: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -582,9 +584,13 @@ class MiniAppQueryService:
                 matches=ticket.matches,
                 prize_amount=ticket.prize_amount,
                 winning_numbers=(
-                    tuple(draw.winning_numbers) if draw.winning_numbers else None
+                    tuple(draw.winning_numbers)
+                    if draw.winning_numbers
+                    and (lottery.code != "bingo" or draw.status == DrawStatus.COMPLETED)
+                    else None
                 ),
                 draw_ticket_count=int(draw_ticket_count),
+                bingo_result=ticket.bingo_result,
             )
             for ticket, draw, lottery, draw_ticket_count in rows
         )
@@ -653,7 +659,7 @@ class MiniAppQueryService:
         lottery_filter = (
             Lottery.code.in_(FAST_LOTTERY_CODES)
             if fast_only
-            else Lottery.code.not_in(FAST_LOTTERY_CODES)
+            else Lottery.code.not_in((*FAST_LOTTERY_CODES, "bingo"))
         )
         completed_rows = (
             await self._session.execute(

@@ -1,9 +1,10 @@
 """Authenticated Telegram Mini App API."""
 
 import asyncio
+import hashlib
 from collections.abc import AsyncIterator
 from datetime import datetime
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
@@ -99,6 +100,7 @@ class TicketResponse(BaseModel):
     prize_amount: int
     winning_numbers: list[int] | None
     draw_ticket_count: int
+    bingo_result: dict[str, Any] | None = None
 
 
 class DashboardResponse(BaseModel):
@@ -207,6 +209,12 @@ class PurchaseRequest(BaseModel):
     )
     idempotency_key: str = Field(min_length=1, max_length=100)
     draw_count: Literal[1, 5] = 1
+
+
+class BingoPurchaseRequest(BaseModel):
+    draw_id: UUID
+    ticket_ids: list[UUID] = Field(min_length=1, max_length=50)
+    idempotency_key: str = Field(min_length=1, max_length=100)
 
 
 class PurchaseResponse(BaseModel):
@@ -328,6 +336,7 @@ def _ticket_response(item: MiniAppTicket) -> TicketResponse:
         prize_amount=item.prize_amount,
         winning_numbers=(list(item.winning_numbers) if item.winning_numbers else None),
         draw_ticket_count=item.draw_ticket_count,
+        bingo_result=item.bingo_result,
     )
 
 
@@ -775,6 +784,69 @@ async def purchase_lottery_tickets(
         operation_id=result.operation_id,
         draw_id=result.draw_id,
         draw_ids=list(result.draw_ids or (result.draw_id,)),
+        draw_count=result.draw_count,
+        ticket_ids=list(result.ticket_ids),
+        total_cost=result.total_cost,
+        balance_after=result.balance_after,
+        already_processed=result.already_processed,
+    )
+
+
+@router.get("/bingo/inventory")
+async def bingo_inventory(
+    user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    offset: Annotated[int, Query(ge=0, le=2000)] = 0,
+) -> dict[str, Any]:
+    from k_loto.application.bingo import BingoQueryService
+
+    try:
+        return await BingoQueryService(session).inventory(offset=offset)
+    except NoAvailableDraw as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+
+
+@router.get("/bingo/live")
+async def bingo_live(
+    user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> dict[str, Any]:
+    from k_loto.application.bingo import BingoQueryService
+
+    return await BingoQueryService(session).feed(user.id)
+
+
+@router.post("/bingo/purchases", response_model=PurchaseResponse, status_code=201)
+async def bingo_purchase(
+    payload: BingoPurchaseRequest,
+    user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> PurchaseResponse:
+    try:
+        result = await LotteryTicketPurchaseService(
+            session,
+            "bingo",
+            target_draw_id=payload.draw_id,
+        ).purchase(
+            user_id=user.id,
+            combinations=[[] for _ in payload.ticket_ids],
+            pool_ticket_ids=payload.ticket_ids,
+            idempotency_key=hashlib.sha256(
+                f"bingo:{user.id}:{payload.idempotency_key}".encode()
+            ).hexdigest(),
+        )
+    except InsufficientBalance as error:
+        raise HTTPException(status_code=402, detail=str(error)) from error
+    except InvalidTicket as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    except NoAvailableDraw as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except ConfigurationError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    return PurchaseResponse(
+        operation_id=result.operation_id,
+        draw_id=result.draw_id,
+        draw_ids=list(result.draw_ids),
         draw_count=result.draw_count,
         ticket_ids=list(result.ticket_ids),
         total_cost=result.total_cost,

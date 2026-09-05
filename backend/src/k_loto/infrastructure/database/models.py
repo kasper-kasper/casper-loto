@@ -290,6 +290,27 @@ class Ticket(Base):
     matches: Mapped[int | None] = mapped_column(Integer)
     prize_amount: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
     settled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    bingo_result: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+
+
+class BingoPoolTicket(Base):
+    """Preprinted draw inventory; a claimed entry references an immutable ticket."""
+
+    __tablename__ = "bingo_pool_tickets"
+    __table_args__ = (
+        UniqueConstraint("draw_id", "public_number", name="uq_bingo_pool_serial"),
+        CheckConstraint("cardinality(numbers) = 12", name="bingo_twelve_numbers"),
+        Index("ix_bingo_pool_free", "draw_id", "ticket_id"),
+    )
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
+    draw_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("draws.id", ondelete="RESTRICT")
+    )
+    public_number: Mapped[int] = mapped_column(BigInteger, unique=True)
+    numbers: Mapped[list[int]] = mapped_column(ARRAY(Integer))
+    ticket_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("tickets.id", ondelete="RESTRICT"), unique=True
+    )
 
 
 class Balance(TimestampMixin, Base):

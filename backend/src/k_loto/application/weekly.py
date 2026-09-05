@@ -1,7 +1,7 @@
 """Transactional Weekly purchase and settlement services."""
 
-from dataclasses import dataclass
-from datetime import UTC, datetime
+from dataclasses import dataclass, replace
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -44,6 +44,7 @@ from k_loto.domain.weekly import (
 )
 from k_loto.infrastructure.database.models import (
     Balance,
+    BingoPoolTicket,
     Draw,
     JackpotAccount,
     JackpotWinEvent,
@@ -196,6 +197,7 @@ class WeeklyTicketPurchaseService:
         idempotency_key: str,
         draw_count: int = 1,
         source: TicketSource = TicketSource.MANUAL,
+        pool_ticket_ids: list[UUID] | None = None,
         now: datetime | None = None,
     ) -> PurchaseResult:
         if not idempotency_key or len(idempotency_key) > 100:
@@ -233,6 +235,8 @@ class WeeklyTicketPurchaseService:
                     f"Active {self.lottery_label} lottery is not configured."
                 )
             rules = _rules_for_lottery(lottery, expected=self.ruleset_code)
+            if lottery.code == "bingo" and draw_count != 1:
+                raise InvalidTicket("Bingo purchases cover one draw.")
             if (
                 lottery.numbers_to_pick != rules.numbers_to_pick
                 or lottery.max_number != rules.max_number
@@ -380,6 +384,38 @@ class WeeklyTicketPurchaseService:
                         "The per-player ticket limit for this draw would be exceeded."
                     )
 
+            pool_entries: list[BingoPoolTicket] = []
+            if lottery.code == "bingo":
+                from k_loto.application.bingo import ensure_pool
+
+                await ensure_pool(self._session, lottery, draw)
+                pool_query = select(BingoPoolTicket).where(
+                    BingoPoolTicket.draw_id == draw.id,
+                    BingoPoolTicket.ticket_id.is_(None),
+                )
+                if pool_ticket_ids is not None:
+                    if len(set(pool_ticket_ids)) != len(combinations):
+                        raise InvalidTicket("Select distinct Bingo tickets.")
+                    pool_query = pool_query.where(
+                        BingoPoolTicket.id.in_(pool_ticket_ids)
+                    )
+                elif source != TicketSource.AUTO_PLAY:
+                    raise InvalidTicket("Bingo requires preprinted ticket IDs.")
+                pool_entries = list(
+                    (
+                        await self._session.scalars(
+                            pool_query.order_by(BingoPoolTicket.public_number)
+                            .limit(len(combinations))
+                            .with_for_update()
+                        )
+                    ).all()
+                )
+                if len(pool_entries) != len(combinations):
+                    raise NoAvailableDraw(
+                        "Some selected Bingo tickets were already purchased."
+                    )
+                combinations = [entry.numbers for entry in pool_entries]
+
             balance = await self._session.scalar(
                 select(Balance).where(Balance.user_id == user_id).with_for_update()
             )
@@ -409,7 +445,11 @@ class WeeklyTicketPurchaseService:
                     self._session.add(
                         Ticket(
                             id=ticket_id,
-                            public_number=first_number + offset,
+                            public_number=(
+                                pool_entries[offset].public_number
+                                if pool_entries
+                                else first_number + offset
+                            ),
                             lottery_id=lottery.id,
                             draw_id=target_draw.id,
                             user_id=user_id,
@@ -424,7 +464,14 @@ class WeeklyTicketPurchaseService:
                     offset += 1
                 target_draw.ticket_count += len(combinations)
                 target_draw.total_sales += len(combinations) * ticket_price
-            lottery.next_ticket_number += len(ticket_ids)
+            if not pool_entries:
+                lottery.next_ticket_number += len(ticket_ids)
+            else:
+                # Persist tickets before setting the inventory foreign keys.
+                # The lottery/pool locks remain held until the whole purchase commits.
+                await self._session.flush()
+                for entry, ticket_id in zip(pool_entries, ticket_ids, strict=True):
+                    entry.ticket_id = ticket_id
 
             balance_before = balance.amount
             balance.amount -= total_cost
@@ -531,6 +578,28 @@ class WeeklySettlementService:
                 raise ConfigurationError(
                     f"Draw is not attached to a {self.lottery_label} lottery."
                 )
+            if lottery.code == "bingo":
+                from k_loto.domain.bingo import DRAW_MOVES, generate_sequence
+
+                if draw.winning_numbers is None:
+                    opening_account = await self._session.scalar(
+                        select(JackpotAccount)
+                        .where(JackpotAccount.lottery_id == lottery.id)
+                        .with_for_update()
+                    )
+                    if opening_account is None:
+                        raise ConfigurationError("Bingo jackpot account is missing.")
+                    draw.jackpot_opening = opening_account.balance
+                    draw.winning_numbers = list(generate_sequence())
+                    missed = timestamp - draw.scheduled_at > timedelta(minutes=5)
+                    draw.executed_at = draw.scheduled_at if missed else timestamp
+                    draw.status = DrawStatus.DRAWING
+                    if not missed:
+                        return SettlementResult(draw.id, (), 0, already_completed=True)
+                if draw.executed_at and timestamp < draw.executed_at + timedelta(
+                    seconds=DRAW_MOVES * 2 + 2
+                ):
+                    return SettlementResult(draw.id, (), 0, already_completed=True)
             current_rules = _rules_for_lottery(lottery, expected=self.ruleset_code)
             snapshot_rules = str(
                 _snapshot_value(draw, "ruleset_code", current_rules.code)
@@ -566,7 +635,11 @@ class WeeklySettlementService:
                     )
                 ).all()
             )
-            winning = rules.generate_combination(self._number_generator)
+            winning = (
+                tuple(draw.winning_numbers or ())
+                if lottery.code == "bingo"
+                else rules.generate_combination(self._number_generator)
+            )
             plan = rules.calculate_settlement(
                 [
                     SettlementTicket(
@@ -580,13 +653,26 @@ class WeeklySettlementService:
                 ],
                 winning,
                 distribution_balance=0,
-                jackpot_balance=jackpot.balance,
+                jackpot_balance=(
+                    draw.jackpot_opening
+                    if lottery.code == "bingo" and draw.jackpot_opening is not None
+                    else jackpot.balance
+                ),
                 reserve_balance=fund.balance,
                 base_jackpot=int(
                     _snapshot_value(draw, "base_jackpot", jackpot.base_amount)
                 ),
             )
 
+            retained_jackpot = (
+                max(jackpot.balance - plan.jackpot_opening, 0)
+                if lottery.code == "bingo"
+                else 0
+            )
+            if retained_jackpot:
+                plan = replace(
+                    plan, jackpot_closing=plan.jackpot_closing + retained_jackpot
+                )
             user_ids = {ticket.user_id for ticket in ticket_models}
             balances = {
                 item.user_id: item
@@ -606,6 +692,8 @@ class WeeklySettlementService:
             ledger_entries: list[LedgerTransaction] = []
             for ticket in ticket_models:
                 payout = payout_by_ticket[ticket.id]
+                if payout.bingo_result is not None:
+                    ticket.bingo_result = payout.bingo_result
                 ticket.matches = payout.matches
                 ticket.prize_amount = payout.amount
                 ticket.status = TicketStatus.SETTLED
@@ -618,9 +706,32 @@ class WeeklySettlementService:
                 balance.version += 1
                 transaction_type = (
                     TransactionType.JACKPOT_PAYOUT
-                    if payout.matches == rules.jackpot_match
+                    if (
+                        payout.jackpot_amount > 0
+                        if payout.jackpot_amount is not None
+                        else payout.matches == rules.jackpot_match
+                    )
                     else TransactionType.PRIZE_PAYOUT
                 )
+                ordinary = payout.amount - (payout.jackpot_amount or 0)
+                if payout.jackpot_amount and ordinary:
+                    ledger_entries.append(
+                        _ledger_entry(
+                            operation_id=operation_id,
+                            idempotency_key=f"draw:{draw.id}:ticket:{ticket.id}:ordinary",
+                            account_kind=LedgerAccountKind.USER_BALANCE,
+                            account_id=balance.user_id,
+                            transaction_type=TransactionType.PRIZE_PAYOUT,
+                            before=before,
+                            after=before + ordinary,
+                            user_id=ticket.user_id,
+                            lottery_id=lottery.id,
+                            draw_id=draw.id,
+                            ticket_id=ticket.id,
+                            details={"bingo": payout.bingo_result},
+                        )
+                    )
+                    before += ordinary
                 ledger_entries.append(
                     _ledger_entry(
                         operation_id=operation_id,
@@ -671,7 +782,7 @@ class WeeklySettlementService:
                             account_id=jackpot.id,
                             transaction_type=TransactionType.JACKPOT_PAYOUT,
                             before=jackpot_before,
-                            after=0,
+                            after=retained_jackpot,
                             lottery_id=lottery.id,
                             draw_id=draw.id,
                         )
@@ -684,8 +795,8 @@ class WeeklySettlementService:
                             account_kind=LedgerAccountKind.JACKPOT,
                             account_id=jackpot.id,
                             transaction_type=TransactionType.SYSTEM_ADJUSTMENT,
-                            before=0,
-                            after=plan.jackpot_reset_credit,
+                            before=retained_jackpot,
+                            after=retained_jackpot + plan.jackpot_reset_credit,
                             lottery_id=lottery.id,
                             draw_id=draw.id,
                             details={"reason": "base jackpot reset"},
@@ -694,12 +805,14 @@ class WeeklySettlementService:
                 jackpot.balance = plan.jackpot_closing
                 jackpot.version += 1
 
-            ensure_draw_transition(draw.status, DrawStatus.DRAWING)
+            if draw.status != DrawStatus.DRAWING:
+                ensure_draw_transition(draw.status, DrawStatus.DRAWING)
             ensure_draw_transition(DrawStatus.DRAWING, DrawStatus.SETTLING)
             ensure_draw_transition(DrawStatus.SETTLING, DrawStatus.COMPLETED)
             draw.status = DrawStatus.COMPLETED
             draw.winning_numbers = list(plan.winning_numbers)
-            draw.executed_at = timestamp
+            if lottery.code != "bingo":
+                draw.executed_at = timestamp
             draw.total_payout = plan.total_payout
             draw.jackpot_opening = plan.jackpot_opening
             draw.jackpot_closing = plan.jackpot_closing
@@ -803,7 +916,13 @@ class WeeklySettlementService:
 
             if plan.jackpot_won and plan.jackpot_opening > 0:
                 jackpot_payouts = [
-                    item for item in plan.payouts if item.matches == rules.jackpot_match
+                    item
+                    for item in plan.payouts
+                    if (
+                        item.jackpot_amount > 0
+                        if item.jackpot_amount is not None
+                        else item.matches == rules.jackpot_match
+                    )
                 ]
                 winner_ids = {item.user_id for item in jackpot_payouts}
                 self._session.add(

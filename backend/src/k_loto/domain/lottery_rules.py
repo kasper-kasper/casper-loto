@@ -39,6 +39,8 @@ class TicketPayout:
     user_id: UUID
     matches: int
     amount: int
+    jackpot_amount: int | None = None
+    bingo_result: dict[str, object] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,7 +58,14 @@ class SettlementPlan:
 
     @property
     def jackpot_won(self) -> bool:
-        return any(item.matches == self.jackpot_match_count for item in self.payouts)
+        return any(
+            (
+                item.jackpot_amount > 0
+                if item.jackpot_amount is not None
+                else item.matches == self.jackpot_match_count
+            )
+            for item in self.payouts
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -109,6 +118,10 @@ class LotteryRuleStrategy:
     def validate_combination(
         self, numbers: tuple[int, ...] | list[int]
     ) -> tuple[int, ...]:
+        if self.code == "bingo_12_60":
+            from k_loto.domain.bingo import validate_ticket
+
+            return validate_ticket(numbers)
         if len(numbers) != self.numbers_to_pick:
             raise InvalidTicket(
                 f"{self.label} tickets require exactly {self.numbers_to_pick} numbers."
@@ -147,6 +160,10 @@ class LotteryRuleStrategy:
         return tuple(sorted(numbers))
 
     def generate_combination(self, generator: NumberGenerator) -> tuple[int, ...]:
+        if self.code == "bingo_12_60":
+            from k_loto.domain.bingo import generate_ticket
+
+            return generate_ticket()
         if not self.secondary_numbers_to_pick:
             return generator.draw(self.max_number, self.numbers_to_pick)
         primary = generator.draw(
@@ -221,6 +238,46 @@ class LotteryRuleStrategy:
         reserve_balance: int,
         base_jackpot: int,
     ) -> SettlementPlan:
+        if self.code == "bingo_12_60":
+            from k_loto.domain.bingo import outcomes
+
+            results = outcomes(
+                [(t.id, t.public_number, t.numbers) for t in tickets],
+                tuple(winning_numbers),
+                jackpot_balance,
+            )
+            won = any(r.amounts[2] > 0 for r in results.values())
+            reset = base_jackpot if won else 0
+            used = sum(sum(r.amounts[:2]) for r in results.values()) + reset
+            if used > reserve_balance:
+                raise InsufficientReserve("Kasper Fund cannot cover Bingo payouts.")
+            payouts = tuple(
+                TicketPayout(
+                    t.id,
+                    t.public_number,
+                    t.user_id,
+                    len(set(t.numbers).intersection(winning_numbers)),
+                    sum(results[t.id].amounts),
+                    results[t.id].amounts[2],
+                    {
+                        "moves": list(results[t.id].moves),
+                        "amounts": list(results[t.id].amounts),
+                    },
+                )
+                for t in tickets
+            )
+            return SettlementPlan(
+                tuple(winning_numbers),
+                payouts,
+                0,
+                0,
+                used,
+                jackpot_balance,
+                base_jackpot if won else jackpot_balance,
+                reset,
+                sum(p.amount for p in payouts),
+                12,
+            )
         winning = self.validate_combination(winning_numbers)
         if (
             min(distribution_balance, jackpot_balance, reserve_balance, base_jackpot)
@@ -440,10 +497,23 @@ PULSE_RULES = LotteryRuleStrategy(
     secondary_max_number=5,
     secondary_storage_offset=10,
 )
+BINGO_RULES = LotteryRuleStrategy(
+    "bingo_12_60",
+    "Kasper Bingo",
+    12,
+    60,
+    1,
+    PayoutRatio(1),
+    MappingProxyType({}),
+    None,
+    12,
+    jackpot_refill_from_reserve=True,
+)
 LOTTERY_RULES: Mapping[str, LotteryRuleStrategy] = MappingProxyType(
     {
         rule.code: rule
         for rule in (
+            BINGO_RULES,
             WEEKLY_RULES,
             KASPER_GRAND_RULES,
             DAILY_RULES,
