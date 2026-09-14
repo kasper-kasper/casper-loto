@@ -91,19 +91,27 @@ class AutoPlayService:
             if self._owner_telegram_id is not None:
                 query = query.where(User.telegram_id == self._owner_telegram_id)
             rows = (await session.execute(query)).all()
-        return tuple(
-            AutoPlayCandidate(
-                user_id=setting.user_id,
-                draw_id=draw.id,
-                lottery_code=lottery.code,
-                lottery_kind=lottery.kind,
-                numbers_to_pick=lottery.numbers_to_pick,
-                max_number=lottery.max_number,
-                tickets_per_draw=setting.tickets_per_draw,
-                ruleset_code=lottery.ruleset_code,
+        candidates: list[AutoPlayCandidate] = []
+        for setting, draw, lottery in rows:
+            ruleset_code = str(
+                (draw.configuration_snapshot or {}).get(
+                    "ruleset_code", lottery.ruleset_code
+                )
             )
-            for setting, draw, lottery in rows
-        )
+            rules = get_lottery_rules(ruleset_code)
+            candidates.append(
+                AutoPlayCandidate(
+                    user_id=setting.user_id,
+                    draw_id=draw.id,
+                    lottery_code=lottery.code,
+                    lottery_kind=lottery.kind,
+                    numbers_to_pick=rules.numbers_to_pick,
+                    max_number=rules.max_number,
+                    tickets_per_draw=setting.tickets_per_draw,
+                    ruleset_code=ruleset_code,
+                )
+            )
+        return tuple(candidates)
 
     async def _record_attempt(
         self, user_id: UUID, now: datetime, error: str | None

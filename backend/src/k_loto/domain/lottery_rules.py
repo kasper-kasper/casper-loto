@@ -490,7 +490,7 @@ GROB_RULES = LotteryRuleStrategy(
     MappingProxyType({1: 666, 2: 6_666}),
     True,
 )
-FAST_RULES = LotteryRuleStrategy(
+LEGACY_FAST_RULES = LotteryRuleStrategy(
     "fast_3_15",
     "Fast",
     3,
@@ -503,7 +503,20 @@ FAST_RULES = LotteryRuleStrategy(
     MappingProxyType({1: 88, 2: 888}),
     True,
 )
-PULSE_RULES = LotteryRuleStrategy(
+FAST_RULES = LotteryRuleStrategy(
+    "fast_3_16",
+    "FLASH",
+    3,
+    16,
+    1,
+    PayoutRatio(1),
+    MappingProxyType({}),
+    None,
+    3,
+    MappingProxyType({1: 88, 2: 888}),
+    True,
+)
+LEGACY_PULSE_RULES = LotteryRuleStrategy(
     code="pulse_2_10_1_5",
     label="PULSE",
     numbers_to_pick=3,
@@ -518,6 +531,26 @@ PULSE_RULES = LotteryRuleStrategy(
     primary_numbers_to_pick=2,
     primary_max_number=10,
     secondary_numbers_to_pick=1,
+    secondary_max_number=5,
+    secondary_storage_offset=10,
+)
+PULSE_RULES = LotteryRuleStrategy(
+    code="pulse_2_10_2_5",
+    label="PULSE",
+    numbers_to_pick=4,
+    max_number=15,
+    price_divisor=1,
+    jackpot_share=PayoutRatio(1),
+    guaranteed_payouts=MappingProxyType({}),
+    distribution_pool_match=None,
+    jackpot_match=22,
+    fixed_payouts=MappingProxyType(
+        {1: 88, 2: 888, 10: 88, 11: 888, 12: 888, 20: 888, 21: 888}
+    ),
+    jackpot_refill_from_reserve=True,
+    primary_numbers_to_pick=2,
+    primary_max_number=10,
+    secondary_numbers_to_pick=2,
     secondary_max_number=5,
     secondary_storage_offset=10,
 )
@@ -559,7 +592,9 @@ LOTTERY_RULES: Mapping[str, LotteryRuleStrategy] = MappingProxyType(
             CLASSIC_6_36_RULES,
             SEPTEMBER_RULES,
             GROB_RULES,
+            LEGACY_FAST_RULES,
             FAST_RULES,
+            LEGACY_PULSE_RULES,
             PULSE_RULES,
             CODE_RULES,
         )

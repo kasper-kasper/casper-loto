@@ -535,7 +535,7 @@ class MiniAppQueryService:
                     or 0
                 )
             timeline = (
-                draw_timeline(draw.scheduled_at, lottery.numbers_to_pick)
+                draw_timeline(draw.scheduled_at, rules.numbers_to_pick)
                 if draw is not None
                 else None
             )
@@ -547,10 +547,10 @@ class MiniAppQueryService:
                         if draw
                         else lottery.name
                     ),
-                    ruleset_code=lottery.ruleset_code,
+                    ruleset_code=rules.code,
                     kind=lottery.kind,
-                    numbers_to_pick=lottery.numbers_to_pick,
-                    max_number=lottery.max_number,
+                    numbers_to_pick=rules.numbers_to_pick,
+                    max_number=rules.max_number,
                     primary_numbers_to_pick=rules.display_primary_numbers_to_pick,
                     primary_max_number=rules.display_primary_max_number,
                     secondary_numbers_to_pick=rules.secondary_numbers_to_pick,

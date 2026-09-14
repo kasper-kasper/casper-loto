@@ -66,12 +66,14 @@ dispatch separately supports weekly, slot-based and interval strategies. See
 `docs/LOTTERY_STRATEGIES.md`.
 
 FLASH, CODE and PULSE are independent interval lotteries presented in the
-separate Fast Mini App section. Each repeats every nine minutes with three-minute
+separate Kasper Fast Mini App section. Each repeats every nine minutes with three-minute
 offsets, its own draw/ticket counters and jackpot. They do not enter the ordinary
 broadcast screen or engagement reminders. A scoped SSE projection drives a
 short embedded Fast presentation only while the Fast section is open: 20 seconds
 of anticipation, the server-authored reveal sequence and a 12-second result.
 Configured player auto-play uses the same idempotent service as every other lottery.
+Purchase, dashboard and auto-play resolve rules from the target draw snapshot so a
+format change never mutates or invalidates an already offered draw.
 
 Completed Bingo draws use a dedicated Admin projection: the draw list summarizes
 the number of moves and the two balls left out, while the detail endpoint exposes

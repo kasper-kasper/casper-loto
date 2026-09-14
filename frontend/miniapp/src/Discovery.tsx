@@ -25,7 +25,7 @@ export function LotteryCatalog({ lotteries, onOpen }: { lotteries: Lottery[]; on
     </button>)}</div></>;
 }
 
-export function Today({ lotteries, now, highlights, onOpen, onCatalog, onTickets, onFast }: { lotteries: Lottery[]; now: number; highlights: Highlights | null; onOpen: (code: string, live?: boolean) => void; onCatalog: () => void; onTickets: () => void; onFast: () => void }) {
+export function Today({ lotteries, now, highlights, onOpen, onCatalog, onTickets }: { lotteries: Lottery[]; now: number; highlights: Highlights | null; onOpen: (code: string, live?: boolean) => void; onCatalog: () => void; onTickets: () => void }) {
   const fallback = [...lotteries].filter(l => l.scheduled_at).sort((a, b) => Date.parse(a.scheduled_at!) - Date.parse(b.scheduled_at!))[0];
   const event = highlights?.next_event;
   const eventLottery = lotteries.find(l => l.code === event?.lottery_code);
@@ -36,7 +36,6 @@ export function Today({ lotteries, now, highlights, onOpen, onCatalog, onTickets
   return <><div className="discovery-heading today-heading"><span>ВАШ ДЕНЬ В KASPER</span><h1>Сегодня может повезти.</h1><p>Ближайший розыгрыш и всё, что важно для вас.</p></div>{next ? <section className={`today-event lottery-${next.code}`}><div className="today-event-art">{next.code === "bingo" ? <img src="/brand/kasper-symbol.svg" alt="" /> : <LotteryVisual code={next.code} animated={false} />}</div><span className="today-eyebrow">{phase === "live" ? "СЕЙЧАС В ЭФИРЕ" : phase === "result" ? "ТИРАЖ ЗАВЕРШЁН" : "БЛИЖАЙШИЙ ТИРАЖ"}</span><h2>{next.name}</h2><small>Джекпот</small><strong>{formatCas(next.jackpot)}</strong><div className="today-event-time"><span>{formatMoscow(next.scheduled_at!)} МСК</span><b>{phase === "waiting" ? countdown(next.scheduled_at, now) : phase === "live" ? "LIVE" : "Итоги"}</b></div>{next.player_ticket_count > 0 && <p className="today-participating">✓ У вас {next.player_ticket_count} билетов на этот тираж</p>}<button type="button" onClick={() => onOpen(next.code, phase !== "waiting")}>{phase === "live" ? "Смотреть эфир" : phase === "result" ? "Результаты тиража" : next.player_ticket_count ? "Моя лотерея" : "Открыть лотерею"}<span aria-hidden="true">↗</span></button></section> : <div className="today-empty">Готовим следующие тиражи. Все игры доступны в каталоге.</div>}
     <button className="today-personal" type="button" onClick={participation.length ? onTickets : onCatalog}><Icon name={participation.length ? "ticket" : "catalog"} /><span><strong>{participation.length ? `Вы участвуете в ${participation.length} лотереях` : "Какая лотерея ваша?"}</strong><small>{participation.length ? "Билеты и история — в разделе «Моё»" : "Посмотрите все игры в каталоге"}</small></span><b>→</b></button>
     {jackpot && <section className="today-jackpot"><span className="today-eyebrow">ПОСЛЕДНИЙ ДЖЕКПОТ · ЛОТЕРЕИ</span><h2>{formatCas(jackpot.jackpot_amount)}</h2><p>{jackpot.lottery_name} · тираж №{jackpot.draw_number}</p><small>{formatMoscow(jackpot.occurred_at)} МСК</small><button type="button" onClick={() => onOpen(jackpot.lottery_code)}>Открыть лотерею ↗</button></section>}
-    <button className="today-fast-link" type="button" onClick={onFast}><Icon name="fast" /><span><b>Есть свободная минута?</b><small>Fast · быстрые игры и своя история</small></span><span aria-hidden="true">↗</span></button>
   </>;
 }
 

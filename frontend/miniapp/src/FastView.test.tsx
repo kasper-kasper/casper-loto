@@ -98,15 +98,16 @@ describe("Fast draw placement", () => {
 });
 
 describe("PULSE picker", () => {
-  it("submits two main numbers and one tagged Pulse number", () => {
+  it("submits two main numbers and two tagged Pulse numbers", () => {
     const onBuy = vi.fn();
     render(
       <FastPicker
         lottery={{
           ...lottery("pulse", "2026-09-04T08:36:00Z"),
+          numbers_to_pick: 4,
           primary_numbers_to_pick: 2,
           primary_max_number: 10,
-          secondary_numbers_to_pick: 1,
+          secondary_numbers_to_pick: 2,
           secondary_max_number: 5,
           secondary_storage_offset: 10,
         }}
@@ -119,8 +120,9 @@ describe("PULSE picker", () => {
     fireEvent.click(screen.getByRole("button", { name: "Позиция 1" }));
     fireEvent.click(screen.getByRole("button", { name: "Позиция 10" }));
     fireEvent.click(screen.getByRole("button", { name: "Pulse-число 5" }));
+    fireEvent.click(screen.getByRole("button", { name: "Pulse-число 2" }));
     fireEvent.click(screen.getByRole("button", { name: /Запустить пульс/i }));
-    expect(onBuy).toHaveBeenCalledWith([1, 10, 15]);
+    expect(onBuy).toHaveBeenCalledWith([1, 10, 12, 15]);
   });
 });
 

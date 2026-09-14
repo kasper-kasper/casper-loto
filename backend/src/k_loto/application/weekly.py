@@ -242,12 +242,12 @@ class WeeklyTicketPurchaseService:
                 raise ConfigurationError(
                     f"Active {self.lottery_label} lottery is not configured."
                 )
-            rules = _rules_for_lottery(lottery, expected=self.ruleset_code)
+            current_rules = _rules_for_lottery(lottery, expected=self.ruleset_code)
             if lottery.code == "bingo" and draw_count != 1:
                 raise InvalidTicket("Bingo purchases cover one draw.")
             if (
-                lottery.numbers_to_pick != rules.numbers_to_pick
-                or lottery.max_number != rules.max_number
+                lottery.numbers_to_pick != current_rules.numbers_to_pick
+                or lottery.max_number != current_rules.max_number
             ):
                 raise ConfigurationError(
                     f"{self.lottery_label} lottery format is invalid."
@@ -433,12 +433,25 @@ class WeeklyTicketPurchaseService:
             )
             if balance is None:
                 raise ConfigurationError("User balance account is missing.")
-            canonical = tuple(rules.validate_combination(item) for item in combinations)
+            draw_rules = [
+                get_lottery_rules(
+                    str(_snapshot_value(item, "ruleset_code", current_rules.code))
+                )
+                for item in draws[:draw_count]
+            ]
+            if any(item.code != draw_rules[0].code for item in draw_rules[1:]):
+                raise InvalidTicket("A purchase cannot span different lottery formats.")
+            purchase_rules = draw_rules[0]
+            canonical = tuple(
+                purchase_rules.validate_combination(item) for item in combinations
+            )
             prices = [
                 int(_snapshot_value(item, "ticket_price", lottery.ticket_price))
                 for item in draws[:draw_count]
             ]
-            if any(price <= 0 or price % rules.price_divisor for price in prices):
+            if any(
+                price <= 0 or price % purchase_rules.price_divisor for price in prices
+            ):
                 raise ConfigurationError("Draw ticket price snapshot is invalid.")
             total_cost = len(canonical) * sum(prices)
             if balance.amount < total_cost:

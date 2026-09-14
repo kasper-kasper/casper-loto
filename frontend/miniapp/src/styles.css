@@ -1785,6 +1785,55 @@ html.app-backgrounded *, .motion-paused, .motion-paused * { animation-play-state
   .grand-number-set .number { width: 24px; height: 24px; }
 }
 
+/* Kasper Fast is a deliberately separate, red-lit world. */
+.app-shell.fast-shell {
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 85% 7%, rgba(255, 45, 72, .18), transparent 30%),
+    radial-gradient(circle at 6% 48%, rgba(125, 10, 31, .22), transparent 38%),
+    linear-gradient(180deg, #140307 0%, #09040a 42%, #050714 100%);
+}
+.app-shell.fast-shell::before {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  content: "";
+  background:
+    repeating-linear-gradient(90deg, transparent 0 31px, rgba(255, 74, 94, .025) 32px),
+    repeating-linear-gradient(0deg, transparent 0 31px, rgba(255, 74, 94, .02) 32px);
+  pointer-events: none;
+}
+.fast-shell .app-header {
+  border-bottom-color: rgba(255, 65, 88, .18);
+  background: linear-gradient(180deg, rgba(20, 3, 8, .96), rgba(20, 3, 8, .7), transparent);
+}
+.fast-shell .bottom-nav {
+  border-color: rgba(255, 61, 84, .25);
+  background: linear-gradient(115deg, rgba(22, 3, 9, .97), rgba(8, 7, 18, .97));
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .5), 0 0 30px rgba(190, 18, 43, .1);
+}
+.bottom-nav button:nth-child(3) { color: #d7475c; }
+.bottom-nav button:nth-child(3).active { color: #ff5369; }
+.bottom-nav button:nth-child(3).active > span {
+  border-color: rgba(255, 69, 94, .4);
+  background: linear-gradient(145deg, rgba(255, 50, 77, .25), rgba(103, 11, 31, .12));
+  box-shadow: 0 0 19px rgba(255, 42, 70, .18), inset 0 1px rgba(255, 255, 255, .06);
+}
+.fast-world { position: relative; }
+.fast-world::before {
+  position: absolute;
+  z-index: -1;
+  top: -22px;
+  right: calc(var(--space) * -1);
+  bottom: -30px;
+  left: calc(var(--space) * -1);
+  content: "";
+  background: linear-gradient(180deg, rgba(108, 7, 27, .1), transparent 28%);
+  pointer-events: none;
+}
+.fast-heading span { color: #ff4a61; }
+.fast-heading h1 { color: #ff5369; text-shadow: 0 0 28px rgba(255, 40, 67, .24); }
+
 /* Final compact-picker overrides must follow the flagship theme. */
 .picker-shell .picker-heading,
 .picker-shell.lottery-weekly .picker-heading { min-height: 94px !important; padding: 43px 12px 10px 56px !important; }

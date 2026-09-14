@@ -7,8 +7,8 @@ const future = (minutes: number) => new Date(Date.now() + minutes * 60_000).toIS
 const lotterySeed = [
   { code: "bingo", name: "Kasper Bingo", kind: "DAILY" as const, numbers_to_pick: 12, max_number: 60, ticket_price: 50_000, jackpot: 10_000_250_000, draw_number: 1, scheduled_at: future(180) },
   { code: "shadow", name: "SHADOW", kind: "DAILY" as const, numbers_to_pick: 3, max_number: 15, ticket_price: 888, jackpot: 888_888, draw_number: 38, scheduled_at: future(7) },
-  { code: "flash", name: "FLASH", kind: "DAILY" as const, numbers_to_pick: 3, max_number: 15, ticket_price: 888, jackpot: 901_320, draw_number: 42, scheduled_at: future(17) },
-  { code: "pulse", name: "PULSE", kind: "DAILY" as const, numbers_to_pick: 3, max_number: 15, primary_numbers_to_pick: 2, primary_max_number: 10, secondary_numbers_to_pick: 1, secondary_max_number: 5, secondary_storage_offset: 10, ticket_price: 1_234, jackpot: 1_234_567, draw_number: 1, scheduled_at: future(10) },
+  { code: "flash", name: "FLASH", kind: "DAILY" as const, ruleset_code: "fast_3_16", numbers_to_pick: 3, max_number: 16, ticket_price: 888, jackpot: 901_320, draw_number: 42, scheduled_at: future(17) },
+  { code: "pulse", name: "PULSE", kind: "DAILY" as const, ruleset_code: "pulse_2_10_2_5", numbers_to_pick: 4, max_number: 15, primary_numbers_to_pick: 2, primary_max_number: 10, secondary_numbers_to_pick: 2, secondary_max_number: 5, secondary_storage_offset: 10, ticket_price: 1_234, jackpot: 1_234_567, draw_number: 1, scheduled_at: future(10) },
   { code: "grob", name: "ГРОБ", kind: "DAILY" as const, numbers_to_pick: 3, max_number: 16, ticket_price: 6_666, jackpot: 6_666_666, draw_number: 1, scheduled_at: future(36) },
   { code: "september", name: "3 СЕНТЯБРЯ", kind: "DAILY" as const, numbers_to_pick: 3, max_number: 33, ticket_price: 333, jackpot: 33_333_333, draw_number: 1, scheduled_at: future(83) },
   { code: "pll", name: "ПЛЛ-Лото", kind: "DAILY" as const, numbers_to_pick: 4, max_number: 15, ticket_price: 24_000, jackpot: 18_640_000, draw_number: 418, scheduled_at: future(145) },

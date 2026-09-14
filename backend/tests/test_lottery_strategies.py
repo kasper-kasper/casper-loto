@@ -11,11 +11,14 @@ from k_loto.domain.lottery_rules import (
     CODE_RULES,
     FAST_RULES,
     GROB_RULES,
+    LEGACY_FAST_RULES,
+    LEGACY_PULSE_RULES,
     PULSE_RULES,
     SEPTEMBER_RULES,
     LotteryRuleStrategy,
     PayoutRatio,
     SettlementTicket,
+    get_lottery_rules,
 )
 from k_loto.domain.schedules import future_draw_target, next_draw_at
 
@@ -105,7 +108,7 @@ def test_interval_schedule_is_server_anchored_in_moscow() -> None:
 
 
 def test_fast_purchase_and_fixed_payouts_use_unified_funding() -> None:
-    quote = FAST_RULES.quote_purchase([[1, 2, 3], [13, 14, 15]], 888, 10_000)
+    quote = FAST_RULES.quote_purchase([[1, 2, 3], [14, 15, 16]], 888, 10_000)
     assert quote.total_cost == 1_776
     assert quote.jackpot_contribution == 1_776
     assert quote.distribution_contribution == 0
@@ -195,28 +198,35 @@ def test_fast_schedules_rotate_every_three_minutes_without_collisions() -> None:
 
 
 def test_pulse_two_field_format_and_fast_payouts() -> None:
-    assert PULSE_RULES.validate_combination([1, 10, 15]) == (1, 10, 15)
-    quote = PULSE_RULES.quote_purchase([[1, 10, 15]], 1_234, 2_000)
+    assert PULSE_RULES.validate_combination([1, 10, 11, 15]) == (1, 10, 11, 15)
+    quote = PULSE_RULES.quote_purchase([[1, 10, 11, 15]], 1_234, 2_000)
     assert quote.jackpot_contribution == 1_234
     assert quote.distribution_contribution == 0
 
     tickets = [
-        SettlementTicket(UUID(int=81), 1, UUID(int=91), (1, 8, 12), 1_234),
-        SettlementTicket(UUID(int=82), 2, UUID(int=92), (1, 2, 15), 1_234),
-        SettlementTicket(UUID(int=83), 3, UUID(int=93), (1, 2, 12), 1_234),
+        SettlementTicket(UUID(int=81), 1, UUID(int=91), (1, 8, 12, 13), 1_234),
+        SettlementTicket(UUID(int=82), 2, UUID(int=92), (1, 2, 14, 15), 1_234),
+        SettlementTicket(UUID(int=83), 3, UUID(int=93), (1, 2, 12, 13), 1_234),
     ]
     plan = PULSE_RULES.calculate_settlement(
         tickets,
-        (1, 2, 12),
+        (1, 2, 12, 13),
         distribution_balance=0,
         jackpot_balance=1_235_000,
         reserve_balance=2_000_000,
         base_jackpot=1_234_567,
     )
-    assert [item.matches for item in plan.payouts] == [11, 20, 21]
+    assert [item.matches for item in plan.payouts] == [12, 20, 22]
     assert [item.amount for item in plan.payouts] == [888, 888, 1_235_000]
     assert plan.jackpot_closing == 1_234_567
     assert plan.reserve_used == 1_236_343
+
+
+def test_existing_fast_draws_keep_their_legacy_rules() -> None:
+    assert get_lottery_rules("fast_3_15") is LEGACY_FAST_RULES
+    assert get_lottery_rules("pulse_2_10_1_5") is LEGACY_PULSE_RULES
+    assert LEGACY_FAST_RULES.validate_combination([13, 14, 15]) == (13, 14, 15)
+    assert LEGACY_PULSE_RULES.validate_combination([1, 10, 15]) == (1, 10, 15)
 
 
 def test_september_fixed_payouts_and_shared_main_prize() -> None:
