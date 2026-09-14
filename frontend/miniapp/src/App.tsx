@@ -226,17 +226,6 @@ function CartView({ cart, groups, purchasing, success, progress, canAdd, onClear
   </div>;
 }
 
-function PurchaseConfirmation({ count, cost, onClose, onHome, onTickets }: { count: number; cost: number; onClose: () => void; onHome: () => void; onTickets: () => void }) {
-  return <div className="purchase-confirmation-backdrop" onClick={onClose} role="presentation"><motion.section animate={{ opacity: 1, y: 0, scale: 1 }} aria-modal="true" className="purchase-confirmation" initial={{ opacity: 0, y: 12, scale: .98 }} onClick={(event) => event.stopPropagation()} role="dialog" transition={{ duration: .28 }}>
-    <button aria-label="Закрыть сообщение" className="purchase-confirmation-close" onClick={onClose} type="button"><Icon name="close" /></button>
-    <div className="purchase-confirmation-mark">✓</div>
-    <span className="eyebrow">Покупка завершена</span>
-    <h2>{count === 1 ? "Билет уже участвует" : `${count} ${plural(count, "билет участвует", "билета участвуют", "билетов участвуют")}`}</h2>
-    <p>Списано {formatCas(cost)}. Билет сохранён и появится в результатах после тиража.</p>
-    <div><PrimaryButton onClick={onHome}>На главную</PrimaryButton><button className="secondary-button" onClick={onTickets} type="button">Мои билеты</button></div>
-  </motion.section></div>;
-}
-
 export default function App({ initData, localDev = false }: AppProps) {
   const authenticated = Boolean(initData) || localDev;
   const [cartTtl] = useState(() => configuredCartTtl());
@@ -265,11 +254,9 @@ export default function App({ initData, localDev = false }: AppProps) {
   const [highlights, setHighlights] = useState<Highlights | null>(null);
   const [bingoOpen, setBingoOpen] = useState(import.meta.env.VITE_DESIGN_PREVIEW === "true" && new URLSearchParams(window.location.search).get("screen") === "bingo");
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
-  const [purchaseConfirmation, setPurchaseConfirmation] = useState<{ lotteryCode: string | null; count: number; cost: number } | null>(null);
   const [purchaseProgress, setPurchaseProgress] = useState<{ done: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const clockAnchor = useRef<{ server: number; monotonic: number } | null>(null);
@@ -448,6 +435,12 @@ export default function App({ initData, localDev = false }: AppProps) {
   }, [cart]);
   const serverNow = now;
 
+  useEffect(() => {
+    if (!notice) return;
+    const timer = window.setTimeout(() => setNotice(null), 2600);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
+
   const openLottery = async (lotteryCode: string, initialNumbers: number[] = [], initialLive = false) => {
     setRoomLive(initialLive);
     if (lotteryCode === "bingo") { setBingoOpen(true); return; }
@@ -502,11 +495,9 @@ export default function App({ initData, localDev = false }: AppProps) {
       setPurchaseSuccess(true); successHaptic();
       setNotice(`${combinations.length === 1 ? "Билет куплен" : `Куплено билетов: ${combinations.length}`} · списано ${formatCas(result.total_cost)}`);
       await refreshDashboard();
-      const updatedAccount = await refreshAccount();
-      if (!localDev && !updatedAccount?.notification_preferences.telegram_enabled && localStorage.getItem("k-loto:notification-prompt-dismissed") !== "true") setShowNotificationPrompt(true);
+      await refreshAccount();
       await new Promise((resolve) => window.setTimeout(resolve, 480));
       setPickerLottery(null); setView(isFastLottery(lotteryCode) ? "fast" : "home");
-      setPurchaseConfirmation({ lotteryCode, count: combinations.length, cost: result.total_cost });
     } catch (reason) {
       errorHaptic();
       setError(reason instanceof ApiError ? reason.message : "Покупка не выполнена.");
@@ -517,7 +508,6 @@ export default function App({ initData, localDev = false }: AppProps) {
 
   const purchaseCart = async () => {
     if (purchasing || cart.length === 0) return;
-    const returnLotteryCode = cart[0]?.lotteryCode ?? null;
     const groups = new Map<string, CartTicket[]>();
     for (const item of cart) {
       const key = `${item.lotteryCode}:${item.drawCount}`;
@@ -539,13 +529,11 @@ export default function App({ initData, localDev = false }: AppProps) {
         setDashboard((current) => current ? { ...current, balance: result.balance_after } : current);
       }
       setPurchaseSuccess(true); successHaptic();
-      setNotice(`${done} билетов куплено · списано ${formatCas(totalCost)}`);
+      setNotice(`${done} ${plural(done, "билет куплен", "билета куплены", "билетов куплено")} · списано ${formatCas(totalCost)}`);
       await refreshDashboard();
-      const updatedAccount = await refreshAccount();
-      if (!localDev && !updatedAccount?.notification_preferences.telegram_enabled && localStorage.getItem("k-loto:notification-prompt-dismissed") !== "true") setShowNotificationPrompt(true);
+      await refreshAccount();
       await new Promise((resolve) => window.setTimeout(resolve, 480));
       setView("home");
-      setPurchaseConfirmation({ lotteryCode: returnLotteryCode, count: done, cost: totalCost });
     } catch (reason) {
       errorHaptic();
       setError(`${done ? `Куплено ${done} из ${total}. ` : ""}${reason instanceof ApiError ? reason.message : "Покупка прервана. Непроданные билеты остались в корзине."}`);
@@ -586,7 +574,6 @@ export default function App({ initData, localDev = false }: AppProps) {
     const allowed = await requestTelegramWriteAccess();
     if (!allowed) {
       setNotice("Разрешение не выдано. Его можно включить позже в разделе «Моё».");
-      setShowNotificationPrompt(false);
       return;
     }
     const preferences: NotificationPreferences = {
@@ -595,14 +582,7 @@ export default function App({ initData, localDev = false }: AppProps) {
       inactivity_reminders_enabled: true,
     };
     await saveNotificationPreferences(preferences);
-    localStorage.removeItem("k-loto:notification-prompt-dismissed");
-    setShowNotificationPrompt(false);
     setNotice("Telegram-уведомления включены");
-  };
-
-  const dismissNotificationPrompt = () => {
-    localStorage.setItem("k-loto:notification-prompt-dismissed", "true");
-    setShowNotificationPrompt(false);
   };
 
   const refillDevBalance = async () => {
@@ -625,8 +605,6 @@ export default function App({ initData, localDev = false }: AppProps) {
     <header className="app-header"><div aria-label="Kasper Loto" className="brand-lockup"><img alt="" className="brand-logo-horizontal" src="/brand/kasper-loto-horizontal.svg" /><img alt="" className="brand-logo-symbol" src="/brand/kasper-symbol.svg" /></div><div className="header-actions">{localDev && import.meta.env.VITE_DESIGN_PREVIEW !== "true" && <button className="dev-badge" onClick={() => void refillDevBalance()} type="button">+ TEST CAS</button>}{cart.length > 0 && <button aria-label={`Корзина: ${cart.length} ${plural(cart.length, "комбинация", "комбинации", "комбинаций")}`} className="header-cart" onClick={() => setView("cart")} type="button"><Icon name="cart" /><small>{cart.length}</small></button>}<Balance value={dashboard.balance} /></div></header>
     {updateAvailable && <aside className="update-banner"><span><strong>Доступно обновление</strong><small>Корзина сохранена на этом устройстве.</small></span><button onClick={() => { const url = new URL(window.location.href); url.searchParams.set("app_update", String(Date.now())); window.location.replace(url.toString()); }} type="button">Обновить</button></aside>}
     {(error || notice) && <button className={`toast ${error ? "error" : "success"}`} onClick={() => { setError(null); setNotice(null); }} type="button"><span>{error ? "!" : "✓"}</span><span className="toast-message">{error ?? notice}</span><Icon name="close" /></button>}
-    {showNotificationPrompt && <div className="permission-backdrop"><section className="permission-card"><div className="permission-mark"><Icon name="profile" /></div><span className="eyebrow">{copy.notifications.promptEyebrow}</span><h2>{copy.notifications.promptTitle}</h2><p>{copy.notifications.promptText}</p><PrimaryButton onClick={() => void enableTelegramNotifications()}>{copy.notifications.enable}</PrimaryButton><button className="permission-later" onClick={dismissNotificationPrompt} type="button">{copy.notifications.promptLater}</button></section></div>}
-    {purchaseConfirmation && <PurchaseConfirmation count={purchaseConfirmation.count} cost={purchaseConfirmation.cost} onClose={() => setPurchaseConfirmation(null)} onHome={() => { setPurchaseConfirmation(null); setPickerLottery(null); setView("home"); }} onTickets={() => { setTicketLotteryFilter(purchaseConfirmation.lotteryCode ?? ""); setPurchaseConfirmation(null); setTicketsLoading(true); setView("account"); setAccountView("tickets"); setTicketView("active"); }} />}
     {selectedTicket && (selectedTicket.lottery_code === "bingo" ? <BingoTicketDetail ticket={selectedTicket} onClose={() => setSelectedTicket(null)} /> : <TicketDetail lottery={dashboard.lotteries.find((item) => item.code === selectedTicket.lottery_code)} onClose={() => setSelectedTicket(null)} ticket={selectedTicket} />)}
 
     {view === "home" && <section className="view-content home-view" key="home"><Today lotteries={standardLotteries} now={serverNow} highlights={highlights} onOpen={(code, live) => void openLottery(code, [], live)} onCatalog={() => setView("catalog")} onTickets={() => { setTicketsLoading(true); setAccountView("tickets"); setTicketLotteryFilter("scope:standard"); setView("account"); }} onFast={() => setView("fast")} /></section>}

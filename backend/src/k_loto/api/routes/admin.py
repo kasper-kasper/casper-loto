@@ -188,6 +188,7 @@ class DrawTicketResponse(ApiModel):
     purchase_price: int
     matches: int | None
     prize_amount: int
+    bingo_result: dict[str, Any] | None = None
 
 
 class DrawDetailResponse(BaseModel):

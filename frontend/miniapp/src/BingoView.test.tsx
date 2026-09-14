@@ -25,7 +25,7 @@ test("selecting the 50th ticket blocks another selection and purchases its pool 
   expect(choices[1]).toBeDisabled();
   fireEvent.click(screen.getByRole("button", { name: "Купить билеты ↗" }));
   await waitFor(() => expect(miniAppApi.bingoPurchase).toHaveBeenCalledWith("auth", "draw", { ticketIds: ["pool-1"] }, expect.any(String)));
-  expect(await screen.findByText(/Ваши билеты готовы/)).toBeInTheDocument();
+  expect(await screen.findByText("Куплено: 1 · 50 000 CAS")).toBeInTheDocument();
 });
 
 test("uncertain purchase retry reuses the same operation key", async () => {
@@ -65,11 +65,21 @@ test("quick buy all uses the remaining player allowance", async () => {
   await waitFor(() => expect(miniAppApi.bingoPurchase).toHaveBeenCalledWith("auth", "draw", { quantity: 1, requiredNumbers: [] }, expect.any(String)));
 });
 
-test("five favorite numbers filter the available pool", async () => {
+test("three favorite numbers filter the available pool", async () => {
   render(<BingoView lottery={lottery} initData="auth" now={0} balance={100000} onClose={vi.fn()} onPurchased={vi.fn()} />);
-  for (const [index, value] of [2, 9, 16, 28, 44].entries()) fireEvent.change(screen.getByLabelText(`Любимое число ${index + 1}`), { target: { value: String(value) } });
+  for (const [index, value] of [2, 9, 16].entries()) fireEvent.change(screen.getByLabelText(`Любимое число ${index + 1}`), { target: { value: String(value) } });
   fireEvent.click(screen.getByRole("button", { name: "Найти билеты" }));
-  await waitFor(() => expect(miniAppApi.bingoInventory).toHaveBeenCalledWith("auth", 0, [2, 9, 16, 28, 44]));
+  await waitFor(() => expect(miniAppApi.bingoInventory).toHaveBeenCalledWith("auth", 0, [2, 9, 16]));
+  expect(screen.getByText("Нашли варианты: 2")).toBeInTheDocument();
+});
+
+test("shows favorite-number mistakes inside the search card", async () => {
+  render(<BingoView lottery={lottery} initData="auth" now={0} balance={100000} onClose={vi.fn()} onPurchased={vi.fn()} />);
+  await screen.findAllByRole("button", { name: "+ Выбрать билет" });
+  for (const [index, value] of [2, 2, 3].entries()) fireEvent.change(screen.getByLabelText(`Любимое число ${index + 1}`), { target: { value: String(value) } });
+  fireEvent.click(screen.getByRole("button", { name: "Найти билеты" }));
+  expect(screen.getByRole("alert")).toHaveTextContent("Введите три разных числа от 1 до 60.");
+  expect(miniAppApi.bingoInventory).toHaveBeenCalledTimes(1);
 });
 
 test("Kasper set requests ten tickets with its four numbers", async () => {

@@ -113,6 +113,18 @@ function drawNumber(value: number): string {
   return String(value).padStart(4, "0");
 }
 
+function BingoResultSummary({ numbers, detailed = false }: { numbers: number[] | null; detailed?: boolean }) {
+  if (!numbers?.length) return <>—</>;
+  const missed = Array.from({ length: 60 }, (_, index) => index + 1).filter((number) => !numbers.includes(number));
+  return <div className={`bingo-result-summary ${detailed ? "detailed" : ""}`}><b>{numbers.length} ходов</b><small>Не выпали: {missed.join(" · ") || "—"}</small>{detailed && <details><summary>Полный протокол шаров</summary><div className="winning bingo-protocol">{numbers.map((number, index) => <i key={`${number}-${index}`}>{number}</i>)}</div></details>}</div>;
+}
+
+function DrawResult({ draw, detailed = false }: { draw: Draw; detailed?: boolean }) {
+  if (draw.lottery_code === "bingo") return <BingoResultSummary numbers={draw.winning_numbers} detailed={detailed} />;
+  if (!draw.winning_numbers?.length) return <>—</>;
+  return <div className={detailed ? "winning" : "number-line"}>{draw.winning_numbers.map((number, index) => <i className={draw.lottery_code === "weekly" && number > 35 ? "special" : ""} key={`${number}-${index}`}>{displayNumber(draw.lottery_code, number)}</i>)}</div>;
+}
+
 function ScheduleView({ entries, lotteries, loadedAt }: { entries: ScheduleEntry[]; lotteries: Lottery[]; loadedAt: number }) {
   const [lotteryId, setLotteryId] = useState("");
   const [category, setCategory] = useState<"all" | "daily" | "fast" | "weekly">("all");
@@ -254,6 +266,7 @@ function PlayerCard({ player, onSaved }: { player: Player; onSaved: () => Promis
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [autoReason, setAutoReason] = useState("");
+  const [autoTickets, setAutoTickets] = useState(String(player.auto_play_tickets_per_draw));
   const [autoBusy, setAutoBusy] = useState(false);
   const save = async () => {
     setBusy(true); setFormError("");
@@ -263,19 +276,20 @@ function PlayerCard({ player, onSaved }: { player: Player; onSaved: () => Promis
       await onSaved();
     } catch (reason) { setFormError(reason instanceof Error ? reason.message : "Не удалось изменить баланс."); } finally { setBusy(false); }
   };
-  const toggleAutoPlay = async () => {
+  const configureAutoPlay = async (enabled: boolean) => {
     setAutoBusy(true); setFormError("");
     try {
-      await adminApi.setAutoPlay(player.id, !player.auto_play_enabled, autoReason);
+      await adminApi.setAutoPlay(player.id, enabled, Number(autoTickets), autoReason);
       setAutoReason("");
       await onSaved();
     } catch (reason) { setFormError(reason instanceof Error ? reason.message : "Не удалось изменить автоучастие."); } finally { setAutoBusy(false); }
   };
+  const autoStatus = !player.auto_play_enabled ? "Отключено" : player.auto_play_last_error ? "Требует внимания" : player.auto_play_last_succeeded_at ? "Работает" : "Ожидает первого тиража";
   return <article className="player-card">
     {formError && <p className="error" role="alert">{formError}</p>}
     <div className="player-head"><div className="avatar">{player.display_name.slice(0, 1)}</div><div><h3>{player.display_name}</h3><small>@{player.username ?? "без_логина"} · TG {player.telegram_id ?? "—"}</small></div><Status active={player.is_active}>{player.is_active ? "АКТИВЕН" : "ОТКЛЮЧЁН"}</Status></div>
     <div className="player-stats"><span><small>БАЛАНС</small><b>{cas(player.balance)}</b></span><span><small>БИЛЕТЫ</small><b>{player.ticket_count}</b></span><span><small>ПОТРАЧЕНО</small><b>{cas(player.spent)}</b></span><span><small>ВЫИГРАНО</small><b>{cas(player.won)}</b></span><span><small>ИТОГ</small><b className={player.net >= 0 ? "positive" : "negative"}>{cas(player.net)}</b></span></div>
-    <div className="player-automation"><div><small>АВТОУЧАСТИЕ</small><b>{player.auto_play_enabled ? "5 случайных билетов на каждый тираж" : "Отключено"}</b><span>Telegram: {player.telegram_notifications_enabled ? "разрешён" : "не разрешён"} · последний успех: {date(player.auto_play_last_succeeded_at)}{player.auto_play_last_error ? ` · ошибка: ${player.auto_play_last_error}` : ""}</span></div><label>Причина автоучастия<input value={autoReason} onChange={(event) => setAutoReason(event.target.value)} placeholder="Почему меняется автоучастие?" /></label><button disabled={autoBusy || !autoReason.trim()} onClick={() => void toggleAutoPlay()}>{player.auto_play_enabled ? "ОТКЛЮЧИТЬ" : "ВКЛЮЧИТЬ 5 БИЛЕТОВ"}</button></div>
+    <div className="player-automation"><div><small>АВТОУЧАСТИЕ · {autoStatus.toLocaleUpperCase("ru-RU")}</small><b>{player.auto_play_enabled ? `${player.auto_play_tickets_per_draw} случайных билетов на каждый тираж` : "Отключено"}</b><span>Telegram: {player.telegram_notifications_enabled ? "разрешён" : "не разрешён"} · последний успех: {date(player.auto_play_last_succeeded_at)}{player.auto_play_last_error ? ` · ошибка: ${player.auto_play_last_error}` : ""}</span></div><label>Билетов на тираж<input aria-label="Билетов автоучастия на тираж" type="number" min="1" max="5" value={autoTickets} onChange={(event) => setAutoTickets(event.target.value)} /></label><label>Причина автоучастия<input value={autoReason} onChange={(event) => setAutoReason(event.target.value)} placeholder="Почему меняется автоучастие?" /></label><button disabled={autoBusy || !autoReason.trim() || Number(autoTickets) < 1 || Number(autoTickets) > 5} onClick={() => void configureAutoPlay(true)}>{player.auto_play_enabled ? "СОХРАНИТЬ АВТОУЧАСТИЕ" : "ВКЛЮЧИТЬ АВТОУЧАСТИЕ"}</button>{player.auto_play_enabled && <button className="secondary-action" disabled={autoBusy || !autoReason.trim()} onClick={() => void configureAutoPlay(false)}>ОТКЛЮЧИТЬ</button>}</div>
     <div className="adjust"><label>Новый баланс<input min="0" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} /></label><label>Обязательная причина<input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Почему требуется изменение?" /></label><button disabled={busy || !reason.trim()} onClick={() => void save()}>ИЗМЕНИТЬ ЧЕРЕЗ ЖУРНАЛ</button></div>
   </article>;
 }
@@ -331,7 +345,7 @@ function LotteryCard({ lottery, onSaved }: { lottery: Lottery; onSaved: () => Pr
 }
 
 function DrawTable({ draws, onOpen }: { draws: Draw[]; onOpen?: (id: string) => void }) {
-  return <div className="table-wrap"><table><thead><tr><th>Лотерея / тираж</th><th>Статус</th><th>По расписанию</th><th>Числа</th><th>Билеты</th><th>Продажи / выплаты</th></tr></thead><tbody>{draws.map((draw) => <tr key={draw.id} onClick={() => onOpen?.(draw.id)} className={onOpen ? "clickable" : ""}><td><b>{draw.lottery_name}</b> №{drawNumber(draw.public_number)}</td><td><span className={`tag ${draw.status.toLowerCase()}`}>{translated(draw.status, drawStatuses)}</span></td><td>{date(draw.scheduled_at)}</td><td><div className="number-line">{draw.winning_numbers?.map((n) => <i className={draw.lottery_code === "weekly" && n > 35 ? "special" : ""} key={n}>{displayNumber(draw.lottery_code, n)}</i>) ?? "—"}</div></td><td>{draw.ticket_count}</td><td>{cas(draw.total_sales)}<small>{cas(draw.total_payout)}</small></td></tr>)}</tbody></table></div>;
+  return <div className="table-wrap"><table><thead><tr><th>Лотерея / тираж</th><th>Статус</th><th>По расписанию</th><th>Результат</th><th>Билеты</th><th>Продажи / выплаты</th></tr></thead><tbody>{draws.map((draw) => <tr key={draw.id} onClick={() => onOpen?.(draw.id)} className={onOpen ? "clickable" : ""}><td><b>{draw.lottery_name}</b> №{drawNumber(draw.public_number)}</td><td><span className={`tag ${draw.status.toLowerCase()}`}>{translated(draw.status, drawStatuses)}</span></td><td>{date(draw.scheduled_at)}</td><td><DrawResult draw={draw} /></td><td>{draw.ticket_count}</td><td>{cas(draw.total_sales)}<small>{cas(draw.total_payout)}</small></td></tr>)}</tbody></table></div>;
 }
 
 function TransactionTable({ rows }: { rows: Transaction[] }) {
@@ -341,12 +355,22 @@ function TransactionTable({ rows }: { rows: Transaction[] }) {
 function DrawDetailPanel({ detail, onClose }: { detail: DrawDetail; onClose: () => void }) {
   const draw = detail.draw;
   const jackpotWon = (draw.jackpot_amount ?? 0) > 0;
+  const bingo = draw.lottery_code === "bingo";
+  const [ticketFilter, setTicketFilter] = useState<"all" | "winners">(bingo && draw.status === "COMPLETED" ? "winners" : "all");
+  const winningTickets = detail.tickets.filter((ticket) => ticket.prize_amount > 0);
+  const shownTickets = ticketFilter === "winners" ? winningTickets : detail.tickets;
+  const participantCount = new Set(detail.tickets.map((ticket) => ticket.user_id)).size;
+  const bingoStages = [0, 1, 2].map((stage) => {
+    const winners = detail.tickets.filter((ticket) => (ticket.bingo_result?.amounts[stage] ?? 0) > 0);
+    const firstMove = winners.length ? Math.min(...winners.map((ticket) => ticket.bingo_result?.moves[stage] ?? 0)) : null;
+    return { winners: winners.length, payout: winners.reduce((sum, ticket) => sum + (ticket.bingo_result?.amounts[stage] ?? 0), 0), firstMove };
+  });
   useEffect(() => {
     const close = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
     window.addEventListener("keydown", close);
     return () => window.removeEventListener("keydown", close);
   }, [onClose]);
-  return <div className="drawer" role="dialog" aria-modal="true" aria-label={`Тираж ${draw.lottery_name} №${drawNumber(draw.public_number)}`}><button aria-label="Закрыть" className="close" onClick={onClose}>×</button><small>НЕИЗМЕНЯЕМАЯ ЗАПИСЬ ТИРАЖА</small><h2>{draw.lottery_name} №{drawNumber(draw.public_number)}</h2><div className="winning">{draw.winning_numbers?.map((n) => <i className={draw.lottery_code === "weekly" && n > 35 ? "special" : ""} key={n}>{displayNumber(draw.lottery_code, n)}</i>) ?? "НЕТ РЕЗУЛЬТАТА"}</div>{jackpotWon && <div className="jackpot-hit"><small>ДЖЕКПОТ ЭТОГО ТИРАЖА СОРВАН</small><strong>{cas(draw.jackpot_amount)}</strong><span>Эта сумма делится между билетами джекпот-категории. Общая выплата тиража указана отдельно.</span></div>}<dl className="detail-list"><dt>Статус</dt><dd>{translated(draw.status, drawStatuses)}</dd><dt>По расписанию</dt><dd>{date(draw.scheduled_at)}</dd><dt>Проведён</dt><dd>{date(draw.executed_at)}</dd><dt>Билетов</dt><dd>{draw.ticket_count.toLocaleString("ru-RU")}</dd><dt>Продажи</dt><dd>{cas(draw.total_sales)}</dd><dt>Все выплаты тиража</dt><dd>{cas(draw.total_payout)}</dd><dt>Джекпот до тиража</dt><dd>{cas(draw.jackpot_opening)}</dd><dt>Джекпот после тиража</dt><dd>{cas(draw.jackpot_closing)}</dd><dt>Использовано из Фонда Каспера</dt><dd>{cas(draw.kasper_fund_used)}</dd></dl><h3>Билеты ({detail.tickets.length})</h3>{detail.tickets.map((ticket) => <div className="ticket-row" key={ticket.id}><b>№{drawNumber(ticket.public_number)}</b><span>{ticket.numbers.map((number) => displayNumber(draw.lottery_code, number)).join(" · ")}</span><span>совпадений: {displayMatches(draw.lottery_code, ticket.matches, ticket.numbers.length === 7)}</span><strong>{cas(ticket.prize_amount)}</strong></div>)}</div>;
+  return <div className="drawer" role="dialog" aria-modal="true" aria-label={`Тираж ${draw.lottery_name} №${drawNumber(draw.public_number)}`}><button aria-label="Закрыть" className="close" onClick={onClose}>×</button><small>НЕИЗМЕНЯЕМАЯ ЗАПИСЬ ТИРАЖА</small><h2>{draw.lottery_name} №{drawNumber(draw.public_number)}</h2><DrawResult draw={draw} detailed />{bingo && draw.status === "COMPLETED" && <section className="bingo-stage-summary">{bingoStages.map((stage, index) => <article key={index}><small>{["РАННЯЯ СТРОКА", "ДВЕ СТРОКИ", "ДЖЕКПОТ"][index]}</small><strong>{stage.winners ? `${stage.winners} бил.` : "Нет победителя"}</strong><span>{stage.firstMove ? `ход ${stage.firstMove} · ${cas(stage.payout)}` : index === 2 ? "Джекпот перенесён" : "Приз не выплачен"}</span></article>)}</section>}{jackpotWon && <div className="jackpot-hit"><small>ДЖЕКПОТ ЭТОГО ТИРАЖА СОРВАН</small><strong>{cas(draw.jackpot_amount)}</strong><span>Эта сумма делится между билетами джекпот-категории. Общая выплата тиража указана отдельно.</span></div>}<dl className="detail-list"><dt>Статус</dt><dd>{translated(draw.status, drawStatuses)}</dd><dt>По расписанию</dt><dd>{date(draw.scheduled_at)}</dd><dt>Проведён</dt><dd>{date(draw.executed_at)}</dd><dt>Игроков</dt><dd>{participantCount.toLocaleString("ru-RU")}</dd><dt>Билетов</dt><dd>{draw.ticket_count.toLocaleString("ru-RU")}</dd><dt>Выигрышных</dt><dd>{winningTickets.length.toLocaleString("ru-RU")}</dd><dt>Продажи</dt><dd>{cas(draw.total_sales)}</dd><dt>Все выплаты тиража</dt><dd>{cas(draw.total_payout)}</dd><dt>Джекпот до тиража</dt><dd>{cas(draw.jackpot_opening)}</dd><dt>Джекпот после тиража</dt><dd>{cas(draw.jackpot_closing)}</dd><dt>Использовано из Фонда Каспера</dt><dd>{cas(draw.kasper_fund_used)}</dd></dl><div className="ticket-list-heading"><h3>Билеты ({shownTickets.length})</h3><div><button className={ticketFilter === "winners" ? "active" : ""} onClick={() => setTicketFilter("winners")}>Выигрышные · {winningTickets.length}</button><button className={ticketFilter === "all" ? "active" : ""} onClick={() => setTicketFilter("all")}>Все · {detail.tickets.length}</button></div></div>{shownTickets.map((ticket) => <div className={`ticket-row ${bingo ? "bingo-ticket-row" : ""}`} key={ticket.id}><b>№{drawNumber(ticket.public_number)}</b><span>{bingo ? <span className="bingo-ticket-numbers">{[0, 1, 2].map((row) => <i key={row}>{ticket.numbers.slice(row * 4, row * 4 + 4).join(" · ")}</i>)}</span> : ticket.numbers.map((number) => displayNumber(draw.lottery_code, number)).join(" · ")}</span><span>{bingo && ticket.bingo_result ? ticket.bingo_result.moves.map((move, index) => `${["строка", "две", "полный"][index]}: ${move <= 60 ? `ход ${move}` : "не закрыто"}`).join(" · ") : `совпадений: ${displayMatches(draw.lottery_code, ticket.matches, ticket.numbers.length === 7)}`}</span><strong>{cas(ticket.prize_amount)}</strong></div>)}{!shownTickets.length && <p className="source-note">В этом тираже выигрышных билетов нет.</p>}</div>;
 }
 
 function DevelopmentView({ changelog, devlog }: { changelog: ReleaseNote[]; devlog: ReleaseNote[] }) {
@@ -521,7 +545,7 @@ export default function App() {
         apply(() => { setLotteries(available); });
         apply(() => { setDashboard(dashboardData); });
         apply(() => { setTicketAnalytics(analyticsData); });
-        const scoped = available.filter(l => scope === "all" || ["flash", "shadow", "pulse"].includes(l.code) === (scope === "fast"));
+        const scoped = available.filter(l => l.code !== "bingo" && (scope === "all" || ["flash", "shadow", "pulse"].includes(l.code) === (scope === "fast")));
         const selectedId = scoped.find(l => l.id === statisticsLotteryId)?.id || scoped[0]?.id || "";
         apply(() => { setStatisticsLotteryId(selectedId); });
         if (selectedId) { const report = await adminApi.statistics(selectedId, statisticsWindow); apply(() => setStatistics(report)); }
@@ -593,7 +617,8 @@ function TransactionFilters({ onApply }: { onApply: (query: string) => void }) {
 }
 
 function StatisticsView({ lotteries, report, selectedLotteryId, windowSize, onLottery, onWindow }: { lotteries: Lottery[]; report: NumberStatisticsReport; selectedLotteryId: string; windowSize: number; onLottery: (id: string) => void; onWindow: (size: number) => void }) {
-  const selectedLottery = lotteries.find((lottery) => lottery.id === selectedLotteryId);
+  const eligibleLotteries = lotteries.filter((lottery) => lottery.code !== "bingo");
+  const selectedLottery = eligibleLotteries.find((lottery) => lottery.id === selectedLotteryId);
   const numberLabel = (number: number) => displayNumber(selectedLottery?.code ?? "", number);
   const ranked = [...report.numbers].sort((left, right) => right.appearances - left.appearances || left.number - right.number);
   const hottest = ranked[0];
@@ -606,6 +631,6 @@ function StatisticsView({ lotteries, report, selectedLotteryId, windowSize, onLo
       <article><small>ЧАЩЕ ВСЕГО</small><strong>{hottest?.appearances ? numberLabel(hottest.number) : "—"}</strong><span>{hottest?.appearances ? `${hottest.appearances} выпадений` : "данные накапливаются"}</span></article>
       <article><small>РЕЖЕ ВСЕГО</small><strong>{coldest?.appearances || report.draw_count ? coldest ? numberLabel(coldest.number) : "—" : "—"}</strong><span>{coldest ? `${coldest.appearances} выпадений` : "данные накапливаются"}</span></article>
     </section>
-    <section className="panel statistics-panel"><header><div><h2>Выпавшие числа</h2><span>{report.draw_count ? `${date(report.first_draw_at)} — ${date(report.last_draw_at)}` : "ПОКА НЕТ ЗАВЕРШЁННЫХ ТИРАЖЕЙ В ПЕРИОДЕ"}</span></div><div className="statistics-controls"><select aria-label="Лотерея" value={selectedLotteryId} onChange={(e) => onLottery(e.target.value)}>{lotteries.map((lottery) => <option value={lottery.id} key={lottery.id}>{lottery.name}</option>)}</select><select aria-label="Количество тиражей" value={windowSize} onChange={(e) => onWindow(Number(e.target.value))}><option value={0}>Все</option><option value={10}>10 тиражей</option><option value={20}>20 тиражей</option><option value={50}>50 тиражей</option><option value={100}>100 тиражей</option></select></div></header><div className="stat-grid">{report.numbers.map((row) => <article key={row.number}><i>{numberLabel(row.number)}</i><strong>{row.appearances}</strong><small>выпадений</small><div style={{ "--value": `${row.draw_percentage}%` } as CSSProperties}><span /></div><em>{row.draw_percentage}% тиражей</em><b>{row.draws_since_last === null ? "ещё не выпадало" : row.draws_since_last === 0 ? "в последнем тираже" : `${row.draws_since_last} тир. назад`}</b></article>)}</div><p className="source-note">Для Kasper Grand символ ★ обозначает специальное поле. Частота чисел нужна для наблюдения за историей, но не повышает вероятность следующего результата: каждый тираж использует независимый криптографически стойкий выбор.</p></section>
+    <section className="panel statistics-panel"><header><div><h2>Выпавшие числа</h2><span>{report.draw_count ? `${date(report.first_draw_at)} — ${date(report.last_draw_at)}` : "ПОКА НЕТ ЗАВЕРШЁННЫХ ТИРАЖЕЙ В ПЕРИОДЕ"}</span></div><div className="statistics-controls"><select aria-label="Лотерея" value={selectedLotteryId} onChange={(e) => onLottery(e.target.value)}>{eligibleLotteries.map((lottery) => <option value={lottery.id} key={lottery.id}>{lottery.name}</option>)}</select><select aria-label="Количество тиражей" value={windowSize} onChange={(e) => onWindow(Number(e.target.value))}><option value={0}>Все</option><option value={10}>10 тиражей</option><option value={20}>20 тиражей</option><option value={50}>50 тиражей</option><option value={100}>100 тиражей</option></select></div></header><div className="stat-grid">{report.numbers.map((row) => <article key={row.number}><i>{numberLabel(row.number)}</i><strong>{row.appearances}</strong><small>выпадений</small><div style={{ "--value": `${row.draw_percentage}%` } as CSSProperties}><span /></div><em>{row.draw_percentage}% тиражей</em><b>{row.draws_since_last === null ? "ещё не выпадало" : row.draws_since_last === 0 ? "в последнем тираже" : `${row.draws_since_last} тир. назад`}</b></article>)}</div><p className="source-note">Для Kasper Grand символ ★ обозначает специальное поле. Bingo здесь не показывается: в нём важен порядок закрытия строк, а не частота почти всех 60 шаров. Частота чисел нужна только для наблюдения за историей и не повышает вероятность следующего результата.</p></section>
   </>;
 }

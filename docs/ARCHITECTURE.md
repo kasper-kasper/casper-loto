@@ -48,7 +48,7 @@ ordinary players. Explicitly configured auto-play entries also
 queue one private Telegram result per draw; Fast jackpot news remains excluded.
 
 Auto-play is an application service invoked after scheduler recovery. It scans
-explicit per-user settings, generates five combinations with `SystemRandom`,
+explicit per-user settings, generates the configured one to five combinations with `SystemRandom`,
 and delegates to the same transactional purchase service as manual checkout.
 A stable user/draw idempotency key plus the persisted `AUTO_PLAY` ticket source
 prevents duplicate sets after retries or server restarts.
@@ -72,6 +72,13 @@ broadcast screen or engagement reminders. A scoped SSE projection drives a
 short embedded Fast presentation only while the Fast section is open: 20 seconds
 of anticipation, the server-authored reveal sequence and a 12-second result.
 Configured player auto-play uses the same idempotent service as every other lottery.
+
+Completed Bingo draws use a dedicated Admin projection: the draw list summarizes
+the number of moves and the two balls left out, while the detail endpoint exposes
+each ticket's immutable stage result. The panel derives category winner counts and
+payouts from those stored results and keeps the full 58-ball protocol collapsed.
+Ordinary number-frequency analytics deliberately excludes Bingo because calling
+58 of 60 balls makes that comparison misleading.
 
 The v0.14.0 transition preserves the final shared Daily draw and its purchased
 tickets. PSS and KHAN start independently at deployment. After the legacy draw

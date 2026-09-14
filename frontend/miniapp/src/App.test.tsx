@@ -358,11 +358,9 @@ it("selects five numbers, adds a ticket and buys the cart atomically", async () 
       1,
     ),
   );
-  expect(await screen.findByText("Билет уже участвует")).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "На главную" })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Мои билеты" })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "На главную" }));
-  expect(screen.getByRole("heading", { name: "Сегодня может повезти." })).toBeInTheDocument();
+  expect(await screen.findByText("1 билет куплен · списано 100 CAS")).toBeInTheDocument();
+  expect(screen.queryByRole("dialog", { name: /покупк/i })).not.toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "Сегодня может повезти." })).toBeInTheDocument();
   expect(document.querySelector(".number-grid")).toBeNull();
 });
 

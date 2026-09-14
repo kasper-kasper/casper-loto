@@ -503,7 +503,6 @@ h1, h2, h3, p { margin-top: 0; }
 .preference-list { display: grid; gap: 4px; margin-top: 12px; }.preference-list label { display: flex; min-height: 55px; padding: 9px 0; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid var(--border); }.preference-list b, .preference-list small { display: block; }.preference-list b { font-size: 9px; }.preference-list small { margin-top: 4px; color: var(--text-muted); font-size: 8px; }.preference-list input { width: 21px; height: 21px; accent-color: var(--gold); }.danger-text { color: var(--danger); }
 .inbox-list { display: grid; gap: 8px; }.inbox-list article { display: grid; grid-template-columns: 40px minmax(0, 1fr); padding: 13px; gap: 11px; border: 1px solid var(--border); border-radius: 18px; background: rgba(10,23,53,.82); }.inbox-list article.unread { border-color: rgba(121,156,243,.28); }.inbox-list article.win,.inbox-list article.news { border-color: rgba(239,199,110,.25); background: linear-gradient(125deg, rgba(239,199,110,.07), rgba(10,23,53,.88) 50%); }.inbox-symbol { display: grid; width: 38px; height: 38px; place-items: center; border: 1px solid rgba(121,156,243,.2); border-radius: 12px; color: var(--blue-soft); background: rgba(71,124,240,.07); font-size: 15px; font-weight: 900; }.inbox-list .win .inbox-symbol,.inbox-list .news .inbox-symbol { border-color: rgba(239,199,110,.28); color: var(--gold-bright); background: rgba(239,199,110,.08); }.inbox-list header { display: flex; align-items: start; justify-content: space-between; gap: 8px; }.inbox-list header strong { font-size: 10px; }.inbox-list time { color: var(--text-muted); font-size: 7px; white-space: nowrap; }.inbox-list p { margin: 6px 0 8px; color: var(--text-secondary); font-size: 9px; line-height: 1.5; }.inbox-list button { min-height: 30px; padding: 0; border: 0; color: var(--gold); background: transparent; font-size: 8px; font-weight: 800; }.inbox-list button span { margin-left: 5px; }
 .account-skeleton { min-height: 370px; border-radius: 21px; }
-.permission-backdrop { position: fixed; z-index: 30; inset: 0; display: grid; padding: 18px; place-items: end center; background: rgba(2,7,20,.72); backdrop-filter: blur(8px); animation: fade-in var(--fast) both; }.permission-card { width: min(100%, 500px); padding: 24px 20px calc(18px + env(safe-area-inset-bottom)); border: 1px solid var(--border-strong); border-radius: 26px; background: linear-gradient(150deg, #172c5d, #091630 60%, #160f29); box-shadow: 0 25px 70px rgba(0,0,0,.5); text-align: center; animation: modal-in var(--normal) var(--ease) both; }.permission-mark { display: grid; width: 48px; height: 48px; margin: 0 auto 14px; place-items: center; border: 1px solid rgba(239,199,110,.25); border-radius: 16px; color: var(--gold); background: rgba(239,199,110,.07); }.permission-card h2 { margin: 7px 0 0; font-size: 20px; }.permission-card p { margin: 10px auto 16px; color: var(--text-secondary); font-size: 10px; line-height: 1.55; }.permission-later { min-height: 41px; margin-top: 5px; border: 0; color: var(--text-muted); background: transparent; font-size: 9px; }
 
 @keyframes modal-in { from { opacity: 0; transform: translateY(18px) scale(.985); } }
 
@@ -1364,16 +1363,6 @@ html.app-backgrounded *, .motion-paused, .motion-paused * { animation-play-state
   .picker-shell.lottery-grob .pick-number { min-height: 61px; }
 }
 
-.purchase-confirmation-backdrop { position: fixed; z-index: 40; inset: 0; display: grid; padding: 24px; place-items: center; background: rgba(2,7,20,.78); backdrop-filter: blur(12px); }
-.purchase-confirmation { position: relative; width: min(100%, 390px); padding: 28px 22px 22px; border: 1px solid rgba(235,195,108,.28); border-radius: 18px 18px 30px 18px; background: radial-gradient(circle at 85% 5%,rgba(195,140,51,.16),transparent 35%),linear-gradient(145deg,#12254e,#09152f 68%,#241329); box-shadow: 0 30px 90px rgba(0,0,0,.5),inset 0 1px rgba(255,255,255,.05); text-align: center; }
-.purchase-confirmation-close { position: absolute; top: 12px; right: 12px; display: grid; width: 38px; height: 38px; padding: 0; place-items: center; border: 1px solid rgba(154,173,216,.18); border-radius: 11px; color: #8e9cba; background: rgba(5,13,32,.34); }
-.purchase-confirmation-close .icon { width: 16px; height: 16px; }
-.purchase-confirmation-mark { display: grid; width: 52px; height: 52px; margin: 0 auto 17px; place-items: center; border: 1px solid var(--gold); border-radius: 50%; color: #171006; background: linear-gradient(135deg,#f4d48a,#bd8138); box-shadow: 0 0 34px rgba(228,177,80,.22); font-size: 22px; font-weight: 900; }
-.purchase-confirmation h2 { margin: 8px 0 9px; color: #fff; font-size: 25px; letter-spacing: -.04em; }
-.purchase-confirmation p { margin: 0 auto 22px; max-width: 290px; color: #95a5c8; font-size: 11px; line-height: 1.6; }
-.purchase-confirmation > div:last-child { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
-.purchase-confirmation .primary-button,
-.purchase-confirmation .secondary-button { min-height: 50px; }
 
 /* 1.8 — Fast: two lightweight interval lotteries with their own visual language. */
 .fast-view { display: grid; gap: 14px; padding-bottom: 8px; }
@@ -1807,6 +1796,8 @@ html { overflow-x: clip; scrollbar-gutter: stable; }
 .app-shell, .view-content, .fast-view > div { min-width: 0; }
 .toast { grid-template-columns: 24px minmax(0,1fr) 18px; }
 .toast > .toast-message { display: block; width: auto; height: auto; min-width: 0; overflow-wrap: anywhere; border-radius: 0; color: inherit; background: transparent; font-weight: 500; }
+.toast.success { position: fixed; z-index: 29; left: 50%; bottom: calc(78px + env(safe-area-inset-bottom)); width: min(calc(100% - 28px),360px); min-height: 42px; margin: 0; padding: 8px 10px; transform: translateX(-50%); box-shadow: 0 12px 28px rgba(0,0,0,.34); animation: compact-toast-in var(--normal) var(--ease); }
+@keyframes compact-toast-in { from { opacity: 0; transform: translate(-50%,8px) scale(.98); } }
 .fast-card, .fast-live-card { min-height: 354px; content-visibility: visible; overflow-anchor: none; }
 .fast-card-main { grid-template-columns: minmax(0,1fr) 95px; }
 .fast-card-bottom { grid-template-columns: 78px minmax(0,1fr); }

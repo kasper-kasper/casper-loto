@@ -89,6 +89,7 @@ export interface DrawTicket {
   purchase_price: number;
   matches: number | null;
   prize_amount: number;
+  bingo_result?: { moves: number[]; amounts: number[] } | null;
 }
 
 export interface DrawDetail {

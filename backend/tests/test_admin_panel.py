@@ -31,6 +31,7 @@ from k_loto.infrastructure.database.models import (
     LedgerTransaction,
     Lottery,
     LotteryReserve,
+    Ticket,
     User,
 )
 from k_loto.main import create_app
@@ -98,6 +99,62 @@ class FakeSession:
 
     def add(self, item: Any) -> None:
         self.added.append(item)
+
+
+async def test_draw_detail_exposes_bingo_stage_result() -> None:
+    lottery = Lottery(
+        id=UUID(int=70),
+        code="bingo",
+        name="Kasper Bingo",
+        kind=LotteryKind.DAILY,
+        numbers_to_pick=12,
+        max_number=60,
+        ticket_price=50_000,
+        timezone="Europe/Moscow",
+        schedule={},
+        sales_cutoff_minutes=2,
+        is_active=True,
+        next_draw_number=2,
+        next_ticket_number=102,
+    )
+    draw = Draw(
+        id=UUID(int=71),
+        lottery_id=lottery.id,
+        public_number=1,
+        status=DrawStatus.COMPLETED,
+        scheduled_at=datetime(2026, 9, 14, 19, tzinfo=UTC),
+        sales_close_at=datetime(2026, 9, 14, 18, 58, tzinfo=UTC),
+        winning_numbers=list(range(1, 59)),
+        correlation_id=UUID(int=72),
+        ticket_count=1,
+        total_sales=50_000,
+        total_payout=100_000,
+        reserve_used=0,
+    )
+    ticket = Ticket(
+        id=UUID(int=73),
+        public_number=101,
+        lottery_id=lottery.id,
+        draw_id=draw.id,
+        user_id=UUID(int=74),
+        numbers=list(range(1, 13)),
+        purchase_price=50_000,
+        matches=12,
+        prize_amount=100_000,
+        bingo_result={"moves": [16, 31, 40], "amounts": [100_000, 0, 0]},
+    )
+    fake = FakeSession(
+        scalar_values=[],
+        execute_rows=[(draw, lottery, None)],
+        scalar_collections=[[ticket]],
+    )
+
+    _, tickets = await AdminQueryService(cast(AsyncSession, fake)).draw(draw.id)
+
+    assert tickets[0].bingo_result == {
+        "moves": [16, 31, 40],
+        "amounts": [100_000, 0, 0],
+    }
 
 
 def test_admin_session_is_signed_expiring_and_contains_csrf() -> None:

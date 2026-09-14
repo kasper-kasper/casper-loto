@@ -150,6 +150,7 @@ class AdminDrawTicket:
     purchase_price: int
     matches: int | None
     prize_amount: int
+    bingo_result: dict[str, Any] | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -962,6 +963,7 @@ class AdminQueryService:
                 ticket.purchase_price,
                 ticket.matches,
                 ticket.prize_amount,
+                ticket.bingo_result,
             )
             for ticket in tickets
         )
