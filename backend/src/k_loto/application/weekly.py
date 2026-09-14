@@ -845,6 +845,14 @@ class WeeklySettlementService:
                 ]
                 user_payouts = [payout_by_ticket[ticket.id] for ticket in user_tickets]
                 total_prize = sum(item.amount for item in user_payouts)
+                jackpot_prize = sum(
+                    item.jackpot_amount
+                    if item.jackpot_amount is not None
+                    else item.amount
+                    if item.matches == rules.jackpot_match
+                    else 0
+                    for item in user_payouts
+                )
                 payload = {
                     "lottery_code": lottery.code,
                     "lottery_name": draw_display_name(
@@ -868,53 +876,40 @@ class WeeklySettlementService:
                     "balance_after": balances[user_id].amount,
                 }
                 preference = preferences.get(user_id)
-                owner_fast_result = fast_lottery and any(
-                    ticket.source == TicketSource.AUTO_PLAY for ticket in user_tickets
-                )
                 if (
-                    (not fast_lottery or owner_fast_result)
+                    jackpot_prize > 0
                     and preference is not None
                     and preference.telegram_enabled
-                    and preference.draw_results_enabled
                 ):
                     self._session.add(
                         NotificationOutbox(
                             id=uuid4(),
-                            event_key=f"result:{draw.id}:user:{user_id}",
+                            event_key=f"jackpot-win:{draw.id}:user:{user_id}",
                             user_id=user_id,
-                            type=NotificationType.DRAW_RESULT,
+                            type=NotificationType.JACKPOT_WIN,
                             status=NotificationStatus.PENDING,
-                            payload=payload,
+                            payload={
+                                "lottery_name": payload["lottery_name"],
+                                "draw_number": draw.public_number,
+                                "scheduled_at": draw.scheduled_at.isoformat(),
+                                "win_amount": total_prize,
+                            },
                             attempts=0,
                             available_at=timestamp,
                         )
                     )
-                if fast_lottery or total_prize > 0:
-                    result_type = (
-                        InAppNotificationType.DRAW_RESULT
-                        if fast_lottery
-                        else InAppNotificationType.WIN
-                    )
-                    result_title = (
-                        f"{payload['lottery_name']}: результат раунда"
-                        if fast_lottery and total_prize == 0
-                        else f"Выигрыш {total_prize:,} CAS".replace(",", " ")
-                    )
+                if total_prize > 0 and (not fast_lottery or jackpot_prize > 0):
                     self._session.add(
                         UserNotification(
                             id=uuid4(),
                             event_key=f"result:{draw.id}:user:{user_id}",
                             user_id=user_id,
-                            type=result_type,
-                            title=result_title,
+                            type=InAppNotificationType.WIN,
+                            title=f"Выигрыш {total_prize:,} CAS".replace(",", " "),
                             body=(
                                 f"{payload['lottery_name']}, тираж "
                                 f"№{draw.public_number:04d}. "
-                                + (
-                                    "Выигрыш уже зачислен."
-                                    if total_prize > 0
-                                    else "В этот раз без выигрыша."
-                                )
+                                "Выигрыш уже зачислен."
                             ),
                             payload=payload,
                             created_at=timestamp,

@@ -307,6 +307,7 @@ class MiniAppQueryService:
                 select(func.count(UserNotification.id)).where(
                     UserNotification.user_id == user_id,
                     UserNotification.read_at.is_(None),
+                    UserNotification.type != InAppNotificationType.DRAW_RESULT,
                 )
             )
             or 0
@@ -378,7 +379,10 @@ class MiniAppQueryService:
         rows = (
             await self._session.scalars(
                 select(UserNotification)
-                .where(UserNotification.user_id == user_id)
+                .where(
+                    UserNotification.user_id == user_id,
+                    UserNotification.type != InAppNotificationType.DRAW_RESULT,
+                )
                 .order_by(UserNotification.created_at.desc())
                 .limit(limit)
             )

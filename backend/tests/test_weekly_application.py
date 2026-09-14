@@ -116,6 +116,12 @@ class FixedFastGenerator:
         return (1, 2, 3)
 
 
+class FixedFastPartialGenerator:
+    def draw(self, population_size: int, numbers_to_pick: int) -> tuple[int, ...]:
+        assert (population_size, numbers_to_pick) == (15, 3)
+        return (1, 2, 4)
+
+
 def build_purchase_accounts(now: datetime):
     lottery_id = UUID(int=100)
     user_id = UUID(int=200)
@@ -490,7 +496,7 @@ async def test_completed_draw_settlement_is_idempotent() -> None:
     assert fake.added == []
 
 
-async def test_settlement_enqueues_one_result_notification_per_user() -> None:
+async def test_ordinary_result_does_not_enqueue_telegram_notification() -> None:
     now = datetime(2026, 8, 14, 17, tzinfo=UTC)
     execution_time = now + timedelta(hours=2)
     user_id, lottery, draw, balance, jackpot, distribution = build_purchase_accounts(
@@ -527,19 +533,21 @@ async def test_settlement_enqueues_one_result_notification_per_user() -> None:
     notifications = [
         item for item in fake.added if isinstance(item, NotificationOutbox)
     ]
-    assert len(notifications) == 1
-    notification = notifications[0]
-    assert notification.type == NotificationType.DRAW_RESULT
-    assert notification.payload["total_prize"] == 0
-    assert notification.payload["tickets"][0]["matches"] == 0
+    assert notifications == []
 
 
 @pytest.mark.parametrize(
-    ("source", "telegram_count"),
-    ((TicketSource.MANUAL, 0), (TicketSource.AUTO_PLAY, 1)),
+    ("source", "generator", "notified"),
+    (
+        (TicketSource.MANUAL, FixedFastGenerator(), True),
+        (TicketSource.AUTO_PLAY, FixedFastGenerator(), True),
+        (TicketSource.MANUAL, FixedFastPartialGenerator(), False),
+    ),
 )
-async def test_fast_result_notifies_only_owner_auto_play_in_telegram(
-    source: TicketSource, telegram_count: int
+async def test_fast_only_notifies_for_jackpot(
+    source: TicketSource,
+    generator: FixedFastGenerator | FixedFastPartialGenerator,
+    notified: bool,
 ) -> None:
     now = datetime(2026, 9, 1, 12, tzinfo=UTC)
     user_id = UUID(int=850)
@@ -605,17 +613,26 @@ async def test_fast_result_notifies_only_owner_auto_play_in_telegram(
         scalar_collections=[[ticket], [balance], [preference]],
     )
 
-    await LotterySettlementService(
-        cast(AsyncSession, fake), FixedFastGenerator()
-    ).settle(draw.id, now=now)
+    await LotterySettlementService(cast(AsyncSession, fake), generator).settle(
+        draw.id, now=now
+    )
 
     telegram = [item for item in fake.added if isinstance(item, NotificationOutbox)]
-    assert len(telegram) == telegram_count
     in_app = [item for item in fake.added if isinstance(item, UserNotification)]
-    assert len(in_app) == 1
-    assert in_app[0].type == InAppNotificationType.DRAW_RESULT
-    assert in_app[0].payload["lottery_code"] == "flash"
-    assert len([item for item in fake.added if isinstance(item, JackpotWinEvent)]) == 1
+    if notified:
+        assert len(telegram) == 1
+        assert telegram[0].type == NotificationType.JACKPOT_WIN
+        assert telegram[0].payload["win_amount"] == 888_888
+        assert len(in_app) == 1
+        assert in_app[0].type == InAppNotificationType.WIN
+        assert in_app[0].payload["lottery_code"] == "flash"
+        assert (
+            len([item for item in fake.added if isinstance(item, JackpotWinEvent)]) == 1
+        )
+    else:
+        assert telegram == []
+        assert in_app == []
+        assert not any(isinstance(item, JackpotWinEvent) for item in fake.added)
 
 
 async def test_draw_cannot_be_settled_before_official_time() -> None:

@@ -105,9 +105,10 @@ and draw invitations are stored in an inbox; opening the notification tab marks
 only the read timestamp and never edits event content.
 
 Telegram messages are disabled until the native `requestWriteAccess` prompt is
-accepted. The settings screen controls draw-result and 24-hour inactivity
-categories separately. A purchase itself is confirmed by the Mini App and no
-longer creates a duplicate bot message.
+accepted. Telegram sends only a personal jackpot win and one inactivity reminder
+after 24 hours without purchases. Purchases and ordinary draw results are shown
+inside the Mini App and never create duplicate bot messages. The in-app inbox
+hides routine Fast results; complete results remain available in ticket history.
 
 ## Cart TTL
 

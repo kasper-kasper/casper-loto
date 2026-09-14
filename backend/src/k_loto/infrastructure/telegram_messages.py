@@ -148,11 +148,22 @@ def format_inactivity_reminder(payload: dict[str, Any]) -> str:
     )
 
 
+def format_jackpot_win(payload: dict[str, Any]) -> str:
+    scheduled = datetime.fromisoformat(str(payload["scheduled_at"])).astimezone(MOSCOW)
+    return (
+        "Ну ниче се! Ты сорвал кучу бабла, правда виртуальных, "
+        "а быть может это знак?\n\n"
+        f"Тираж: {payload['lottery_name']} №{int(payload['draw_number']):04d}\n"
+        f"Дата: {scheduled:%d.%m.%Y · %H:%M} МСК\n"
+        f"Выигрыш: {format_cas(int(payload['win_amount']))} CAS"
+    )
+
+
 def format_delivery_test() -> str:
     return (
         "✅ Уведомления K-Loto работают\n\n"
         "Это проверочное сообщение, которое вы запросили в профиле Mini App. "
-        "Результаты ваших тиражей будут приходить сюда."
+        "Сюда придёт сообщение о вашем джекпоте или напоминание об игре."
     )
 
 
@@ -171,6 +182,8 @@ class BotNotificationFormatter:
             return format_purchase_message(notification.payload)
         if notification.type == NotificationType.DRAW_RESULT:
             return format_result_message(notification.payload)
+        if notification.type == NotificationType.JACKPOT_WIN:
+            return format_jackpot_win(notification.payload)
         if notification.type == NotificationType.INACTIVITY_REMINDER:
             return format_inactivity_reminder(notification.payload)
         if notification.type == NotificationType.DELIVERY_TEST:

@@ -41,6 +41,10 @@ class RecordingSession:
         self.record(statement)
         return 0
 
+    async def scalars(self, statement: Any) -> EmptyResult:
+        self.record(statement)
+        return EmptyResult()
+
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("scope, operator", [("standard", "NOT IN"), ("fast", " IN")])
@@ -91,3 +95,15 @@ async def test_live_room_queries_only_its_lottery() -> None:
     )
     assert len(session.sql) == 2
     assert all("lotteries.code = 'khan'" in sql for sql in session.sql)
+
+
+@pytest.mark.asyncio
+async def test_in_app_inbox_hides_legacy_fast_result_noise() -> None:
+    session = RecordingSession()
+
+    notifications = await MiniAppQueryService(
+        cast(AsyncSession, session)
+    ).notifications(UUID(int=1))
+
+    assert notifications == ()
+    assert "user_notifications.type != 'DRAW_RESULT'" in session.sql[0]

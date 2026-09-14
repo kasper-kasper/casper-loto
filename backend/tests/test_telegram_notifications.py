@@ -19,6 +19,7 @@ from k_loto.infrastructure.telegram_messages import (
     BotNotificationFormatter,
     format_delivery_test,
     format_inactivity_reminder,
+    format_jackpot_win,
     format_purchase_message,
     format_result_message,
     format_system_alert,
@@ -195,6 +196,36 @@ def test_inactivity_reminder_names_the_next_draw_without_purchase_noise() -> Non
     assert "ПСС-Лото №0044" in message
     assert "02.09.2026 · 12:00 МСК" in message
     assert "Вы давно не выбирали числа" in message
+
+
+def test_jackpot_message_uses_the_owner_copy_and_actual_player_win() -> None:
+    payload = {
+        "lottery_name": "FLASH",
+        "draw_number": 44,
+        "scheduled_at": "2026-09-15T12:00:00+00:00",
+        "win_amount": 1_234_567,
+    }
+    message = format_jackpot_win(payload)
+
+    assert message.startswith(
+        "Ну ниче се! Ты сорвал кучу бабла, правда виртуальных, а быть может это знак?"
+    )
+    assert "Тираж: FLASH №0044" in message
+    assert "Дата: 15.09.2026 · 15:00 МСК" in message
+    assert "Выигрыш: 1 234 567 CAS" in message
+    assert (
+        BotNotificationFormatter().format(
+            ClaimedNotification(
+                id=UUID(int=19),
+                event_key="jackpot-win:test",
+                chat_id=123,
+                type=NotificationType.JACKPOT_WIN,
+                payload=payload,
+                attempts=1,
+            )
+        )
+        == message
+    )
 
 
 def test_delivery_diagnostic_is_explicit_and_does_not_expose_payload() -> None:

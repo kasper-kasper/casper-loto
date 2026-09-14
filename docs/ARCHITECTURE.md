@@ -41,11 +41,11 @@ four draws and debits the complete cost once, without automatic renewal.
 
 Player communication is split into two durable projections. Telegram delivery
 uses the existing outbox only after explicit per-user consent and is limited to
-the player's own draw results and 24-hour inactivity reminders. The Mini App
-inbox stores wins and draw invitations independently; its event body is
-immutable and only `read_at` may change. Fast results are Mini-App-only for
-ordinary players. Explicitly configured auto-play entries also
-queue one private Telegram result per draw; Fast jackpot news remains excluded.
+the player's own jackpot wins and 24-hour inactivity reminders. Purchases,
+ordinary results and auto-play results never queue player Telegram messages.
+The Mini App inbox stores meaningful wins and draw invitations independently;
+its event body is immutable and only `read_at` may change. Routine Fast results
+stay in ticket history and are excluded from the inbox and unread counter.
 
 Auto-play is an application service invoked after scheduler recovery. It scans
 explicit per-user settings, generates the configured one to five combinations with `SystemRandom`,
