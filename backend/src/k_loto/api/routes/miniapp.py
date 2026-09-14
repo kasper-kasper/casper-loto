@@ -809,7 +809,7 @@ async def bingo_inventory(
     user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
     offset: Annotated[int, Query(ge=0, le=2000)] = 0,
-    number: Annotated[list[int] | None, Query(ge=1, le=60)] = None,
+    number: Annotated[list[int] | None, Query()] = None,
 ) -> dict[str, Any]:
     from k_loto.application.bingo import BingoQueryService
 

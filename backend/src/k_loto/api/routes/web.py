@@ -338,7 +338,7 @@ async def bingo_inventory(
     _player: Annotated[CurrentWebPlayer, Depends(current_web_player)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
     offset: Annotated[int, Query(ge=0, le=2000)] = 0,
-    number: Annotated[list[int] | None, Query(ge=1, le=60)] = None,
+    number: Annotated[list[int] | None, Query()] = None,
 ) -> dict[str, object]:
     try:
         return await BingoQueryService(session).inventory(

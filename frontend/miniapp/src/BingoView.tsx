@@ -79,7 +79,7 @@ export function BingoView({ lottery, initData, now, balance, onClose, onPurchase
   const refreshMine = useCallback(async () => { const page = await miniAppApi.tickets(initData, "active", "bingo"); setMine(page.tickets); }, [initData]);
   useEffect(() => {
     let active = true;
-    void miniAppApi.bingoInventory(initData, offset, favoriteNumbers).then(data => { if (active) { setInventory(data); if (inventoryDraw.current && inventoryDraw.current !== data.draw_id) setSelected([]); inventoryDraw.current = data.draw_id; } }).catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "Не удалось загрузить билеты"); }).finally(() => { if (active) setLoading(false); });
+    void miniAppApi.bingoInventory(initData, offset, favoriteNumbers).then(data => { if (active) { setInventory(data); setFavoriteError(""); if (inventoryDraw.current && inventoryDraw.current !== data.draw_id) setSelected([]); inventoryDraw.current = data.draw_id; } }).catch((reason: unknown) => { if (active) { if (favoriteNumbers.length > 0) setFavoriteError("Поиск не сработал. Попробуйте ещё раз."); else setError(reason instanceof Error ? reason.message : "Не удалось загрузить билеты"); } }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [favoriteNumbers, initData, offset, revision]);
   useEffect(() => { const timer = window.setTimeout(() => void refreshMine().catch(() => undefined), 0); return () => window.clearTimeout(timer); }, [refreshMine, feed?.draw?.complete]);
@@ -117,6 +117,7 @@ export function BingoView({ lottery, initData, now, balance, onClose, onPurchase
   const available = Math.max(0, lottery.max_tickets_per_user_per_draw - lottery.player_ticket_count);
   const affordable = price > 0 ? Math.floor(balance / price) : 0;
   const quickAll = Math.min(available, affordable);
+  const hasFavoriteNumber = favoriteInputs.some(value => value.trim() !== "");
   const toggle = (ticket: PrintedTicket) => {
     if (busy || pending.current) return;
     setSelected(current => current.some(t => t.id === ticket.id) ? current.filter(t => t.id !== ticket.id) : current.length < available ? [...current, ticket] : current);
@@ -144,9 +145,9 @@ export function BingoView({ lottery, initData, now, balance, onClose, onPurchase
     if (quantity > 0) void purchase({ quantity, requiredNumbers });
   };
   const searchFavorites = () => {
-    const values = favoriteInputs.map(Number);
-    if (values.some(value => !Number.isInteger(value) || value < 1 || value > 60) || new Set(values).size !== 3) {
-      setFavoriteError("Введите три разных числа от 1 до 60.");
+    const values = favoriteInputs.filter(value => value.trim() !== "").map(Number);
+    if (values.length === 0 || values.some(value => !Number.isInteger(value) || value < 1 || value > 60) || new Set(values).size !== values.length) {
+      setFavoriteError("Введите до трёх разных чисел от 1 до 60.");
       return;
     }
     setFavoriteError(""); setError(""); setSelected([]); setOffset(0); setLoading(true); setFavoriteNumbers(values);
@@ -170,12 +171,12 @@ export function BingoView({ lottery, initData, now, balance, onClose, onPurchase
           <span>✦ НАБОР КАСПЕРА</span><strong>10 случайных билетов</strong><small>В каждом: 2 · 9 · 16 · 28</small><b>{inventory?.kasper_set_available ? formatCas(price * 10) : "Уже выбран"}</b>
         </button>
         <form className="bingo-favorite-search" onSubmit={event => { event.preventDefault(); searchFavorites(); }}>
-          <span>ТРИ ЛЮБИМЫХ ЧИСЛА</span>
+          <span>ЛЮБИМЫЕ ЧИСЛА · ДО ТРЁХ</span>
           <div>{favoriteInputs.map((value, index) => <input key={index} type="number" min="1" max="60" inputMode="numeric" aria-label={`Любимое число ${index + 1}`} value={value} onChange={event => { setFavoriteError(""); setFavoriteInputs(current => current.map((item, itemIndex) => itemIndex === index ? event.target.value : item)); }} />)}</div>
-          <button type="submit" disabled={busy}>Найти билеты</button>
+          <button type="submit" disabled={busy || !hasFavoriteNumber}>Найти билеты</button>
           {favoriteError && <small className="bingo-search-feedback is-error" role="alert">{favoriteError}</small>}
-          {favoriteNumbers.length === 3 && !loading && <small className={`bingo-search-feedback ${inventory?.tickets.length ? "" : "is-error"}`}>{inventory?.tickets.length ? `Нашли варианты: ${inventory.tickets.length}` : "Свободных билетов с этой тройкой нет. Замените одно число."}</small>}
-          {favoriteNumbers.length === 3 && <button className="bingo-search-reset" type="button" onClick={() => { setFavoriteError(""); setFavoriteNumbers([]); setFavoriteInputs(["", "", ""]); setOffset(0); setLoading(true); }}>Показать все</button>}
+          {favoriteNumbers.length > 0 && !loading && !favoriteError && <small className={`bingo-search-feedback ${inventory?.tickets.length ? "" : "is-error"}`}>{inventory?.tickets.length ? `Нашли варианты: ${inventory.tickets.length}` : "Свободных билетов с этими числами нет. Измените выбор."}</small>}
+          {favoriteNumbers.length > 0 && <button className="bingo-search-reset" type="button" onClick={() => { setFavoriteError(""); setFavoriteNumbers([]); setFavoriteInputs(["", "", ""]); setOffset(0); setLoading(true); }}>Показать все</button>}
         </form>
       </div>
       <div className="bingo-selection-meta"><span>{favoriteNumbers.length ? `Билеты с числами ${favoriteNumbers.join(" · ")}` : `Можно купить ещё ${available}`}</span><button type="button" disabled={loading || busy} onClick={() => { setLoading(true); setOffset(inventory?.has_more ? offset + 6 : 0); setRevision(v => v + 1); setError(""); }}>Другие билеты ↻</button></div>

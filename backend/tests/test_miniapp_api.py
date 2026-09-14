@@ -7,8 +7,10 @@ from hashlib import sha256
 from urllib.parse import urlencode
 
 import pytest
+from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
+from k_loto.api.dependencies import get_current_miniapp_user, get_db_session
 from k_loto.api.routes.miniapp import PurchaseRequest, _live_response
 from k_loto.application.miniapp import (
     MiniAppLiveDraw,
@@ -110,6 +112,43 @@ def test_miniapp_routes_are_registered() -> None:
     assert "/api/v1/miniapp/lotteries/{lottery_code}/purchases" in paths
     assert "/api/v1/miniapp/dev/session" in paths
     assert "/api/v1/miniapp/dev/refill" in paths
+
+
+def test_bingo_inventory_accepts_three_repeated_number_parameters(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    class FakeBingoQueryService:
+        def __init__(self, session: object) -> None:
+            captured["session"] = session
+
+        async def inventory(
+            self, *, offset: int, required_numbers: tuple[int, ...]
+        ) -> dict[str, object]:
+            captured["offset"] = offset
+            captured["required_numbers"] = required_numbers
+            return {"tickets": []}
+
+    import k_loto.application.bingo as bingo_application
+
+    monkeypatch.setattr(bingo_application, "BingoQueryService", FakeBingoQueryService)
+    app = create_app()
+    session = object()
+    app.dependency_overrides[get_current_miniapp_user] = lambda: object()
+    app.dependency_overrides[get_db_session] = lambda: session
+
+    response = TestClient(app).get(
+        "/api/v1/miniapp/bingo/inventory",
+        params=[("number", "2"), ("number", "9"), ("number", "16")],
+    )
+
+    assert response.status_code == 200
+    assert captured == {
+        "session": session,
+        "offset": 0,
+        "required_numbers": (2, 9, 16),
+    }
 
 
 def test_live_response_exposes_server_clock_and_personal_result() -> None:
