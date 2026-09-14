@@ -17,6 +17,11 @@ from k_loto.infrastructure.database.models import (
 from k_loto.infrastructure.database.session import engine, session_factory
 
 FAST_SALES_CUTOFF_SECONDS = 8
+FAST_LOTTERY_FORMATS = (
+    ("flash", "FLASH", "00:00", "fast_3_16", 3, 16),
+    ("shadow", "CODE", "00:03", "code_4_digits", 4, 9),
+    ("pulse", "PULSE", "00:06", "pulse_2_10_2_5", 4, 15),
+)
 
 
 def fast_schedule(anchor_time: str) -> dict[str, object]:
@@ -127,11 +132,7 @@ async def main() -> None:
         {"slots": ["09:00", "18:00"]},
         "classic_6_36",
     )
-    for code, name, anchor_time, ruleset_code, pick, maximum in (
-        ("flash", "FLASH", "00:00", "fast_3_15", 3, 15),
-        ("shadow", "CODE", "00:03", "code_4_digits", 4, 9),
-        ("pulse", "PULSE", "00:06", "pulse_2_10_1_5", 3, 15),
-    ):
+    for code, name, anchor_time, ruleset_code, pick, maximum in FAST_LOTTERY_FORMATS:
         await ensure_lottery(
             code,
             name,
