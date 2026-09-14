@@ -103,6 +103,8 @@ class MiniAppDashboard:
     lotteries: tuple[MiniAppLottery, ...]
     recent_results: tuple[MiniAppTicket, ...]
     monthly_total_payout: int
+    total_ticket_count: int
+    total_winning_ticket_count: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -593,6 +595,14 @@ class MiniAppQueryService:
             )
             or 0
         )
+        ticket_totals = (
+            await self._session.execute(
+                select(
+                    func.count(Ticket.id),
+                    func.count(Ticket.id).filter(Ticket.prize_amount > 0),
+                )
+            )
+        ).one()
         return MiniAppDashboard(
             server_time=timestamp,
             balance=balance,
@@ -600,6 +610,8 @@ class MiniAppQueryService:
             lotteries=tuple(lotteries),
             recent_results=recent_results,
             monthly_total_payout=monthly_total_payout,
+            total_ticket_count=int(ticket_totals[0]),
+            total_winning_ticket_count=int(ticket_totals[1]),
         )
 
     async def tickets(

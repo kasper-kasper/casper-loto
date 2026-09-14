@@ -113,6 +113,8 @@ class DashboardResponse(BaseModel):
     lotteries: list[LotteryResponse]
     recent_results: list[TicketResponse]
     monthly_total_payout: int
+    total_ticket_count: int
+    total_winning_ticket_count: int
 
 
 class NotificationPreferencesResponse(BaseModel):
@@ -354,6 +356,8 @@ def _dashboard_response(item: MiniAppDashboard) -> DashboardResponse:
         lotteries=[_lottery_response(value) for value in item.lotteries],
         recent_results=[_ticket_response(value) for value in item.recent_results],
         monthly_total_payout=item.monthly_total_payout,
+        total_ticket_count=item.total_ticket_count,
+        total_winning_ticket_count=item.total_winning_ticket_count,
     )
 
 

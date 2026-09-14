@@ -11,8 +11,13 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from k_loto.api.dependencies import get_current_miniapp_user, get_db_session
-from k_loto.api.routes.miniapp import PurchaseRequest, _live_response
+from k_loto.api.routes.miniapp import (
+    PurchaseRequest,
+    _dashboard_response,
+    _live_response,
+)
 from k_loto.application.miniapp import (
+    MiniAppDashboard,
     MiniAppLiveDraw,
     MiniAppLiveFeed,
     MiniAppLiveTicket,
@@ -112,6 +117,25 @@ def test_miniapp_routes_are_registered() -> None:
     assert "/api/v1/miniapp/lotteries/{lottery_code}/purchases" in paths
     assert "/api/v1/miniapp/dev/session" in paths
     assert "/api/v1/miniapp/dev/refill" in paths
+
+
+def test_dashboard_response_exposes_project_ticket_totals() -> None:
+    now = datetime(2026, 9, 15, 12, tzinfo=UTC)
+    response = _dashboard_response(
+        MiniAppDashboard(
+            server_time=now,
+            balance=500,
+            active_ticket_count=2,
+            lotteries=(),
+            recent_results=(),
+            monthly_total_payout=88_888,
+            total_ticket_count=18_432,
+            total_winning_ticket_count=1_208,
+        )
+    )
+
+    assert response.total_ticket_count == 18_432
+    assert response.total_winning_ticket_count == 1_208
 
 
 def test_bingo_inventory_accepts_three_repeated_number_parameters(

@@ -131,6 +131,8 @@ const dashboard: Dashboard = {
   ],
   recent_results: [],
   monthly_total_payout: 0,
+  total_ticket_count: 18_432,
+  total_winning_ticket_count: 1_208,
 };
 const account: Account = {
   display_name: "Test Player",
@@ -212,7 +214,7 @@ it("renders server-authoritative balance and lottery states", async () => {
   expect(screen.getByRole("button", { name: "Открыть Weekly 5/20" })).toBeEnabled();
 });
 
-it("keeps the home short and separates the catalog from Fast", async () => {
+it("turns the home into a daily poster while keeping Fast separate", async () => {
   const template = dashboard.lotteries[0];
   const showcaseDashboard: Dashboard = {
     ...dashboard,
@@ -231,6 +233,11 @@ it("keeps the home short and separates the catalog from Fast", async () => {
   render(<App initData="signed" />);
 
   await screen.findByRole("button", { name: "Лотереи" });
+  expect(screen.getByText("АФИША ДНЯ")).toBeInTheDocument();
+  expect(screen.getByText("ВЫ В ИГРЕ")).toBeInTheDocument();
+  expect(screen.getByText("12 билетов ждут тиража")).toBeInTheDocument();
+  expect(screen.getAllByText("18 432")).toHaveLength(2);
+  expect(screen.getAllByText("1 208")).toHaveLength(2);
   expect(screen.queryByLabelText("Витрина лотерей")).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Лотереи" }));
   const storefront = await screen.findByLabelText("Витрина лотерей");

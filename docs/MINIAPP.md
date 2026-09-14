@@ -26,8 +26,11 @@ Milestone 5 provides a mobile-first React/TypeScript/Vite client with:
 
 The v0.20.0 visual system uses layered navy surfaces, restrained blue and
 burgundy depth, and gold only for jackpots, money, wins and primary actions.
-The home screen has one selected lottery stage and a compact schedule switcher
-instead of a wall of product cards. PLL, PSS, KHAN and Weekly retain the same
+The home screen is a daily poster: one selected lottery stage, up to three next
+events, a personal «Вы в игре» card and a slow project-statistics ribbon. The
+ribbon reuses dashboard data and respects reduced-motion preferences. Kasper
+Fast remains isolated in its own section and is not promoted on the home page.
+PLL, PSS, KHAN and Weekly retain the same
 interaction model but have distinct night-violet, blue, burgundy and gold
 accents. Decorative lottery balls are intentionally not used. Functional
 number choices are rounded tiles.

@@ -52,6 +52,8 @@ export interface Dashboard {
   lotteries: Lottery[];
   recent_results: Ticket[];
   monthly_total_payout: number;
+  total_ticket_count: number;
+  total_winning_ticket_count: number;
 }
 
 export interface LiveTicket {
