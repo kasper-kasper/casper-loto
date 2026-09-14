@@ -43,15 +43,29 @@ function SignalPreview({ code }: { code: string }) {
   return <div className="fast-signal-preview" aria-hidden="true">{Array.from({ length: 15 }, (_, index) => <i className={active.includes(index) ? "active" : ""} key={index} />)}</div>;
 }
 
-function FastCard({ lottery, now, primary, onOpen }: { lottery: Lottery; now: number; primary: boolean; onOpen: () => void }) {
+function randomFastTicket(lottery: Lottery): number[] {
   const code = presentationCode(lottery);
+  return code === "code"
+    ? secureCode()
+    : code === "pulse"
+      ? [...randomCombination(10, 2), randomCombination(5, 1)[0] + 10]
+      : randomCombination(15, 3);
+}
+
+function FastCard({ lottery, now, primary, balance, purchasing, onOpen, onQuickBuy }: { lottery: Lottery; now: number; primary: boolean; balance: number; purchasing: boolean; onOpen: () => void; onQuickBuy: (combinations: number[][]) => void }) {
+  const code = presentationCode(lottery);
+  const remaining = Math.max(0, lottery.max_tickets_per_user_per_draw - lottery.player_ticket_count);
+  const affordable = lottery.ticket_price ? Math.floor(balance / lottery.ticket_price) : 0;
+  const quickLimit = Math.min(remaining, affordable, lottery.max_tickets_per_purchase);
   return <motion.article className={`fast-card fast-${code} ${primary ? "primary" : ""}`} initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: .34 }}>
     {code !== "code" && <img src={fastScene(code)} alt="" />}
     {code === "code" && <div className="code-card-scene" aria-hidden="true"><b>01001101</b><b>11010010</b><b>00110110</b><i /></div>}
     <div className="fast-card-sheen" aria-hidden="true" />
     <header><span><i /> БЫСТРАЯ ЛОТЕРЕЯ</span><small>{formatDrawLabel(lottery.code, lottery.draw_number ?? 0)}</small></header>
     <div className="fast-card-main"><div><h2>{lottery.name}</h2><p>{fastTagline(code)}</p><span>Следующий раунд через</span><strong>{countdown(lottery.scheduled_at, now)}</strong></div><SignalPreview code={code} /></div>
+    <div className="fast-card-jackpot"><span>ТЕКУЩИЙ ДЖЕКПОТ</span><strong>{formatCas(lottery.jackpot)}</strong></div>
     <div className="fast-card-bottom"><div><span>Стоимость</span><strong>{formatCas(lottery.ticket_price ?? 0)}</strong></div><button disabled={!lottery.purchase_available} onClick={onOpen} type="button"><Icon name="fast" />{lottery.purchase_available ? fastAction(code) : "Продажи закрыты"}<small>{lottery.scheduled_at ? formatMoscowTime(lottery.scheduled_at) : "—"}</small></button></div>
+    <div className="fast-card-quick"><span>КУПИТЬ СЛУЧАЙНЫЕ</span>{[1, 5, 10].map((quantity) => <button aria-label={`Купить ${quantity} случайных билетов ${lottery.name}`} disabled={purchasing || !lottery.purchase_available || quantity > quickLimit} key={quantity} onClick={() => onQuickBuy(Array.from({ length: quantity }, () => randomFastTicket(lottery)))} type="button">{quantity}</button>)}</div>
   </motion.article>;
 }
 
@@ -92,7 +106,7 @@ function FastLiveCard({ feed, now }: { feed: LiveFeed; now: number }) {
   </motion.article>;
 }
 
-export function FastView({ lotteries, feed, now, onOpen }: { lotteries: Lottery[]; feed: LiveFeed | null; now: number; onOpen: (code: string) => void }) {
+export function FastView({ lotteries, feed, now, balance = Number.MAX_SAFE_INTEGER, purchasing = false, onOpen, onQuickBuy = () => undefined }: { lotteries: Lottery[]; feed: LiveFeed | null; now: number; balance?: number; purchasing?: boolean; onOpen: (code: string) => void; onQuickBuy?: (code: string, combinations: number[][]) => void }) {
   const liveState = useMemo(() => fastLivePresentation(feed, now), [feed, now]);
   const liveCode = liveState?.draw?.lottery_code;
   const ordered = [...lotteries].sort((left, right) => {
@@ -102,7 +116,7 @@ export function FastView({ lotteries, feed, now, onOpen }: { lotteries: Lottery[
   });
   return <section className="fast-view">
     <header className="fast-heading"><div><span>Ритм Каспера</span><h1>Fast</h1></div><p>Новый раунд каждые 3 минуты.<br />Каждая лотерея возвращается через 9.</p></header>
-    {ordered.map((lottery, index) => <motion.div key={lottery.code} layout transition={{ layout: { duration: .42, ease: [0.2, 0.75, 0.25, 1] } }}><AnimatePresence mode="wait">{liveCode === lottery.code && feed ? <FastLiveCard feed={feed} key={`live-${lottery.code}`} now={now} /> : <FastCard lottery={lottery} now={now} primary={index === 0} onOpen={() => onOpen(lottery.code)} key={`card-${lottery.code}`} />}</AnimatePresence>{index === 0 && ordered.length > 1 && <div className="fast-divider"><span><b>{lottery.scheduled_at ? formatMoscowTime(lottery.scheduled_at) : "—"}</b>{lottery.name}</span><i><Icon name="fast" /></i><span><b>{ordered[1].scheduled_at ? formatMoscowTime(ordered[1].scheduled_at) : "—"}</b>{ordered[1].name}</span></div>}</motion.div>)}
+    {ordered.map((lottery, index) => <motion.div key={lottery.code} layout transition={{ layout: { duration: .42, ease: [0.2, 0.75, 0.25, 1] } }}><AnimatePresence mode="wait">{liveCode === lottery.code && feed ? <FastLiveCard feed={feed} key={`live-${lottery.code}`} now={now} /> : <FastCard lottery={lottery} now={now} primary={index === 0} balance={balance} purchasing={purchasing} onOpen={() => onOpen(lottery.code)} onQuickBuy={(combinations) => onQuickBuy(lottery.code, combinations)} key={`card-${lottery.code}`} />}</AnimatePresence>{index === 0 && ordered.length > 1 && <div className="fast-divider"><span><b>{lottery.scheduled_at ? formatMoscowTime(lottery.scheduled_at) : "—"}</b>{lottery.name}</span><i><Icon name="fast" /></i><span><b>{ordered[1].scheduled_at ? formatMoscowTime(ordered[1].scheduled_at) : "—"}</b>{ordered[1].name}</span></div>}</motion.div>)}
     {!ordered.length && <div className="fast-unavailable"><Icon name="fast" /><strong>Расписание Fast готовится</strong><p>Экран обновится автоматически.</p></div>}
   </section>;
 }
@@ -131,7 +145,7 @@ export function FastPicker({ lottery, purchasing, success, onClose, onBuy }: { l
     setSelected(codeMode ? secureCode() : pulse ? [...randomCombination(10, 2), randomCombination(5, 1)[0] + 10] : randomCombination(15, 3));
   };
   const complete = codeMode ? selected.length === 4 : pulse ? primarySelected.length === 2 && secondarySelected.length === 1 : selected.length === 3;
-  const primaryValues = codeMode ? Array.from({ length: 10 }, (_, index) => index) : Array.from({ length: primaryMax }, (_, index) => index + 1);
+  const primaryValues = codeMode ? [...Array.from({ length: 9 }, (_, index) => index + 1), 0] : Array.from({ length: primaryMax }, (_, index) => index + 1);
   return <div className={`fast-picker fast-${code}`}>
     {code !== "code" && <img className="fast-picker-scene" src={fastScene(code)} alt="" />}
     {codeMode && <div className="code-picker-scene" aria-hidden="true"><span>ACCESS</span><b>••••</b><i /></div>}

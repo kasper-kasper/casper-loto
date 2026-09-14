@@ -49,6 +49,19 @@ const completedShadow: LiveDraw = {
 };
 
 describe("Fast draw placement", () => {
+  it("shows the current jackpot and buys random tickets from the card", () => {
+    const onQuickBuy = vi.fn();
+    const entry = lottery("flash", "2026-09-04T08:40:00Z");
+    render(<FastView feed={null} lotteries={[entry]} now={drawTime} balance={20_000} onOpen={() => undefined} onQuickBuy={onQuickBuy} />);
+
+    expect(screen.getByText("1 000 000 CAS")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Купить 5 случайных билетов FLASH" }));
+    expect(onQuickBuy).toHaveBeenCalledWith("flash", expect.arrayContaining([
+      expect.arrayContaining([expect.any(Number), expect.any(Number), expect.any(Number)]),
+    ]));
+    expect(onQuickBuy.mock.calls[0][1]).toHaveLength(5);
+  });
+
   it("does not demote the round in the gap between settlement and broadcast", () => {
     const feed: LiveFeed = { server_time: new Date(drawTime).toISOString(), latest_completed: completedShadow, next_scheduled: null, recent_completed: [completedShadow] };
     const lotteries = [lottery("flash", "2026-09-04T08:40:00Z"), lottery("shadow", "2026-09-04T08:50:00Z")];
@@ -112,6 +125,19 @@ describe("PULSE picker", () => {
 });
 
 describe("CODE picker", () => {
+  it("uses the familiar phone keypad order", () => {
+    const { container } = render(
+      <FastPicker
+        lottery={{ ...lottery("shadow", "2026-09-04T08:33:00Z"), name: "CODE", ruleset_code: "code_4_digits", numbers_to_pick: 4, max_number: 9 }}
+        purchasing={false}
+        success={false}
+        onBuy={() => undefined}
+        onClose={() => undefined}
+      />,
+    );
+    expect(Array.from(container.querySelectorAll(".code-keypad button:not(.code-backspace)"), (button) => button.textContent)).toEqual(["01", "02", "03", "04", "05", "06", "07", "08", "09", "00"]);
+  });
+
   it("submits four ordered digits including zero and repeats", () => {
     const onBuy = vi.fn();
     render(

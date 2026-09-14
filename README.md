@@ -1,6 +1,6 @@
 # K-Loto
 
-Current release: **1.25.0 — Kasper Bingo: новая механика и касса**.
+Current release: **1.26.0 — Fast: быстрая покупка, джекпоты и общее автоучастие**.
 Backend/Mini App: **1.20.0**; Admin: **1.19.0**.
 
 K-Loto is a multi-user lottery platform with integer CAS accounting, an

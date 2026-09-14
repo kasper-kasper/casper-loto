@@ -44,7 +44,7 @@ uses the existing outbox only after explicit per-user consent and is limited to
 the player's own draw results and 24-hour inactivity reminders. The Mini App
 inbox stores wins and draw invitations independently; its event body is
 immutable and only `read_at` may change. Fast results are Mini-App-only for
-ordinary players. The owner's explicitly configured auto-play entries also
+ordinary players. Explicitly configured auto-play entries also
 queue one private Telegram result per draw; Fast jackpot news remains excluded.
 
 Auto-play is an application service invoked after scheduler recovery. It scans
@@ -71,7 +71,7 @@ offsets, its own draw/ticket counters and jackpot. They do not enter the ordinar
 broadcast screen or engagement reminders. A scoped SSE projection drives a
 short embedded Fast presentation only while the Fast section is open: 20 seconds
 of anticipation, the server-authored reveal sequence and a 12-second result.
-Owner auto-play uses the same idempotent service as every other lottery.
+Configured player auto-play uses the same idempotent service as every other lottery.
 
 The v0.14.0 transition preserves the final shared Daily draw and its purchased
 tickets. PSS and KHAN start independently at deployment. After the legacy draw

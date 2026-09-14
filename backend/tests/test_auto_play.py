@@ -7,6 +7,7 @@ from uuid import UUID
 from k_loto.application import auto_play as auto_play_module
 from k_loto.application.auto_play import AutoPlayCandidate, AutoPlayService
 from k_loto.domain.enums import LotteryKind, TicketSource
+from k_loto.infrastructure import scheduler as scheduler_module
 
 
 class FixedGenerator:
@@ -116,3 +117,63 @@ async def test_auto_play_uses_new_ruleset_key_after_format_refund(
 
     assert calls[0]["combinations"] == [[0, 0, 7, 3]]
     assert calls[0]["idempotency_key"].endswith(":code_4_digits")
+
+
+async def test_scheduler_runs_auto_play_without_owner_only_filter(
+    monkeypatch: Any,
+) -> None:
+    constructor_kwargs: list[dict[str, Any]] = []
+
+    class FakeHeartbeat:
+        last_failed_at = None
+        last_error = None
+        last_succeeded_at = None
+        settled_count = 0
+        prepared_count = 0
+
+    class FakeRuntimeSession(FakeSession):
+        def begin(self) -> "FakeRuntimeSession":
+            return self
+
+        async def execute(self, _query: object) -> None:
+            return None
+
+        async def get(self, _model: object, _key: object) -> FakeHeartbeat:
+            return FakeHeartbeat()
+
+    class FakeRecovery:
+        async def reconcile(self, *, now: datetime) -> Any:
+            return type(
+                "Report", (), {"settled_draw_ids": (), "prepared_draw_ids": ()}
+            )()
+
+    class FakeAutoPlay:
+        def __init__(self, _factory: object, **kwargs: Any) -> None:
+            constructor_kwargs.append(kwargs)
+
+        async def run(self, *, now: datetime) -> None:
+            return None
+
+    class FakeEngagement:
+        def __init__(self, _factory: object) -> None:
+            pass
+
+        async def run(self, *, now: datetime) -> None:
+            return None
+
+    class FakeMonitor:
+        async def run(self, *, now: datetime) -> None:
+            return None
+
+    monkeypatch.setattr(
+        scheduler_module, "session_factory", lambda: FakeRuntimeSession()
+    )
+    monkeypatch.setattr(scheduler_module, "AutoPlayService", FakeAutoPlay)
+    monkeypatch.setattr(scheduler_module, "PlayerEngagementService", FakeEngagement)
+    runtime = scheduler_module.SchedulerRuntime(10)
+    runtime._recovery = FakeRecovery()  # type: ignore[assignment]
+    runtime._monitor = FakeMonitor()  # type: ignore[assignment]
+
+    await runtime._run()
+
+    assert constructor_kwargs == [{}]
