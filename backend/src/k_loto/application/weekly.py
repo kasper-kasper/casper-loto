@@ -65,13 +65,19 @@ KASPER_FUND_ID = UUID("4b415350-4552-4655-4e44-000000000001")
 
 def draw_configuration_snapshot(lottery: Lottery, base_jackpot: int) -> dict[str, Any]:
     """Freeze every setting which can change the price or payout of a draw."""
-    return {
+    snapshot: dict[str, Any] = {
         "ruleset_code": lottery.ruleset_code,
         "ticket_price": lottery.ticket_price,
         "numbers_to_pick": lottery.numbers_to_pick,
         "max_number": lottery.max_number,
         "base_jackpot": base_jackpot,
     }
+    if lottery.code == "bingo":
+        from k_loto.domain.bingo import JACKPOT_MOVE, TOUR_MOVES
+
+        snapshot["bingo_tour_moves"] = list(TOUR_MOVES)
+        snapshot["bingo_jackpot_move"] = JACKPOT_MOVE
+    return snapshot
 
 
 def _snapshot_value(draw: Draw, key: str, fallback: Any) -> Any:
@@ -198,6 +204,8 @@ class WeeklyTicketPurchaseService:
         draw_count: int = 1,
         source: TicketSource = TicketSource.MANUAL,
         pool_ticket_ids: list[UUID] | None = None,
+        pool_required_numbers: tuple[int, ...] = (),
+        select_bingo_pool: bool = False,
         now: datetime | None = None,
     ) -> PurchaseResult:
         if not idempotency_key or len(idempotency_key) > 100:
@@ -399,12 +407,16 @@ class WeeklyTicketPurchaseService:
                     pool_query = pool_query.where(
                         BingoPoolTicket.id.in_(pool_ticket_ids)
                     )
-                elif source != TicketSource.AUTO_PLAY:
+                elif source != TicketSource.AUTO_PLAY and not select_bingo_pool:
                     raise InvalidTicket("Bingo requires preprinted ticket IDs.")
+                if pool_required_numbers:
+                    pool_query = pool_query.where(
+                        BingoPoolTicket.numbers.contains(list(pool_required_numbers))
+                    )
                 pool_entries = list(
                     (
                         await self._session.scalars(
-                            pool_query.order_by(BingoPoolTicket.public_number)
+                            pool_query.order_by(BingoPoolTicket.pool_position)
                             .limit(len(combinations))
                             .with_for_update()
                         )
@@ -445,11 +457,7 @@ class WeeklyTicketPurchaseService:
                     self._session.add(
                         Ticket(
                             id=ticket_id,
-                            public_number=(
-                                pool_entries[offset].public_number
-                                if pool_entries
-                                else first_number + offset
-                            ),
+                            public_number=first_number + offset,
                             lottery_id=lottery.id,
                             draw_id=target_draw.id,
                             user_id=user_id,
@@ -464,9 +472,8 @@ class WeeklyTicketPurchaseService:
                     offset += 1
                 target_draw.ticket_count += len(combinations)
                 target_draw.total_sales += len(combinations) * ticket_price
-            if not pool_entries:
-                lottery.next_ticket_number += len(ticket_ids)
-            else:
+            lottery.next_ticket_number += len(ticket_ids)
+            if pool_entries:
                 # Persist tickets before setting the inventory foreign keys.
                 # The lottery/pool locks remain held until the whole purchase commits.
                 await self._session.flush()

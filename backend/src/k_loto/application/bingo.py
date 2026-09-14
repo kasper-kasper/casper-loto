@@ -1,23 +1,30 @@
 """Bingo inventory and a public feed which never exposes future balls."""
 
+import secrets
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from k_loto.domain.bingo import (
     DRAW_MOVES,
     JACKPOT_MOVE,
+    KASPER_SET_INVENTORY,
+    KASPER_SET_NUMBERS,
+    KASPER_SET_SIZE,
     POOL_SIZE,
+    TOUR_MOVES,
     TOUR_PRIZES,
     closing_moves,
     generate_ticket,
 )
 from k_loto.domain.enums import DrawStatus
-from k_loto.domain.errors import NoAvailableDraw
+from k_loto.domain.errors import InvalidTicket, NoAvailableDraw
 from k_loto.infrastructure.database.models import BingoPoolTicket, Draw, Lottery, Ticket
+
+_STAGE_CACHE: dict[tuple[UUID, int], list[dict[str, int | None]]] = {}
 
 
 async def ensure_pool(session: AsyncSession, lottery: Lottery, draw: Draw) -> None:
@@ -30,8 +37,18 @@ async def ensure_pool(session: AsyncSession, lottery: Lottery, draw: Draw) -> No
     await session.flush()
     seen: set[tuple[int, ...]] = set()
     entries: list[BingoPoolTicket] = []
+    random = secrets.SystemRandom()
     while len(entries) < POOL_SIZE:
-        numbers = generate_ticket()
+        if len(entries) >= POOL_SIZE - KASPER_SET_INVENTORY:
+            remainder = random.sample(
+                [n for n in range(1, 61) if n not in KASPER_SET_NUMBERS], 8
+            )
+            shuffled = random.sample((*KASPER_SET_NUMBERS, *remainder), 12)
+            numbers = tuple(
+                n for i in range(0, 12, 4) for n in sorted(shuffled[i : i + 4])
+            )
+        else:
+            numbers = generate_ticket()
         identity = tuple(sorted(numbers))
         if identity in seen:
             continue
@@ -40,11 +57,10 @@ async def ensure_pool(session: AsyncSession, lottery: Lottery, draw: Draw) -> No
             BingoPoolTicket(
                 id=uuid4(),
                 draw_id=draw.id,
-                public_number=lottery.next_ticket_number + len(entries),
+                pool_position=len(entries) + 1,
                 numbers=list(numbers),
             )
         )
-    lottery.next_ticket_number += POOL_SIZE
     session.add_all(entries)
     await session.flush()
 
@@ -53,7 +69,20 @@ class BingoQueryService:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def inventory(self, *, offset: int = 0) -> dict[str, Any]:
+    async def inventory(
+        self, *, offset: int = 0, required_numbers: tuple[int, ...] = ()
+    ) -> dict[str, Any]:
+        if (
+            len(required_numbers) > 5
+            or len(set(required_numbers)) != len(required_numbers)
+            or any(
+                type(number) is not int or not 1 <= number <= 60
+                for number in required_numbers
+            )
+        ):
+            raise InvalidTicket(
+                "Choose up to five distinct Bingo numbers from 1 to 60."
+            )
         now = datetime.now(UTC)
         async with self.session.begin():
             lottery = await self.session.scalar(
@@ -76,19 +105,32 @@ class BingoQueryService:
             if draw is None:
                 raise NoAvailableDraw("Bingo sales are closed.")
             await ensure_pool(self.session, lottery, draw)
+            query = select(BingoPoolTicket).where(
+                BingoPoolTicket.draw_id == draw.id,
+                BingoPoolTicket.ticket_id.is_(None),
+            )
+            if required_numbers:
+                query = query.where(
+                    BingoPoolTicket.numbers.contains(list(required_numbers))
+                )
             entries = list(
                 (
                     await self.session.scalars(
-                        select(BingoPoolTicket)
-                        .where(
-                            BingoPoolTicket.draw_id == draw.id,
-                            BingoPoolTicket.ticket_id.is_(None),
-                        )
-                        .order_by(BingoPoolTicket.public_number)
+                        query.order_by(BingoPoolTicket.pool_position)
                         .offset(offset)
                         .limit(7)
                     )
                 ).all()
+            )
+            kasper_set_available = int(
+                await self.session.scalar(
+                    select(func.count(BingoPoolTicket.id)).where(
+                        BingoPoolTicket.draw_id == draw.id,
+                        BingoPoolTicket.ticket_id.is_(None),
+                        BingoPoolTicket.numbers.contains(list(KASPER_SET_NUMBERS)),
+                    )
+                )
+                or 0
             )
             return {
                 "draw_id": str(draw.id),
@@ -96,10 +138,11 @@ class BingoQueryService:
                 "scheduled_at": draw.scheduled_at.isoformat(),
                 "price": draw.configuration_snapshot["ticket_price"],
                 "has_more": len(entries) > 6,
+                "kasper_set_available": kasper_set_available >= KASPER_SET_SIZE,
                 "tickets": [
                     {
                         "id": str(t.id),
-                        "public_number": t.public_number,
+                        "pool_position": t.pool_position,
                         "numbers": t.numbers,
                     }
                     for t in entries[:6]
@@ -118,6 +161,7 @@ class BingoQueryService:
         rules = {
             "total_moves": DRAW_MOVES,
             "jackpot_move": JACKPOT_MOVE,
+            "tour_moves": list(TOUR_MOVES),
             "tour_prizes": list(TOUR_PRIZES),
             "pool_size": POOL_SIZE,
         }
@@ -133,26 +177,35 @@ class BingoQueryService:
         complete = draw.status == DrawStatus.COMPLETED
         if complete:
             count = len(sequence)
-        all_tickets = list(
-            (
-                await self.session.scalars(
-                    select(Ticket).where(Ticket.draw_id == draw.id)
-                )
-            ).all()
-        )
-        moves = [closing_moves(tuple(t.numbers), tuple(sequence)) for t in all_tickets]
-        stages = []
-        for category in range(3):
-            first = min((m[category] for m in moves), default=61)
-            reached = first <= count and (category != 2 or first <= JACKPOT_MOVE)
-            stages.append(
-                {
-                    "move": first if reached else None,
-                    "winners": sum(m[category] == first for m in moves)
-                    if reached
-                    else 0,
-                }
+        cache_key = (draw.id, count)
+        stages = _STAGE_CACHE.get(cache_key)
+        if stages is None:
+            all_tickets = list(
+                (
+                    await self.session.scalars(
+                        select(Ticket).where(Ticket.draw_id == draw.id)
+                    )
+                ).all()
             )
+            moves = [
+                closing_moves(tuple(ticket.numbers), tuple(sequence))
+                for ticket in all_tickets
+            ]
+            stages = []
+            for category, cutoff in enumerate((*TOUR_MOVES, JACKPOT_MOVE)):
+                reached = count >= cutoff
+                stages.append(
+                    {
+                        "move": cutoff if reached else None,
+                        "winners": (
+                            sum(move[category] <= cutoff for move in moves)
+                            if reached
+                            else 0
+                        ),
+                    }
+                )
+            _STAGE_CACHE.clear()
+            _STAGE_CACHE[cache_key] = stages
         tickets = list(
             (
                 await self.session.scalars(

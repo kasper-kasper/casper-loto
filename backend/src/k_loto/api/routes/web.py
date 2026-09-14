@@ -338,8 +338,14 @@ async def bingo_inventory(
     _player: Annotated[CurrentWebPlayer, Depends(current_web_player)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
     offset: Annotated[int, Query(ge=0, le=2000)] = 0,
+    number: Annotated[list[int] | None, Query(ge=1, le=60)] = None,
 ) -> dict[str, object]:
-    return await BingoQueryService(session).inventory(offset=offset)
+    try:
+        return await BingoQueryService(session).inventory(
+            offset=offset, required_numbers=tuple(number or ())
+        )
+    except InvalidTicket as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
 
 
 def _purchase_response(result: PurchaseResult) -> PurchaseResponse:
@@ -413,13 +419,26 @@ async def purchase_bingo(
     player: Annotated[CurrentWebPlayer, Depends(web_player_with_csrf)],
     session: Annotated[AsyncSession, Depends(get_db_session, use_cache=False)],
 ) -> PurchaseResponse:
+    if bool(payload.ticket_ids) == (payload.quantity is not None):
+        raise HTTPException(
+            status_code=422, detail="Choose ticket IDs or a quick-purchase quantity."
+        )
+    if len(set(payload.required_numbers)) != len(payload.required_numbers) or any(
+        not 1 <= number <= 60 for number in payload.required_numbers
+    ):
+        raise HTTPException(
+            status_code=422, detail="Choose distinct numbers from 1 to 60."
+        )
+    quantity = len(payload.ticket_ids) or payload.quantity or 0
     try:
         result = await LotteryTicketPurchaseService(
             session, "bingo", target_draw_id=payload.draw_id
         ).purchase(
             user_id=player.user_id,
-            combinations=[[] for _ in payload.ticket_ids],
-            pool_ticket_ids=payload.ticket_ids,
+            combinations=[[] for _ in range(quantity)],
+            pool_ticket_ids=payload.ticket_ids or None,
+            pool_required_numbers=tuple(payload.required_numbers),
+            select_bingo_pool=not payload.ticket_ids,
             idempotency_key=hashlib.sha256(
                 f"bingo:{player.user_id}:{payload.idempotency_key}".encode()
             ).hexdigest(),

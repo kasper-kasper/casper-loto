@@ -84,6 +84,9 @@ class FakeSession:
     def add_all(self, values: Iterable[Any]) -> None:
         self.added.extend(values)
 
+    async def flush(self) -> None:
+        return None
+
 
 class FixedGenerator:
     def __init__(self) -> None:

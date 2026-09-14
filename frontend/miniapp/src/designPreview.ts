@@ -49,8 +49,15 @@ export function installDesignPreview(): void {
     const url = new URL(raw, window.location.origin);
     const path = url.pathname;
     if (!path.startsWith("/api/v1/miniapp/")) return nativeFetch(input, init);
-    if (path.includes("/bingo/inventory")) return json({ draw_id: "preview-bingo", draw_number: 1, scheduled_at: future(180), price: 50000, has_more: true, tickets: Array.from({ length: 6 }, (_, i) => ({ id: `bingo-${i}`, public_number: i + 1, numbers: [2, 14, 27, 41, 8, 22, 36, 52, 11, 25, 43, 59].map(n => (n + i - 1) % 60 + 1) })) });
-    if (path.includes("/bingo/live")) return json({ server_time: nowIso(), rules: { total_moves: 58, jackpot_move: 28, tour_prizes: [100000, 500000], pool_size: 2000 }, draw: null });
+    if (path.includes("/bingo/inventory")) return json({ draw_id: "preview-bingo", draw_number: 1, scheduled_at: future(180), price: 50000, has_more: true, kasper_set_available: true, tickets: Array.from({ length: 6 }, (_, i) => ({ id: `bingo-${i}`, pool_position: i + 1, numbers: [2, 14, 27, 41, 8, 22, 36, 52, 11, 25, 43, 59].map(n => (n + i - 1) % 60 + 1) })) });
+    if (path.includes("/bingo/live")) return json({ server_time: nowIso(), rules: { total_moves: 58, jackpot_move: 28, tour_moves: [18, 34], tour_prizes: [100000, 500000], pool_size: 2000 }, draw: null });
+    if (path.endsWith("/bingo/purchases") && init?.method === "POST") {
+      const body = JSON.parse(String(init.body)) as { ticket_ids: string[]; quantity?: number };
+      const quantity = body.ticket_ids.length || body.quantity || 0;
+      const totalCost = 50_000 * quantity;
+      balance -= totalCost;
+      return json({ operation_id: crypto.randomUUID(), draw_id: "preview-bingo", draw_ids: ["preview-bingo"], draw_count: 1, ticket_ids: Array.from({ length: quantity }, () => crypto.randomUUID()), total_cost: totalCost, balance_after: balance, already_processed: false });
+    }
     if (path.endsWith("/dev/session")) return json({ mode: "design-preview" });
     if (path.endsWith("/dev/refill")) { balance = 100_000_000_000; return json({ balance }); }
     if (path.endsWith("/highlights")) return json({ last_jackpot: null, next_event: null });

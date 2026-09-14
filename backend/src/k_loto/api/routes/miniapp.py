@@ -215,7 +215,9 @@ class PurchaseRequest(BaseModel):
 
 class BingoPurchaseRequest(BaseModel):
     draw_id: UUID
-    ticket_ids: list[UUID] = Field(min_length=1, max_length=50)
+    ticket_ids: list[UUID] = Field(default_factory=list, max_length=50)
+    quantity: int | None = Field(default=None, ge=1, le=50)
+    required_numbers: list[int] = Field(default_factory=list, max_length=5)
     idempotency_key: str = Field(min_length=1, max_length=100)
 
 
@@ -807,11 +809,16 @@ async def bingo_inventory(
     user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
     offset: Annotated[int, Query(ge=0, le=2000)] = 0,
+    number: Annotated[list[int] | None, Query(ge=1, le=60)] = None,
 ) -> dict[str, Any]:
     from k_loto.application.bingo import BingoQueryService
 
     try:
-        return await BingoQueryService(session).inventory(offset=offset)
+        return await BingoQueryService(session).inventory(
+            offset=offset, required_numbers=tuple(number or ())
+        )
+    except InvalidTicket as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
     except NoAvailableDraw as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
 
@@ -832,6 +839,17 @@ async def bingo_purchase(
     user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> PurchaseResponse:
+    if bool(payload.ticket_ids) == (payload.quantity is not None):
+        raise HTTPException(
+            status_code=422, detail="Choose ticket IDs or a quick-purchase quantity."
+        )
+    if len(set(payload.required_numbers)) != len(payload.required_numbers) or any(
+        not 1 <= number <= 60 for number in payload.required_numbers
+    ):
+        raise HTTPException(
+            status_code=422, detail="Choose distinct numbers from 1 to 60."
+        )
+    quantity = len(payload.ticket_ids) or payload.quantity or 0
     try:
         result = await LotteryTicketPurchaseService(
             session,
@@ -839,8 +857,10 @@ async def bingo_purchase(
             target_draw_id=payload.draw_id,
         ).purchase(
             user_id=user.id,
-            combinations=[[] for _ in payload.ticket_ids],
-            pool_ticket_ids=payload.ticket_ids,
+            combinations=[[] for _ in range(quantity)],
+            pool_ticket_ids=payload.ticket_ids or None,
+            pool_required_numbers=tuple(payload.required_numbers),
+            select_bingo_pool=not payload.ticket_ids,
             idempotency_key=hashlib.sha256(
                 f"bingo:{user.id}:{payload.idempotency_key}".encode()
             ).hexdigest(),

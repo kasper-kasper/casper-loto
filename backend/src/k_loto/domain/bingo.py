@@ -11,6 +11,10 @@ POOL_SIZE = 2000
 DRAW_MOVES = 58
 JACKPOT_MOVE = 28
 TOUR_PRIZES = (100_000, 500_000)
+TOUR_MOVES = (18, 34)
+KASPER_SET_NUMBERS = (2, 9, 16, 28)
+KASPER_SET_SIZE = 10
+KASPER_SET_INVENTORY = 100
 
 
 def validate_ticket(numbers: tuple[int, ...] | list[int]) -> tuple[int, ...]:
@@ -64,12 +68,14 @@ def outcomes(
         raise InvalidTicket("Bingo draw must be an ordered permutation of 1–60.")
     moves = {tid: closing_moves(numbers, sequence) for tid, _, numbers in tickets}
     amounts = {tid: [0, 0, 0] for tid, _, _ in tickets}
-    for category, pool in enumerate((*TOUR_PRIZES, jackpot)):
-        first = min((m[category] for m in moves.values()), default=61)
-        if first > DRAW_MOVES or (category == 2 and first > JACKPOT_MOVE):
-            continue
+    cutoffs = (*TOUR_MOVES, JACKPOT_MOVE)
+    for category, (pool, cutoff) in enumerate(
+        zip((*TOUR_PRIZES, jackpot), cutoffs, strict=True)
+    ):
         winners = sorted(
-            (serial, tid) for tid, serial, _ in tickets if moves[tid][category] == first
+            (serial, tid)
+            for tid, serial, _ in tickets
+            if moves[tid][category] <= cutoff
         )
         if not winners:
             continue

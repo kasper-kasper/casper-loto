@@ -2,21 +2,28 @@
 
 from datetime import UTC, datetime, timedelta
 from typing import cast
+from unittest.mock import AsyncMock
 from uuid import UUID
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from k_loto.application.weekly import LotterySettlementService
+from k_loto.application.weekly import (
+    LotterySettlementService,
+    LotteryTicketPurchaseService,
+)
 from k_loto.domain.bingo import closing_moves, generate_sequence, outcomes
-from k_loto.domain.enums import DrawStatus
+from k_loto.domain.enums import DrawStatus, LotteryKind
 from k_loto.domain.errors import InsufficientReserve
 from k_loto.domain.lottery_rules import BINGO_RULES, SettlementTicket
 from k_loto.infrastructure.database.models import (
+    Balance,
+    BingoPoolTicket,
     Draw,
     JackpotAccount,
     KasperFundAccount,
     Lottery,
+    Ticket,
 )
 from test_weekly_application import FakeSession
 
@@ -54,15 +61,15 @@ def test_simultaneous_winners_split_each_pool_without_losing_cas() -> None:
     assert outcomes([], tuple(range(1, 59)), 100) == {}
 
 
-def test_row_layout_is_immutable_and_later_closure_does_not_win() -> None:
+def test_row_layout_is_immutable_and_every_ticket_inside_cutoff_shares() -> None:
     first = (1, 2, 3, 4, 10, 11, 12, 13, 20, 21, 22, 23)
     second = (1, 10, 20, 2, 3, 11, 21, 4, 12, 13, 22, 23)
     assert BINGO_RULES.validate_combination(second) == second
     result = outcomes(
         [(UUID(int=1), 1, first), (UUID(int=2), 2, second)], tuple(range(1, 59)), 100
     )
-    assert result[UUID(int=1)].amounts[:2] == (100_000, 500_000)
-    assert result[UUID(int=2)].amounts[:2] == (0, 0)
+    assert result[UUID(int=1)].amounts[:2] == (100_000, 250_000)
+    assert result[UUID(int=2)].amounts[:2] == (0, 250_000)
     sequence = generate_sequence()
     assert len(sequence) == len(set(sequence)) == 58
     assert set(sequence) <= set(range(1, 61))
@@ -88,6 +95,88 @@ def test_settlement_funds_prizes_and_reset_and_keeps_unwon_jackpot() -> None:
         BINGO_RULES.calculate_settlement(
             [ticket], tuple(range(1, 59)), **{**params, "reserve_balance": 100}
         )
+
+
+async def test_quick_purchase_numbers_only_sold_tickets(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    now = datetime(2026, 9, 14, 12, tzinfo=UTC)
+    lottery = Lottery(
+        id=UUID(int=10),
+        code="bingo",
+        name="Kasper Bingo",
+        kind=LotteryKind.DAILY,
+        ruleset_code="bingo_12_60",
+        numbers_to_pick=12,
+        max_number=60,
+        ticket_price=50_000,
+        timezone="Europe/Moscow",
+        schedule={},
+        sales_cutoff_minutes=2,
+        max_tickets_per_purchase=50,
+        max_tickets_per_user_per_draw=50,
+        is_active=True,
+        next_draw_number=2,
+        next_ticket_number=101,
+    )
+    draw = Draw(
+        id=UUID(int=20),
+        lottery_id=lottery.id,
+        public_number=1,
+        status=DrawStatus.SCHEDULED,
+        scheduled_at=now + timedelta(hours=1),
+        sales_close_at=now + timedelta(minutes=58),
+        ticket_count=0,
+        total_sales=0,
+        total_payout=0,
+        reserve_used=0,
+        configuration_snapshot={"ticket_price": 50_000},
+    )
+    combinations = [
+        [2, 9, 16, 28, 3, 4, 5, 6, 7, 8, 10, 11],
+        [2, 9, 16, 28, 12, 13, 14, 15, 17, 18, 19, 20],
+    ]
+    pool = [
+        BingoPoolTicket(
+            id=UUID(int=30 + index),
+            draw_id=draw.id,
+            pool_position=1991 + index,
+            numbers=numbers,
+        )
+        for index, numbers in enumerate(combinations)
+    ]
+    user_id = UUID(int=40)
+    balance = Balance(user_id=user_id, amount=200_000, version=1)
+    jackpot = JackpotAccount(
+        id=UUID(int=50),
+        lottery_id=lottery.id,
+        balance=10_000_000_000,
+        base_amount=10_000_000_000,
+        version=1,
+    )
+    session = FakeSession(
+        scalar_values=[None, lottery, jackpot, None, draw, 0, balance],
+        scalar_collections=[pool],
+    )
+    monkeypatch.setattr("k_loto.application.bingo.ensure_pool", AsyncMock())
+
+    result = await LotteryTicketPurchaseService(
+        cast(AsyncSession, session), "bingo", target_draw_id=draw.id
+    ).purchase(
+        user_id=user_id,
+        combinations=[[], []],
+        idempotency_key="quick-two",
+        pool_required_numbers=(2, 9, 16, 28),
+        select_bingo_pool=True,
+        now=now,
+    )
+
+    tickets = [item for item in session.added if isinstance(item, Ticket)]
+    assert [ticket.public_number for ticket in tickets] == [101, 102]
+    assert [ticket.numbers for ticket in tickets] == combinations
+    assert lottery.next_ticket_number == 103
+    assert all(entry.ticket_id for entry in pool)
+    assert result.total_cost == 100_000
 
 
 async def test_draw_starts_once_and_restart_preserves_sequence() -> None:

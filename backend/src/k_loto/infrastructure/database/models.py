@@ -298,7 +298,8 @@ class BingoPoolTicket(Base):
 
     __tablename__ = "bingo_pool_tickets"
     __table_args__ = (
-        UniqueConstraint("draw_id", "public_number", name="uq_bingo_pool_serial"),
+        UniqueConstraint("draw_id", "pool_position", name="uq_bingo_pool_position"),
+        CheckConstraint("pool_position >= 1", name="bingo_pool_position_positive"),
         CheckConstraint("cardinality(numbers) = 12", name="bingo_twelve_numbers"),
         Index("ix_bingo_pool_free", "draw_id", "ticket_id"),
     )
@@ -306,7 +307,7 @@ class BingoPoolTicket(Base):
     draw_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True), ForeignKey("draws.id", ondelete="RESTRICT")
     )
-    public_number: Mapped[int] = mapped_column(BigInteger, unique=True)
+    pool_position: Mapped[int] = mapped_column(BigInteger)
     numbers: Mapped[list[int]] = mapped_column(ARRAY(Integer))
     ticket_id: Mapped[UUID | None] = mapped_column(
         PGUUID(as_uuid=True), ForeignKey("tickets.id", ondelete="RESTRICT"), unique=True

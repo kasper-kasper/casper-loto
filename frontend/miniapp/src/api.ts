@@ -39,9 +39,13 @@ async function request<T>(path: string, initData: string, init?: RequestInit): P
 
 export const miniAppApi = {
   highlights: (initData: string, scope: "standard" | "fast" = "standard") => request<Highlights>(`/api/v1/miniapp/highlights?scope=${scope}`, initData),
-  bingoInventory: (initData: string, offset = 0) => request<BingoInventory>(`/api/v1/miniapp/bingo/inventory?offset=${offset}`, initData),
+  bingoInventory: (initData: string, offset = 0, numbers: number[] = []) => {
+    const query = new URLSearchParams({ offset: String(offset) });
+    numbers.forEach(number => query.append("number", String(number)));
+    return request<BingoInventory>(`/api/v1/miniapp/bingo/inventory?${query}`, initData);
+  },
   bingoLive: (initData: string) => request<BingoFeed>("/api/v1/miniapp/bingo/live", initData),
-  bingoPurchase: (initData: string, drawId: string, ticketIds: string[], key: string) => request<PurchaseResult>("/api/v1/miniapp/bingo/purchases", initData, { method: "POST", body: JSON.stringify({ draw_id: drawId, ticket_ids: ticketIds, idempotency_key: key }) }),
+  bingoPurchase: (initData: string, drawId: string, selection: { ticketIds?: string[]; quantity?: number; requiredNumbers?: number[] }, key: string) => request<PurchaseResult>("/api/v1/miniapp/bingo/purchases", initData, { method: "POST", body: JSON.stringify({ draw_id: drawId, ticket_ids: selection.ticketIds ?? [], quantity: selection.quantity, required_numbers: selection.requiredNumbers ?? [], idempotency_key: key }) }),
   devSession: () =>
     request<{ mode: "local-development" }>(
       "/api/v1/miniapp/dev/session",
