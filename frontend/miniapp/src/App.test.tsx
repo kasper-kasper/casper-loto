@@ -367,8 +367,28 @@ it("selects five numbers, adds a ticket and buys the cart atomically", async () 
   );
   expect(await screen.findByText("1 билет куплен · списано 100 CAS")).toBeInTheDocument();
   expect(screen.queryByRole("dialog", { name: /покупк/i })).not.toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Билеты уже в игре" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Купить ещё" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Мои билеты" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "На главную" }));
   expect(await screen.findByRole("heading", { name: "Сегодня может повезти." })).toBeInTheDocument();
   expect(document.querySelector(".number-grid")).toBeNull();
+});
+
+it("keeps a confirmed purchase successful when the following refresh fails", async () => {
+  render(<App initData="signed" />);
+  await openWeeklyFromStorefront();
+  await waitFor(() => expect(document.querySelector(".number-grid")).not.toBeNull());
+  fireEvent.click(screen.getByRole("button", { name: "Быстрый случайный выбор" }));
+  expect(screen.getByRole("button", { name: "Купить билет" })).toBeEnabled();
+  vi.mocked(miniAppApi.dashboard).mockRejectedValue(new Error("refresh unavailable"));
+  vi.mocked(miniAppApi.account).mockRejectedValue(new Error("refresh unavailable"));
+  fireEvent.click(screen.getByRole("button", { name: "Купить билет" }));
+
+  expect(await screen.findByText("4 900 CAS")).toBeInTheDocument();
+  expect(screen.getByText("Ваших билетов: 3")).toBeInTheDocument();
+  expect(screen.queryByText("Покупка не выполнена.")).not.toBeInTheDocument();
+  await waitFor(() => expect(screen.getByRole("button", { name: "Купить билет" })).toBeDisabled());
 });
 
 it("keeps Kasper Grand main and special number fields independent", async () => {

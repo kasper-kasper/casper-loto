@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, miniAppApi } from "./api";
 import { countdown, formatCas, formatMoscow } from "./format";
-import type { Lottery, Ticket } from "./types";
+import type { Lottery, PurchaseResult, Ticket } from "./types";
 import "./bingo.css";
 
 export interface BingoResult { moves: number[]; amounts: number[] }
@@ -54,7 +54,7 @@ function PaperDialog({ children, onClose }: { children: React.ReactNode; onClose
   return <div className="bingo-dialog-backdrop" role="presentation" onClick={onClose}><section className="bingo-dialog" role="dialog" aria-modal="true" aria-label="Билет Kasper Bingo" onClick={e => e.stopPropagation()}><button ref={ref} type="button" className="bingo-dialog-close" onClick={onClose} aria-label="Закрыть билет">×</button>{children}</section></div>;
 }
 
-export function BingoView({ lottery, initData, now, balance, onClose, onPurchased, initialTab = "choose" }: { initialTab?: "choose" | "live"; lottery: Lottery; initData: string; now: number; balance: number; onClose: () => void; onPurchased: () => Promise<unknown> }) {
+export function BingoView({ lottery, initData, now, balance, onClose, onPurchased, initialTab = "choose" }: { initialTab?: "choose" | "live"; lottery: Lottery; initData: string; now: number; balance: number; onClose: () => void; onPurchased: (result: PurchaseResult) => void }) {
   const [tab, setTab] = useState<"choose" | "live" | "mine">(initialTab);
   const [inventory, setInventory] = useState<BingoInventory | null>(null);
   const [selected, setSelected] = useState<PrintedTicket[]>([]);
@@ -130,8 +130,10 @@ export function BingoView({ lottery, initData, now, balance, onClose, onPurchase
       const result = await miniAppApi.bingoPurchase(initData, pending.current.draw, pending.current.selection, pending.current.key);
       pending.current = null; setRetry(false); setRetrySelection(null); setSelected([]);
       setNotice(`Куплено: ${result.ticket_ids.length} · ${formatCas(result.total_cost)}`);
-      await onPurchased(); await refreshMine(); setTab("mine");
-      setInventory(await miniAppApi.bingoInventory(initData, 0, favoriteNumbers)); setOffset(0);
+      onPurchased(result);
+      void Promise.allSettled([refreshMine(), miniAppApi.bingoInventory(initData, 0, favoriteNumbers)]).then(([, inventoryRefresh]) => {
+        if (inventoryRefresh.status === "fulfilled") { setInventory(inventoryRefresh.value); setOffset(0); }
+      });
     } catch (reason) {
       if (reason instanceof ApiError && reason.status >= 400 && reason.status < 500) {
         pending.current = null; setRetry(false); setRetrySelection(null);
@@ -158,7 +160,7 @@ export function BingoView({ lottery, initData, now, balance, onClose, onPurchase
     <div className="bingo-prizes"><div><small>СТРОКА · ДО {rules?.tour_moves[0] ?? 18}</small><strong>{rules ? formatCas(rules.tour_prizes[0]) : "…"}</strong></div><div><small>ДВЕ · ДО {rules?.tour_moves[1] ?? 34}</small><strong>{rules ? formatCas(rules.tour_prizes[1]) : "…"}</strong></div><div><small>ПОЛНЫЙ · ДО {rules?.jackpot_move ?? 28}</small><strong>Джекпот</strong></div></div></>}
     <nav className="bingo-tabs" aria-label="Kasper Bingo"><button type="button" aria-pressed={tab === "choose"} onClick={() => setTab("choose")}>Выбрать билеты</button><button type="button" aria-pressed={tab === "mine"} onClick={() => setTab("mine")}>Мои · {mine.length}</button><button type="button" aria-pressed={tab === "live"} onClick={() => setTab("live")}>{live && !live.complete ? "● " : ""}Эфир</button></nav>
     {error && <div className="bingo-message is-error" role="alert"><span>{error}</span>{retry && retrySelection && <button type="button" onClick={() => void purchase(retrySelection)}>Проверить покупку</button>}<button type="button" onClick={() => setError("")} aria-label="Закрыть сообщение">×</button></div>}
-    {notice && <div className="bingo-message" role="status">{notice}</div>}
+    {notice && <div className="bingo-message" role="status"><span>{notice}</span><button type="button" onClick={() => { setNotice(""); setTab("mine"); }}>Мои билеты →</button></div>}
     {tab === "choose" && <section className="bingo-selection">
       <div className="bingo-section-title"><span className="bingo-eyebrow">БИЛЕТНАЯ КАССА</span><h2>Как играет удача?</h2><p>Мгновенно, по любимым числам или с личным выбором.</p></div>
       <div className="bingo-buy-studio">

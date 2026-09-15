@@ -26,6 +26,8 @@ test("selecting the 50th ticket blocks another selection and purchases its pool 
   fireEvent.click(screen.getByRole("button", { name: "Купить билеты ↗" }));
   await waitFor(() => expect(miniAppApi.bingoPurchase).toHaveBeenCalledWith("auth", "draw", { ticketIds: ["pool-1"] }, expect.any(String)));
   expect(await screen.findByText("Куплено: 1 · 50 000 CAS")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Как играет удача?" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Мои билеты →" })).toBeInTheDocument();
 });
 
 test("uncertain purchase retry reuses the same operation key", async () => {
