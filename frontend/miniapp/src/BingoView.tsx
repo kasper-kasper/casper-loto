@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, miniAppApi } from "./api";
+import { Money } from "./components";
 import { countdown, formatCas, formatMoscow } from "./format";
 import type { Lottery, PurchaseResult, Ticket } from "./types";
 import "./bingo.css";
@@ -17,7 +18,7 @@ export function BingoInvitation({ lottery, now, onOpen }: { lottery: Lottery; no
   return <button className="bingo-invitation" type="button" onClick={onOpen}>
     <span className="bingo-invite-top"><span>КАЖДЫЙ ВЕЧЕР · 22:00 МСК</span><span>ДЖЕКПОТ ВЕЧЕРА</span></span>
     <span className="bingo-invite-main"><span><strong>Kasper <em>Bingo</em></strong><small>Ваш вечерний ритуал</small></span><BingoMark /></span>
-    <span className="bingo-invite-bottom"><span><small>ДЖЕКПОТ</small><b>{formatCas(lottery.jackpot)}</b></span><span className="bingo-arrow">↗</span></span>
+    <span className="bingo-invite-bottom"><span><small>ДЖЕКПОТ</small><b><Money value={lottery.jackpot} compact /></b></span><span className="bingo-arrow">↗</span></span>
     <span className="bingo-invite-date">{lottery.scheduled_at ? `${formatMoscow(lottery.scheduled_at)} МСК · ${countdown(lottery.scheduled_at, now)}` : "Открыть билеты и эфир"}</span>
   </button>;
 }
@@ -155,8 +156,8 @@ export function BingoView({ lottery, initData, now, balance, onClose, onPurchase
     setFavoriteError(""); setError(""); setSelected([]); setOffset(0); setLoading(true); setFavoriteNumbers(values);
   };
   return <main className="app-shell bingo-page">
-    <header className="bingo-topbar"><button type="button" onClick={onClose} aria-label="Вернуться к лотереям">←</button><span>KASPER <b>BINGO</b></span><small>{formatCas(balance)}</small></header>
-    {tab !== "live" && <><section className="bingo-hero"><div className="bingo-hero-kicker"><span>ВЕЧЕР ОСОБОГО ЗНАЧЕНИЯ</span><span>✦ DAILY</span></div><div className="bingo-hero-title"><h1>Kasper<br /><em>Bingo.</em></h1><BingoMark /></div><p>Один вечер. Ваш билет. Большая история.</p><div className="bingo-jackpot"><small>НАКОПИТЕЛЬНЫЙ ДЖЕКПОТ</small><strong>{formatCas(lottery.jackpot).replace(" CAS", "")}<span>CAS</span></strong><p>Все 12 чисел до {rules?.jackpot_move ?? "…"}-го хода</p></div><footer><span><small>БЛИЖАЙШИЙ ТИРАЖ · №{lottery.draw_number}</small><b>{lottery.scheduled_at ? `${formatMoscow(lottery.scheduled_at)} МСК` : "Готовим расписание"}</b></span><time>{countdown(lottery.scheduled_at, now)}</time></footer></section>
+    <header className="bingo-topbar"><button type="button" onClick={onClose} aria-label="Вернуться к лотереям">←</button><span>KASPER <b>BINGO</b></span><small><Money value={balance} /></small></header>
+    {tab !== "live" && <><section className="bingo-hero"><div className="bingo-hero-kicker"><span>ВЕЧЕР ОСОБОГО ЗНАЧЕНИЯ</span><span>✦ DAILY</span></div><div className="bingo-hero-title"><h1>Kasper<br /><em>Bingo.</em></h1><BingoMark /></div><p>Один вечер. Ваш билет. Большая история.</p><div className="bingo-jackpot"><small>НАКОПИТЕЛЬНЫЙ ДЖЕКПОТ</small><strong><Money value={lottery.jackpot} compact /></strong><p>Все 12 чисел до {rules?.jackpot_move ?? "…"}-го хода</p></div><footer><span><small>БЛИЖАЙШИЙ ТИРАЖ · №{lottery.draw_number}</small><b>{lottery.scheduled_at ? `${formatMoscow(lottery.scheduled_at)} МСК` : "Готовим расписание"}</b></span><time>{countdown(lottery.scheduled_at, now)}</time></footer></section>
     <div className="bingo-prizes"><div><small>СТРОКА · ДО {rules?.tour_moves[0] ?? 18}</small><strong>{rules ? formatCas(rules.tour_prizes[0]) : "…"}</strong></div><div><small>ДВЕ · ДО {rules?.tour_moves[1] ?? 34}</small><strong>{rules ? formatCas(rules.tour_prizes[1]) : "…"}</strong></div><div><small>ПОЛНЫЙ · ДО {rules?.jackpot_move ?? 28}</small><strong>Джекпот</strong></div></div></>}
     <nav className="bingo-tabs" aria-label="Kasper Bingo"><button type="button" aria-pressed={tab === "choose"} onClick={() => setTab("choose")}>Выбрать билеты</button><button type="button" aria-pressed={tab === "mine"} onClick={() => setTab("mine")}>Мои · {mine.length}</button><button type="button" aria-pressed={tab === "live"} onClick={() => setTab("live")}>{live && !live.complete ? "● " : ""}Эфир</button></nav>
     {error && <div className="bingo-message is-error" role="alert"><span>{error}</span>{retry && retrySelection && <button type="button" onClick={() => void purchase(retrySelection)}>Проверить покупку</button>}<button type="button" onClick={() => setError("")} aria-label="Закрыть сообщение">×</button></div>}

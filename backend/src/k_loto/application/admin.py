@@ -60,12 +60,14 @@ class AdminPlayer:
     is_active: bool
     balance: int
     ticket_count: int
+    active_ticket_count: int
     spent: int
     won: int
     net: int
     telegram_notifications_enabled: bool
     auto_play_enabled: bool
     auto_play_tickets_per_draw: int
+    auto_play_last_attempted_at: datetime | None
     auto_play_last_succeeded_at: datetime | None
     auto_play_last_error: str | None
 
@@ -667,6 +669,15 @@ class AdminQueryService:
         return await self._player(user, balance or 0, ticket_count or 0)
 
     async def _player(self, user: User, balance: int, ticket_count: int) -> AdminPlayer:
+        active_ticket_count = int(
+            await self._session.scalar(
+                select(func.count(Ticket.id)).where(
+                    Ticket.user_id == user.id,
+                    Ticket.status == TicketStatus.PURCHASED,
+                )
+            )
+            or 0
+        )
         ledger = (
             await self._session.scalars(
                 select(LedgerTransaction).where(
@@ -697,12 +708,14 @@ class AdminQueryService:
             user.is_active,
             balance,
             ticket_count,
+            active_ticket_count,
             spent,
             won,
             won - spent,
             bool(preference and preference.telegram_enabled),
             bool(auto_play and auto_play.enabled),
             auto_play.tickets_per_draw if auto_play else 5,
+            auto_play.last_attempted_at if auto_play else None,
             auto_play.last_succeeded_at if auto_play else None,
             auto_play.last_error if auto_play else None,
         )
@@ -1175,19 +1188,29 @@ class AdminQueryService:
         users = await self._session.scalar(
             select(func.count(User.id)).where(User.is_admin.is_(False))
         )
-        tickets = await self._session.scalar(select(func.count(Ticket.id)))
+        tickets = await self._session.scalar(
+            select(func.count(Ticket.id))
+            .join(Draw, Draw.id == Ticket.draw_id)
+            .join(Lottery, Lottery.id == Draw.lottery_id)
+            .where(lottery_scope(self._scope))
+        )
         completed = await self._session.scalar(
-            select(func.count(Draw.id)).where(Draw.status == DrawStatus.COMPLETED)
+            select(func.count(Draw.id))
+            .join(Lottery, Lottery.id == Draw.lottery_id)
+            .where(Draw.status == DrawStatus.COMPLETED, lottery_scope(self._scope))
         )
         pending = await self._session.scalar(
-            select(func.count(Draw.id)).where(
+            select(func.count(Draw.id))
+            .join(Lottery, Lottery.id == Draw.lottery_id)
+            .where(
                 or_(
                     Draw.status == DrawStatus.SCHEDULED,
                     Draw.status == DrawStatus.CLOSED,
                     Draw.status == DrawStatus.DRAWING,
                     Draw.status == DrawStatus.SETTLING,
                     Draw.status == DrawStatus.FAILED,
-                )
+                ),
+                lottery_scope(self._scope),
             )
         )
         return {
@@ -1195,6 +1218,65 @@ class AdminQueryService:
             "tickets": tickets or 0,
             "completed_draws": completed or 0,
             "pending_draws": pending or 0,
+        }
+
+    async def today_summary(self, *, now: datetime | None = None) -> dict[str, int]:
+        """Owner-facing Moscow-day sales and payout snapshot."""
+        timestamp = now or datetime.now(UTC)
+        local_day = timestamp.astimezone(MOSCOW).date()
+        start = datetime.combine(
+            local_day, datetime.min.time(), tzinfo=MOSCOW
+        ).astimezone(UTC)
+        end = start + timedelta(days=1)
+        completed = await self._session.scalar(
+            select(func.count(Draw.id))
+            .join(Lottery, Lottery.id == Draw.lottery_id)
+            .where(
+                Draw.status == DrawStatus.COMPLETED,
+                Draw.scheduled_at >= start,
+                Draw.scheduled_at < end,
+                lottery_scope(self._scope),
+            )
+        )
+        ticket_count, sales = (
+            await self._session.execute(
+                select(
+                    func.count(Ticket.id),
+                    func.coalesce(func.sum(Ticket.purchase_price), 0),
+                )
+                .join(Draw, Draw.id == Ticket.draw_id)
+                .join(Lottery, Lottery.id == Draw.lottery_id)
+                .where(
+                    Ticket.purchased_at >= start,
+                    Ticket.purchased_at < end,
+                    lottery_scope(self._scope),
+                )
+            )
+        ).one()
+        winning_tickets, payout = (
+            await self._session.execute(
+                select(
+                    func.count(Ticket.id).filter(Ticket.prize_amount > 0),
+                    func.coalesce(func.sum(Ticket.prize_amount), 0),
+                )
+                .join(Draw, Draw.id == Ticket.draw_id)
+                .join(Lottery, Lottery.id == Draw.lottery_id)
+                .where(
+                    Ticket.settled_at >= start,
+                    Ticket.settled_at < end,
+                    lottery_scope(self._scope),
+                )
+            )
+        ).one()
+        sales_value = int(sales)
+        payout_value = int(payout)
+        return {
+            "completed_draws": int(completed or 0),
+            "purchased_tickets": int(ticket_count),
+            "sales": sales_value,
+            "winning_tickets": int(winning_tickets),
+            "payout": payout_value,
+            "net": sales_value - payout_value,
         }
 
     async def jackpot_analytics(self) -> dict[str, Any]:
@@ -1342,6 +1424,7 @@ class AdminQueryService:
             or 0
         )
         return {
+            "today": await self.today_summary(now=now),
             "scheduler": {
                 "last_started_at": heartbeat.last_started_at if heartbeat else None,
                 "last_succeeded_at": (

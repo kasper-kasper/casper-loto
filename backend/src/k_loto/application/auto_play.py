@@ -47,6 +47,19 @@ class AutoPlayReport:
     failed_draw_ids: tuple[UUID, ...]
 
 
+def auto_play_error_code(error: Exception) -> str:
+    """Stable owner-facing reason without leaking exception text."""
+    if isinstance(error, InsufficientBalance):
+        return "INSUFFICIENT_BALANCE"
+    if isinstance(error, NoAvailableDraw):
+        return "SALES_CLOSED"
+    if isinstance(error, InvalidTicket):
+        if "limit" in str(error).lower():
+            return "TICKET_LIMIT_REACHED"
+        return "INVALID_COMBINATION"
+    return "TECHNICAL_ERROR"
+
+
 class AutoPlayService:
     """Buy configured random entries once for every open draw."""
 
@@ -157,11 +170,22 @@ class AutoPlayService:
                 InvalidTicket,
                 NoAvailableDraw,
             ) as error:
-                error_code = type(error).__name__[:128]
+                error_code = auto_play_error_code(error)
                 await self._record_attempt(candidate.user_id, timestamp, error_code)
                 failed.append(candidate.draw_id)
                 logger.warning(
                     "auto_play_skipped",
+                    user_id=str(candidate.user_id),
+                    draw_id=str(candidate.draw_id),
+                    error_code=error_code,
+                )
+                continue
+            except Exception:
+                error_code = "TECHNICAL_ERROR"
+                await self._record_attempt(candidate.user_id, timestamp, error_code)
+                failed.append(candidate.draw_id)
+                logger.exception(
+                    "auto_play_failed",
                     user_id=str(candidate.user_id),
                     draw_id=str(candidate.draw_id),
                     error_code=error_code,

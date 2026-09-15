@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
-import { formatCas } from "./format";
+import { formatCompactAmount } from "./format";
 import { splitGrandNumbers } from "./grand";
 import { splitPulseNumbers } from "./fast";
 
@@ -54,7 +54,11 @@ function useAnimatedValue(value: number): number {
 
 export function Balance({ value }: { value: number }) {
   const displayed = useAnimatedValue(value);
-  return <div className="balance"><span>Баланс</span><strong>{formatCas(displayed)}</strong></div>;
+  return <div className="balance"><span>Баланс</span><strong><Money value={displayed} /></strong></div>;
+}
+
+export function Money({ value, compact = false, prefix = "" }: { value: number; compact?: boolean; prefix?: string }) {
+  return <span className="money-value" aria-label={`${prefix}${new Intl.NumberFormat("ru-RU").format(value)} CAS`}><span>{prefix}{compact ? formatCompactAmount(value) : new Intl.NumberFormat("ru-RU").format(value)}</span><i className="currency-mark" aria-hidden="true">C</i></span>;
 }
 
 export function PrimaryButton({

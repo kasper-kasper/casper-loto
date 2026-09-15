@@ -206,7 +206,7 @@ it("opens a loopback development session outside Telegram", async () => {
 it("renders server-authoritative balance and lottery states", async () => {
   const { container } = render(<App initData="signed" />);
 
-  expect(await screen.findByText("5 000 CAS")).toBeInTheDocument();
+  expect(await screen.findByLabelText("5 000 CAS")).toHaveTextContent("5 000C");
   expect(screen.getByLabelText("Kasper Loto")).toBeInTheDocument();
   expect(container.querySelector(".brand-logo-horizontal")).toHaveAttribute("src", "/brand/kasper-loto-horizontal.svg");
   expect(within(container.querySelector(".bottom-nav") as HTMLElement).getAllByRole("button").map(b => b.textContent)).toEqual(["Сегодня", "Лотереи", "Kasper Fast", "Моё"]);

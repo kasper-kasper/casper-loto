@@ -10,7 +10,7 @@ vi.mock("./api", () => ({
   adminApi: {
     login: vi.fn(), session: vi.fn(), logout: vi.fn(), dashboard: vi.fn(),
     players: vi.fn(), lotteries: vi.fn(), schedule: vi.fn(), draws: vi.fn(), draw: vi.fn(),
-    transactions: vi.fn(), statistics: vi.fn(), ticketAnalytics: vi.fn(), activity: vi.fn(), audit: vi.fn(),
+    transactions: vi.fn(), playerTransactions: vi.fn(), statistics: vi.fn(), ticketAnalytics: vi.fn(), activity: vi.fn(), audit: vi.fn(),
     notifications: vi.fn(), releaseNotes: vi.fn(),
     setBalance: vi.fn(), configureLottery: vi.fn(), setReserve: vi.fn(), setJackpot: vi.fn(),
     setAutoPlay: vi.fn(),
@@ -19,8 +19,8 @@ vi.mock("./api", () => ({
 
 const session = { username: "owner", csrf_token: "csrf", expires_at: "2026-08-16T00:00:00Z" };
 const lottery: Lottery = { id: "lottery", code: "weekly", name: "Weekly 5/20", kind: "WEEKLY", ticket_price: 100, base_jackpot: 10_000, current_jackpot: 12_000, distribution_fund: 500, reserve: 100_000, schedule: { weekday: "sunday" }, sales_cutoff_minutes: 5, max_tickets_per_purchase: 1000, max_tickets_per_user_per_draw: 5000, is_active: true, next_draw_number: 8, next_draw_at: "2026-08-16T17:00:00Z" };
-const dashboard: Dashboard = { version: "0.8.0", uptime_seconds: 120, database_healthy: true, bot_configured: true, scheduler_enabled: true, counts: { users: 1, tickets: 6, completed_draws: 3, pending_draws: 1 }, lotteries: [lottery], recent_draws: [], recent_transactions: [], operations: { scheduler: { last_started_at: null, last_succeeded_at: null, last_failed_at: null, last_error: null, settled_count: 0, prepared_count: 0 }, stuck_draw_count: 0, notifications: {}, next_draws: [] }, jackpots: { kasper_fund_balance: 1_000_000_000_000_000, total_wins: 0, total_paid: 0, largest_win: 0, lotteries: [{ code: "weekly", name: "Weekly 5/20", win_count: 0, total_paid: 0, last_win_at: null }], history: [] } };
-const player: Player = { id: "player", display_name: "Test Player", username: "player", telegram_id: 123, is_active: true, balance: 5_000, ticket_count: 6, spent: 600, won: 250, net: -350, telegram_notifications_enabled: false, auto_play_enabled: false, auto_play_tickets_per_draw: 5, auto_play_last_succeeded_at: null, auto_play_last_error: null };
+const dashboard: Dashboard = { version: "0.8.0", uptime_seconds: 120, database_healthy: true, bot_configured: true, scheduler_enabled: true, counts: { users: 1, tickets: 6, completed_draws: 3, pending_draws: 1 }, lotteries: [lottery], recent_draws: [], recent_transactions: [], operations: { today: { completed_draws: 2, purchased_tickets: 4, sales: 400, winning_tickets: 1, payout: 250, net: 150 }, scheduler: { last_started_at: null, last_succeeded_at: null, last_failed_at: null, last_error: null, settled_count: 0, prepared_count: 0 }, stuck_draw_count: 0, notifications: {}, next_draws: [] }, jackpots: { kasper_fund_balance: 1_000_000_000_000_000, total_wins: 0, total_paid: 0, largest_win: 0, lotteries: [{ code: "weekly", name: "Weekly 5/20", win_count: 0, total_paid: 0, last_win_at: null }], history: [] } };
+const player: Player = { id: "player", display_name: "Test Player", username: "player", telegram_id: 123, is_active: true, balance: 5_000, ticket_count: 6, active_ticket_count: 2, spent: 600, won: 250, net: -350, telegram_notifications_enabled: false, auto_play_enabled: false, auto_play_tickets_per_draw: 5, auto_play_last_attempted_at: null, auto_play_last_succeeded_at: null, auto_play_last_error: null };
 const analytics: TicketAnalytics = { overall: { lottery_id: null, lottery_name: "Все лотереи", is_active: null, total_tickets: 100, active_tickets: 10, settled_tickets: 90, winning_tickets: 21, participants: 8, winning_players: 5, total_sales: 10_000, total_payout: 2_500 }, lotteries: [{ lottery_id: "lottery", lottery_name: "Weekly 5/20", is_active: true, total_tickets: 100, active_tickets: 10, settled_tickets: 90, winning_tickets: 21, participants: 8, winning_players: 5, total_sales: 10_000, total_payout: 2_500 }] };
 const numberStatistics: NumberStatisticsReport = { lottery_id: "lottery", lottery_name: "Weekly 5/20", period_start: "2026-08-31T21:00:00Z", window_size: 20, draw_count: 2, first_draw_at: "2026-09-01T09:00:00Z", last_draw_at: "2026-09-01T15:00:00Z", numbers: [{ number: 7, appearances: 2, draw_percentage: 100, last_appearance: "2026-09-01T15:00:00Z", draws_since_last: 0 }] };
 const scheduleEntries: ScheduleEntry[] = [{ id: "scheduled-draw", lottery_id: "lottery", lottery_name: "Weekly 5/20", public_number: 8, scheduled_at: "2026-09-02T17:00:00Z" }];
@@ -38,6 +38,7 @@ beforeEach(() => {
   vi.mocked(adminApi.draws).mockResolvedValue([]);
   vi.mocked(adminApi.schedule).mockResolvedValue(scheduleEntries);
   vi.mocked(adminApi.transactions).mockResolvedValue([]);
+  vi.mocked(adminApi.playerTransactions).mockResolvedValue([]);
   vi.mocked(adminApi.statistics).mockResolvedValue(numberStatistics);
   vi.mocked(adminApi.ticketAnalytics).mockResolvedValue(analytics);
   vi.mocked(adminApi.activity).mockResolvedValue([]);
@@ -57,11 +58,11 @@ it("restores an authenticated session and renders Russian system truth", async (
   render(<App />);
 
   expect(await screen.findByText("Всего сорвано джекпотов")).toBeInTheDocument();
-  expect(screen.getByText("Всего тиражей")).toBeInTheDocument();
-  expect(screen.getByText("проведено по всем лотереям")).toBeInTheDocument();
+  expect(screen.getByText("ТИРАЖИ СЕГОДНЯ")).toBeInTheDocument();
+  expect(screen.getByText("за всю историю")).toBeInTheDocument();
   expect(screen.getByText("12 000 CAS")).toBeInTheDocument();
   expect(screen.queryByText("v0.8.0 · работает 2 мин.")).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: /Система/ }));
+  fireEvent.click(screen.getByRole("button", { name: /^08Система$/ }));
   expect(await screen.findByText("БАЗА ДАННЫХ РАБОТАЕТ")).toBeInTheDocument();
   expect(screen.getByText("v0.8.0 · работает 2 мин.")).toBeInTheDocument();
 });
@@ -101,23 +102,25 @@ it("adjusts a player balance only with a mandatory reason", async () => {
   render(<App />);
   fireEvent.click(await screen.findByRole("button", { name: /Игроки/ }));
 
-  const save = await screen.findByRole("button", { name: "ИЗМЕНИТЬ ЧЕРЕЗ ЖУРНАЛ" });
+  const save = await screen.findByRole("button", { name: "ПРОВЕРИТЬ ИЗМЕНЕНИЕ" });
   expect(save).toBeDisabled();
   fireEvent.change(screen.getByLabelText("Новый баланс"), { target: { value: "9000" } });
   fireEvent.change(screen.getByLabelText("Обязательная причина"), { target: { value: "Тестовое начисление" } });
   fireEvent.click(save);
+  fireEvent.click(await screen.findByRole("button", { name: "Подтвердить" }));
 
   await waitFor(() => expect(adminApi.setBalance).toHaveBeenCalledWith("player", 9000, "Тестовое начисление"));
 });
 
-it("groups administration into seven owner-oriented sections", async () => {
+it("groups administration into eight owner-oriented sections", async () => {
   render(<App />);
   await screen.findByText("Всего сорвано джекпотов");
 
-  for (const label of ["Обзор", "Лотереи", "Расписание", "Тиражи", "Игроки", "Аналитика", "Система"]) {
-    expect(screen.getByRole("button", { name: new RegExp(label) })).toBeInTheDocument();
+  const nav = within(screen.getByRole("navigation"));
+  for (const label of ["Сегодня", "Fast", "Лотереи", "Расписание", "Тиражи", "Игроки", "Аналитика", "Система"]) {
+    expect(nav.getByRole("button", { name: new RegExp(label) })).toBeInTheDocument();
   }
-  fireEvent.click(screen.getByRole("button", { name: /Система/ }));
+  fireEvent.click(nav.getByRole("button", { name: /Система/ }));
   expect(await screen.findByRole("tab", { name: "Журнал CAS" })).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: "Уведомления" })).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: "Аудит действий" })).toBeInTheDocument();
@@ -138,7 +141,7 @@ it("loads the daily schedule only after opening its section", async () => {
 
 it("shows complete changelog and devlog in separate protected tabs", async () => {
   render(<App />);
-  fireEvent.click(await screen.findByRole("button", { name: /Система/ }));
+  fireEvent.click(await screen.findByRole("button", { name: /^08Система$/ }));
   fireEvent.click(await screen.findByRole("tab", { name: "Разработка" }));
 
   expect(await screen.findByText("Публичное изменение")).toBeInTheDocument();
@@ -187,7 +190,8 @@ it("saves lottery price, base jackpot and limits with one action", async () => {
   fireEvent.change(await screen.findByLabelText("Цена билета, CAS"), { target: { value: "22222" } });
   fireEvent.change(screen.getByLabelText("Базовый джекпот после выигрыша, CAS"), { target: { value: "2811996" } });
   fireEvent.change(screen.getByLabelText("Обязательная причина для аудита"), { target: { value: "Настройки владельца" } });
-  fireEvent.click(screen.getByRole("button", { name: "СОХРАНИТЬ НАСТРОЙКИ" }));
+  fireEvent.click(screen.getByRole("button", { name: "ПРОВЕРИТЬ НАСТРОЙКИ" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Подтвердить" }));
 
   await waitFor(() => expect(adminApi.configureLottery).toHaveBeenCalledWith("lottery", 22222, 2811996, 5, 1000, 5000, "Настройки владельца"));
   expect(adminApi.setReserve).not.toHaveBeenCalled();
@@ -200,7 +204,8 @@ it("adjusts the current jackpot through the ledger action", async () => {
 
   fireEvent.change(await screen.findByLabelText("Текущий джекпот, CAS"), { target: { value: "999999" } });
   fireEvent.change(screen.getByLabelText("Обязательная причина для аудита"), { target: { value: "Решение владельца" } });
-  fireEvent.click(screen.getByRole("button", { name: "ИЗМЕНИТЬ ЧЕРЕЗ ЖУРНАЛ" }));
+  fireEvent.click(screen.getByRole("button", { name: "ПРОВЕРИТЬ ИЗМЕНЕНИЕ" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Подтвердить" }));
 
   await waitFor(() => expect(adminApi.setJackpot).toHaveBeenCalledWith("lottery", 999999, "Решение владельца"));
   expect(await screen.findByText("Текущий джекпот изменён через журнал CAS.")).toBeInTheDocument();
@@ -241,7 +246,8 @@ it("reports a failed owner balance change without pretending it succeeded", asyn
   render(<App />);
   fireEvent.click(await screen.findByRole("button", { name: /Игроки/ }));
   fireEvent.change(await screen.findByLabelText("Обязательная причина"), { target: { value: "Уточнение" } });
-  fireEvent.click(screen.getByRole("button", { name: "ИЗМЕНИТЬ ЧЕРЕЗ ЖУРНАЛ" }));
+  fireEvent.click(screen.getByRole("button", { name: "ПРОВЕРИТЬ ИЗМЕНЕНИЕ" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Подтвердить" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("Не удалось сохранить баланс");
 });
 
@@ -251,8 +257,12 @@ it.each([null, 200])("uses the recorded jackpot event in draw details, amount=%s
   vi.mocked(adminApi.draw).mockResolvedValue({ draw: {
     id: "draw", lottery_id: "lottery", lottery_code: "weekly", lottery_name: "Weekly 5/20", public_number: 7, status: "COMPLETED", scheduled_at: event.occurred_at, sales_close_at: event.occurred_at, executed_at: event.occurred_at, winning_numbers: [1,2,3,4,5], ticket_count: 1, total_sales: 100, total_payout: 200, jackpot_opening: 200, jackpot_closing: amount ? 500 : 100, distribution_opening: 0, distribution_closing: 0, reserve_used: 0, kasper_fund_used: 0, correlation_id: "internal-correlation", jackpot_amount: amount,
   }, tickets: [] });
+  vi.mocked(adminApi.draws).mockResolvedValue([{
+    id: "draw", lottery_id: "lottery", lottery_code: "weekly", lottery_name: "Weekly 5/20", public_number: 7, status: "COMPLETED", scheduled_at: event.occurred_at, sales_close_at: event.occurred_at, executed_at: event.occurred_at, winning_numbers: [1,2,3,4,5], ticket_count: 1, total_sales: 100, total_payout: 200, jackpot_opening: 200, jackpot_closing: amount ? 500 : 100, distribution_opening: 0, distribution_closing: 0, reserve_used: 0, kasper_fund_used: 0, correlation_id: "internal-correlation", jackpot_amount: amount,
+  }]);
   render(<App />);
-  fireEvent.click(await screen.findByRole("button", { name: "Тираж №0007 →" }));
+  fireEvent.click(await screen.findByRole("button", { name: /Тиражи/ }));
+  fireEvent.click((await screen.findAllByText("Weekly 5/20")).at(-1)!);
   const dialog = await screen.findByRole("dialog");
   if (amount) expect(within(dialog).getByText("ДЖЕКПОТ ЭТОГО ТИРАЖА СОРВАН")).toBeInTheDocument();
   else expect(within(dialog).queryByText("ДЖЕКПОТ ЭТОГО ТИРАЖА СОРВАН")).not.toBeInTheDocument();
@@ -278,6 +288,7 @@ it("lets the owner choose the auto-play ticket count and shows its state", async
   fireEvent.change(screen.getByLabelText("Билетов автоучастия на тираж"), { target: { value: "3" } });
   fireEvent.change(screen.getByLabelText("Причина автоучастия"), { target: { value: "Пожелание игрока" } });
   fireEvent.click(screen.getByRole("button", { name: "ВКЛЮЧИТЬ АВТОУЧАСТИЕ" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Подтвердить" }));
   await waitFor(() => expect(adminApi.setAutoPlay).toHaveBeenCalledWith("player", true, 3, "Пожелание игрока"));
 });
 
@@ -305,14 +316,15 @@ it("summarizes Bingo by stages and keeps the full ball protocol collapsed", asyn
   expect(within(dialog).getByText("Полный протокол шаров").closest("details")).not.toHaveAttribute("open");
 });
 
-it("scopes the owner overview and requests a bounded Fast draw page", async () => {
+it("opens the dedicated Fast control room and requests a bounded Fast draw page", async () => {
   render(<App />);
   await screen.findByText("Всего сорвано джекпотов");
-  expect(adminApi.dashboard).toHaveBeenCalledWith("standard");
-  fireEvent.click(within(screen.getByRole("tablist", { name: "Тип игр" })).getByRole("tab", { name: "Fast" }));
+  expect(adminApi.dashboard).toHaveBeenCalledWith("all");
+  fireEvent.click(screen.getByRole("button", { name: /^02Fast$/ }));
   await waitFor(() => expect(adminApi.dashboard).toHaveBeenCalledWith("fast"));
   expect(adminApi.ticketAnalytics).toHaveBeenCalledWith("fast");
   fireEvent.click(screen.getByRole("button", { name: /Тиражи/ }));
+  fireEvent.click(within(screen.getByRole("tablist", { name: "Тип игр" })).getByRole("tab", { name: "Fast" }));
   await waitFor(() => expect(adminApi.draws).toHaveBeenCalledWith("scope=fast&period=today&limit=100&offset=0"));
   fireEvent.click(screen.getByRole("tab", { name: "Завершённые" }));
   await waitFor(() => expect(adminApi.draws).toHaveBeenLastCalledWith("scope=fast&period=completed&limit=100&offset=0"));

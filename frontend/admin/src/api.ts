@@ -109,6 +109,7 @@ export const adminApi = {
   draw: (id: string) => request<DrawDetail>(`/draws/${id}`),
   transactions: (query = "") =>
     request<Transaction[]>(`/transactions${query ? `?${query}` : ""}`),
+  playerTransactions: (userId: string) => request<Transaction[]>(`/transactions?user_id=${encodeURIComponent(userId)}&limit=6`),
   statistics: (lotteryId: string, limit = 20, dateFrom = "2026-08-31T21:00:00.000Z") => {
     const params = new URLSearchParams({ limit: String(limit), date_from: dateFrom });
     return request<NumberStatisticsReport>(`/lotteries/${lotteryId}/number-statistics?${params.toString()}`);

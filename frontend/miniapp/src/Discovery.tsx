@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { miniAppApi } from "./api";
-import { Icon } from "./components";
-import { countdown, formatCas, formatMoscow, formatMoscowTime } from "./format";
+import { Icon, Money } from "./components";
+import { countdown, formatCas, formatCompactAmount, formatMoscow, formatMoscowTime } from "./format";
 import { LotteryVisual } from "./LotteryVisuals";
 import { LiveView } from "./LiveView";
 import type { LiveFeed, Lottery } from "./types";
@@ -10,10 +10,7 @@ import "./discovery.css";
 
 export interface Highlights { next_event?: { lottery_code: string; scheduled_at: string; draw_number: number; player_ticket_count: number; jackpot: number; phase: string } | null; last_jackpot: null | { lottery_code: string; lottery_name: string; draw_number: number; jackpot_amount: number; occurred_at: string } }
 
-function compactPrize(value: number): string {
-  const unit = value >= 1e9 ? 1e9 : value >= 1e6 ? 1e6 : 1;
-  return `${(value / unit).toLocaleString("ru-RU", { maximumFractionDigits: unit === 1 ? 0 : 2 })}${unit === 1e9 ? " млрд" : unit === 1e6 ? " млн" : ""}`;
-}
+const compactPrize = formatCompactAmount;
 
 export function LotteryCatalog({ lotteries, onOpen }: { lotteries: Lottery[]; onOpen: (code: string) => void }) {
   const [filter, setFilter] = useState("all");
@@ -21,7 +18,7 @@ export function LotteryCatalog({ lotteries, onOpen }: { lotteries: Lottery[]; on
   const visible = [...lotteries].filter(l => filter === "all" || l.kind === filter).sort((a, b) => b.jackpot - a.jackpot);
   return <><div className="discovery-heading"><span>КОЛЛЕКЦИЯ ИГР KASPER</span><h1>Найдите свою удачу.</h1><p>Выберите лотерею. Билеты, правила и эфир — внутри.</p></div><div className="discovery-filters" aria-label="Каталог лотерей">{[["all", "Все"], ["DAILY", "Каждый день"], ["WEEKLY", "Раз в неделю"]].map(([id, label]) => <button key={id} type="button" aria-pressed={filter === id} onClick={() => setFilter(id)}>{label}</button>)}</div><div className="lottery-catalog" aria-label="Витрина лотерей">{visible.map(lottery => <button className={`catalog-game lottery-${lottery.code} ${lottery.jackpot === largest ? "largest-prize" : ""}`} key={lottery.code} type="button" onClick={() => onOpen(lottery.code)} aria-label={`Открыть ${lottery.name}`}>
       <div className="catalog-art">{lottery.code === "bingo" ? <img src="/brand/kasper-symbol.svg" alt="" /> : <LotteryVisual code={lottery.code} animated={false} />}<span>{lottery.jackpot === largest ? "САМЫЙ БОЛЬШОЙ ДЖЕКПОТ" : lottery.kind === "WEEKLY" ? "СОБЫТИЕ НЕДЕЛИ" : "ЕЖЕДНЕВНАЯ"}</span></div>
-      <div className="catalog-game-body"><h2>{lottery.name}</h2><small>ДЖЕКПОТ</small><strong title={formatCas(lottery.jackpot)}>{compactPrize(lottery.jackpot)} <em>CAS</em></strong><time>{lottery.scheduled_at ? `${formatMoscow(lottery.scheduled_at)} МСК` : "Расписание внутри"}</time><footer><span>{lottery.ticket_price === null ? "Скоро" : formatCas(lottery.ticket_price)}</span><i>↗</i></footer></div>
+      <div className="catalog-game-body"><h2>{lottery.name}</h2><small>ДЖЕКПОТ</small><strong title={formatCas(lottery.jackpot)}><Money value={lottery.jackpot} compact /></strong><time>{lottery.scheduled_at ? `${formatMoscow(lottery.scheduled_at)} МСК` : "Расписание внутри"}</time><footer><span>{lottery.ticket_price === null ? "Скоро" : <Money value={lottery.ticket_price} />}</span><i>↗</i></footer></div>
     </button>)}</div></>;
 }
 

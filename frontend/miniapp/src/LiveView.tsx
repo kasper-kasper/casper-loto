@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 
-import { GrandNumberSet, Icon, NumberSet, PrimaryButton } from "./components";
+import { GrandNumberSet, Icon, Money, NumberSet, PrimaryButton } from "./components";
 import { MINIAPP_TEXTS as copy } from "./content";
 import { countdown, formatCas, formatDrawLabel, formatMoscow, formatTicketLabel } from "./format";
 import { livePresentation, replayPresentation } from "./live";
@@ -81,7 +81,7 @@ export function LiveView({ feed, now, loading, onPlay, onTickets }: LiveViewProp
         <div className="live-countdown"><span>{finalMinute ? "Тираж начнётся через" : "До начала тиража"}</span><strong>{countdown(draw.scheduled_at, now)}</strong><small><i /> Синхронизировано с сервером</small><div className="live-signal" aria-hidden="true"><i /><span /></div>{finalMinute && <div className="last-minute-progress"><span style={{ width: `${finalMinuteProgress}%` }} /></div>}</div>
         <div className="live-timeline" aria-label="Этапы тиража"><div className="active"><i /><span>Ожидание</span></div><b /><div><i /><span>Выбор чисел</span></div><b /><div><i /><span>Результат</span></div></div>
         <div className="result-preview"><span>{finalMinute ? "Готовим экран результата" : "Здесь появятся выпавшие числа"}</span><div>{Array.from({ length: resultSize }, (_, index) => <i key={index}>{index + 1}</i>)}</div></div>
-        <div className="live-facts"><div><span>Джекпот</span><strong>{formatCas(draw.jackpot)}</strong></div><div><span>Ваши билеты</span><strong>{draw.player_ticket_count}</strong></div></div>
+        <div className="live-facts"><div><span>Джекпот</span><strong><Money value={draw.jackpot} compact /></strong></div><div><span>Ваши билеты</span><strong>{draw.player_ticket_count}</strong></div></div>
       </>}
 
       {state.phase === "starting" && <div className="live-start"><span>{isReplay ? "Возвращаемся к моменту тиража" : "Тираж начинается"}</span><strong>{isReplay ? "Восстанавливаем последовательность чисел" : copy.live.choosingNumbers}</strong><p>{isReplay ? "Это цифровой повтор сохранённого результата." : copy.live.stayOnScreen}</p><i /></div>}

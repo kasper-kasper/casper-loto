@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import flashScene from "./assets/lotteries/flash-scene.webp";
 import pulseScene from "./assets/lotteries/pulse-scene.webp";
 import shadowScene from "./assets/lotteries/shadow-scene.webp";
-import { Icon, PrimaryButton } from "./components";
+import { Icon, Money, PrimaryButton } from "./components";
 import { countdown, formatCas, formatDrawLabel, formatMoscowTime } from "./format";
 import { fastLivePresentation } from "./live";
 import { randomCombination } from "./random";
@@ -68,8 +68,8 @@ function FastCard({ lottery, now, primary, balance, purchasing, onOpen, onQuickB
     <div className="fast-card-sheen" aria-hidden="true" />
     <header><span><i /> БЫСТРАЯ ЛОТЕРЕЯ</span><small>{formatDrawLabel(lottery.code, lottery.draw_number ?? 0)}</small></header>
     <div className="fast-card-main"><div><h2>{lottery.name}</h2><p>{fastTagline(code)}</p><span>Следующий раунд через</span><strong>{countdown(lottery.scheduled_at, now)}</strong></div><SignalPreview code={code} maxNumber={lottery.max_number} /></div>
-    <div className="fast-card-jackpot"><span>ТЕКУЩИЙ ДЖЕКПОТ</span><strong>{formatCas(lottery.jackpot)}</strong></div>
-    <div className="fast-card-bottom"><div><span>Стоимость</span><strong>{formatCas(lottery.ticket_price ?? 0)}</strong></div><button disabled={!lottery.purchase_available} onClick={onOpen} type="button"><Icon name="fast" />{lottery.purchase_available ? fastAction(code) : "Продажи закрыты"}<small>{lottery.scheduled_at ? formatMoscowTime(lottery.scheduled_at) : "—"}</small></button></div>
+    <div className="fast-card-jackpot"><span>ТЕКУЩИЙ ДЖЕКПОТ</span><strong><Money value={lottery.jackpot} compact /></strong></div>
+    <div className="fast-card-bottom"><div><span>Стоимость</span><strong><Money value={lottery.ticket_price ?? 0} /></strong></div><button disabled={!lottery.purchase_available} onClick={onOpen} type="button"><Icon name="fast" />{lottery.purchase_available ? fastAction(code) : "Продажи закрыты"}<small>{lottery.scheduled_at ? formatMoscowTime(lottery.scheduled_at) : "—"}</small></button></div>
     <div className="fast-card-quick"><span>КУПИТЬ СЛУЧАЙНЫЕ</span>{[1, 5, 10].map((quantity) => <button aria-label={`Купить ${quantity} случайных билетов ${lottery.name}`} disabled={purchasing || !lottery.purchase_available || quantity > quickLimit} key={quantity} onClick={() => onQuickBuy(Array.from({ length: quantity }, () => randomFastTicket(lottery)))} type="button">{quantity}</button>)}</div>
   </motion.article>;
 }

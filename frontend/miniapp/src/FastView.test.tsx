@@ -54,7 +54,7 @@ describe("Fast draw placement", () => {
     const entry = lottery("flash", "2026-09-04T08:40:00Z");
     render(<FastView feed={null} lotteries={[entry]} now={drawTime} balance={20_000} onOpen={() => undefined} onQuickBuy={onQuickBuy} />);
 
-    expect(screen.getByText("1 000 000 CAS")).toBeInTheDocument();
+    expect(screen.getByLabelText("1 000 000 CAS")).toHaveTextContent("1 млн");
     fireEvent.click(screen.getByRole("button", { name: "Купить 5 случайных билетов FLASH" }));
     expect(onQuickBuy).toHaveBeenCalledWith("flash", expect.arrayContaining([
       expect.arrayContaining([expect.any(Number), expect.any(Number), expect.any(Number)]),

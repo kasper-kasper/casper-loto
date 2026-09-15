@@ -4,10 +4,38 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
+import pytest
+
 from k_loto.application import auto_play as auto_play_module
-from k_loto.application.auto_play import AutoPlayCandidate, AutoPlayService
+from k_loto.application.auto_play import (
+    AutoPlayCandidate,
+    AutoPlayService,
+    auto_play_error_code,
+)
 from k_loto.domain.enums import LotteryKind, TicketSource
+from k_loto.domain.errors import (
+    ConfigurationError,
+    InsufficientBalance,
+    InvalidTicket,
+    NoAvailableDraw,
+)
 from k_loto.infrastructure import scheduler as scheduler_module
+
+
+@pytest.mark.parametrize(
+    ("error", "code"),
+    [
+        (InsufficientBalance(), "INSUFFICIENT_BALANCE"),
+        (NoAvailableDraw(), "SALES_CLOSED"),
+        (InvalidTicket("ticket limit reached"), "TICKET_LIMIT_REACHED"),
+        (InvalidTicket("bad numbers"), "INVALID_COMBINATION"),
+        (ConfigurationError(), "TECHNICAL_ERROR"),
+    ],
+)
+def test_auto_play_errors_have_stable_owner_facing_reasons(
+    error: Exception, code: str
+) -> None:
+    assert auto_play_error_code(error) == code
 
 
 class FixedGenerator:

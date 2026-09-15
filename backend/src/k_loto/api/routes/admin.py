@@ -103,12 +103,14 @@ class PlayerResponse(ApiModel):
     is_active: bool
     balance: int
     ticket_count: int
+    active_ticket_count: int
     spent: int
     won: int
     net: int
     telegram_notifications_enabled: bool
     auto_play_enabled: bool
     auto_play_tickets_per_draw: int
+    auto_play_last_attempted_at: datetime | None
     auto_play_last_succeeded_at: datetime | None
     auto_play_last_error: str | None
 

@@ -12,12 +12,14 @@ export interface Player {
   is_active: boolean;
   balance: number;
   ticket_count: number;
+  active_ticket_count: number;
   spent: number;
   won: number;
   net: number;
   telegram_notifications_enabled: boolean;
   auto_play_enabled: boolean;
   auto_play_tickets_per_draw: number;
+  auto_play_last_attempted_at: string | null;
   auto_play_last_succeeded_at: string | null;
   auto_play_last_error: string | null;
 }
@@ -152,6 +154,14 @@ export interface Dashboard {
   recent_draws: Draw[];
   recent_transactions: Transaction[];
   operations: {
+    today: {
+      completed_draws: number;
+      purchased_tickets: number;
+      sales: number;
+      winning_tickets: number;
+      payout: number;
+      net: number;
+    };
     scheduler: {
       last_started_at: string | null;
       last_succeeded_at: string | null;

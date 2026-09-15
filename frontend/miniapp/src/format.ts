@@ -1,5 +1,13 @@
 export function formatCas(value: number): string {
-  return `${new Intl.NumberFormat("ru-RU").format(value)} CAS`;
+  return `${formatCompactAmount(value)} CAS`;
+}
+
+export function formatCompactAmount(value: number): string {
+  const absolute = Math.abs(value);
+  const format = (scaled: number, suffix: string) => `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 }).format(scaled)} ${suffix}`;
+  if (absolute >= 1_000_000_000) return format(value / 1_000_000_000, "млрд");
+  if (absolute >= 1_000_000) return format(value / 1_000_000, "млн");
+  return new Intl.NumberFormat("ru-RU").format(value);
 }
 
 export function formatDraw(value: number): string {
