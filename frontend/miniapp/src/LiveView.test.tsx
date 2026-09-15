@@ -85,5 +85,9 @@ describe("personalised live result", () => {
     expect(screen.getByText("ВАШ ЛУЧШИЙ БИЛЕТ СЕЙЧАС")).toBeInTheDocument();
     expect(document.querySelectorAll(".khan-best-ticket .number.won")).toHaveLength(2);
     expect(document.querySelectorAll(".khan-ball-rack i.filled")).toHaveLength(2);
+    expect(document.querySelector(".khan-output > strong")).toHaveClass("band-yellow");
+    for (const band of ["band-yellow", "band-blue", "band-red", "band-green"]) {
+      expect(document.querySelector(`.khan-drum .${band}`)).not.toBeNull();
+    }
   });
 });

@@ -31,26 +31,33 @@ function lotteryFormat(draw: LiveDraw): string {
 }
 
 const drumBalls = [
-  [18, 27], [36, 18], [57, 26], [73, 43], [63, 66], [42, 72],
-  [22, 61], [47, 45], [79, 23], [29, 42], [55, 57], [76, 68],
+  [4, 18, 27], [13, 36, 18], [22, 57, 26], [31, 73, 43], [8, 63, 66], [17, 42, 72],
+  [26, 22, 61], [35, 47, 45], [10, 79, 23], [19, 29, 42], [28, 55, 57], [36, 76, 68],
 ];
+
+function khanBallBand(number: number): string {
+  if (number < 10) return "band-yellow";
+  if (number < 20) return "band-blue";
+  if (number < 30) return "band-red";
+  return "band-green";
+}
 
 function KhanLototron({ revealedNumbers, currentNumber, mixing }: { revealedNumbers: number[]; currentNumber: number | null; mixing: boolean }) {
   return <div className={`khan-lototron ${mixing ? "is-mixing" : "is-drawing"}`} aria-live="polite">
-    <header><span>{mixing ? "ЛОТОТРОН ЗАПУЩЕН" : `ШАР ${revealedNumbers.length} ИЗ 6`}</span><strong>{mixing ? "Перемешиваем шары" : "Выпавшее число"}</strong></header>
+    <header><span><i />{mixing ? "ЛОТОТРОН ЗАПУЩЕН" : `ШАР ${revealedNumbers.length} ИЗ 6`}</span><strong>{mixing ? "Перемешиваем шары" : currentNumber === null ? "Механизм готов" : "Шар зафиксирован"}</strong></header>
     <div className="khan-machine" aria-hidden="true">
-      <div className="khan-drum"><i className="khan-drum-ring" />{drumBalls.map(([left, top], index) => <b key={index} style={{ "--ball-left": `${left}%`, "--ball-top": `${top}%`, "--ball-delay": `${index * -0.17}s` } as CSSProperties} />)}<span className="khan-rotor"><i /><i /><i /></span></div>
-      <div className="khan-chute"><i /></div>
-      <div className="khan-output">{currentNumber !== null ? <motion.strong animate={{ opacity: 1, scale: 1, y: 0 }} initial={{ opacity: 0, scale: .45, y: -25 }} key={currentNumber} transition={{ type: "spring", stiffness: 240, damping: 17 }}>{currentNumber}</motion.strong> : <span />}</div>
+      <div className="khan-drum"><i className="khan-drum-ring" /><i className="khan-glass-glare" />{drumBalls.map(([number, left, top], index) => <b className={`khan-ball ${khanBallBand(number)}`} key={number} style={{ "--ball-left": `${left}%`, "--ball-top": `${top}%`, "--ball-delay": `${index * -0.17}s` } as CSSProperties}>{number}</b>)}<span className="khan-rotor"><i /><i /><i /></span></div>
+      <div className={`khan-chute ${currentNumber !== null ? "releasing" : ""}`}><i /><b /></div>
+      <div className={`khan-output ${currentNumber !== null ? "has-ball" : ""}`}>{currentNumber !== null ? <motion.strong className={khanBallBand(currentNumber)} animate={{ opacity: 1, scale: 1, y: 0, rotate: 0 }} initial={{ opacity: 0, scale: .45, y: -28, rotate: -35 }} key={currentNumber} transition={{ type: "spring", stiffness: 240, damping: 17 }}>{currentNumber}</motion.strong> : <span />}</div>
       <div className="khan-base"><span>KASPER</span><i /><b>6 / 36</b></div>
     </div>
-    <div className="khan-ball-rack">{Array.from({ length: 6 }, (_, index) => <i className={index < revealedNumbers.length ? "filled" : ""} key={index}>{revealedNumbers[index] ?? "·"}</i>)}</div>
+    <div className="khan-ball-rack">{Array.from({ length: 6 }, (_, index) => { const number = revealedNumbers[index]; return <i className={number ? `filled ${khanBallBand(number)}` : ""} key={index}>{number ?? "·"}</i>; })}</div>
   </div>;
 }
 
 function KhanBestTicket({ ticket, revealedNumbers }: { ticket: LiveTicket; revealedNumbers: number[] }) {
   const matches = ticket.numbers.filter((number) => revealedNumbers.includes(number)).length;
-  return <article className="khan-best-ticket"><header><div><span>ВАШ ЛУЧШИЙ БИЛЕТ СЕЙЧАС</span><strong>{formatTicketLabel("khan", ticket.public_number)}</strong></div><b>{matches} / 6</b></header><NumberSet values={ticket.numbers} winning={revealedNumbers} animate={false} /></article>;
+  return <article className="khan-best-ticket"><header><div><span>ВАШ ЛУЧШИЙ БИЛЕТ СЕЙЧАС</span><strong>{formatTicketLabel("khan", ticket.public_number)}</strong></div><b>{matches} / 6</b></header><div className="number-row">{ticket.numbers.map((number) => <span className={`number ${khanBallBand(number)} ${revealedNumbers.includes(number) ? "won" : ""}`} key={number}>{number}</span>)}</div></article>;
 }
 
 export function LiveView({ feed, now, loading, onPlay, onTickets }: LiveViewProps) {
