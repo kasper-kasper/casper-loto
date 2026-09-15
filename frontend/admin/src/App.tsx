@@ -10,6 +10,8 @@ import type {
   Dashboard,
   Draw,
   DrawDetail,
+  InterestingFact,
+  InterestingFactStatus,
   Lottery,
   NumberStatisticsReport,
   NotificationItem,
@@ -20,7 +22,7 @@ import type {
   Transaction,
 } from "./types";
 
-type View = "dashboard" | "fast" | "lotteries" | "schedule" | "draws" | "players" | "analytics" | "broadcast" | "system";
+type View = "dashboard" | "fast" | "lotteries" | "schedule" | "draws" | "players" | "analytics" | "facts" | "broadcast" | "system";
 type AnalyticsTab = "lotteries" | "tickets" | "numbers" | "finances";
 type SystemTab = "health" | "ledger" | "notifications" | "audit" | "development";
 
@@ -32,8 +34,9 @@ const navigation: { id: View; label: string; code: string }[] = [
   { id: "draws", label: "Тиражи", code: "05" },
   { id: "players", label: "Игроки", code: "06" },
   { id: "analytics", label: "Аналитика", code: "07" },
-  { id: "broadcast", label: "Тест эфира", code: "08" },
-  { id: "system", label: "Система", code: "09" },
+  { id: "facts", label: "Interesting Facts", code: "08" },
+  { id: "broadcast", label: "Тест эфира", code: "09" },
+  { id: "system", label: "Система", code: "10" },
 ];
 
 const viewStorageKey = "k-loto:admin-view";
@@ -525,6 +528,52 @@ function SystemView({ tab, onTab, transactions, notifications, audit, onTransact
   </>;
 }
 
+const factTypeLabels: Record<string, string> = {
+  jackpot_drought: "Серия без джекпота",
+  record_current_jackpot: "Рекордный джекпот",
+  jackpot_growth: "Рост джекпота",
+  frequent_numbers: "Частые числа",
+  overdue_numbers: "Давно не выпадали",
+  daily_winner_leader: "Лидер по выигрышным билетам",
+  largest_daily_win: "Крупнейший выигрыш дня",
+  largest_weekly_win: "Крупнейший выигрыш недели",
+  unusual_win_rate: "Необычный процент выигрышей",
+  frequent_pair: "Частая пара",
+  busiest_draw: "Самый заметный тираж",
+};
+const factStatusLabels: Record<InterestingFactStatus, string> = {
+  new: "Новые", viewed: "Просмотренные", used: "Использованные", hidden: "Скрытые",
+};
+
+function InterestingFactsView({ facts, lotteries, onStatus }: { facts: InterestingFact[]; lotteries: Lottery[]; onStatus: (fact: InterestingFact, status: InterestingFactStatus) => Promise<void> }) {
+  const [factStatus, setFactStatus] = useState<InterestingFactStatus | "">("new");
+  const [lotteryId, setLotteryId] = useState("");
+  const [factType, setFactType] = useState("");
+  const [copiedId, setCopiedId] = useState("");
+  const types = [...new Set(facts.map((fact) => fact.fact_type))].sort();
+  const visible = facts.filter((fact) => (!factStatus || fact.status === factStatus) && (!lotteryId || fact.lottery_id === lotteryId) && (!factType || fact.fact_type === factType));
+  const copy = async (fact: InterestingFact) => {
+    const values = Object.entries(fact.numeric_values).map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : String(value)}`).join("\n");
+    await navigator.clipboard.writeText(`${fact.title}\n\n${fact.description}${values ? `\n\n${values}` : ""}`);
+    setCopiedId(fact.id);
+    window.setTimeout(() => setCopiedId(""), 1800);
+  };
+  return <>
+    <section className="facts-intro"><div><small>ЕЖЕДНЕВНАЯ ПОДБОРКА</small><h2>Готовые поводы для Telegram</h2><p>Расчёт выполняется один раз в сутки. Здесь открываются уже сохранённые карточки без повторного анализа тиражей.</p></div><strong>{visible.length}<small>фактов в выборке</small></strong></section>
+    <div className="facts-filters">
+      <select aria-label="Статус факта" value={factStatus} onChange={(event) => setFactStatus(event.target.value as InterestingFactStatus | "")}><option value="">Все статусы</option>{Object.entries(factStatusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
+      <select aria-label="Лотерея факта" value={lotteryId} onChange={(event) => setLotteryId(event.target.value)}><option value="">Все лотереи</option>{lotteries.map((lottery) => <option key={lottery.id} value={lottery.id}>{lottery.name}</option>)}</select>
+      <select aria-label="Тип факта" value={factType} onChange={(event) => setFactType(event.target.value)}><option value="">Все типы</option>{types.map((type) => <option key={type} value={type}>{factTypeLabels[type] ?? translated(type, {})}</option>)}</select>
+    </div>
+    {visible.length ? <section className="facts-grid">{visible.map((fact) => <article className={`fact-card ${fact.status}`} key={fact.id}>
+      <header><span>{factTypeLabels[fact.fact_type] ?? translated(fact.fact_type, {})}</span><b>score {fact.score}</b></header>
+      <small>{fact.lottery_name} · {new Date(`${fact.generation_date}T12:00:00`).toLocaleDateString("ru-RU")}</small><h3>{fact.title}</h3><p>{fact.description}</p>
+      <div className="fact-values">{Object.entries(fact.numeric_values).map(([key, value]) => <span key={key}><small>{translated(key, {})}</small><b>{Array.isArray(value) ? value.join(" · ") : String(value)}</b></span>)}</div>
+      <footer><button onClick={() => void copy(fact)}>{copiedId === fact.id ? "Скопировано" : "Скопировать данные"}</button>{fact.status !== "viewed" && <button onClick={() => void onStatus(fact, "viewed")}>Просмотрено</button>}{fact.status !== "used" && <button className="primary" onClick={() => void onStatus(fact, "used")}>Использовано</button>}{fact.status !== "hidden" && <button className="quiet" onClick={() => void onStatus(fact, "hidden")}>Скрыть</button>}</footer>
+    </article>)}</section> : <section className="panel empty-facts"><h2>В этой выборке пока нет фактов</h2><p>Новая подборка появится автоматически после ежедневного расчёта.</p></section>}
+  </>;
+}
+
 export default function App() {
   const [session, setSession] = useState<AdminSession | null>(null);
   const [checking, setChecking] = useState(true);
@@ -545,6 +594,7 @@ export default function App() {
   const [statisticsWindow, setStatisticsWindow] = useState(20);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [interestingFacts, setInterestingFacts] = useState<InterestingFact[]>([]);
   const [releaseNotes, setReleaseNotes] = useState<{ changelog: ReleaseNote[]; devlog: ReleaseNote[] }>({ changelog: [], devlog: [] });
   const [ticketAnalytics, setTicketAnalytics] = useState<TicketAnalytics | null>(null);
   const [analyticsTab, setAnalyticsTab] = useState<AnalyticsTab>("lotteries");
@@ -595,6 +645,10 @@ export default function App() {
         apply(() => { setLotteries(available); });
       }
       if (target === "broadcast") { const rows = await adminApi.lotteries(); apply(() => setLotteries(rows)); }
+      if (target === "facts") {
+        const [facts, available] = await Promise.all([adminApi.interestingFacts(""), adminApi.lotteries()]);
+        apply(() => { setInterestingFacts(facts); setLotteries(available); });
+      }
       if (target === "system") {
         const [ledgerRows, notificationRows, auditRows, dashboardData, changelog, devlog] = await Promise.all([adminApi.transactions(), adminApi.notifications(), adminApi.audit(), adminApi.dashboard(), adminApi.releaseNotes("changelog"), adminApi.releaseNotes("devlog")]);
         apply(() => { setTransactions(ledgerRows); setNotifications(notificationRows); setAudit(auditRows); setDashboard(dashboardData); setReleaseNotes({ changelog, devlog }); });
@@ -647,6 +701,7 @@ export default function App() {
       {!loading && view === "schedule" && <ScheduleView key={scope} entries={scheduleEntries} lotteries={visibleLotteries} loadedAt={scheduleLoadedAt} />}
       {!loading && view === "draws" && <DrawsView key={scope} scope={scope} lotteries={visibleLotteries} onOpen={openDraw} />}
       {!loading && view === "analytics" && dashboard && ticketAnalytics && <AnalyticsView tab={analyticsTab} onTab={setAnalyticsTab} dashboard={dashboard} analytics={ticketAnalytics} lotteries={visibleLotteries} statistics={statistics} selectedLotteryId={statisticsLotteryId} windowSize={statisticsWindow} onLottery={setStatisticsLotteryId} onWindow={setStatisticsWindow} />}
+      {!loading && view === "facts" && <InterestingFactsView facts={interestingFacts} lotteries={lotteries} onStatus={async (fact, factStatus) => { try { const updated = await adminApi.setInterestingFactStatus(fact.id, factStatus); setInterestingFacts((current) => current.map((item) => item.id === updated.id ? updated : item)); } catch (reason) { setError(reason instanceof Error ? reason.message : "Не удалось изменить статус факта."); } }} />}
       {!loading && view === "broadcast" && <BroadcastTestView lotteries={lotteries} miniappUrl={session.miniapp_url} />}
       {!loading && view === "system" && <SystemView dashboard={dashboard} releaseNotes={releaseNotes} tab={systemTab} onTab={setSystemTab} transactions={transactions} notifications={notifications} audit={audit} onTransactions={(query) => void adminApi.transactions(query).then(setTransactions).catch((reason: Error) => setError(reason.message))} />}
     </main>{drawDetail && <DrawDetailPanel detail={drawDetail} onClose={() => setDrawDetail(null)} />}

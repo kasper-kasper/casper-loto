@@ -890,7 +890,7 @@ class MiniAppQueryService:
                         ),
                     )
             else:
-                tickets = (
+                ranked_tickets = (
                     await self._session.execute(
                         select(Ticket)
                         .where(Ticket.user_id == user_id, Ticket.draw_id == draw.id)
@@ -909,7 +909,7 @@ class MiniAppQueryService:
                         matches=ticket.matches,
                         prize_amount=ticket.prize_amount,
                     )
-                    for ticket in tickets
+                    for ticket in ranked_tickets
                 )
         return MiniAppLiveDraw(
             lottery_code=draw_display_code(lottery.code, draw.scheduled_at),

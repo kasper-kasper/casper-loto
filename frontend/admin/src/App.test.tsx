@@ -11,7 +11,7 @@ vi.mock("./api", () => ({
     login: vi.fn(), session: vi.fn(), logout: vi.fn(), dashboard: vi.fn(),
     players: vi.fn(), lotteries: vi.fn(), schedule: vi.fn(), draws: vi.fn(), draw: vi.fn(),
     transactions: vi.fn(), playerTransactions: vi.fn(), statistics: vi.fn(), ticketAnalytics: vi.fn(), activity: vi.fn(), audit: vi.fn(),
-    notifications: vi.fn(), releaseNotes: vi.fn(),
+    notifications: vi.fn(), releaseNotes: vi.fn(), interestingFacts: vi.fn(), setInterestingFactStatus: vi.fn(),
     setBalance: vi.fn(), configureLottery: vi.fn(), setReserve: vi.fn(), setJackpot: vi.fn(),
     setAutoPlay: vi.fn(),
   },
@@ -24,6 +24,7 @@ const player: Player = { id: "player", display_name: "Test Player", username: "p
 const analytics: TicketAnalytics = { overall: { lottery_id: null, lottery_name: "Все лотереи", is_active: null, total_tickets: 100, active_tickets: 10, settled_tickets: 90, winning_tickets: 21, participants: 8, winning_players: 5, total_sales: 10_000, total_payout: 2_500 }, lotteries: [{ lottery_id: "lottery", lottery_name: "Weekly 5/20", is_active: true, total_tickets: 100, active_tickets: 10, settled_tickets: 90, winning_tickets: 21, participants: 8, winning_players: 5, total_sales: 10_000, total_payout: 2_500 }] };
 const numberStatistics: NumberStatisticsReport = { lottery_id: "lottery", lottery_name: "Weekly 5/20", period_start: "2026-08-31T21:00:00Z", window_size: 20, draw_count: 2, first_draw_at: "2026-09-01T09:00:00Z", last_draw_at: "2026-09-01T15:00:00Z", numbers: [{ number: 7, appearances: 2, draw_percentage: 100, last_appearance: "2026-09-01T15:00:00Z", draws_since_last: 0 }] };
 const scheduleEntries: ScheduleEntry[] = [{ id: "scheduled-draw", lottery_id: "lottery", lottery_name: "Weekly 5/20", public_number: 8, scheduled_at: "2026-09-02T17:00:00Z" }];
+const interestingFact = { id: "fact", generation_date: "2026-09-15", generated_at: "2026-09-15T01:10:00Z", lottery_id: "lottery", lottery_code: "weekly", lottery_name: "Weekly 5/20", fact_type: "jackpot_drought", title: "12 тиражей без джекпота", description: "Джекпот продолжает копиться.", numeric_values: { draws_without_jackpot: 12, jackpot: 3_000_000 }, score: 82, status: "new" as const };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -47,6 +48,8 @@ beforeEach(() => {
   vi.mocked(adminApi.releaseNotes).mockImplementation(async (kind) => [{
     version: "0.15.0", date: "2026-08-31", content: kind === "changelog" ? "Публичное изменение" : "Техническое изменение", sequence: kind === "devlog" ? 15 : null,
   }]);
+  vi.mocked(adminApi.interestingFacts).mockResolvedValue([interestingFact]);
+  vi.mocked(adminApi.setInterestingFactStatus).mockImplementation(async (_id, status) => ({ ...interestingFact, status }));
   vi.mocked(adminApi.setBalance).mockResolvedValue({ amount: 9_000, already_processed: false });
   vi.mocked(adminApi.configureLottery).mockResolvedValue(lottery);
   vi.mocked(adminApi.setJackpot).mockResolvedValue({ amount: lottery.current_jackpot, already_processed: false });
@@ -62,7 +65,7 @@ it("restores an authenticated session and renders Russian system truth", async (
   expect(screen.getByText("за всю историю")).toBeInTheDocument();
   expect(screen.getByText("12 000 CAS")).toBeInTheDocument();
   expect(screen.queryByText("v0.8.0 · работает 2 мин.")).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: /^09Система$/ }));
+  fireEvent.click(screen.getByRole("button", { name: /^10Система$/ }));
   expect(await screen.findByText("БАЗА ДАННЫХ РАБОТАЕТ")).toBeInTheDocument();
   expect(screen.getByText("v0.8.0 · работает 2 мин.")).toBeInTheDocument();
 });
@@ -112,18 +115,31 @@ it("adjusts a player balance only with a mandatory reason", async () => {
   await waitFor(() => expect(adminApi.setBalance).toHaveBeenCalledWith("player", 9000, "Тестовое начисление"));
 });
 
-it("groups administration into nine owner-oriented sections", async () => {
+it("groups administration into ten owner-oriented sections", async () => {
   render(<App />);
   await screen.findByText("Всего сорвано джекпотов");
 
   const nav = within(screen.getByRole("navigation"));
-  for (const label of ["Сегодня", "Fast", "Лотереи", "Расписание", "Тиражи", "Игроки", "Аналитика", "Тест эфира", "Система"]) {
+  for (const label of ["Сегодня", "Fast", "Лотереи", "Расписание", "Тиражи", "Игроки", "Аналитика", "Interesting Facts", "Тест эфира", "Система"]) {
     expect(nav.getByRole("button", { name: new RegExp(label) })).toBeInTheDocument();
   }
   fireEvent.click(nav.getByRole("button", { name: /Система/ }));
   expect(await screen.findByRole("tab", { name: "Журнал CAS" })).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: "Уведомления" })).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: "Аудит действий" })).toBeInTheDocument();
+});
+
+it("shows precomputed interesting facts and updates their workflow status", async () => {
+  render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /Interesting Facts/ }));
+
+  expect(await screen.findByText("12 тиражей без джекпота")).toBeInTheDocument();
+  expect(screen.getByLabelText("Статус факта")).toHaveValue("new");
+  expect(adminApi.interestingFacts).toHaveBeenCalledWith("");
+  fireEvent.click(screen.getByRole("button", { name: "Использовано" }));
+
+  await waitFor(() => expect(adminApi.setInterestingFactStatus).toHaveBeenCalledWith("fact", "used"));
+  expect(screen.queryByText("12 тиражей без джекпота")).not.toBeInTheDocument();
 });
 
 it("opens an isolated non-Fast broadcast rehearsal in the Mini App", async () => {
@@ -158,7 +174,7 @@ it("loads the daily schedule only after opening its section", async () => {
 
 it("shows complete changelog and devlog in separate protected tabs", async () => {
   render(<App />);
-  fireEvent.click(await screen.findByRole("button", { name: /^09Система$/ }));
+  fireEvent.click(await screen.findByRole("button", { name: /^10Система$/ }));
   fireEvent.click(await screen.findByRole("tab", { name: "Разработка" }));
 
   expect(await screen.findByText("Публичное изменение")).toBeInTheDocument();

@@ -242,6 +242,23 @@ export interface NotificationItem {
   created_at: string;
 }
 
+export type InterestingFactStatus = "new" | "viewed" | "used" | "hidden";
+
+export interface InterestingFact {
+  id: string;
+  generation_date: string;
+  generated_at: string;
+  lottery_id: string;
+  lottery_code: string;
+  lottery_name: string;
+  fact_type: string;
+  title: string;
+  description: string;
+  numeric_values: Record<string, unknown>;
+  score: number;
+  status: InterestingFactStatus;
+}
+
 
 export interface JackpotEvent {
   id: string;

@@ -628,10 +628,13 @@ def test_admin_routes_cover_milestone_and_completed_draws_have_no_mutation() -> 
         "/api/v1/admin/ticket-analytics",
         "/api/v1/admin/activity",
         "/api/v1/admin/audit",
+        "/api/v1/admin/interesting-facts",
+        "/api/v1/admin/interesting-facts/{fact_id}/status",
         "/api/v1/admin/release-notes/{kind}",
     }
     assert required.issubset(paths)
     assert set(paths["/api/v1/admin/draws/{draw_id}"]) == {"get"}
+    assert set(paths["/api/v1/admin/interesting-facts/{fact_id}/status"]) == {"patch"}
 
 
 def test_postgresql_trigger_migrations_are_asyncpg_compatible() -> None:

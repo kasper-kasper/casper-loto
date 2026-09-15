@@ -2,7 +2,7 @@
 
 import asyncio
 import hmac
-from datetime import datetime
+from datetime import date, datetime
 from time import monotonic
 from typing import Annotated, Any, Literal
 from uuid import UUID
@@ -27,12 +27,14 @@ from k_loto.application.admin import (
     AdminQueryService,
     ensure_admin_user,
 )
+from k_loto.application.interesting_facts import InterestingFactAdminService
 from k_loto.application.query_scope import LotteryScope
 from k_loto.application.release_notes import ReleaseNoteKind, load_release_notes
 from k_loto.core.config import Settings, get_settings
 from k_loto.domain.enums import (
     AuditAction,
     DrawStatus,
+    InterestingFactStatus,
     LedgerAccountKind,
     LotteryKind,
     NotificationStatus,
@@ -288,6 +290,25 @@ class NotificationResponse(ApiModel):
     sent_at: datetime | None
     last_error: str | None
     created_at: datetime
+
+
+class InterestingFactResponse(ApiModel):
+    id: UUID
+    generation_date: date
+    generated_at: datetime
+    lottery_id: UUID
+    lottery_code: str
+    lottery_name: str
+    fact_type: str
+    title: str
+    description: str
+    numeric_values: dict[str, Any]
+    score: int
+    status: InterestingFactStatus
+
+
+class InterestingFactStatusRequest(BaseModel):
+    status: InterestingFactStatus
 
 
 class CurrentAdmin:
@@ -728,6 +749,43 @@ async def audit(
         AuditResponse.model_validate(item)
         for item in await AdminQueryService(session).audit(limit=limit)
     ]
+
+
+@router.get("/interesting-facts", response_model=list[InterestingFactResponse])
+async def interesting_facts(
+    _admin: Annotated[CurrentAdmin, Depends(get_current_admin)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    fact_status: Annotated[InterestingFactStatus | None, Query()] = None,
+    lottery_id: Annotated[UUID | None, Query()] = None,
+    fact_type: Annotated[str | None, Query(max_length=64)] = None,
+    limit: Annotated[int, Query(ge=1, le=500)] = 200,
+) -> list[InterestingFactResponse]:
+    items = await InterestingFactAdminService(session).list(
+        status=fact_status,
+        lottery_id=lottery_id,
+        fact_type=fact_type,
+        limit=limit,
+    )
+    return [InterestingFactResponse.model_validate(item) for item in items]
+
+
+@router.patch(
+    "/interesting-facts/{fact_id}/status",
+    response_model=InterestingFactResponse,
+)
+async def update_interesting_fact_status(
+    fact_id: UUID,
+    payload: InterestingFactStatusRequest,
+    _admin: Annotated[CurrentAdmin, Depends(require_admin_csrf)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> InterestingFactResponse:
+    async with session.begin():
+        item = await InterestingFactAdminService(session).set_status(
+            fact_id, payload.status
+        )
+    if item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    return InterestingFactResponse.model_validate(item)
 
 
 @router.get("/ticket-analytics", response_model=TicketAnalyticsResponse)

@@ -74,3 +74,10 @@ class NotificationStatus(StrEnum):
     SENT = "SENT"
     FAILED = "FAILED"
     CANCELLED = "CANCELLED"
+
+
+class InterestingFactStatus(StrEnum):
+    NEW = "new"
+    VIEWED = "viewed"
+    USED = "used"
+    HIDDEN = "hidden"

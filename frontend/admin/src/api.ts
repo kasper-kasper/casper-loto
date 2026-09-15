@@ -4,6 +4,8 @@ import type {
   Dashboard,
   Draw,
   DrawDetail,
+  InterestingFact,
+  InterestingFactStatus,
   Lottery,
   NumberStatisticsReport,
   NotificationItem,
@@ -120,6 +122,13 @@ export const adminApi = {
   notifications: () => request<NotificationItem[]>("/notifications"),
   releaseNotes: (kind: "changelog" | "devlog") =>
     request<ReleaseNote[]>(`/release-notes/${kind}`),
+  interestingFacts: (query = "fact_status=new") =>
+    request<InterestingFact[]>(`/interesting-facts${query ? `?${query}` : ""}`),
+  setInterestingFactStatus: (id: string, status: InterestingFactStatus) =>
+    request<InterestingFact>(`/interesting-facts/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    }),
   setBalance: (userId: string, targetAmount: number, reason: string) =>
     request<{ amount: number; already_processed: boolean }>(
       `/players/${userId}/balance-adjustments`,
