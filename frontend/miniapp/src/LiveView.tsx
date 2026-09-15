@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import { motion } from "motion/react";
 
 import { GrandNumberSet, Icon, Money, NumberSet, PrimaryButton } from "./components";
@@ -8,7 +9,7 @@ import { livePresentation, replayPresentation } from "./live";
 import { LotteryVisual } from "./LotteryVisuals";
 import { isGrandLottery, matchLabel, splitGrandNumbers } from "./grand";
 import { liveStartHaptic, selectionHaptic } from "./telegram";
-import type { LiveDraw, LiveFeed } from "./types";
+import type { LiveDraw, LiveFeed, LiveTicket } from "./types";
 
 interface LiveViewProps {
   feed: LiveFeed | null;
@@ -27,6 +28,29 @@ function lotteryFormat(draw: LiveDraw): string {
   if (draw.lottery_code === "september") return "DAILY · 3 ИЗ 33";
   if (draw.lottery_code === "grob") return "DAILY · 3 ИЗ 16";
   return draw.lottery_kind === "WEEKLY" ? "ЕЖЕНЕДЕЛЬНАЯ · 5 ИЗ 35 + 2 ИЗ 5" : "DAILY · 4 ИЗ 15";
+}
+
+const drumBalls = [
+  [18, 27], [36, 18], [57, 26], [73, 43], [63, 66], [42, 72],
+  [22, 61], [47, 45], [79, 23], [29, 42], [55, 57], [76, 68],
+];
+
+function KhanLototron({ revealedNumbers, currentNumber, mixing }: { revealedNumbers: number[]; currentNumber: number | null; mixing: boolean }) {
+  return <div className={`khan-lototron ${mixing ? "is-mixing" : "is-drawing"}`} aria-live="polite">
+    <header><span>{mixing ? "ЛОТОТРОН ЗАПУЩЕН" : `ШАР ${revealedNumbers.length} ИЗ 6`}</span><strong>{mixing ? "Перемешиваем шары" : "Выпавшее число"}</strong></header>
+    <div className="khan-machine" aria-hidden="true">
+      <div className="khan-drum"><i className="khan-drum-ring" />{drumBalls.map(([left, top], index) => <b key={index} style={{ "--ball-left": `${left}%`, "--ball-top": `${top}%`, "--ball-delay": `${index * -0.17}s` } as CSSProperties} />)}<span className="khan-rotor"><i /><i /><i /></span></div>
+      <div className="khan-chute"><i /></div>
+      <div className="khan-output">{currentNumber !== null ? <motion.strong animate={{ opacity: 1, scale: 1, y: 0 }} initial={{ opacity: 0, scale: .45, y: -25 }} key={currentNumber} transition={{ type: "spring", stiffness: 240, damping: 17 }}>{currentNumber}</motion.strong> : <span />}</div>
+      <div className="khan-base"><span>KASPER</span><i /><b>6 / 36</b></div>
+    </div>
+    <div className="khan-ball-rack">{Array.from({ length: 6 }, (_, index) => <i className={index < revealedNumbers.length ? "filled" : ""} key={index}>{revealedNumbers[index] ?? "·"}</i>)}</div>
+  </div>;
+}
+
+function KhanBestTicket({ ticket, revealedNumbers }: { ticket: LiveTicket; revealedNumbers: number[] }) {
+  const matches = ticket.numbers.filter((number) => revealedNumbers.includes(number)).length;
+  return <article className="khan-best-ticket"><header><div><span>ВАШ ЛУЧШИЙ БИЛЕТ СЕЙЧАС</span><strong>{formatTicketLabel("khan", ticket.public_number)}</strong></div><b>{matches} / 6</b></header><NumberSet values={ticket.numbers} winning={revealedNumbers} animate={false} /></article>;
 }
 
 export function LiveView({ feed, now, loading, onPlay, onTickets }: LiveViewProps) {
@@ -64,6 +88,7 @@ export function LiveView({ feed, now, loading, onPlay, onTickets }: LiveViewProp
   const finalMinuteProgress = finalMinute ? Math.max(0, Math.min(100, ((60_000 - startsIn) / 60_000) * 100)) : 0;
   const grand = isGrandLottery(draw.lottery_code) && (draw.winning_numbers?.length ?? 7) === 7;
   const resultSize = draw.lottery_code === "september" || draw.lottery_code === "grob" ? 3 : draw.lottery_code === "khan" ? 6 : draw.lottery_kind === "WEEKLY" ? 7 : 4;
+  const khanShownNumbers = state.currentNumber === null ? state.revealedNumbers : [...state.revealedNumbers, state.currentNumber];
 
   return <div className="live-experience">
     <section className={`live-stage lottery-${draw.lottery_code} phase-${state.phase} ${finalMinute ? "final-minute" : ""} ${isReplay ? "is-replay" : "is-live"}`}>
@@ -84,13 +109,13 @@ export function LiveView({ feed, now, loading, onPlay, onTickets }: LiveViewProp
         <div className="live-facts"><div><span>Джекпот</span><strong><Money value={draw.jackpot} compact /></strong></div><div><span>Ваши билеты</span><strong>{draw.player_ticket_count}</strong></div></div>
       </>}
 
-      {state.phase === "starting" && <div className="live-start"><span>{isReplay ? "Возвращаемся к моменту тиража" : "Тираж начинается"}</span><strong>{isReplay ? "Восстанавливаем последовательность чисел" : copy.live.choosingNumbers}</strong><p>{isReplay ? "Это цифровой повтор сохранённого результата." : copy.live.stayOnScreen}</p><i /></div>}
+      {state.phase === "starting" && (draw.lottery_code === "khan" ? <KhanLototron revealedNumbers={[]} currentNumber={null} mixing /> : <div className="live-start"><span>{isReplay ? "Возвращаемся к моменту тиража" : "Тираж начинается"}</span><strong>{isReplay ? "Восстанавливаем последовательность чисел" : copy.live.choosingNumbers}</strong><p>{isReplay ? "Это цифровой повтор сохранённого результата." : copy.live.stayOnScreen}</p><i /></div>)}
 
-      {state.phase === "revealing" && <div className="live-reveal" aria-live="polite">
+      {state.phase === "revealing" && (draw.lottery_code === "khan" ? <><KhanLototron revealedNumbers={khanShownNumbers} currentNumber={state.currentNumber} mixing={false} />{draw.highlighted_tickets[0] && <KhanBestTicket ticket={draw.highlighted_tickets[0]} revealedNumbers={khanShownNumbers} />}</> : <div className="live-reveal" aria-live="polite">
         <span>{isReplay ? "В записи выпало число" : "Выпадает число"}</span>
         <motion.strong animate={{ opacity: 1, scale: 1, y: 0 }} initial={{ opacity: 0, scale: .76, y: 12 }} key={state.currentNumber} transition={{ type: "spring", stiffness: 280, damping: 22 }}>{grand && (state.currentNumber ?? 0) > 35 ? (state.currentNumber ?? 0) - 35 : state.currentNumber}</motion.strong>
         <div className={`live-sequence ${grand ? "grand-live-sequence" : ""}`}>{draw.winning_numbers?.map((number, index) => <i className={`${grand && number > 35 ? "special" : ""} ${index < state.revealedNumbers.length ? `shown ${index === state.revealedNumbers.length - 1 ? "recent" : ""}` : ""}`} key={`${number}-${index}`}>{index < state.revealedNumbers.length ? (grand && number > 35 ? number - 35 : number) : "·"}</i>)}</div>
-      </div>}
+      </div>)}
 
       {state.phase === "result" && <motion.div animate={{ opacity: 1, y: 0 }} className={`live-result ${winner ? "winner" : "neutral"}`} initial={{ opacity: 0, y: 10 }}>
         <span>{isReplay ? "Результат записи" : "Итог тиража"}</span>

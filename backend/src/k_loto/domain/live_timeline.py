@@ -9,6 +9,8 @@ REVEAL_LEAD = timedelta(seconds=1)
 REVEAL_INTERVAL = timedelta(seconds=2)
 FAST_REVEAL_LEAD = timedelta(milliseconds=500)
 FAST_REVEAL_INTERVAL = timedelta(seconds=1)
+KHAN_REVEAL_LEAD = timedelta(seconds=4)
+KHAN_REVEAL_INTERVAL = timedelta(milliseconds=3200)
 CUTOFF_SOON = timedelta(minutes=5)
 
 
@@ -39,6 +41,26 @@ def presentation_timeline(
 
     starts_at = max(scheduled_at, executed_at) if executed_at else scheduled_at
     return draw_timeline(starts_at, number_count)
+
+
+def khan_presentation_timeline(
+    scheduled_at: datetime,
+    executed_at: datetime | None,
+    number_count: int,
+) -> DrawTimeline:
+    """Give the 6-of-36 drum enough time to mix and present every ball."""
+
+    starts_at = max(scheduled_at, executed_at) if executed_at else scheduled_at
+    reveal_at = tuple(
+        starts_at + KHAN_REVEAL_LEAD + KHAN_REVEAL_INTERVAL * index
+        for index in range(number_count)
+    )
+    ends_at = (
+        reveal_at[-1] + KHAN_REVEAL_INTERVAL
+        if reveal_at
+        else starts_at + KHAN_REVEAL_LEAD
+    )
+    return DrawTimeline(starts_at, reveal_at, ends_at)
 
 
 def fast_presentation_timeline(

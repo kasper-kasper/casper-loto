@@ -70,10 +70,11 @@ export function Today({ lotteries, now, highlights, totalTicketCount, totalWinni
   </>;
 }
 
-export function LotteryRoom({ lottery, initData, now, children, onClose, onTickets, initialLive = false, balance }: { balance?: number; initialLive?: boolean; lottery: Lottery; initData: string; now: number; children: ReactNode; onClose: () => void; onTickets: () => void }) {
+export function LotteryRoom({ lottery, initData, now, children, onClose, onTickets, onLiveModeChange, initialLive = false, balance }: { balance?: number; initialLive?: boolean; lottery: Lottery; initData: string; now: number; children: ReactNode; onClose: () => void; onTickets: () => void; onLiveModeChange?: (active: boolean) => void }) {
   const [tab, setTab] = useState<"tickets" | "live">(initialLive ? "live" : "tickets");
   const [feed, setFeed] = useState<LiveFeed | null>(null);
   const [error, setError] = useState("");
+  useEffect(() => onLiveModeChange?.(tab === "live"), [onLiveModeChange, tab]);
   useEffect(() => {
     if (tab !== "live") return;
     let active = true;

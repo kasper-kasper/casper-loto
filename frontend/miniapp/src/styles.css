@@ -1974,3 +1974,36 @@ html { overflow-x: clip; scrollbar-gutter: stable; }
 .instant-ticket-row button { min-width:35px; height:35px; padding:0 6px; border:1px solid color-mix(in srgb,var(--picker-accent) 34%,transparent); border-radius:9px; color:var(--picker-accent); background:color-mix(in srgb,var(--picker-accent) 10%,transparent); font-size:10px; font-weight:850; }
 .instant-ticket-row button:disabled { opacity:.3; }
 @media(max-width:350px){.instant-ticket-row{align-items:flex-start;flex-direction:column}.instant-ticket-row>div:last-child{width:100%}.instant-ticket-row button{flex:1}}
+
+/* 6 of 36 gets a short, self-contained mechanical draw instead of a generic number card. */
+.live-stage.lottery-khan.phase-starting,.live-stage.lottery-khan.phase-revealing { border-color:rgba(101,174,255,.36); background:radial-gradient(circle at 50% 28%,rgba(52,132,224,.15),transparent 34%),linear-gradient(165deg,#071a36,#050d1f 68%,#0c1727) !important; }
+.khan-lototron { display:grid; gap:10px; min-height:335px; align-content:center; }
+.khan-lototron>header { display:flex; align-items:end; justify-content:space-between; gap:12px; }
+.khan-lototron>header span { color:#79baff; font-size:7px; font-weight:850; letter-spacing:.18em; }
+.khan-lototron>header strong { color:#dcecff; font-size:10px; font-weight:650; }
+.khan-machine { position:relative; width:270px; height:225px; margin:0 auto; }
+.khan-drum { position:absolute; top:4px; left:18px; width:190px; height:190px; overflow:hidden; border:6px solid #8aa4bd; border-radius:50%; background:radial-gradient(circle at 36% 27%,rgba(255,255,255,.18),transparent 16%),radial-gradient(circle,#163c67,#07182f 68%); box-shadow:inset 0 0 0 3px #d7e7f255,inset 0 -20px 35px #02081399,0 16px 32px #0007; }
+.khan-drum::before { position:absolute; inset:10px; content:""; border:1px solid rgba(205,232,255,.28); border-radius:50%; box-shadow:inset 0 0 24px rgba(118,190,255,.12); }
+.khan-drum::after { position:absolute; inset:0; content:""; background:linear-gradient(115deg,rgba(255,255,255,.19),transparent 23% 71%,rgba(110,184,255,.08)); pointer-events:none; }
+.khan-drum-ring { position:absolute; inset:21px; border:2px dashed rgba(159,207,250,.33); border-radius:50%; animation:khan-drum-turn 5s linear infinite; }
+.khan-drum>b { position:absolute; z-index:2; left:var(--ball-left); top:var(--ball-top); width:22px; height:22px; border:1px solid #fff; border-radius:50%; background:radial-gradient(circle at 33% 27%,#fff 0 8%,#cce8ff 18%,#5ca6e8 58%,#22568b); box-shadow:inset -3px -4px 6px #0a315a88,0 2px 6px #0008; transform:translate(-50%,-50%); animation:khan-ball-mix 1.55s ease-in-out infinite alternate; animation-delay:var(--ball-delay); }
+.khan-rotor { position:absolute; z-index:1; inset:50%; width:16px; height:16px; transform:translate(-50%,-50%); }
+.khan-rotor>i { position:absolute; left:7px; bottom:7px; width:2px; height:69px; border-radius:2px; background:linear-gradient(#9dd5ff,transparent); transform-origin:50% 100%; }
+.khan-rotor>i:nth-child(2){transform:rotate(120deg)}.khan-rotor>i:nth-child(3){transform:rotate(240deg)}
+.khan-chute { position:absolute; z-index:3; top:121px; left:196px; width:48px; height:76px; overflow:hidden; border:4px solid #8098b0; border-left-width:7px; border-radius:5px 23px 24px 5px; background:linear-gradient(90deg,#102842,#07182d); transform:rotate(18deg); box-shadow:inset 0 0 0 2px #d5e5ef35,0 8px 14px #0007; }
+.khan-chute>i { position:absolute; inset:8px; border-radius:4px 16px 18px 4px; background:linear-gradient(110deg,rgba(129,197,255,.2),transparent); }
+.khan-output { position:absolute; z-index:5; right:0; bottom:8px; display:grid; width:70px; height:70px; place-items:center; border:5px solid #9fb5c8; border-radius:50%; background:#08172b; box-shadow:inset 0 0 0 2px #e8f5ff44,0 11px 25px #0008; }
+.khan-output>strong { display:grid; width:56px; height:56px; place-items:center; border:1px solid #fff; border-radius:50%; color:#092342; background:radial-gradient(circle at 34% 27%,#fff 0 9%,#d9efff 22%,#70b7f2 67%,#3675ad); box-shadow:inset -5px -7px 9px #28618e77,0 0 20px rgba(111,187,255,.3); font-size:25px; font-weight:900; }
+.khan-output>span { width:15px; height:15px; border:1px solid #51718d; border-radius:50%; }
+.khan-base { position:absolute; z-index:4; left:42px; bottom:0; display:flex; width:164px; height:39px; padding:0 13px; align-items:center; justify-content:space-between; border:1px solid #7891a8; border-radius:5px 5px 14px 14px; color:#d9edff; background:linear-gradient(#173754,#091b30); box-shadow:inset 0 1px #d9efff33,0 9px 18px #0007; }
+.khan-base span { font-size:9px; font-weight:900; letter-spacing:.18em; }.khan-base i { width:5px; height:5px; border-radius:50%; background:#69d99c; box-shadow:0 0 8px #69d99c; }.khan-base b { color:#7dbdff; font-size:8px; }
+.khan-ball-rack { display:grid; grid-template-columns:repeat(6,1fr); gap:6px; padding:8px; border:1px solid rgba(118,181,239,.19); border-radius:13px; background:rgba(3,11,25,.55); }
+.khan-ball-rack i { display:grid; aspect-ratio:1; place-items:center; border:1px solid rgba(128,171,211,.22); border-radius:50%; color:#4e6f90; background:#0b2039; font-size:12px; font-style:normal; }
+.khan-ball-rack i.filled { color:#08203d; border-color:#eff9ff; background:radial-gradient(circle at 34% 28%,#fff,#add8f8 48%,#4e98d5); box-shadow:0 0 13px rgba(98,175,241,.22); animation:khan-rack-in .45s cubic-bezier(.2,.8,.2,1) both; }
+.khan-best-ticket { display:grid; gap:9px; padding:12px; border:1px solid rgba(114,184,244,.22); border-radius:14px; background:linear-gradient(120deg,rgba(14,43,72,.92),rgba(5,17,32,.92)); }
+.khan-best-ticket>header { display:flex; align-items:center; justify-content:space-between; gap:10px; }.khan-best-ticket>header span,.khan-best-ticket>header strong { display:block; }.khan-best-ticket>header span { color:#6f9fc9; font-size:6px; font-weight:850; letter-spacing:.13em; }.khan-best-ticket>header strong { margin-top:3px; color:#d8eaff; font-size:9px; }.khan-best-ticket>header>b { color:#82c4ff; font-size:17px; }.khan-best-ticket .number-row { justify-content:flex-start; }.khan-best-ticket .number { width:34px; height:34px; border-color:rgba(116,175,226,.23); background:#0b2541; }.khan-best-ticket .number.won { color:#08203d; border-color:#eff9ff; background:#a9dafd; }
+@keyframes khan-drum-turn{to{transform:rotate(360deg)}}
+@keyframes khan-ball-mix{0%{transform:translate(-50%,-50%) translate(-8px,10px) rotate(-25deg)}100%{transform:translate(-50%,-50%) translate(10px,-12px) rotate(35deg)}}
+@keyframes khan-rack-in{from{opacity:.25;transform:translateY(-12px) scale(.62)}70%{transform:translateY(1px) scale(1.08)}}
+@media(max-width:350px){.khan-machine{width:248px;transform:scale(.92);transform-origin:center}.khan-best-ticket .number{width:31px;height:31px}}
+@media(prefers-reduced-motion:reduce){.khan-drum-ring,.khan-drum>b,.khan-ball-rack i.filled{animation:none}}

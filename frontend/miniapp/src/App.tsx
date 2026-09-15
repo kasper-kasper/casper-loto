@@ -275,6 +275,12 @@ export default function App({ initData, localDev = false }: AppProps) {
   const [now, setNow] = useState(() => Date.now());
   const clockAnchor = useRef<{ server: number; monotonic: number } | null>(null);
   const clockNeedsSync = useRef(true);
+  const nearestDrawIn = Math.min(
+    ...(dashboard?.lotteries
+      .map((lottery) => lottery.scheduled_at ? Date.parse(lottery.scheduled_at) - now : Number.POSITIVE_INFINITY)
+      .filter((delay) => delay >= 0) ?? [Number.POSITIVE_INFINITY]),
+  );
+  const clockInterval = view === "fast" || view === "live" || bingoOpen || roomLive || nearestDrawIn <= 60_000 ? 1_000 : 10_000;
 
   const applyDashboard = useCallback((value: Dashboard) => {
     setDashboard(value);
@@ -352,7 +358,7 @@ export default function App({ initData, localDev = false }: AppProps) {
         setNow(anchor ? anchor.server + performance.now() - anchor.monotonic : Date.now());
       };
       tick();
-      timer = window.setInterval(tick, 1000);
+      timer = window.setInterval(tick, clockInterval);
     };
     syncClock();
     document.addEventListener("visibilitychange", syncClock);
@@ -360,7 +366,7 @@ export default function App({ initData, localDev = false }: AppProps) {
       if (timer !== null) window.clearInterval(timer);
       document.removeEventListener("visibilitychange", syncClock);
     };
-  }, []);
+  }, [clockInterval]);
   useEffect(() => {
     let active = true;
     const check = async () => {
@@ -641,7 +647,7 @@ export default function App({ initData, localDev = false }: AppProps) {
   if (!dashboard) return <main className="centered-message"><div className="offline-mark">!</div><h1>Нет связи с K-Loto</h1><p>{error}</p></main>;
   const bingoLottery = dashboard.lotteries.find(item => item.code === "bingo");
   if (bingoOpen && bingoLottery) return <BingoView initialTab={roomLive ? "live" : "choose"} lottery={bingoLottery} initData={initData} now={serverNow} balance={dashboard.balance} onClose={() => setBingoOpen(false)} onPurchased={(result) => { applyPurchaseSnapshot("bingo", result, result.ticket_ids.length); void Promise.allSettled([refreshDashboard(), refreshAccount()]); }} />;
-  if (pickerLottery) return <main className="app-shell picker-page">{isFastLottery(pickerLottery.code) ? <FastPicker lottery={pickerLottery} purchasing={purchasing} success={purchaseSuccess} onBuy={(numbers) => purchaseDirect(pickerLottery.code, [numbers], 1)} onClose={() => { setPickerLottery(null); setView("fast"); }} /> : <LotteryRoom balance={dashboard.balance} initialLive={roomLive} key={pickerLottery.code} lottery={pickerLottery} initData={initData} now={serverNow} onClose={() => setPickerLottery(null)} onTickets={() => { setPickerLottery(null); setTicketLotteryFilter(pickerLottery.code); setTicketsLoading(true); setAccountView("tickets"); setView("account"); }}><NumberPicker lottery={pickerLottery} balance={dashboard.balance} purchasing={purchasing} initialNumbers={pickerInitialNumbers} favorites={favorites} cartRemaining={CART_MAX_TICKETS - cart.length} onAdd={(numbers, drawCount) => addManyToCart(pickerLottery, [numbers], drawCount)} onAddMany={(combinations, drawCount) => addManyToCart(pickerLottery, combinations, drawCount)} onBuy={(numbers, drawCount) => purchaseDirect(pickerLottery.code, [numbers], drawCount)} onBuyMany={(combinations, drawCount) => purchaseDirect(pickerLottery.code, combinations, drawCount)} onSaveFavorite={(numbers) => void saveFavorite(numbers)} onDeleteFavorite={(id) => void deleteFavorite(id)} /></LotteryRoom>}</main>;
+  if (pickerLottery) return <main className="app-shell picker-page">{isFastLottery(pickerLottery.code) ? <FastPicker lottery={pickerLottery} purchasing={purchasing} success={purchaseSuccess} onBuy={(numbers) => purchaseDirect(pickerLottery.code, [numbers], 1)} onClose={() => { setPickerLottery(null); setView("fast"); }} /> : <LotteryRoom balance={dashboard.balance} initialLive={roomLive} key={pickerLottery.code} lottery={pickerLottery} initData={initData} now={serverNow} onClose={() => { setRoomLive(false); setPickerLottery(null); }} onLiveModeChange={setRoomLive} onTickets={() => { setRoomLive(false); setPickerLottery(null); setTicketLotteryFilter(pickerLottery.code); setTicketsLoading(true); setAccountView("tickets"); setView("account"); }}><NumberPicker lottery={pickerLottery} balance={dashboard.balance} purchasing={purchasing} initialNumbers={pickerInitialNumbers} favorites={favorites} cartRemaining={CART_MAX_TICKETS - cart.length} onAdd={(numbers, drawCount) => addManyToCart(pickerLottery, [numbers], drawCount)} onAddMany={(combinations, drawCount) => addManyToCart(pickerLottery, combinations, drawCount)} onBuy={(numbers, drawCount) => purchaseDirect(pickerLottery.code, [numbers], drawCount)} onBuyMany={(combinations, drawCount) => purchaseDirect(pickerLottery.code, combinations, drawCount)} onSaveFavorite={(numbers) => void saveFavorite(numbers)} onDeleteFavorite={(id) => void deleteFavorite(id)} /></LotteryRoom>}</main>;
 
   return <main className={`app-shell ${view === "fast" ? "fast-shell" : ""}`}>
     <header className="app-header"><div aria-label="Kasper Loto" className="brand-lockup"><img alt="" className="brand-logo-horizontal" src="/brand/kasper-loto-horizontal.svg" /><img alt="" className="brand-logo-symbol" src="/brand/kasper-symbol.svg" /></div><div className="header-actions">{localDev && import.meta.env.VITE_DESIGN_PREVIEW !== "true" && <button className="dev-badge" onClick={() => void refillDevBalance()} type="button">+ TEST CAS</button>}{cart.length > 0 && <button aria-label={`Корзина: ${cart.length} ${plural(cart.length, "комбинация", "комбинации", "комбинаций")}`} className="header-cart" onClick={() => setView("cart")} type="button"><Icon name="cart" /><small>{cart.length}</small></button>}<Balance value={dashboard.balance} /></div></header>

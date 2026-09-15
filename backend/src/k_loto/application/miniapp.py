@@ -26,6 +26,7 @@ from k_loto.domain.enums import (
 from k_loto.domain.live_timeline import (
     draw_timeline,
     fast_presentation_timeline,
+    khan_presentation_timeline,
     presentation_timeline,
     sales_status,
 )
@@ -802,26 +803,21 @@ class MiniAppQueryService:
                 next_statement.order_by(Draw.scheduled_at, Draw.public_number).limit(1)
             )
         ).first()
+        recent_draws = tuple(
+            [
+                await self._live_draw(user_id, draw, lottery, jackpot)
+                for draw, lottery, jackpot in recent_rows
+            ]
+        )
         return MiniAppLiveFeed(
             server_time=timestamp,
-            latest_completed=(
-                await self._live_draw(
-                    user_id, latest_row[0], latest_row[1], latest_row[2]
-                )
-                if latest_row
-                else None
-            ),
+            latest_completed=recent_draws[0] if latest_row else None,
             next_scheduled=(
                 await self._live_draw(user_id, next_row[0], next_row[1], next_row[2])
                 if next_row
                 else None
             ),
-            recent_completed=tuple(
-                [
-                    await self._live_draw(user_id, draw, lottery, jackpot)
-                    for draw, lottery, jackpot in recent_rows
-                ]
-            ),
+            recent_completed=recent_draws,
         )
 
     async def _live_draw(
@@ -841,32 +837,11 @@ class MiniAppQueryService:
                 ).where(Ticket.user_id == user_id, Ticket.draw_id == draw.id)
             )
         ).one()
-        highlighted: tuple[MiniAppLiveTicket, ...] = ()
-        if draw.status == DrawStatus.COMPLETED and aggregate[0]:
-            tickets = (
-                await self._session.execute(
-                    select(Ticket)
-                    .where(Ticket.user_id == user_id, Ticket.draw_id == draw.id)
-                    .order_by(
-                        Ticket.prize_amount.desc(),
-                        Ticket.matches.desc().nullslast(),
-                        Ticket.public_number,
-                    )
-                    .limit(3)
-                )
-            ).scalars()
-            highlighted = tuple(
-                MiniAppLiveTicket(
-                    public_number=ticket.public_number,
-                    numbers=tuple(ticket.numbers),
-                    matches=ticket.matches,
-                    prize_amount=ticket.prize_amount,
-                )
-                for ticket in tickets
-            )
         timeline_factory = (
             fast_presentation_timeline
             if lottery.code in FAST_LOTTERY_CODES
+            else khan_presentation_timeline
+            if lottery.code == "khan"
             else presentation_timeline
         )
         timeline = timeline_factory(
@@ -874,6 +849,68 @@ class MiniAppQueryService:
             draw.executed_at if draw.status == DrawStatus.COMPLETED else None,
             lottery.numbers_to_pick,
         )
+        presentation_now = datetime.now(UTC)
+        highlighted: tuple[MiniAppLiveTicket, ...] = ()
+        if draw.status == DrawStatus.COMPLETED and aggregate[0]:
+            khan_is_revealing = (
+                lottery.code == "khan"
+                and timeline.starts_at <= presentation_now < timeline.ends_at
+            )
+            if khan_is_revealing:
+                revealed_count = sum(
+                    moment <= presentation_now for moment in timeline.reveal_at
+                )
+                if revealed_count and draw.winning_numbers:
+                    tickets = list(
+                        (
+                            await self._session.execute(
+                                select(Ticket)
+                                .where(
+                                    Ticket.user_id == user_id,
+                                    Ticket.draw_id == draw.id,
+                                )
+                                .order_by(Ticket.public_number)
+                            )
+                        ).scalars()
+                    )
+                    revealed = set(draw.winning_numbers[:revealed_count])
+                    best = max(
+                        tickets,
+                        key=lambda ticket: (
+                            len(revealed.intersection(ticket.numbers)),
+                            -ticket.public_number,
+                        ),
+                    )
+                    highlighted = (
+                        MiniAppLiveTicket(
+                            public_number=best.public_number,
+                            numbers=tuple(best.numbers),
+                            matches=len(revealed.intersection(best.numbers)),
+                            prize_amount=0,
+                        ),
+                    )
+            else:
+                tickets = (
+                    await self._session.execute(
+                        select(Ticket)
+                        .where(Ticket.user_id == user_id, Ticket.draw_id == draw.id)
+                        .order_by(
+                            Ticket.prize_amount.desc(),
+                            Ticket.matches.desc().nullslast(),
+                            Ticket.public_number,
+                        )
+                        .limit(3)
+                    )
+                ).scalars()
+                highlighted = tuple(
+                    MiniAppLiveTicket(
+                        public_number=ticket.public_number,
+                        numbers=tuple(ticket.numbers),
+                        matches=ticket.matches,
+                        prize_amount=ticket.prize_amount,
+                    )
+                    for ticket in tickets
+                )
         return MiniAppLiveDraw(
             lottery_code=draw_display_code(lottery.code, draw.scheduled_at),
             lottery_name=draw_display_name(
@@ -894,7 +931,7 @@ class MiniAppQueryService:
             highlighted_tickets=highlighted,
             sales_close_at=draw.sales_close_at,
             sales_status=sales_status(
-                now=datetime.now(UTC),
+                now=presentation_now,
                 status=draw.status,
                 sales_close_at=draw.sales_close_at,
                 timeline=timeline,

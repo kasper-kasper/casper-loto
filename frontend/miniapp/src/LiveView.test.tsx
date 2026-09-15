@@ -62,4 +62,28 @@ describe("personalised live result", () => {
     expect(document.querySelector(".live-september-mark")).not.toBeNull();
     expect(document.querySelectorAll(".live-final-numbers i")).toHaveLength(3);
   });
+
+  it("runs the 6 of 36 drum and keeps the current best ticket beside it", () => {
+    const revealAt = [4_000, 7_200, 10_400, 13_600, 16_800, 20_000].map((offset) => new Date(startsAt + offset).toISOString());
+    const draw: LiveDraw = {
+      ...baseDraw,
+      lottery_code: "khan",
+      lottery_name: "6 из 36",
+      winning_numbers: [2, 5, 9, 14, 28, 36],
+      player_ticket_count: 3,
+      player_best_matches: 2,
+      highlighted_tickets: [{ public_number: 6001, numbers: [2, 5, 8, 17, 24, 31], matches: 2, prize_amount: 0 }],
+      reveal_at: revealAt,
+      live_ends_at: new Date(startsAt + 23_200).toISOString(),
+    };
+    const now = startsAt + 7_300;
+    const feed: LiveFeed = { server_time: new Date(now).toISOString(), latest_completed: draw, next_scheduled: null, recent_completed: [draw] };
+
+    render(<LiveView feed={feed} now={now} loading={false} onPlay={vi.fn()} onTickets={vi.fn()} />);
+
+    expect(screen.getByText("ШАР 2 ИЗ 6")).toBeInTheDocument();
+    expect(screen.getByText("ВАШ ЛУЧШИЙ БИЛЕТ СЕЙЧАС")).toBeInTheDocument();
+    expect(document.querySelectorAll(".khan-best-ticket .number.won")).toHaveLength(2);
+    expect(document.querySelectorAll(".khan-ball-rack i.filled")).toHaveLength(2);
+  });
 });

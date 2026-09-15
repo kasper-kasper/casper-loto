@@ -6,6 +6,7 @@ from k_loto.domain.enums import DrawStatus
 from k_loto.domain.live_timeline import (
     draw_timeline,
     fast_presentation_timeline,
+    khan_presentation_timeline,
     presentation_timeline,
     sales_status,
 )
@@ -33,6 +34,16 @@ def test_timeline_assigns_stable_reveal_moments() -> None:
         starts_at + timedelta(seconds=1 + index * 2) for index in range(4)
     )
     assert timeline.ends_at == starts_at + timedelta(seconds=9)
+
+
+def test_khan_timeline_runs_a_twenty_three_second_drum_show() -> None:
+    starts_at = datetime(2026, 9, 1, 9, tzinfo=UTC)
+
+    timeline = khan_presentation_timeline(starts_at, starts_at, 6)
+
+    assert timeline.reveal_at[0] == starts_at + timedelta(seconds=4)
+    assert timeline.reveal_at[-1] == starts_at + timedelta(seconds=20)
+    assert timeline.ends_at == starts_at + timedelta(seconds=23, milliseconds=200)
 
 
 def test_completed_draw_reveal_starts_when_result_is_ready() -> None:
