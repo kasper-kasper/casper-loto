@@ -98,8 +98,24 @@ describe("Fast draw placement", () => {
 });
 
 describe("PULSE picker", () => {
+  it("renders both additional numbers in the live 2+2 result", () => {
+    const pulseDraw: LiveDraw = {
+      ...completedShadow,
+      lottery_code: "pulse",
+      lottery_name: "PULSE",
+      winning_numbers: [1, 7, 12, 15],
+      reveal_at: [6_000, 7_000, 8_000, 9_000].map((offset) => new Date(drawTime + offset).toISOString()),
+      live_ends_at: new Date(drawTime + 10_000).toISOString(),
+    };
+    const feed: LiveFeed = { server_time: new Date(drawTime + 11_000).toISOString(), latest_completed: pulseDraw, next_scheduled: null, recent_completed: [pulseDraw] };
+    const { container } = render(<FastView feed={feed} lotteries={[lottery("pulse", "2026-09-04T08:36:00Z")]} now={drawTime + 11_000} onOpen={() => undefined} />);
+
+    expect(container.querySelectorAll(".pulse-slots > i")).toHaveLength(4);
+    expect(container.querySelectorAll(".pulse-slots > i.special")).toHaveLength(2);
+  });
+
   it("submits two main numbers and two tagged Pulse numbers", () => {
-    const onBuy = vi.fn();
+    const onBuy = vi.fn().mockResolvedValue(true);
     render(
       <FastPicker
         lottery={{
@@ -133,7 +149,7 @@ describe("CODE picker", () => {
         lottery={{ ...lottery("shadow", "2026-09-04T08:33:00Z"), name: "CODE", ruleset_code: "code_4_digits", numbers_to_pick: 4, max_number: 9 }}
         purchasing={false}
         success={false}
-        onBuy={() => undefined}
+        onBuy={async () => true}
         onClose={() => undefined}
       />,
     );
@@ -141,7 +157,7 @@ describe("CODE picker", () => {
   });
 
   it("submits four ordered digits including zero and repeats", () => {
-    const onBuy = vi.fn();
+    const onBuy = vi.fn().mockResolvedValue(true);
     render(
       <FastPicker
         lottery={{

@@ -1446,11 +1446,12 @@ html.app-backgrounded *, .motion-paused, .motion-paused * { animation-play-state
 .fast-live-slots { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 10px; }
 .fast-live-slots i { display: grid; min-height: 61px; place-items: center; border: 1px dashed rgba(130,151,195,.26); border-radius: 11px 11px 18px 11px; color: #52617f; background: rgba(2,7,20,.62); font-size: 24px; font-style: normal; font-weight: 900; }
 .fast-live-slots i.lit { border-style: solid; border-color: color-mix(in srgb,var(--fast-accent) 78%,#fff); color: #fff; background: radial-gradient(circle,color-mix(in srgb,var(--fast-accent) 38%,transparent),rgba(4,10,26,.96) 67%); box-shadow: inset 0 0 22px color-mix(in srgb,var(--fast-accent) 20%,transparent),0 0 17px color-mix(in srgb,var(--fast-accent) 23%,transparent); text-shadow: 0 0 13px var(--fast-accent); }
-.fast-live-slots.pulse-slots { grid-template-columns: 1fr 1fr 8px 1fr; }
+.fast-live-slots.pulse-slots { grid-template-columns: 1fr 1fr 8px 1fr 1fr; gap: 7px; }
 .fast-live-slots.pulse-slots::before { grid-column: 3; grid-row: 1; align-self: center; color: #ff4960; content: "+"; font-weight: 900; text-align: center; }
 .fast-live-slots.pulse-slots i:nth-child(1) { grid-column: 1; }
 .fast-live-slots.pulse-slots i:nth-child(2) { grid-column: 2; }
 .fast-live-slots.pulse-slots i:nth-child(3) { grid-column: 4; }
+.fast-live-slots.pulse-slots i:nth-child(4) { grid-column: 5; }
 .fast-live-slots.pulse-slots i.special { border-color: #ff5369; background: radial-gradient(circle,rgba(255,52,79,.43),rgba(20,2,8,.96) 67%); }
 .fast-live-slots.code-slots { grid-template-columns: repeat(4,1fr); gap: 7px; }
 .fast-live-slots.code-slots i { min-height: 58px; border-radius: 7px; font-family: ui-monospace,SFMono-Regular,Consolas,monospace; }
@@ -1881,6 +1882,43 @@ html { overflow-x: clip; scrollbar-gutter: stable; }
 .account-favorites p { flex-wrap: wrap; justify-content: flex-end; }
 .ticket-filters { flex-wrap: wrap; }
 .ticket-filters select { min-width: 0; max-width: 100%; }
+
+/* Keep the direct-purchase rhythm inside the current lottery. */
+.picker-page .picker-shell { padding-bottom: calc(94px + env(safe-area-inset-bottom)); }
+.picker-page .picker-actions { position: fixed; z-index: 28; left: 50%; bottom: max(10px,env(safe-area-inset-bottom)); width: min(calc(100% - 24px),516px); margin: 0; padding: 7px; border: 1px solid rgba(196,211,240,.2); border-radius: 15px; background: rgba(5,13,31,.91); box-shadow: 0 18px 48px rgba(0,0,0,.5),inset 0 1px rgba(255,255,255,.055); backdrop-filter: blur(18px); transform: translateX(-50%); }
+.picker-page .picker-actions > button { min-height: 52px; }
+
+/* Fast opens on the games; supporting history sits after the lineup. */
+.fast-world-footer { display: grid; gap: 9px; margin-top: 11px; padding-bottom: 9px; }
+.fast-world-footer .fast-last-jackpot { margin: 0; border-color: rgba(255,75,98,.25); background: linear-gradient(125deg,rgba(116,10,28,.2),rgba(13,3,8,.7)); }
+.fast-history-button { display: flex; width: 100%; min-height: 60px; padding: 12px 14px; align-items: center; gap: 12px; border: 1px solid rgba(255,75,98,.2); border-radius: 13px; color: #f4e8eb; background: rgba(38,5,13,.64); text-align: left; }
+.fast-history-button>.icon { width: 21px; color: #ff5269; }
+.fast-history-button>span { flex: 1; }
+.fast-history-button b,.fast-history-button small { display: block; }
+.fast-history-button b { font-size: 11px; }
+.fast-history-button small { margin-top: 4px; color: #9f7c84; font-size: 8px; }
+.fast-history-button>strong { color: #ff5269; font-size: 18px; font-weight: 400; }
+
+/* The cabinet now follows the same editorial card language as Today. */
+.account-title { margin-bottom: 3px; }
+.account-title h1 { font-family: Georgia,"Times New Roman",serif; font-weight: 400; }
+.account-overview { gap: 13px; overflow: visible; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.account-overview .account-identity { min-height: 143px; border: 1px solid rgba(211,185,112,.3); border-radius: 22px; background: radial-gradient(circle at 88% 6%,rgba(218,190,112,.2),transparent 36%),linear-gradient(145deg,#183027,#0d1e1a 67%,#17251f); box-shadow: 0 17px 38px rgba(0,0,0,.28); }
+.account-overview .account-monogram { border-color: rgba(220,194,125,.5); color: #f0d79b; background: rgba(219,190,111,.09); }
+.account-overview .account-balance { border-color: rgba(211,185,112,.18); }
+.account-overview .account-shortcuts { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; padding: 0; }
+.account-overview .account-shortcuts button { min-height: 112px; padding: 15px; align-items: flex-start; flex-direction: column; border-color: rgba(153,177,158,.18); border-radius: 17px; background: linear-gradient(145deg,#12251f,#0a1815); }
+.account-overview .account-shortcuts button>span { width: 100%; }
+.account-overview .account-shortcuts button>b { align-self: flex-end; margin-top: auto; color: #d9c083; }
+.account-overview .account-highlight { min-height: 174px; border: 1px solid rgba(212,183,108,.22); border-radius: 22px; background: radial-gradient(circle at 84% 39%,rgba(230,187,93,.19),transparent 28%),linear-gradient(140deg,#191e29,#2b1925 62%,#101b1b); box-shadow: 0 17px 38px rgba(0,0,0,.22); }
+.account-overview .account-scoreline { overflow: hidden; border: 1px solid rgba(153,177,158,.17); border-radius: 17px; background: #0d1d19; }
+.account-overview .account-scoreline article { border-color: rgba(153,177,158,.13); }
+.account-overview .account-ledger,.account-overview .account-favorites,.account-overview .notification-settings { padding: 9px 17px 15px; border: 1px solid rgba(153,177,158,.16); border-radius: 18px; background: linear-gradient(145deg,#10211c,#0a1815); }
+.account-overview .account-ledger header,.account-overview .account-ledger>div,.account-overview .account-favorites header,.account-overview .account-favorites>div { border-color: rgba(153,177,158,.11); }
+.account-overview .account-favorites { border-top: 1px solid rgba(153,177,158,.16); }
+.account-overview .notification-settings { margin: 0; }
+
+@media(max-width:350px){.picker-page .picker-actions{width:calc(100% - 16px)}.account-overview .account-shortcuts{grid-template-columns:1fr}.account-overview .account-shortcuts button{min-height:86px}}
 
 .fast-live-card { display: grid; grid-template-rows: 12px 66px 136px 72px; gap: 8px; }
 .fast-live-title { min-width: 0; margin: 0; align-items: center; }

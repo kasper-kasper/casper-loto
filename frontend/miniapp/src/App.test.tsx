@@ -400,6 +400,12 @@ it("keeps Kasper Grand main and special number fields independent", async () => 
     "signed", "weekly", [[1, 2, 3, 4, 5, 36, 37]],
     "00000000-0000-4000-8000-000000000001", 1,
   ));
+  expect(screen.getByRole("heading", { name: "Kasper Grand" })).toBeInTheDocument();
+  await waitFor(() => {
+    const refreshedMain = screen.getByText("Поле №1 · Основные числа").closest("section") as HTMLElement;
+    expect(within(refreshedMain).queryAllByRole("button", { pressed: true })).toHaveLength(0);
+  });
+  await waitFor(() => expect(screen.getByRole("button", { name: "Купить билет" })).toBeDisabled());
 });
 
 it("builds a large cart and sends one hundred tickets in one operation", async () => {
@@ -442,6 +448,7 @@ it("opens the separate Fast section without replacing the nearest main draw", as
   expect(screen.getByRole("heading", { name: "SHADOW" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "PULSE" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /Собрать сигнал/ })).toBeInTheDocument();
+  expect(screen.queryByText("Отдельный мир Каспера")).not.toBeInTheDocument();
 });
 
 it("shows one simple notification control and no auto-play panel", async () => {
@@ -598,7 +605,7 @@ it("does not replace history with a late active-ticket response", async () => {
 it("keeps Fast tickets accessible through a separate server filter", async () => {
   render(<App initData="test" />);
   fireEvent.click(await screen.findByRole("button", { name: "Kasper Fast" }));
-  fireEvent.click(screen.getByRole("button", { name: "Все билеты →" }));
+  fireEvent.click(screen.getByRole("button", { name: /Билеты Kasper Fast/ }));
   await waitFor(() => expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "active", "scope:fast", false));
   fireEvent.change(screen.getByLabelText("Фильтр по лотерее"), { target: { value: "scope:standard" } });
   await waitFor(() => expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "active", "scope:standard", false));

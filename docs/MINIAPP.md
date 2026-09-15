@@ -11,6 +11,9 @@ Milestone 5 provides a mobile-first React/TypeScript/Vite client with:
 - Kasper Grand 5/35 + 2/5, Daily 4/15 and «3 СЕНТЯБРЯ» 3/33 number pickers with Web Crypto random pick;
 - single-ticket purchase and multi-ticket cart checkout;
 - duplicate combinations as independent cart tickets;
+- uninterrupted direct purchase: the current lottery stays open, the purchased
+  combination clears and the fixed purchase dock is immediately ready for the
+  next ticket;
 - a «Моё» cabinet with player statistics, active tickets, completed ticket
   history, notification preferences and a persistent in-app inbox;
 - polished mobile navigation, loading and result states with optional Telegram
@@ -80,7 +83,9 @@ but it does not send thousands of individual requests.
 The live feed uses authenticated SSE. Snapshots follow the server timeline;
 reconnecting or reopening never restarts the reveal locally.
 
-Kasper Fast uses the same read-only feed with `scope=fast`, but renders it directly in
+Kasper Fast opens directly on its game lineup; jackpot history and the ticket
+archive follow the games instead of delaying the first card. It uses the same
+read-only feed with `scope=fast`, but renders it directly in
 the FLASH, CODE or PULSE card. Sales close and the nearest card changes into
 the broadcast together eight seconds before the draw. The immutable stored
 result values appear in a compact sequence, the final result remains
