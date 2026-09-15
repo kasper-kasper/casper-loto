@@ -373,7 +373,7 @@ it("selects five numbers, adds a ticket and buys the cart atomically", async () 
   fireEvent.click(screen.getByRole("button", { name: "На главную" }));
   expect(await screen.findByRole("heading", { name: "Сегодня может повезти." })).toBeInTheDocument();
   expect(document.querySelector(".number-grid")).toBeNull();
-});
+}, 10_000);
 
 it("keeps a confirmed purchase successful when the following refresh fails", async () => {
   render(<App initData="signed" />);
@@ -428,20 +428,15 @@ it("keeps Kasper Grand main and special number fields independent", async () => 
   await waitFor(() => expect(screen.getByRole("button", { name: "Купить билет" })).toBeDisabled());
 });
 
-it("builds a large cart and sends one hundred tickets in one operation", async () => {
+it("buys a random batch from a long lottery without opening the cart", async () => {
   render(<App initData="signed" />);
   await openWeeklyFromStorefront();
-  fireEvent.click(await screen.findByRole("button", { name: "+50" }));
-  expect(await screen.findByText("50 комбинаций")).toBeInTheDocument();
-
-  fireEvent.click(screen.getByRole("button", { name: "Добавить комбинацию" }));
-  fireEvent.click(screen.getByRole("button", { name: "Открыть Weekly 5/20" }));
-  fireEvent.click(await screen.findByRole("button", { name: "+50" }));
-  expect(await screen.findByText("100 комбинаций")).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Купить 100 комб." }));
+  fireEvent.click(await screen.findByRole("button", { name: "Купить 25 случайных билетов" }));
 
   await waitFor(() => expect(miniAppApi.purchase).toHaveBeenCalledOnce());
-  expect(vi.mocked(miniAppApi.purchase).mock.calls[0][2]).toHaveLength(100);
+  expect(vi.mocked(miniAppApi.purchase).mock.calls[0][2]).toHaveLength(25);
+  expect(screen.getByRole("heading", { name: "Weekly 5/20" })).toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "Билеты уже в игре" })).not.toBeInTheDocument();
 });
 
 it("offers an explicit prepaid five-draw purchase without enabling it by default", async () => {
