@@ -23,6 +23,7 @@ import { MINIAPP_TEXTS as copy } from "./content";
 import { FastPicker, FastView } from "./FastView";
 import { isFastLottery } from "./fast";
 import { newestLiveFeed } from "./live";
+import { broadcastPreviewConfig } from "./broadcastPreview";
 import { isGrandLottery, lotteryCombination, matchLabel } from "./grand";
 import { errorHaptic, requestTelegramWriteAccess, selectionHaptic, successHaptic } from "./telegram";
 import type { Account, CartTicket, Dashboard, Favorite, LiveFeed, Lottery, NotificationPreferences, PurchaseResult, Ticket, UserNotification } from "./types";
@@ -38,7 +39,7 @@ interface AppProps {
 }
 
 function initialView(): View {
-  if (import.meta.env.VITE_DESIGN_PREVIEW !== "true") return "home";
+  if (import.meta.env.VITE_DESIGN_PREVIEW !== "true" && !broadcastPreviewConfig()) return "home";
   const screen = new URLSearchParams(window.location.search).get("screen");
   return screen === "live" || screen === "fast" || screen === "account" || screen === "cart" ? screen : "home";
 }
@@ -262,10 +263,10 @@ export default function App({ initData, localDev = false }: AppProps) {
   const [loading, setLoading] = useState(authenticated);
   const [ticketsLoading, setTicketsLoading] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
-  const [roomLive, setRoomLive] = useState(false);
+  const [roomLive, setRoomLive] = useState(Boolean(broadcastPreviewConfig()));
   const [fastHighlights, setFastHighlights] = useState<Highlights | null>(null);
   const [highlights, setHighlights] = useState<Highlights | null>(null);
-  const [bingoOpen, setBingoOpen] = useState(import.meta.env.VITE_DESIGN_PREVIEW === "true" && new URLSearchParams(window.location.search).get("screen") === "bingo");
+  const [bingoOpen, setBingoOpen] = useState((import.meta.env.VITE_DESIGN_PREVIEW === "true" && new URLSearchParams(window.location.search).get("screen") === "bingo") || broadcastPreviewConfig()?.lotteryCode === "bingo");
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
   const [purchaseProgress, setPurchaseProgress] = useState<{ done: number; total: number } | null>(null);
   const [cartReceipt, setCartReceipt] = useState<CartReceipt | null>(null);
@@ -293,6 +294,11 @@ export default function App({ initData, localDev = false }: AppProps) {
     if (import.meta.env.VITE_DESIGN_PREVIEW === "true" && new URLSearchParams(window.location.search).get("screen") === "picker") {
       const requestedCode = new URLSearchParams(window.location.search).get("lottery") ?? "september";
       setPickerLottery(value.lotteries.find((item) => item.code === requestedCode) ?? null);
+    }
+    const preview = broadcastPreviewConfig();
+    if (preview && preview.lotteryCode !== "bingo") {
+      setRoomLive(true);
+      setPickerLottery(value.lotteries.find((item) => item.code === preview.lotteryCode) ?? null);
     }
   }, []);
 

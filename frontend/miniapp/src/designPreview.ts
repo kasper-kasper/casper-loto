@@ -1,8 +1,11 @@
 import type { Account, Dashboard, Favorite, LiveDraw, LiveFeed, Ticket, UserNotification } from "./types";
+import { broadcastPreviewConfig } from "./broadcastPreview";
 
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status, headers: { "Content-Type": "application/json" } });
 const nowIso = () => new Date().toISOString();
 const future = (minutes: number) => new Date(Date.now() + minutes * 60_000).toISOString();
+const broadcastPreview = broadcastPreviewConfig();
+const previewStartsAt = Date.now() + 5_000;
 
 const lotterySeed = [
   { code: "bingo", name: "Kasper Bingo", kind: "DAILY" as const, numbers_to_pick: 12, max_number: 60, ticket_price: 50_000, jackpot: 10_000_250_000, draw_number: 1, scheduled_at: future(180) },
@@ -25,7 +28,7 @@ const dashboard = (): Dashboard => ({
   server_time: nowIso(),
   balance,
   active_ticket_count: purchasedTickets.length,
-  lotteries: lotterySeed.map((lottery) => ({ ...lottery, sales_close_at: new Date(new Date(lottery.scheduled_at).getTime() - (["flash", "shadow", "pulse"].includes(lottery.code) ? 8_000 : 120_000)).toISOString(), sales_open: true, purchase_available: true, player_ticket_count: purchasedTickets.filter((ticket) => ticket.lottery_code === lottery.code).length, sales_status: "OPEN" as const, max_tickets_per_purchase: ["flash", "shadow", "pulse"].includes(lottery.code) ? 100 : 1_000, max_tickets_per_user_per_draw: ["flash", "shadow", "pulse"].includes(lottery.code) ? 500 : 5_000 })),
+  lotteries: lotterySeed.map((lottery) => { const scheduledAt = lottery.code === broadcastPreview?.lotteryCode ? new Date(previewStartsAt).toISOString() : lottery.scheduled_at; return ({ ...lottery, scheduled_at: scheduledAt, sales_close_at: new Date(new Date(scheduledAt).getTime() - (["flash", "shadow", "pulse"].includes(lottery.code) ? 8_000 : 120_000)).toISOString(), sales_open: true, purchase_available: true, player_ticket_count: lottery.code === broadcastPreview?.lotteryCode ? 1 : purchasedTickets.filter((ticket) => ticket.lottery_code === lottery.code).length, sales_status: "OPEN" as const, max_tickets_per_purchase: ["flash", "shadow", "pulse"].includes(lottery.code) ? 100 : 1_000, max_tickets_per_user_per_draw: ["flash", "shadow", "pulse"].includes(lottery.code) ? 500 : 5_000 }); }),
   recent_results: [],
   monthly_total_payout: 12_333_333,
   total_ticket_count: 18_432,
@@ -34,13 +37,34 @@ const dashboard = (): Dashboard => ({
 
 const account = (): Account => ({ display_name: "Дизайн-превью", balance, ticket_count: purchasedTickets.length + 42, active_ticket_count: purchasedTickets.length, winning_ticket_count: 7, total_spent: 14_760_000, total_won: 19_333_333, best_win: 12_000_000, unread_notification_count: 1, notification_preferences: { telegram_enabled: true, draw_results_enabled: true, inactivity_reminders_enabled: true } });
 
+const previewNumbers: Record<string, number[]> = { pll: [2, 6, 11, 14], pss: [1, 5, 9, 15], khan: [4, 12, 19, 23, 31, 36], weekly: [3, 9, 18, 27, 34, 37, 40], september: [3, 9, 28], grob: [2, 8, 16] };
+const previewLosingTickets: Record<string, number[]> = { pll: [1, 3, 5, 7], pss: [2, 4, 6, 8], khan: [1, 2, 3, 5, 6, 7], weekly: [1, 2, 4, 8, 12, 36, 38], september: [1, 2, 4], grob: [1, 3, 5] };
+
 const liveDraw = (): LiveDraw => {
-  const lottery = lotterySeed.find((item) => item.code === "grob")!;
-  const starts = lottery.scheduled_at;
-  return { lottery_code: lottery.code, lottery_name: lottery.name, lottery_kind: lottery.kind, draw_number: lottery.draw_number, scheduled_at: starts, status: "SCHEDULED", winning_numbers: null, jackpot: lottery.jackpot, player_ticket_count: purchasedTickets.filter((ticket) => ticket.lottery_code === lottery.code).length, player_winning_ticket_count: 0, player_best_matches: null, player_total_prize: 0, highlighted_tickets: [], sales_close_at: new Date(new Date(starts).getTime() - 120_000).toISOString(), sales_status: "OPEN", live_starts_at: starts, reveal_at: [0, 1, 2].map((index) => new Date(new Date(starts).getTime() + 3_000 + index * 4_000).toISOString()), live_ends_at: new Date(new Date(starts).getTime() + 18_000).toISOString() };
+  const lottery = lotterySeed.find((item) => item.code === (broadcastPreview?.lotteryCode ?? "grob")) ?? lotterySeed.find((item) => item.code === "grob")!;
+  const winningNumbers = previewNumbers[lottery.code] ?? [2, 8, 16];
+  const winning = broadcastPreview?.scenario !== "loss";
+  const ticketNumbers = winning ? [...winningNumbers] : previewLosingTickets[lottery.code] ?? [1, 3, 5];
+  const revealLead = lottery.code === "khan" ? 4_000 : 1_000;
+  const revealInterval = lottery.code === "khan" ? 3_200 : 2_000;
+  const starts = broadcastPreview ? new Date(previewStartsAt).toISOString() : lottery.scheduled_at;
+  const revealAt = winningNumbers.map((_, index) => new Date(new Date(starts).getTime() + revealLead + index * revealInterval).toISOString());
+  const prize = winning ? (lottery.code === "weekly" ? 5_000_000_000 : 250_000) : 0;
+  return { lottery_code: lottery.code, lottery_name: lottery.name, lottery_kind: lottery.kind, draw_number: lottery.draw_number, scheduled_at: starts, status: broadcastPreview ? "COMPLETED" : "SCHEDULED", winning_numbers: broadcastPreview ? winningNumbers : null, jackpot: lottery.jackpot, player_ticket_count: broadcastPreview ? 1 : purchasedTickets.filter((ticket) => ticket.lottery_code === lottery.code).length, player_winning_ticket_count: winning ? 1 : 0, player_best_matches: winning ? winningNumbers.length : 0, player_total_prize: prize, highlighted_tickets: broadcastPreview ? [{ public_number: 2811, numbers: ticketNumbers, matches: winning ? winningNumbers.length : 0, prize_amount: prize }] : [], sales_close_at: new Date(new Date(starts).getTime() - 120_000).toISOString(), sales_status: broadcastPreview ? "COMPLETED" : "OPEN", live_starts_at: starts, reveal_at: revealAt, live_ends_at: new Date(new Date(starts).getTime() + revealLead + winningNumbers.length * revealInterval).toISOString() };
 };
 
-const liveFeed = (): LiveFeed => ({ server_time: nowIso(), latest_completed: null, next_scheduled: liveDraw(), recent_completed: [] });
+const liveFeed = (): LiveFeed => { const draw = liveDraw(); return broadcastPreview ? { server_time: nowIso(), latest_completed: draw, next_scheduled: Date.now() < previewStartsAt ? draw : null, recent_completed: [] } : { server_time: nowIso(), latest_completed: null, next_scheduled: draw, recent_completed: [] }; };
+
+function bingoLive() {
+  const elapsed = Date.now() - previewStartsAt;
+  const count = elapsed < 0 ? 0 : Math.min(30, Math.floor(elapsed / 1_000) + 1);
+  const sequence = Array.from({ length: 30 }, (_, index) => index + 1);
+  const numbers = sequence.slice(0, count);
+  const winning = broadcastPreview?.scenario !== "loss";
+  const ticketNumbers = winning ? [1, 5, 9, 18, 2, 10, 20, 26, 3, 11, 21, 28] : [31, 34, 37, 40, 42, 45, 48, 51, 53, 56, 58, 60];
+  const complete = count >= sequence.length;
+  return { server_time: nowIso(), rules: { total_moves: 30, jackpot_move: 28, tour_moves: [18, 26], tour_prizes: [100_000, 500_000], pool_size: 2000 }, draw: { draw_number: 1, scheduled_at: new Date(previewStartsAt).toISOString(), complete, numbers, total_moves: 30, jackpot_move: 28, tour_prizes: [100_000, 500_000], stages: winning ? [{ move: count >= 18 ? 18 : null, winners: count >= 18 ? 1 : 0 }, { move: count >= 26 ? 26 : null, winners: count >= 26 ? 1 : 0 }, { move: count >= 28 ? 28 : null, winners: count >= 28 ? 1 : 0 }] : [{ move: null, winners: 0 }, { move: null, winners: 0 }, { move: null, winners: 0 }], tickets: [{ id: "preview-bingo-ticket", public_number: 2811, numbers: ticketNumbers, price: 50_000, result: complete ? { moves: winning ? [18, 26, 28] : [61, 61, 61], amounts: winning ? [100_000, 500_000, 10_000_250_000] : [0, 0, 0] } : null }] } };
+}
 
 const notifications: UserNotification[] = [{ id: "preview-notice", type: "DRAW_INVITATION", title: "Сегодня особый тираж", body: "«3 СЕНТЯБРЯ» уже ждёт вашу комбинацию.", payload: {}, read_at: null, created_at: nowIso() }];
 
@@ -52,7 +76,7 @@ export function installDesignPreview(): void {
     const path = url.pathname;
     if (!path.startsWith("/api/v1/miniapp/")) return nativeFetch(input, init);
     if (path.includes("/bingo/inventory")) return json({ draw_id: "preview-bingo", draw_number: 1, scheduled_at: future(180), price: 50000, has_more: true, kasper_set_available: true, tickets: Array.from({ length: 6 }, (_, i) => ({ id: `bingo-${i}`, pool_position: i + 1, numbers: [2, 14, 27, 41, 8, 22, 36, 52, 11, 25, 43, 59].map(n => (n + i - 1) % 60 + 1) })) });
-    if (path.includes("/bingo/live")) return json({ server_time: nowIso(), rules: { total_moves: 58, jackpot_move: 28, tour_moves: [18, 34], tour_prizes: [100000, 500000], pool_size: 2000 }, draw: null });
+    if (path.includes("/bingo/live")) return json(broadcastPreview ? bingoLive() : { server_time: nowIso(), rules: { total_moves: 58, jackpot_move: 28, tour_moves: [18, 34], tour_prizes: [100000, 500000], pool_size: 2000 }, draw: null });
     if (path.endsWith("/bingo/purchases") && init?.method === "POST") {
       const body = JSON.parse(String(init.body)) as { ticket_ids: string[]; quantity?: number };
       const quantity = body.ticket_ids.length || body.quantity || 0;

@@ -2,6 +2,7 @@ export interface AdminSession {
   username: string;
   csrf_token: string;
   expires_at: string;
+  miniapp_url?: string | null;
 }
 
 export interface Player {

@@ -17,7 +17,7 @@ vi.mock("./api", () => ({
   },
 }));
 
-const session = { username: "owner", csrf_token: "csrf", expires_at: "2026-08-16T00:00:00Z" };
+const session = { username: "owner", csrf_token: "csrf", expires_at: "2026-08-16T00:00:00Z", miniapp_url: "https://play.example.test/" };
 const lottery: Lottery = { id: "lottery", code: "weekly", name: "Weekly 5/20", kind: "WEEKLY", ticket_price: 100, base_jackpot: 10_000, current_jackpot: 12_000, distribution_fund: 500, reserve: 100_000, schedule: { weekday: "sunday" }, sales_cutoff_minutes: 5, max_tickets_per_purchase: 1000, max_tickets_per_user_per_draw: 5000, is_active: true, next_draw_number: 8, next_draw_at: "2026-08-16T17:00:00Z" };
 const dashboard: Dashboard = { version: "0.8.0", uptime_seconds: 120, database_healthy: true, bot_configured: true, scheduler_enabled: true, counts: { users: 1, tickets: 6, completed_draws: 3, pending_draws: 1 }, lotteries: [lottery], recent_draws: [], recent_transactions: [], operations: { today: { completed_draws: 2, purchased_tickets: 4, sales: 400, winning_tickets: 1, payout: 250, net: 150 }, scheduler: { last_started_at: null, last_succeeded_at: null, last_failed_at: null, last_error: null, settled_count: 0, prepared_count: 0 }, stuck_draw_count: 0, notifications: {}, next_draws: [] }, jackpots: { kasper_fund_balance: 1_000_000_000_000_000, total_wins: 0, total_paid: 0, largest_win: 0, lotteries: [{ code: "weekly", name: "Weekly 5/20", win_count: 0, total_paid: 0, last_win_at: null }], history: [] } };
 const player: Player = { id: "player", display_name: "Test Player", username: "player", telegram_id: 123, is_active: true, balance: 5_000, ticket_count: 6, active_ticket_count: 2, spent: 600, won: 250, net: -350, telegram_notifications_enabled: false, auto_play_enabled: false, auto_play_tickets_per_draw: 5, auto_play_last_attempted_at: null, auto_play_last_succeeded_at: null, auto_play_last_error: null };
@@ -62,7 +62,7 @@ it("restores an authenticated session and renders Russian system truth", async (
   expect(screen.getByText("за всю историю")).toBeInTheDocument();
   expect(screen.getByText("12 000 CAS")).toBeInTheDocument();
   expect(screen.queryByText("v0.8.0 · работает 2 мин.")).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: /^08Система$/ }));
+  fireEvent.click(screen.getByRole("button", { name: /^09Система$/ }));
   expect(await screen.findByText("БАЗА ДАННЫХ РАБОТАЕТ")).toBeInTheDocument();
   expect(screen.getByText("v0.8.0 · работает 2 мин.")).toBeInTheDocument();
 });
@@ -112,18 +112,35 @@ it("adjusts a player balance only with a mandatory reason", async () => {
   await waitFor(() => expect(adminApi.setBalance).toHaveBeenCalledWith("player", 9000, "Тестовое начисление"));
 });
 
-it("groups administration into eight owner-oriented sections", async () => {
+it("groups administration into nine owner-oriented sections", async () => {
   render(<App />);
   await screen.findByText("Всего сорвано джекпотов");
 
   const nav = within(screen.getByRole("navigation"));
-  for (const label of ["Сегодня", "Fast", "Лотереи", "Расписание", "Тиражи", "Игроки", "Аналитика", "Система"]) {
+  for (const label of ["Сегодня", "Fast", "Лотереи", "Расписание", "Тиражи", "Игроки", "Аналитика", "Тест эфира", "Система"]) {
     expect(nav.getByRole("button", { name: new RegExp(label) })).toBeInTheDocument();
   }
   fireEvent.click(nav.getByRole("button", { name: /Система/ }));
   expect(await screen.findByRole("tab", { name: "Журнал CAS" })).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: "Уведомления" })).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: "Аудит действий" })).toBeInTheDocument();
+});
+
+it("opens an isolated non-Fast broadcast rehearsal in the Mini App", async () => {
+  const open = vi.spyOn(window, "open").mockImplementation(() => null);
+  render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /Тест эфира/ }));
+
+  expect(await screen.findByText("Проверьте эфир глазами игрока")).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText("Сценарий тестового эфира"), { target: { value: "loss" } });
+  fireEvent.click(screen.getByRole("button", { name: /Запустить тестовый эфир/ }));
+
+  expect(open).toHaveBeenCalledOnce();
+  const launched = new URL(String(open.mock.calls[0][0]));
+  expect(launched.origin).toBe("https://play.example.test");
+  expect(launched.searchParams.get("broadcast-preview")).toBe("weekly");
+  expect(launched.searchParams.get("scenario")).toBe("loss");
+  open.mockRestore();
 });
 
 it("loads the daily schedule only after opening its section", async () => {
@@ -141,7 +158,7 @@ it("loads the daily schedule only after opening its section", async () => {
 
 it("shows complete changelog and devlog in separate protected tabs", async () => {
   render(<App />);
-  fireEvent.click(await screen.findByRole("button", { name: /^08Система$/ }));
+  fireEvent.click(await screen.findByRole("button", { name: /^09Система$/ }));
   fireEvent.click(await screen.findByRole("tab", { name: "Разработка" }));
 
   expect(await screen.findByText("Публичное изменение")).toBeInTheDocument();

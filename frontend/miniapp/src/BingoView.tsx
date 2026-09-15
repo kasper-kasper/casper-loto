@@ -4,6 +4,7 @@ import { Money } from "./components";
 import { countdown, formatCas, formatMoscow } from "./format";
 import type { Lottery, PurchaseResult, Ticket } from "./types";
 import "./bingo.css";
+import { broadcastPreviewConfig } from "./broadcastPreview";
 
 export interface BingoResult { moves: number[]; amounts: number[] }
 interface PrintedTicket { id: string; public_number?: number; pool_position?: number; numbers: number[]; price?: number; result?: BingoResult | null }
@@ -97,7 +98,7 @@ export function BingoView({ lottery, initData, now, balance, onClose, onPurchase
         try { const data = await miniAppApi.bingoLive(initData); if (active) setFeed(data); }
         catch { if (active && tab === "live") setError("Эфир переподключается. Выпавшие числа сохраняются."); }
       }
-      if (active) timer = setTimeout(() => void poll(), tab === "live" ? 2000 : 10000);
+      if (active) timer = setTimeout(() => void poll(), broadcastPreviewConfig() ? 700 : tab === "live" ? 2000 : 10000);
     };
     void poll();
     return () => { active = false; clearTimeout(timer); };

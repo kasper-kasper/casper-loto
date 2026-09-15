@@ -67,6 +67,7 @@ class SessionResponse(BaseModel):
     username: str
     csrf_token: str
     expires_at: datetime
+    miniapp_url: str | None = None
 
 
 class AdjustmentRequest(BaseModel):
@@ -384,17 +385,20 @@ async def login(
         username=admin_session.username,
         csrf_token=admin_session.csrf_token,
         expires_at=admin_session.expires_at,
+        miniapp_url=str(settings.miniapp_url) if settings.miniapp_url else None,
     )
 
 
 @router.get("/auth/session", response_model=SessionResponse)
 async def current_session(
     admin: Annotated[CurrentAdmin, Depends(get_current_admin)],
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> SessionResponse:
     return SessionResponse(
         username=admin.session.username,
         csrf_token=admin.session.csrf_token,
         expires_at=admin.session.expires_at,
+        miniapp_url=str(settings.miniapp_url) if settings.miniapp_url else None,
     )
 
 

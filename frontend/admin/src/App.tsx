@@ -20,7 +20,7 @@ import type {
   Transaction,
 } from "./types";
 
-type View = "dashboard" | "fast" | "lotteries" | "schedule" | "draws" | "players" | "analytics" | "system";
+type View = "dashboard" | "fast" | "lotteries" | "schedule" | "draws" | "players" | "analytics" | "broadcast" | "system";
 type AnalyticsTab = "lotteries" | "tickets" | "numbers" | "finances";
 type SystemTab = "health" | "ledger" | "notifications" | "audit" | "development";
 
@@ -32,7 +32,8 @@ const navigation: { id: View; label: string; code: string }[] = [
   { id: "draws", label: "Тиражи", code: "05" },
   { id: "players", label: "Игроки", code: "06" },
   { id: "analytics", label: "Аналитика", code: "07" },
-  { id: "system", label: "Система", code: "08" },
+  { id: "broadcast", label: "Тест эфира", code: "08" },
+  { id: "system", label: "Система", code: "09" },
 ];
 
 const viewStorageKey = "k-loto:admin-view";
@@ -417,6 +418,31 @@ function DevelopmentView({ changelog, devlog }: { changelog: ReleaseNote[]; devl
   </section>;
 }
 
+function BroadcastTestView({ lotteries, miniappUrl }: { lotteries: Lottery[]; miniappUrl?: string | null }) {
+  const available = lotteries.filter((lottery) => lottery.is_active && !["flash", "shadow", "pulse"].includes(lottery.code));
+  const [lotteryCode, setLotteryCode] = useState(available[0]?.code ?? "");
+  const [scenario, setScenario] = useState<"win" | "loss">("win");
+  const selectedLotteryCode = available.some((lottery) => lottery.code === lotteryCode) ? lotteryCode : available[0]?.code ?? "";
+  const start = () => {
+    if (!miniappUrl || !selectedLotteryCode) return;
+    const url = new URL(miniappUrl);
+    url.searchParams.set("broadcast-preview", selectedLotteryCode);
+    url.searchParams.set("scenario", scenario);
+    url.searchParams.set("started", String(Date.now()));
+    window.open(url.toString(), "_blank", "noopener,noreferrer");
+  };
+  return <section className="broadcast-test">
+    <header><span>РЕПЕТИЦИЯ</span><h2>Проверьте эфир глазами игрока</h2><p>Через пять секунд начнётся настоящий интерфейс эфира на полностью демонстрационных данных.</p></header>
+    <div className="broadcast-test-form">
+      <label>Лотерея<select aria-label="Лотерея тестового эфира" value={selectedLotteryCode} onChange={(event) => setLotteryCode(event.target.value)}>{available.map((lottery) => <option key={lottery.id} value={lottery.code}>{lottery.name}</option>)}</select></label>
+      <label>Результат<select aria-label="Сценарий тестового эфира" value={scenario} onChange={(event) => setScenario(event.target.value as "win" | "loss")}><option value="win">Билет выигрывает</option><option value="loss">Без выигрыша</option></select></label>
+      <button className="broadcast-launch" disabled={!miniappUrl || !selectedLotteryCode} onClick={start} type="button">Запустить тестовый эфир ↗</button>
+    </div>
+    <div className="broadcast-safety"><i>✓</i><span><b>Изолировано от игры</b>Никаких покупок, выплат, уведомлений и записей в историю. Fast здесь намеренно отсутствует.</span></div>
+    {!miniappUrl && <p className="error banner">Адрес Mini App не настроен на сервере.</p>}
+  </section>;
+}
+
 function SectionTabs<T extends string>({ value, items, onChange, label }: { value: T; items: Array<{ id: T; label: string }>; onChange: (value: T) => void; label: string }) {
   return <div className="section-tabs" role="tablist" aria-label={label}>{items.map((item) => <button type="button" role="tab" aria-selected={value === item.id} className={value === item.id ? "active" : ""} key={item.id} onClick={() => onChange(item.id)}>{item.label}</button>)}</div>;
 }
@@ -568,6 +594,7 @@ export default function App() {
         const available = await adminApi.lotteries();
         apply(() => { setLotteries(available); });
       }
+      if (target === "broadcast") { const rows = await adminApi.lotteries(); apply(() => setLotteries(rows)); }
       if (target === "system") {
         const [ledgerRows, notificationRows, auditRows, dashboardData, changelog, devlog] = await Promise.all([adminApi.transactions(), adminApi.notifications(), adminApi.audit(), adminApi.dashboard(), adminApi.releaseNotes("changelog"), adminApi.releaseNotes("devlog")]);
         apply(() => { setTransactions(ledgerRows); setNotifications(notificationRows); setAudit(auditRows); setDashboard(dashboardData); setReleaseNotes({ changelog, devlog }); });
@@ -620,6 +647,7 @@ export default function App() {
       {!loading && view === "schedule" && <ScheduleView key={scope} entries={scheduleEntries} lotteries={visibleLotteries} loadedAt={scheduleLoadedAt} />}
       {!loading && view === "draws" && <DrawsView key={scope} scope={scope} lotteries={visibleLotteries} onOpen={openDraw} />}
       {!loading && view === "analytics" && dashboard && ticketAnalytics && <AnalyticsView tab={analyticsTab} onTab={setAnalyticsTab} dashboard={dashboard} analytics={ticketAnalytics} lotteries={visibleLotteries} statistics={statistics} selectedLotteryId={statisticsLotteryId} windowSize={statisticsWindow} onLottery={setStatisticsLotteryId} onWindow={setStatisticsWindow} />}
+      {!loading && view === "broadcast" && <BroadcastTestView lotteries={lotteries} miniappUrl={session.miniapp_url} />}
       {!loading && view === "system" && <SystemView dashboard={dashboard} releaseNotes={releaseNotes} tab={systemTab} onTab={setSystemTab} transactions={transactions} notifications={notifications} audit={audit} onTransactions={(query) => void adminApi.transactions(query).then(setTransactions).catch((reason: Error) => setError(reason.message))} />}
     </main>{drawDetail && <DrawDetailPanel detail={drawDetail} onClose={() => setDrawDetail(null)} />}
   </div>;
