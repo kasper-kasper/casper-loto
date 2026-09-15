@@ -772,8 +772,8 @@ async def purchase_lottery_tickets(
     ):
         raise HTTPException(
             status_code=429,
-            detail="Too many purchase attempts. Please wait a minute.",
-            headers={"Retry-After": "60"},
+            detail="Слишком много быстрых покупок. Подождите несколько секунд.",
+            headers={"Retry-After": "5"},
         )
     try:
         result = await service.purchase(

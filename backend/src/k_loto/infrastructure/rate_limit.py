@@ -9,10 +9,10 @@ class PurchaseRateLimiter:
     def __init__(self) -> None:
         self._events: dict[UUID, deque[float]] = defaultdict(deque)
 
-    def allow(self, user_id: UUID, *, limit: int) -> bool:
+    def allow(self, user_id: UUID, *, limit: int, window_seconds: int = 5) -> bool:
         now = monotonic()
         events = self._events[user_id]
-        while events and events[0] <= now - 60:
+        while events and events[0] <= now - window_seconds:
             events.popleft()
         if len(events) >= limit:
             return False

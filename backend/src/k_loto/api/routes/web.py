@@ -372,7 +372,7 @@ async def _purchase(
         player.user_id, limit=settings.miniapp_purchase_requests_per_minute
     ):
         raise HTTPException(
-            status_code=429, detail="Слишком много попыток. Подождите минуту."
+            status_code=429, detail="Слишком много попыток. Подождите 5 секунд."
         )
     try:
         result = await LotteryTicketPurchaseService(

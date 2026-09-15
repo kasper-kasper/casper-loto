@@ -345,7 +345,7 @@ export default function App({ initData, localDev = false }: AppProps) {
         setNow(anchor ? anchor.server + performance.now() - anchor.monotonic : Date.now());
       };
       tick();
-      timer = window.setInterval(tick, 200);
+      timer = window.setInterval(tick, 1000);
     };
     syncClock();
     document.addEventListener("visibilitychange", syncClock);
@@ -365,7 +365,7 @@ export default function App({ initData, localDev = false }: AppProps) {
       } catch { /* Keep the app usable offline. */ }
     };
     void check();
-    const timer = window.setInterval(() => { if (document.visibilityState === "visible") void check(); }, 60_000);
+    const timer = window.setInterval(() => { if (document.visibilityState === "visible") void check(); }, 3_600_000);
     return () => { active = false; window.clearInterval(timer); };
   }, []);
   useEffect(() => saveCart(cart, cartTtl), [cart, cartTtl]);
@@ -383,7 +383,7 @@ export default function App({ initData, localDev = false }: AppProps) {
     if (!authenticated) return;
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") void refreshDashboard().catch(() => undefined);
-    }, 15_000);
+    }, 3_600_000);
     const resync = () => { if (document.visibilityState === "visible") void refreshDashboard().catch(() => undefined); };
     document.addEventListener("visibilitychange", resync);
     return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", resync); };
@@ -432,7 +432,6 @@ export default function App({ initData, localDev = false }: AppProps) {
     }, 0);
     void miniAppApi.liveStream(initData, (feed) => {
       setFastFeed((current) => newestLiveFeed(current, feed));
-      void refreshDashboard().catch(() => undefined);
     }, controller.signal, "fast").catch((reason: unknown) => {
       if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : "Не удалось подключиться к Fast-эфиру.");
     });
@@ -447,7 +446,7 @@ export default function App({ initData, localDev = false }: AppProps) {
     let active = true;
     const refresh = () => { if (!document.hidden) void miniAppApi.highlights(initData, view === "fast" ? "fast" : "standard").then(value => { if (active) { if (view === "fast") setFastHighlights(value); else setHighlights(value); } }).catch(() => undefined); };
     refresh();
-    const timer = window.setInterval(refresh, 15000);
+    const timer = window.setInterval(refresh, 3_600_000);
     return () => { active = false; window.clearInterval(timer); };
   }, [authenticated, initData, view]);
   const cartGroups = useMemo(() => {
@@ -465,6 +464,12 @@ export default function App({ initData, localDev = false }: AppProps) {
     const timer = window.setTimeout(() => setNotice(null), 2600);
     return () => window.clearTimeout(timer);
   }, [notice]);
+
+  useEffect(() => {
+    if (!error) return;
+    const timer = window.setTimeout(() => setError(null), 4_500);
+    return () => window.clearTimeout(timer);
+  }, [error]);
 
   const openLottery = async (lotteryCode: string, initialNumbers: number[] = [], initialLive = false) => {
     setRoomLive(initialLive);
