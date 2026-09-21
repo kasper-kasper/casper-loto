@@ -18,9 +18,9 @@ from k_loto.infrastructure.database.session import engine, session_factory
 
 FAST_SALES_CUTOFF_SECONDS = 8
 FAST_LOTTERY_FORMATS = (
-    ("flash", "FLASH", "00:00", "fast_3_16", 3, 16),
+    ("flash", "FLASH", "00:00", "fast_3_20", 3, 20),
     ("shadow", "CODE", "00:03", "code_4_digits", 4, 9),
-    ("pulse", "PULSE", "00:06", "pulse_2_10_2_5", 4, 15),
+    ("pulse", "PULSE", "00:06", "pulse_2_12_2_6", 4, 18),
 )
 
 

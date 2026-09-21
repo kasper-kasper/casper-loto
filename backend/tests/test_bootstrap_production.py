@@ -18,5 +18,5 @@ def test_fast_bootstrap_preserves_eight_second_cutoff() -> None:
 def test_fast_bootstrap_uses_current_flash_and_pulse_formats() -> None:
     formats = {item[0]: item[3:] for item in FAST_LOTTERY_FORMATS}
 
-    assert formats["flash"] == ("fast_3_16", 3, 16)
-    assert formats["pulse"] == ("pulse_2_10_2_5", 4, 15)
+    assert formats["flash"] == ("fast_3_20", 3, 20)
+    assert formats["pulse"] == ("pulse_2_12_2_6", 4, 18)

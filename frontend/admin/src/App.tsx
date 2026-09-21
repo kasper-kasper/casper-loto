@@ -278,6 +278,10 @@ function ActionConfirm({ title, details, busy, onConfirm, onCancel }: { title: s
   return <div className="action-confirm" role="dialog" aria-modal="true" aria-label={title}><div><small>ПРОВЕРКА ПЕРЕД ДЕЙСТВИЕМ</small><h3>{title}</h3>{details.map(item => <p key={item}>{item}</p>)}<b>Завершённые тиражи и купленные билеты не изменятся.</b><footer><button className="secondary-action" onClick={onCancel}>Отмена</button><button disabled={busy} onClick={onConfirm}>{busy ? "Выполняем…" : "Подтвердить"}</button></footer></div></div>;
 }
 
+function InlineConfirm({ summary, busy, confirmLabel, onConfirm, onCancel }: { summary: string; busy: boolean; confirmLabel: string; onConfirm: () => void; onCancel: () => void }) {
+  return <div className="inline-confirm" role="group" aria-label="Подтверждение изменения"><span><b>Вы уверены?</b><small>{summary}</small></span><button className="primary" disabled={busy} onClick={onConfirm}>{busy ? "Сохраняем…" : confirmLabel}</button><button className="secondary-action" disabled={busy} onClick={onCancel}>Нет</button></div>;
+}
+
 const autoPlayReasons: Record<string, string> = { INSUFFICIENT_BALANCE: "Недостаточно CAS", TICKET_LIMIT_REACHED: "Достигнут лимит билетов", SALES_CLOSED: "Продажи закрыты", INVALID_COMBINATION: "Неподходящая комбинация", TECHNICAL_ERROR: "Техническая ошибка", InsufficientBalance: "Недостаточно CAS", NoAvailableDraw: "Продажи закрыты", InvalidTicket: "Неподходящая комбинация", ConfigurationError: "Техническая ошибка" };
 
 function PlayerCard({ player, onSaved }: { player: Player; onSaved: () => Promise<void> }) {
@@ -328,7 +332,7 @@ function LotteryCard({ lottery, onSaved }: { lottery: Lottery; onSaved: () => Pr
   const [cutoff, setCutoff] = useState(String(lottery.sales_cutoff_minutes ?? 0));
   const [purchaseLimit, setPurchaseLimit] = useState(String(lottery.max_tickets_per_purchase));
   const [playerLimit, setPlayerLimit] = useState(String(lottery.max_tickets_per_user_per_draw));
-  const [reason, setReason] = useState("");
+  const [reason, setReason] = useState("Изменение настроек владельцем");
   const [busy, setBusy] = useState(false);
   const [jackpotBusy, setJackpotBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -338,11 +342,11 @@ function LotteryCard({ lottery, onSaved }: { lottery: Lottery; onSaved: () => Pr
     setMessage("");
     try {
       await adminApi.configureLottery(lottery.id, Number(price), Number(base), Number(cutoff), Number(purchaseLimit), Number(playerLimit), reason);
-      setReason("");
       setMessage("Цена билета, базовый джекпот и лимиты сохранены.");
       await onSaved();
       setConfirmation(null);
     } catch (saveError) {
+      setConfirmation(null);
       setMessage(saveError instanceof Error ? saveError.message : "Не удалось сохранить настройки.");
     } finally {
       setBusy(false);
@@ -353,26 +357,27 @@ function LotteryCard({ lottery, onSaved }: { lottery: Lottery; onSaved: () => Pr
     setMessage("");
     try {
       await adminApi.setJackpot(lottery.id, Number(currentJackpot), reason);
-      setReason("");
       setMessage("Текущий джекпот изменён через журнал CAS.");
       await onSaved();
       setConfirmation(null);
     } catch (saveError) {
+      setConfirmation(null);
       setMessage(saveError instanceof Error ? saveError.message : "Не удалось изменить текущий джекпот.");
     } finally {
       setJackpotBusy(false);
     }
   };
+  const messageIsSuccess = message.includes("сохранен") || message.includes("изменён");
   return <article className="lottery-card">
     <header><div><small>{["flash", "shadow", "pulse"].includes(lottery.code) ? "БЫСТРАЯ" : lottery.kind === "WEEKLY" ? "ЕЖЕНЕДЕЛЬНАЯ" : "ЕЖЕДНЕВНАЯ"}</small><h2>{lottery.name}</h2></div><Status active={lottery.is_active}>{lottery.is_active ? "АКТИВНА" : "НЕАКТИВНА"}</Status></header>
     <div className="fund-matrix"><span><small>ТЕКУЩИЙ ДЖЕКПОТ</small><b>{cas(lottery.current_jackpot)}</b></span><span><small>СХЕМА ПОКУПКИ</small><b>100% в джекпот</b></span><span><small>СЛЕДУЮЩИЙ ТИРАЖ</small><b>{lottery.next_draw_number ? `№${drawNumber(lottery.next_draw_number)}` : "—"}</b><em>{date(lottery.next_draw_at)}</em></span></div>
     <div className="config-grid"><label>Цена билета, CAS<input type="number" min="1" value={price} onChange={(e) => setPrice(e.target.value)} /></label><label>Базовый джекпот после выигрыша, CAS<input type="number" min="0" value={base} onChange={(e) => setBase(e.target.value)} /></label><label>Закрыть продажи за, минут<input type="number" min="0" max="1440" value={cutoff} onChange={(e) => setCutoff(e.target.value)} /></label><label>Лимит одной покупки<input type="number" min="1" max="1000" value={purchaseLimit} onChange={(e) => setPurchaseLimit(e.target.value)} /></label><label>Лимит игрока на тираж<input type="number" min="1" max="100000" value={playerLimit} onChange={(e) => setPlayerLimit(e.target.value)} /></label></div>
-    <label className="reason">Обязательная причина для аудита<input value={reason} onChange={(e) => setReason(e.target.value)} /></label>
-    <div className="lottery-actions"><div className="actions"><button disabled={busy || jackpotBusy || !reason.trim()} onClick={() => setConfirmation("settings")}>{busy ? "СОХРАНЯЕМ…" : "ПРОВЕРИТЬ НАСТРОЙКИ"}</button></div><div className="jackpot-adjust"><label>Текущий джекпот, CAS<input type="number" min="0" value={currentJackpot} onChange={(e) => setCurrentJackpot(e.target.value)} /></label><button disabled={busy || jackpotBusy || !reason.trim()} onClick={() => setConfirmation("jackpot")}>{jackpotBusy ? "МЕНЯЕМ…" : "ПРОВЕРИТЬ ИЗМЕНЕНИЕ"}</button></div></div>
-    {message && <p className={message.includes("сохранен") || message.includes("изменён") ? "save-message" : "save-message error"}>{message}</p>}
+    <label className="reason">Комментарий для истории изменений<input value={reason} onChange={(e) => setReason(e.target.value)} /></label>
+    <div className="lottery-actions"><div className="actions"><button disabled={busy || jackpotBusy || !reason.trim()} onClick={() => setConfirmation("settings")}>{busy ? "СОХРАНЯЕМ…" : "СОХРАНИТЬ НАСТРОЙКИ"}</button></div><div className="jackpot-adjust"><label>Текущий джекпот, CAS<input type="number" min="0" value={currentJackpot} onChange={(e) => setCurrentJackpot(e.target.value)} /></label><button disabled={busy || jackpotBusy || !reason.trim()} onClick={() => setConfirmation("jackpot")}>{jackpotBusy ? "МЕНЯЕМ…" : "ИЗМЕНИТЬ ДЖЕКПОТ"}</button></div></div>
+    {confirmation === "settings" && <InlineConfirm summary={`Цена ${cas(lottery.ticket_price ?? 0)} → ${cas(Number(price))} · базовый джекпот ${cas(lottery.base_jackpot)} → ${cas(Number(base))}`} busy={busy} confirmLabel="Да, сохранить" onCancel={() => setConfirmation(null)} onConfirm={() => void saveAll()} />}
+    {confirmation === "jackpot" && <InlineConfirm summary={`${cas(lottery.current_jackpot)} → ${cas(Number(currentJackpot))}`} busy={jackpotBusy} confirmLabel="Да, изменить" onCancel={() => setConfirmation(null)} onConfirm={() => void saveJackpot()} />}
+    {message && <p className={messageIsSuccess ? "save-message" : "save-message error"} role={messageIsSuccess ? undefined : "alert"}>{message}</p>}
     <footer>Расписание: <code>{schedule(lottery.schedule)}</code> · новое время закрытия продаж применяются при подготовке следующих тиражей. Завершённые тиражи и купленные билеты не изменяются.</footer>
-    {confirmation === "settings" && <ActionConfirm title={`Настройки · ${lottery.name}`} details={[`Цена билета: ${cas(lottery.ticket_price ?? 0)} → ${cas(Number(price))}`, `Базовый джекпот: ${cas(lottery.base_jackpot)} → ${cas(Number(base))}`, `Продажи закрываются за ${cutoff} мин.`, `Лимиты: ${purchaseLimit} за покупку, ${playerLimit} игроку`, `Причина: ${reason}`]} busy={busy} onCancel={() => setConfirmation(null)} onConfirm={() => void saveAll()} />}
-    {confirmation === "jackpot" && <ActionConfirm title={`Джекпот · ${lottery.name}`} details={[`Было: ${cas(lottery.current_jackpot)}`, `Станет: ${cas(Number(currentJackpot))}`, `Изменение: ${cas(Number(currentJackpot) - lottery.current_jackpot)}`, `Причина: ${reason}`]} busy={jackpotBusy} onCancel={() => setConfirmation(null)} onConfirm={() => void saveJackpot()} />}
   </article>;
 }
 

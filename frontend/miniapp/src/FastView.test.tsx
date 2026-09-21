@@ -12,7 +12,7 @@ function lottery(code: "flash" | "shadow" | "pulse", scheduledAt: string): Lotte
     name: code.toUpperCase(),
     kind: "DAILY",
     numbers_to_pick: 3,
-    max_number: 15,
+    max_number: code === "flash" ? 20 : 15,
     ticket_price: 888,
     jackpot: 1_000_000,
     draw_number: 185,
@@ -122,10 +122,10 @@ describe("PULSE picker", () => {
           ...lottery("pulse", "2026-09-04T08:36:00Z"),
           numbers_to_pick: 4,
           primary_numbers_to_pick: 2,
-          primary_max_number: 10,
+          primary_max_number: 12,
           secondary_numbers_to_pick: 2,
-          secondary_max_number: 5,
-          secondary_storage_offset: 10,
+          secondary_max_number: 6,
+          secondary_storage_offset: 12,
         }}
         purchasing={false}
         success={false}
@@ -134,11 +134,11 @@ describe("PULSE picker", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Позиция 1" }));
-    fireEvent.click(screen.getByRole("button", { name: "Позиция 10" }));
-    fireEvent.click(screen.getByRole("button", { name: "Pulse-число 5" }));
+    fireEvent.click(screen.getByRole("button", { name: "Позиция 12" }));
+    fireEvent.click(screen.getByRole("button", { name: "Pulse-число 6" }));
     fireEvent.click(screen.getByRole("button", { name: "Pulse-число 2" }));
     fireEvent.click(screen.getByRole("button", { name: /Запустить пульс/i }));
-    expect(onBuy).toHaveBeenCalledWith([1, 10, 12, 15]);
+    expect(onBuy).toHaveBeenCalledWith([1, 12, 14, 18]);
   });
 });
 

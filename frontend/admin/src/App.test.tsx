@@ -222,9 +222,10 @@ it("saves lottery price, base jackpot and limits with one action", async () => {
 
   fireEvent.change(await screen.findByLabelText("Цена билета, CAS"), { target: { value: "22222" } });
   fireEvent.change(screen.getByLabelText("Базовый джекпот после выигрыша, CAS"), { target: { value: "2811996" } });
-  fireEvent.change(screen.getByLabelText("Обязательная причина для аудита"), { target: { value: "Настройки владельца" } });
-  fireEvent.click(screen.getByRole("button", { name: "ПРОВЕРИТЬ НАСТРОЙКИ" }));
-  fireEvent.click(await screen.findByRole("button", { name: "Подтвердить" }));
+  fireEvent.change(screen.getByLabelText("Комментарий для истории изменений"), { target: { value: "Настройки владельца" } });
+  fireEvent.click(screen.getByRole("button", { name: "СОХРАНИТЬ НАСТРОЙКИ" }));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  fireEvent.click(await screen.findByRole("button", { name: "Да, сохранить" }));
 
   await waitFor(() => expect(adminApi.configureLottery).toHaveBeenCalledWith("lottery", 22222, 2811996, 5, 1000, 5000, "Настройки владельца"));
   expect(adminApi.setReserve).not.toHaveBeenCalled();
@@ -236,12 +237,29 @@ it("adjusts the current jackpot through the ledger action", async () => {
   fireEvent.click(await screen.findByRole("button", { name: /Лотереи/ }));
 
   fireEvent.change(await screen.findByLabelText("Текущий джекпот, CAS"), { target: { value: "999999" } });
-  fireEvent.change(screen.getByLabelText("Обязательная причина для аудита"), { target: { value: "Решение владельца" } });
-  fireEvent.click(screen.getByRole("button", { name: "ПРОВЕРИТЬ ИЗМЕНЕНИЕ" }));
-  fireEvent.click(await screen.findByRole("button", { name: "Подтвердить" }));
+  fireEvent.change(screen.getByLabelText("Комментарий для истории изменений"), { target: { value: "Решение владельца" } });
+  fireEvent.click(screen.getByRole("button", { name: "ИЗМЕНИТЬ ДЖЕКПОТ" }));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  fireEvent.click(await screen.findByRole("button", { name: "Да, изменить" }));
 
   await waitFor(() => expect(adminApi.setJackpot).toHaveBeenCalledWith("lottery", 999999, "Решение владельца"));
   expect(await screen.findByText("Текущий джекпот изменён через журнал CAS.")).toBeInTheDocument();
+});
+
+it("keeps lottery controls available after changing the current jackpot", async () => {
+  render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /Лотереи/ }));
+
+  fireEvent.change(await screen.findByLabelText("Текущий джекпот, CAS"), { target: { value: "999999" } });
+  fireEvent.click(screen.getByRole("button", { name: "ИЗМЕНИТЬ ДЖЕКПОТ" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Да, изменить" }));
+  await waitFor(() => expect(adminApi.setJackpot).toHaveBeenCalled());
+
+  fireEvent.change(screen.getByLabelText("Цена билета, CAS"), { target: { value: "22222" } });
+  fireEvent.click(screen.getByRole("button", { name: "СОХРАНИТЬ НАСТРОЙКИ" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Да, сохранить" }));
+
+  await waitFor(() => expect(adminApi.configureLottery).toHaveBeenCalledWith("lottery", 22222, 10000, 5, 1000, 5000, "Изменение настроек владельцем"));
 });
 
 
