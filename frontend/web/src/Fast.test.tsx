@@ -122,3 +122,31 @@ test("random Pulse uses the current 2/12 + 2/6 format",()=>{
     expect(numbers.slice(2).every(n=>n>=13&&n<=18)).toBe(true);
   }
 });
+
+test("broadcast replaces the scene, never creates a panel after purchase controls",async()=>{
+  vi.mocked(webApi.live).mockResolvedValue(liveFeed);
+  const {container,rerender}=render(<FastExperience {...props} lotteries={[pulse]} now={now+4000}/>);
+  await waitFor(()=>expect(container.querySelector(".is-broadcasting")).not.toBeNull());
+  expect(container.querySelectorAll(".station-scene .fast-broadcast")).toHaveLength(1);
+  expect(container.querySelector(".station-controls + .fast-broadcast")).toBeNull();
+  const scene=container.querySelector(".station-scene");
+  rerender(<FastExperience {...props} lotteries={[pulse]} now={now+10000}/>);
+  expect(container.querySelector(".station-scene")).toBe(scene);
+  expect(container.querySelector(".phase-result")).not.toBeNull();
+  rerender(<FastExperience {...props} lotteries={[pulse]} now={now+20000}/>);
+  expect(container.querySelector(".is-broadcasting")).toBeNull();
+});
+
+test("manual selection stays in the scene and survives a live interruption",async()=>{
+  vi.mocked(webApi.live).mockResolvedValue(liveFeed);
+  const {container,rerender}=render(<FastExperience {...props} lotteries={[pulse]} now={now-10000}/>);
+  await waitFor(()=>expect(webApi.live).toHaveBeenCalledTimes(3));
+  fireEvent.click(screen.getByRole("button",{name:/Выбрать числа самостоятельно/}));
+  fireEvent.click(screen.getByRole("button",{name:"Число 12"}));
+  expect(container.querySelector(".station-scene .fast-selector")).not.toBeNull();
+  rerender(<FastExperience {...props} lotteries={[pulse]} now={now+4000}/>);
+  await waitFor(()=>expect(container.querySelector(".is-broadcasting")).not.toBeNull());
+  expect(container.querySelector(".fast-selector")).toHaveAttribute("hidden");
+  rerender(<FastExperience {...props} lotteries={[pulse]} now={now+20000}/>);
+  expect(screen.getByRole("button",{name:"Число 12"})).toHaveAttribute("aria-pressed","true");
+});

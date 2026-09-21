@@ -108,22 +108,26 @@ function FastStation({ lottery, feed, failed, now, balance, userId, onBought, on
     if (code) { if (list.length < limit) set([...list, value]); return }
     set(list.includes(value) ? list.filter(n => n !== value) : list.length < limit ? [...list, value].sort((a, b) => a - b) : list);
   };
-  const phase = fastPresentation(feed, now).phase;
-  return <article id={`fast-${lottery.code}`} className={`fast-station station-${lottery.code} ${["starting", "revealing"].includes(phase) ? "is-broadcasting" : ""}`} aria-labelledby={`title-${lottery.code}`}>
+  const freshFeed = feed && now - Date.parse(feed.server_time) <= 15000 ? feed : null;
+  const phase = fastPresentation(freshFeed, now).phase;
+  const broadcasting = ["prelive", "starting", "revealing", "result"].includes(phase);
+  return <article id={`fast-${lottery.code}`} className={`fast-station station-${lottery.code} ${broadcasting ? "is-broadcasting" : ""} ${choosing ? "is-choosing" : ""}`} aria-labelledby={`title-${lottery.code}`}>
     <div className="station-identity"><span>0{FAST_ORDER.indexOf(lottery.code) + 1} / CASPER FAST</span><span>{lottery.draw_number ? `ТИРАЖ №${lottery.draw_number}` : "СКОРО"}</span></div>
     <div className="station-scene"><img src={art[lottery.code]} alt="" fetchPriority="high"/><div className="station-sheen"/>
       <div className="station-title"><h2 id={`title-${lottery.code}`}>{fastName(lottery.code)}</h2><p>{tagline[lottery.code]}</p></div>
       {lottery.code === "pulse" && <svg className="station-heartbeat" viewBox="0 0 400 80" aria-hidden="true"><path d="M0 40H92L111 28L125 42L147 5L170 73L191 30L209 40H400" pathLength="100"/></svg>}
       {lottery.code === "shadow" && <div className="station-cipher" aria-hidden="true"><i/><i/><i/><i/></div>}
+      <div className="scene-atmosphere" aria-hidden="true"><i/><i/><i/></div>
       <div className="station-format">{code ? "4 ЦИФРЫ · ПОРЯДОК ВАЖЕН" : `${lottery.primary_numbers_to_pick} из ${lottery.primary_max_number}${lottery.secondary_numbers_to_pick ? ` + ${lottery.secondary_numbers_to_pick} из ${lottery.secondary_max_number}` : ""}`}</div>
-    </div>
-    <div className="station-controls"><div className="station-stakes"><div><span>ДЖЕКПОТ</span><strong>{lottery.jackpot.toLocaleString("ru-RU")} <small>CAS</small></strong></div><div><span>{open ? "ДО ЗАКРЫТИЯ" : "ПРОДАЖИ"}</span><b>{open ? timeLeft(lottery.sales_close_at, now) : "ЗАКРЫТЫ"}</b></div></div>
-      {choosing && <fieldset className="fast-selector" disabled={busy || !!pending}><legend>{code ? "Введите код · повторы разрешены" : "Ваши числа"}</legend>
+      {choosing && <fieldset className="fast-selector" disabled={busy || !!pending} hidden={broadcasting}><legend>{code ? "Введите код · повторы разрешены" : "Ваши числа"}</legend>
         {code && <div className="chosen-code">{Array.from({ length: lottery.primary_numbers_to_pick }, (_, i) => <b key={i}>{main[i] ?? "—"}</b>)}<button aria-label="Удалить последнюю цифру" onClick={() => setMain(main.slice(0, -1))}>⌫</button></div>}
         <div className="fast-number-field">{Array.from({ length: code ? 10 : lottery.primary_max_number }, (_, i) => i + (code ? 0 : 1)).map(n => <button type="button" key={n} aria-label={`${code ? "Цифра" : "Число"} ${n}`} aria-pressed={!code && main.includes(n)} onClick={() => select(n)}>{n}</button>)}</div>
         {lottery.secondary_numbers_to_pick > 0 && <><p>PULSE · {special.length}/{lottery.secondary_numbers_to_pick}</p><div className="fast-number-field special">{Array.from({ length: lottery.secondary_max_number }, (_, i) => i + 1).map(n => <button type="button" key={n} aria-label={`Pulse-число ${n}`} aria-pressed={special.includes(n)} onClick={() => select(n, true)}>{n}</button>)}</div></>}
         {!code && <p>Выбрано {main.length}/{lottery.primary_numbers_to_pick}{special.length ? ` + ${special.length}/${lottery.secondary_numbers_to_pick}` : ""}</p>}
       </fieldset>}
+      <div className="scene-transmission" hidden={choosing && !broadcasting}><FastBroadcast feed={feed} lottery={lottery} now={now} failed={failed}/></div>
+    </div>
+    <div className="station-controls"><div className="station-stakes"><div><span>ДЖЕКПОТ</span><strong>{lottery.jackpot.toLocaleString("ru-RU")} <small>CAS</small></strong></div><div><span>{open ? "ДО ЗАКРЫТИЯ" : "ПРОДАЖИ"}</span><b>{open ? timeLeft(lottery.sales_close_at, now) : "ЗАКРЫТЫ"}</b></div></div>
       <button className="station-buy" disabled={busy || !open || !!stalePending || (!pending && (!affordable || (choosing && !valid)))} onClick={() => void buy(choosing)}>
         <span>{busy ? "Покупаем…" : pending ? "Повторить запрос" : choosing ? "Купить выбранный билет" : "Купить случайный билет"}</span><b>{cas(lottery.ticket_price ?? 0)} <i>↗</i></b>
       </button>
@@ -133,7 +137,6 @@ function FastStation({ lottery, feed, failed, now, balance, userId, onBought, on
       {error && <p className="error" role="alert">{error}</p>}
       {pending && (!open || stalePending) && <div className="fast-retry-warning" role="alert"><p>У предыдущей покупки нет подтверждения. Сначала проверьте билеты и баланс, чтобы не купить лишний билет.</p><button onClick={onTickets}>Проверить билеты ↗</button><button onClick={() => { remember(null); setError("") }}>Я проверил — разрешить новую покупку</button></div>}
     </div>
-    <FastBroadcast feed={feed} lottery={lottery} now={now} failed={failed}/>
   </article>;
 }
 
