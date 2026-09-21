@@ -198,6 +198,8 @@ class LiveDrawResponse(BaseModel):
     live_starts_at: datetime
     reveal_at: list[datetime]
     live_ends_at: datetime
+    primary_numbers_to_pick: int = 0
+    secondary_storage_offset: int = 0
 
 
 class LiveFeedResponse(BaseModel):
@@ -389,6 +391,8 @@ def _live_draw_response(item: MiniAppLiveDraw) -> LiveDrawResponse:
         live_starts_at=item.live_starts_at,
         reveal_at=list(item.reveal_at),
         live_ends_at=item.live_ends_at,
+        primary_numbers_to_pick=item.primary_numbers_to_pick,
+        secondary_storage_offset=item.secondary_storage_offset,
     )
 
 

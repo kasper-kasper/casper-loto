@@ -148,6 +148,8 @@ class MiniAppLiveDraw:
     live_starts_at: datetime
     reveal_at: tuple[datetime, ...]
     live_ends_at: datetime
+    primary_numbers_to_pick: int = 0
+    secondary_storage_offset: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -911,6 +913,10 @@ class MiniAppQueryService:
                     )
                     for ticket in ranked_tickets
                 )
+        snapshot = draw.configuration_snapshot or {}
+        rules = get_lottery_rules(
+            str(snapshot.get("ruleset_code", lottery.ruleset_code))
+        )
         return MiniAppLiveDraw(
             lottery_code=draw_display_code(lottery.code, draw.scheduled_at),
             lottery_name=draw_display_name(
@@ -939,6 +945,8 @@ class MiniAppQueryService:
             live_starts_at=timeline.starts_at,
             reveal_at=timeline.reveal_at,
             live_ends_at=timeline.ends_at,
+            primary_numbers_to_pick=rules.display_primary_numbers_to_pick,
+            secondary_storage_offset=rules.secondary_storage_offset,
         )
 
     async def activity(
