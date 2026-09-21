@@ -1,24 +1,17 @@
 # K-Loto
 
-Current release: **1.26.0 — Fast: быстрая покупка, джекпоты и общее автоучастие**.
-Backend/Mini App: **1.20.0**; Admin: **1.19.0**.
+Current release: **1.41.1**.
 
 K-Loto is a multi-user lottery platform with integer CAS accounting, an
-immutable transaction ledger, recoverable draw scheduling and nine independent
+immutable transaction ledger, recoverable draw scheduling and ten independent
 lotteries. Player interfaces are the Telegram bot and Telegram Mini App. The
-administrator uses a separate HTTPS Web Admin Panel. The former ordinary player
-Web client was retired in v0.14.0.
+administrator uses a separate HTTPS Web Admin Panel.
 
 ## Lotteries
 
-| Code | Name | Format | Moscow draw time | Cutoff |
-|---|---|---:|---:|---:|
-| `weekly` | Kasper Grand | 5/35 + 2/5 | Sunday 20:00 | 5 min |
-| `pll` | ПЛЛ-лото | 4/15 | daily 02:22 | 2 min |
-| `pss` | ПСС-Лото | 4/15 | daily 12:00 | 2 min |
-| `khan` | 6 из 36 | 6/36 | daily 09:00 and 18:00 | 2 min |
-| `september` | 3 СЕНТЯБРЯ | 3/33 | daily 03:33 and 15:33 | 2 min |
-| `grob` | ГРОБ | 3/16 | daily 06:06 and 23:06 | 2 min |
+Production currently has ten active lotteries. The authoritative human-readable
+catalogue, including formats, schedules, prices, limits and prize categories, is
+[docs/LOTTERIES.md](docs/LOTTERIES.md).
 
 Each entity owns independent draw numbers, ticket numbers, jackpot,
 central Kasper Fund. Empty draws are settled normally. Every active
