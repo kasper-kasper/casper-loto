@@ -1524,11 +1524,9 @@ html.app-backgrounded *, .motion-paused, .motion-paused * { animation-play-state
 .pulse-special-panel { position: relative; z-index: 1; margin-top: 10px; padding: 12px; border: 1px solid rgba(255,58,84,.34); border-radius: 12px 12px 22px 12px; background: linear-gradient(110deg,rgba(31,4,11,.9),rgba(13,2,6,.76)); }
 .pulse-special-panel > div:first-child { display: flex; justify-content: space-between; color: #b59099; font-size: 8px; letter-spacing: .13em; }
 .pulse-special-panel > div:first-child b { color: #ff5067; font-size: 13px; }
-.pulse-special-panel > div:last-child { display: grid; grid-template-columns: repeat(5,1fr); gap: 7px; margin-top: 10px; }
-.pulse-special-panel button { position: relative; min-height: 44px; border: 1px solid rgba(255,65,90,.27); border-radius: 999px; color: #9c6671; background: rgba(25,3,9,.72); font-size: 10px; font-weight: 850; }
-.pulse-special-panel button i { position: absolute; inset: 50% auto auto 50%; width: 8px; height: 8px; border-radius: 50%; background: #4d111c; transform: translate(-50%,-50%); }
-.pulse-special-panel button.selected { color: #fff; border-color: #ff405a; background: radial-gradient(circle,#fff 0 5%,#ff304e 7% 16%,rgba(64,8,20,.9) 45%); box-shadow: 0 0 18px rgba(255,42,70,.3); text-shadow: 0 0 8px #ff2947; }
-.pulse-special-panel button.selected i { opacity: 0; }
+.pulse-special-panel > div:last-child { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 7px; margin-top: 10px; }
+.pulse-special-panel button { aspect-ratio: 1; min-width: 0; border: 1px solid rgba(255,65,90,.34); border-radius: 50%; color: #d49aa4; background: radial-gradient(circle at 35% 28%,rgba(255,255,255,.08),transparent 18%),linear-gradient(145deg,#35101a,#160309); box-shadow: inset -4px -5px 10px rgba(0,0,0,.32),inset 2px 2px 7px rgba(255,102,121,.08); font-size: 14px; font-weight: 900; }
+.pulse-special-panel button.selected { color: #fff; border-color: #ff7588; background: radial-gradient(circle at 34% 27%,#fff 0 4%,rgba(255,255,255,.32) 5% 10%,transparent 11%),linear-gradient(145deg,#ff5269,#a20d2b 58%,#430714); box-shadow: 0 0 18px rgba(255,42,70,.38),inset -5px -6px 10px rgba(70,0,15,.3); text-shadow: 0 1px 4px rgba(71,0,13,.65); }
 .fast-selection { display: grid; grid-template-columns: 1fr auto; gap: 9px; margin-top: 10px; padding: 12px; border: 1px solid rgba(134,155,201,.17); border-radius: 12px; background: rgba(4,9,23,.57); }
 .fast-selection > div > span { color: #7f90b1; font-size: 8px; letter-spacing: .16em; text-transform: uppercase; }
 .fast-selection > div > div { display: flex; gap: 6px; margin-top: 7px; }
