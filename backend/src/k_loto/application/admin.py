@@ -5,7 +5,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4, uuid5
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import String, cast, exists, func, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -148,6 +148,10 @@ class AdminDrawTicket:
     id: UUID
     public_number: int
     user_id: UUID
+    player_name: str
+    player_username: str | None
+    player_telegram_id: int | None
+    is_jackpot_winner: bool
     numbers: tuple[int, ...]
     purchase_price: int
     matches: int | None
@@ -635,22 +639,111 @@ class AdminQueryService:
         self._session = session
         self._scope = scope
 
-    async def players(self) -> tuple[AdminPlayer, ...]:
+    async def players(
+        self, *, search: str | None = None, limit: int = 200
+    ) -> tuple[AdminPlayer, ...]:
+        query = search.strip() if search else ""
+        balance_amount = (
+            select(Balance.amount).where(Balance.user_id == User.id).scalar_subquery()
+        )
+        ticket_count = (
+            select(func.count(Ticket.id))
+            .where(Ticket.user_id == User.id)
+            .scalar_subquery()
+        )
+        active_ticket_count = (
+            select(func.count(Ticket.id))
+            .where(
+                Ticket.user_id == User.id,
+                Ticket.status == TicketStatus.PURCHASED,
+            )
+            .scalar_subquery()
+        )
+        spent = (
+            select(func.coalesce(func.sum(-LedgerTransaction.amount), 0))
+            .where(
+                LedgerTransaction.user_id == User.id,
+                LedgerTransaction.account_kind == LedgerAccountKind.USER_BALANCE,
+                LedgerTransaction.type == TransactionType.TICKET_PURCHASE,
+                LedgerTransaction.amount < 0,
+            )
+            .scalar_subquery()
+        )
+        won = (
+            select(func.coalesce(func.sum(LedgerTransaction.amount), 0))
+            .where(
+                LedgerTransaction.user_id == User.id,
+                LedgerTransaction.account_kind == LedgerAccountKind.USER_BALANCE,
+                LedgerTransaction.type.in_(
+                    [TransactionType.PRIZE_PAYOUT, TransactionType.JACKPOT_PAYOUT]
+                ),
+                LedgerTransaction.amount > 0,
+            )
+            .scalar_subquery()
+        )
+        statement = (
+            select(
+                User,
+                balance_amount,
+                ticket_count,
+                active_ticket_count,
+                spent,
+                won,
+                UserNotificationPreference.telegram_enabled,
+                AutoPlaySetting,
+            )
+            .outerjoin(
+                UserNotificationPreference,
+                UserNotificationPreference.user_id == User.id,
+            )
+            .outerjoin(AutoPlaySetting, AutoPlaySetting.user_id == User.id)
+            .where(User.is_admin.is_(False))
+        )
+        if query:
+            pattern = f"%{query.removeprefix('@')}%"
+            statement = statement.where(
+                or_(
+                    User.display_name.ilike(pattern),
+                    User.username.ilike(pattern),
+                    cast(User.telegram_id, String).ilike(pattern),
+                    cast(User.id, String).ilike(pattern),
+                )
+            )
         rows = (
             await self._session.execute(
-                select(User, Balance.amount, func.count(Ticket.id))
-                .outerjoin(Balance, Balance.user_id == User.id)
-                .outerjoin(Ticket, Ticket.user_id == User.id)
-                .where(User.is_admin.is_(False))
-                .group_by(User.id, Balance.amount)
-                .order_by(User.created_at.desc())
+                statement.order_by(User.created_at.desc()).limit(limit)
             )
         ).all()
         return tuple(
-            [
-                await self._player(user, balance or 0, ticket_count or 0)
-                for user, balance, ticket_count in rows
-            ]
+            AdminPlayer(
+                user.id,
+                user.display_name,
+                user.username,
+                user.telegram_id,
+                user.is_active,
+                int(balance or 0),
+                int(total_tickets),
+                int(active_tickets),
+                int(total_spent),
+                int(total_won),
+                int(total_won) - int(total_spent),
+                bool(telegram_enabled),
+                bool(auto_play and auto_play.enabled),
+                auto_play.tickets_per_draw if auto_play else 5,
+                auto_play.last_attempted_at if auto_play else None,
+                auto_play.last_succeeded_at if auto_play else None,
+                auto_play.last_error if auto_play else None,
+            )
+            for (
+                user,
+                balance,
+                total_tickets,
+                active_tickets,
+                total_spent,
+                total_won,
+                telegram_enabled,
+                auto_play,
+            ) in rows
         )
 
     async def player(self, user_id: UUID) -> AdminPlayer:
@@ -961,8 +1054,18 @@ class AdminQueryService:
             raise LookupError("Draw does not exist.")
         draw, lottery, jackpot_amount = row
         tickets = (
-            await self._session.scalars(
-                select(Ticket)
+            await self._session.execute(
+                select(
+                    Ticket,
+                    User,
+                    exists(
+                        select(LedgerTransaction.id).where(
+                            LedgerTransaction.ticket_id == Ticket.id,
+                            LedgerTransaction.type == TransactionType.JACKPOT_PAYOUT,
+                        )
+                    ).label("is_jackpot_winner"),
+                )
+                .join(User, User.id == Ticket.user_id)
                 .where(Ticket.draw_id == draw_id)
                 .order_by(Ticket.public_number)
             )
@@ -972,13 +1075,17 @@ class AdminQueryService:
                 ticket.id,
                 ticket.public_number,
                 ticket.user_id,
+                user.display_name,
+                user.username,
+                user.telegram_id,
+                is_jackpot_winner,
                 tuple(ticket.numbers),
                 ticket.purchase_price,
                 ticket.matches,
                 ticket.prize_amount,
                 ticket.bingo_result,
             )
-            for ticket in tickets
+            for ticket, user, is_jackpot_winner in tickets
         )
 
     @staticmethod
@@ -1220,7 +1327,7 @@ class AdminQueryService:
             "pending_draws": pending or 0,
         }
 
-    async def today_summary(self, *, now: datetime | None = None) -> dict[str, int]:
+    async def today_summary(self, *, now: datetime | None = None) -> dict[str, Any]:
         """Owner-facing Moscow-day sales and payout snapshot."""
         timestamp = now or datetime.now(UTC)
         local_day = timestamp.astimezone(MOSCOW).date()
@@ -1268,6 +1375,85 @@ class AdminQueryService:
                 )
             )
         ).one()
+        sales_rows = (
+            await self._session.execute(
+                select(
+                    Lottery.id,
+                    Lottery.name,
+                    func.count(Ticket.id),
+                    func.coalesce(func.sum(Ticket.purchase_price), 0),
+                )
+                .join(Draw, Draw.id == Ticket.draw_id)
+                .join(Lottery, Lottery.id == Draw.lottery_id)
+                .where(
+                    Ticket.purchased_at >= start,
+                    Ticket.purchased_at < end,
+                    lottery_scope(self._scope),
+                )
+                .group_by(Lottery.id)
+            )
+        ).all()
+        payout_rows = (
+            await self._session.execute(
+                select(
+                    Lottery.id,
+                    func.count(Ticket.id).filter(Ticket.prize_amount > 0),
+                    func.coalesce(func.sum(Ticket.prize_amount), 0),
+                )
+                .join(Lottery, Lottery.id == Ticket.lottery_id)
+                .where(
+                    Ticket.settled_at >= start,
+                    Ticket.settled_at < end,
+                    lottery_scope(self._scope),
+                )
+                .group_by(Lottery.id)
+            )
+        ).all()
+        payout_by_lottery = {
+            lottery_id: (int(winners), int(amount))
+            for lottery_id, winners, amount in payout_rows
+        }
+        by_lottery = []
+        for lottery_id, name, tickets, lottery_sales in sales_rows:
+            lottery_winners, lottery_payout = payout_by_lottery.pop(lottery_id, (0, 0))
+            by_lottery.append(
+                {
+                    "lottery_id": str(lottery_id),
+                    "lottery_name": name,
+                    "purchased_tickets": int(tickets),
+                    "sales": int(lottery_sales),
+                    "winning_tickets": lottery_winners,
+                    "payout": lottery_payout,
+                    "net": int(lottery_sales) - lottery_payout,
+                }
+            )
+        if payout_by_lottery:
+            name_rows = (
+                await self._session.execute(
+                    select(Lottery.id, Lottery.name).where(
+                        Lottery.id.in_(payout_by_lottery)
+                    )
+                )
+            ).all()
+            names: dict[UUID, str] = {
+                lottery_id: name for lottery_id, name in name_rows
+            }
+            for lottery_id, (
+                lottery_winners,
+                lottery_payout,
+            ) in payout_by_lottery.items():
+                by_lottery.append(
+                    {
+                        "lottery_id": str(lottery_id),
+                        "lottery_name": names.get(lottery_id, "Лотерея"),
+                        "purchased_tickets": 0,
+                        "sales": 0,
+                        "winning_tickets": lottery_winners,
+                        "payout": lottery_payout,
+                        "net": -lottery_payout,
+                    }
+                )
+        by_lottery.sort(key=lambda item: (-item["sales"], item["lottery_name"]))
         sales_value = int(sales)
         payout_value = int(payout)
         return {
@@ -1277,6 +1463,7 @@ class AdminQueryService:
             "winning_tickets": int(winning_tickets),
             "payout": payout_value,
             "net": sales_value - payout_value,
+            "by_lottery": by_lottery,
         }
 
     async def jackpot_analytics(self) -> dict[str, Any]:

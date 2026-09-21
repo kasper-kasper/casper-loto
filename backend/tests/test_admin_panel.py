@@ -143,10 +143,17 @@ async def test_draw_detail_exposes_bingo_stage_result() -> None:
         prize_amount=100_000,
         bingo_result={"moves": [16, 31, 40], "amounts": [100_000, 0, 0]},
     )
+    player = User(
+        id=ticket.user_id,
+        telegram_id=123456,
+        username="winner",
+        display_name="Jackpot Winner",
+        is_active=True,
+        is_admin=False,
+    )
     fake = FakeSession(
         scalar_values=[],
-        execute_rows=[(draw, lottery, None)],
-        scalar_collections=[[ticket]],
+        execute_rows=[(draw, lottery, None), [(ticket, player, True)]],
     )
 
     _, tickets = await AdminQueryService(cast(AsyncSession, fake)).draw(draw.id)
@@ -155,17 +162,24 @@ async def test_draw_detail_exposes_bingo_stage_result() -> None:
         "moves": [16, 31, 40],
         "amounts": [100_000, 0, 0],
     }
+    assert tickets[0].player_name == "Jackpot Winner"
+    assert tickets[0].player_username == "winner"
+    assert tickets[0].player_telegram_id == 123456
+    assert tickets[0].is_jackpot_winner is True
 
 
 def test_admin_session_is_signed_expiring_and_contains_csrf() -> None:
     now = datetime(2026, 8, 15, 10, tzinfo=UTC)
-    token, issued = issue_admin_session("owner", "s" * 48, now=now, max_age_seconds=600)
+    token, issued = issue_admin_session(
+        "owner", "s" * 48, now=now, max_age_seconds=600, remembered=True
+    )
 
     validated = validate_admin_session(token, "s" * 48, now=now)
 
     assert validated.username == "owner"
     assert validated.csrf_token == issued.csrf_token
     assert validated.expires_at == now + timedelta(minutes=10)
+    assert validated.remembered is True
 
 
 def test_tampered_and_expired_admin_sessions_are_rejected() -> None:

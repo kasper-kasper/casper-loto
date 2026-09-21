@@ -96,15 +96,15 @@ async function drawPage(query = ""): Promise<Draw[]> {
 }
 
 export const adminApi = {
-  login: (username: string, password: string) =>
+  login: (username: string, password: string, rememberBrowser = true) =>
     request<AdminSession>("/auth/login", {
       method: "POST",
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username, password, remember_browser: rememberBrowser }),
     }).then(rememberSession),
   session: () => request<AdminSession>("/auth/session").then(rememberSession),
   logout: () => request<void>("/auth/logout", { method: "POST" }),
   dashboard: (scope: LotteryScope = "all") => request<Dashboard>(`/dashboard?scope=${scope}`),
-  players: () => request<Player[]>("/players"),
+  players: (query = "") => request<Player[]>(`/players${query ? `?q=${encodeURIComponent(query)}` : ""}`),
   lotteries: () => request<Lottery[]>("/lotteries"),
   draws: drawPage,
   schedule: (scope: LotteryScope = "all") => request<ScheduleEntry[]>(`/schedule?scope=${scope}`),

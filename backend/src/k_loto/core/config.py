@@ -45,6 +45,9 @@ class Settings(BaseSettings):
     admin_username: str | None = None
     admin_password_hash: SecretStr | None = None
     admin_session_max_age_seconds: int = Field(default=28_800, ge=300, le=86_400)
+    admin_remember_max_age_seconds: int = Field(
+        default=7_776_000, ge=86_400, le=31_536_000
+    )
     web_session_secret: SecretStr | None = None
     web_session_max_age_seconds: int = Field(default=604_800, ge=300, le=2_592_000)
 

@@ -25,6 +25,7 @@ class AdminSession:
     username: str
     csrf_token: str
     expires_at: datetime
+    remembered: bool = False
 
 
 def verify_admin_password(password: str, encoded_hash: str) -> bool:
@@ -41,6 +42,7 @@ def issue_admin_session(
     *,
     now: datetime | None = None,
     max_age_seconds: int = 28_800,
+    remembered: bool = False,
 ) -> tuple[str, AdminSession]:
     if len(secret) < 32:
         raise ValueError("Administrator session secret must contain 32 characters.")
@@ -49,12 +51,14 @@ def issue_admin_session(
         username=username,
         csrf_token=secrets.token_urlsafe(32),
         expires_at=timestamp + timedelta(seconds=max_age_seconds),
+        remembered=remembered,
     )
     payload = json.dumps(
         {
             "csrf": session.csrf_token,
             "expires_at": int(session.expires_at.timestamp()),
             "purpose": "k-loto-admin",
+            "remembered": session.remembered,
             "username": session.username,
             "version": 1,
         },
@@ -86,6 +90,7 @@ def validate_admin_session(
         expires_at = datetime.fromtimestamp(int(payload["expires_at"]), tz=UTC)
         username = str(payload["username"])
         csrf_token = str(payload["csrf"])
+        remembered = bool(payload.get("remembered", False))
     except InvalidAdminSession:
         raise
     except (ValueError, TypeError, KeyError, json.JSONDecodeError) as error:
@@ -94,4 +99,4 @@ def validate_admin_session(
         raise InvalidAdminSession("Administrator session has expired.")
     if not username or not csrf_token:
         raise InvalidAdminSession("Administrator session identity is missing.")
-    return AdminSession(username, csrf_token, expires_at)
+    return AdminSession(username, csrf_token, expires_at, remembered)

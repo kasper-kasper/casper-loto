@@ -19,7 +19,7 @@ vi.mock("./api", () => ({
 
 const session = { username: "owner", csrf_token: "csrf", expires_at: "2026-08-16T00:00:00Z", miniapp_url: "https://play.example.test/" };
 const lottery: Lottery = { id: "lottery", code: "weekly", name: "Weekly 5/20", kind: "WEEKLY", ticket_price: 100, base_jackpot: 10_000, current_jackpot: 12_000, distribution_fund: 500, reserve: 100_000, schedule: { weekday: "sunday" }, sales_cutoff_minutes: 5, max_tickets_per_purchase: 1000, max_tickets_per_user_per_draw: 5000, is_active: true, next_draw_number: 8, next_draw_at: "2026-08-16T17:00:00Z" };
-const dashboard: Dashboard = { version: "0.8.0", uptime_seconds: 120, database_healthy: true, bot_configured: true, scheduler_enabled: true, counts: { users: 1, tickets: 6, completed_draws: 3, pending_draws: 1 }, lotteries: [lottery], recent_draws: [], recent_transactions: [], operations: { today: { completed_draws: 2, purchased_tickets: 4, sales: 400, winning_tickets: 1, payout: 250, net: 150 }, scheduler: { last_started_at: null, last_succeeded_at: null, last_failed_at: null, last_error: null, settled_count: 0, prepared_count: 0 }, stuck_draw_count: 0, notifications: {}, next_draws: [] }, jackpots: { kasper_fund_balance: 1_000_000_000_000_000, total_wins: 0, total_paid: 0, largest_win: 0, lotteries: [{ code: "weekly", name: "Weekly 5/20", win_count: 0, total_paid: 0, last_win_at: null }], history: [] } };
+const dashboard: Dashboard = { version: "0.8.0", uptime_seconds: 120, database_healthy: true, bot_configured: true, scheduler_enabled: true, counts: { users: 1, tickets: 6, completed_draws: 3, pending_draws: 1 }, lotteries: [lottery], recent_draws: [], recent_transactions: [], operations: { today: { completed_draws: 2, purchased_tickets: 4, sales: 400, winning_tickets: 1, payout: 250, net: 150, by_lottery: [{ lottery_id: "lottery", lottery_name: "Weekly 5/20", purchased_tickets: 4, sales: 400, winning_tickets: 1, payout: 250, net: 150 }] }, scheduler: { last_started_at: null, last_succeeded_at: null, last_failed_at: null, last_error: null, settled_count: 0, prepared_count: 0 }, stuck_draw_count: 0, notifications: {}, next_draws: [] }, jackpots: { kasper_fund_balance: 1_000_000_000_000_000, total_wins: 0, total_paid: 0, largest_win: 0, lotteries: [{ code: "weekly", name: "Weekly 5/20", win_count: 0, total_paid: 0, last_win_at: null }], history: [] } };
 const player: Player = { id: "player", display_name: "Test Player", username: "player", telegram_id: 123, is_active: true, balance: 5_000, ticket_count: 6, active_ticket_count: 2, spent: 600, won: 250, net: -350, telegram_notifications_enabled: false, auto_play_enabled: false, auto_play_tickets_per_draw: 5, auto_play_last_attempted_at: null, auto_play_last_succeeded_at: null, auto_play_last_error: null };
 const analytics: TicketAnalytics = { overall: { lottery_id: null, lottery_name: "Все лотереи", is_active: null, total_tickets: 100, active_tickets: 10, settled_tickets: 90, winning_tickets: 21, participants: 8, winning_players: 5, total_sales: 10_000, total_payout: 2_500 }, lotteries: [{ lottery_id: "lottery", lottery_name: "Weekly 5/20", is_active: true, total_tickets: 100, active_tickets: 10, settled_tickets: 90, winning_tickets: 21, participants: 8, winning_players: 5, total_sales: 10_000, total_payout: 2_500 }] };
 const numberStatistics: NumberStatisticsReport = { lottery_id: "lottery", lottery_name: "Weekly 5/20", period_start: "2026-08-31T21:00:00Z", window_size: 20, draw_count: 2, first_draw_at: "2026-09-01T09:00:00Z", last_draw_at: "2026-09-01T15:00:00Z", numbers: [{ number: 7, appearances: 2, draw_percentage: 100, last_appearance: "2026-09-01T15:00:00Z", draws_since_last: 0 }] };
@@ -97,7 +97,7 @@ it("shows login and authenticates when no session exists", async () => {
   fireEvent.change(screen.getByLabelText("ПАРОЛЬ"), { target: { value: "password" } });
   fireEvent.click(screen.getByRole("button", { name: "ВОЙТИ" }));
 
-  await waitFor(() => expect(adminApi.login).toHaveBeenCalledWith("owner", "password"));
+  await waitFor(() => expect(adminApi.login).toHaveBeenCalledWith("owner", "password", true));
   expect(await screen.findByText("Всего сорвано джекпотов")).toBeInTheDocument();
 });
 
@@ -127,6 +127,13 @@ it("groups administration into ten owner-oriented sections", async () => {
   expect(await screen.findByRole("tab", { name: "Журнал CAS" })).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: "Уведомления" })).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: "Аудит действий" })).toBeInTheDocument();
+});
+
+it("shows the daily owner result and its lottery breakdown", async () => {
+  render(<App />);
+  expect(await screen.findByText("ПЛЮС ЛОТО ЗА ДЕНЬ")).toBeInTheDocument();
+  expect(screen.getByText("Из чего сложился итог дня")).toBeInTheDocument();
+  expect(screen.getAllByText("+150 CAS").length).toBeGreaterThan(0);
 });
 
 it("shows precomputed interesting facts and updates their workflow status", async () => {
@@ -307,7 +314,7 @@ it.each([null, 200])("uses the recorded jackpot event in draw details, amount=%s
   vi.mocked(adminApi.dashboard).mockResolvedValue({ ...dashboard, jackpots: { ...dashboard.jackpots, last_win: event } });
   vi.mocked(adminApi.draw).mockResolvedValue({ draw: {
     id: "draw", lottery_id: "lottery", lottery_code: "weekly", lottery_name: "Weekly 5/20", public_number: 7, status: "COMPLETED", scheduled_at: event.occurred_at, sales_close_at: event.occurred_at, executed_at: event.occurred_at, winning_numbers: [1,2,3,4,5], ticket_count: 1, total_sales: 100, total_payout: 200, jackpot_opening: 200, jackpot_closing: amount ? 500 : 100, distribution_opening: 0, distribution_closing: 0, reserve_used: 0, kasper_fund_used: 0, correlation_id: "internal-correlation", jackpot_amount: amount,
-  }, tickets: [] });
+  }, tickets: amount ? [{ id: "winner-ticket", public_number: 77, user_id: "player", player_name: "Jackpot Player", player_username: "jackpot", player_telegram_id: 777, is_jackpot_winner: true, numbers: [1,2,3,4,5], purchase_price: 100, matches: 5, prize_amount: 200 }] : [] });
   vi.mocked(adminApi.draws).mockResolvedValue([{
     id: "draw", lottery_id: "lottery", lottery_code: "weekly", lottery_name: "Weekly 5/20", public_number: 7, status: "COMPLETED", scheduled_at: event.occurred_at, sales_close_at: event.occurred_at, executed_at: event.occurred_at, winning_numbers: [1,2,3,4,5], ticket_count: 1, total_sales: 100, total_payout: 200, jackpot_opening: 200, jackpot_closing: amount ? 500 : 100, distribution_opening: 0, distribution_closing: 0, reserve_used: 0, kasper_fund_used: 0, correlation_id: "internal-correlation", jackpot_amount: amount,
   }]);
@@ -315,7 +322,11 @@ it.each([null, 200])("uses the recorded jackpot event in draw details, amount=%s
   fireEvent.click(await screen.findByRole("button", { name: /Тиражи/ }));
   fireEvent.click((await screen.findAllByText("Weekly 5/20")).at(-1)!);
   const dialog = await screen.findByRole("dialog");
-  if (amount) expect(within(dialog).getByText("ДЖЕКПОТ ЭТОГО ТИРАЖА СОРВАН")).toBeInTheDocument();
+  if (amount) {
+    expect(within(dialog).getByText("ДЖЕКПОТ ЭТОГО ТИРАЖА СОРВАН")).toBeInTheDocument();
+    expect(within(dialog).getByText("Кто сорвал джекпот")).toBeInTheDocument();
+    expect(within(dialog).getAllByText("Jackpot Player").length).toBeGreaterThan(0);
+  }
   else expect(within(dialog).queryByText("ДЖЕКПОТ ЭТОГО ТИРАЖА СОРВАН")).not.toBeInTheDocument();
   expect(within(dialog).queryByText("internal-correlation")).not.toBeInTheDocument();
   fireEvent.keyDown(window, { key: "Escape" });

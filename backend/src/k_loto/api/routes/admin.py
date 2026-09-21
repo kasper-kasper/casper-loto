@@ -63,6 +63,7 @@ class ApiModel(BaseModel):
 class LoginRequest(BaseModel):
     username: str = Field(min_length=1, max_length=128)
     password: str = Field(min_length=1, max_length=512)
+    remember_browser: bool = True
 
 
 class SessionResponse(BaseModel):
@@ -70,6 +71,7 @@ class SessionResponse(BaseModel):
     csrf_token: str
     expires_at: datetime
     miniapp_url: str | None = None
+    remembered: bool = False
 
 
 class AdjustmentRequest(BaseModel):
@@ -189,6 +191,10 @@ class DrawTicketResponse(ApiModel):
     id: UUID
     public_number: int
     user_id: UUID
+    player_name: str
+    player_username: str | None
+    player_telegram_id: int | None
+    is_jackpot_winner: bool
     numbers: tuple[int, ...]
     purchase_price: int
     matches: int | None
@@ -388,15 +394,21 @@ async def login(
     secret = settings.admin_secret
     if secret is None:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
+    max_age = (
+        settings.admin_remember_max_age_seconds
+        if payload.remember_browser
+        else settings.admin_session_max_age_seconds
+    )
     token, admin_session = issue_admin_session(
         configured_username,
         secret.get_secret_value(),
-        max_age_seconds=settings.admin_session_max_age_seconds,
+        max_age_seconds=max_age,
+        remembered=payload.remember_browser,
     )
     response.set_cookie(
         key=ADMIN_COOKIE,
         value=token,
-        max_age=settings.admin_session_max_age_seconds,
+        max_age=max_age,
         httponly=True,
         secure=settings.app_env == "production",
         samesite="strict",
@@ -407,19 +419,42 @@ async def login(
         csrf_token=admin_session.csrf_token,
         expires_at=admin_session.expires_at,
         miniapp_url=str(settings.miniapp_url) if settings.miniapp_url else None,
+        remembered=admin_session.remembered,
     )
 
 
 @router.get("/auth/session", response_model=SessionResponse)
 async def current_session(
+    response: Response,
     admin: Annotated[CurrentAdmin, Depends(get_current_admin)],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> SessionResponse:
+    current = admin.session
+    if current.remembered:
+        secret = settings.admin_secret
+        if secret is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+        token, current = issue_admin_session(
+            current.username,
+            secret.get_secret_value(),
+            max_age_seconds=settings.admin_remember_max_age_seconds,
+            remembered=True,
+        )
+        response.set_cookie(
+            key=ADMIN_COOKIE,
+            value=token,
+            max_age=settings.admin_remember_max_age_seconds,
+            httponly=True,
+            secure=settings.app_env == "production",
+            samesite="strict",
+            path="/api/v1/admin",
+        )
     return SessionResponse(
-        username=admin.session.username,
-        csrf_token=admin.session.csrf_token,
-        expires_at=admin.session.expires_at,
+        username=current.username,
+        csrf_token=current.csrf_token,
+        expires_at=current.expires_at,
         miniapp_url=str(settings.miniapp_url) if settings.miniapp_url else None,
+        remembered=current.remembered,
     )
 
 
@@ -476,10 +511,12 @@ async def notifications(
 async def players(
     _admin: Annotated[CurrentAdmin, Depends(get_current_admin)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
+    query: Annotated[str | None, Query(alias="q", max_length=128)] = None,
+    limit: int = Query(default=200, ge=1, le=500),
 ) -> list[PlayerResponse]:
     return [
         PlayerResponse.model_validate(item)
-        for item in await AdminQueryService(session).players()
+        for item in await AdminQueryService(session).players(search=query, limit=limit)
     ]
 
 

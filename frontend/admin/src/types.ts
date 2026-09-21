@@ -3,6 +3,7 @@ export interface AdminSession {
   csrf_token: string;
   expires_at: string;
   miniapp_url?: string | null;
+  remembered?: boolean;
 }
 
 export interface Player {
@@ -88,6 +89,10 @@ export interface DrawTicket {
   id: string;
   public_number: number;
   user_id: string;
+  player_name?: string;
+  player_username?: string | null;
+  player_telegram_id?: number | null;
+  is_jackpot_winner?: boolean;
   numbers: number[];
   purchase_price: number;
   matches: number | null;
@@ -162,6 +167,15 @@ export interface Dashboard {
       winning_tickets: number;
       payout: number;
       net: number;
+      by_lottery?: Array<{
+        lottery_id: string;
+        lottery_name: string;
+        purchased_tickets: number;
+        sales: number;
+        winning_tickets: number;
+        payout: number;
+        net: number;
+      }>;
     };
     scheduler: {
       last_started_at: string | null;
