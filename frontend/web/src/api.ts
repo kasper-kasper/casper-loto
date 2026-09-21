@@ -11,7 +11,7 @@ export const webApi={
  session:()=>request<WebSession>("/auth/session").then(remember), logout:()=>request<void>("/auth/logout",{method:"POST"}).finally(()=>{csrf=""}),
  dashboard:()=>request<Dashboard>("/dashboard"), account:()=>request<Account>("/account"),
  tickets:(state:"active"|"history",offset=0)=>request<TicketPage>(`/tickets?state=${state}&offset=${offset}&limit=100`),
- live:(scope:"standard"|"fast")=>request<LiveFeed>(`/live?scope=${scope}`),
+ live:(scope:"standard"|"fast",code="")=>request<LiveFeed>(`/live?scope=${scope}${code?`&lottery_code=${encodeURIComponent(code)}`:""}`,{signal:AbortSignal.timeout(10000)}),
  purchase:(code:string,combinations:number[][],key:string,drawCount:1|5=1)=>request<{ticket_ids:string[];total_cost:number;balance_after:number}>(`/lotteries/${encodeURIComponent(code)}/purchases`,{method:"POST",body:JSON.stringify({combinations,idempotency_key:key,draw_count:drawCount})}),
  bingoInventory:(offset=0)=>request<BingoInventory>(`/bingo/inventory?offset=${offset}`),
  bingoPurchase:(drawId:string,ticketIds:string[],key:string)=>request<{ticket_ids:string[];total_cost:number;balance_after:number}>("/bingo/purchases",{method:"POST",body:JSON.stringify({draw_id:drawId,ticket_ids:ticketIds,idempotency_key:key})}),

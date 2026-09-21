@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AddPassword, Brand, FastExperience, LotteryGallery, Login } from "./Experience";
+import { AddPassword, Brand, LotteryGallery, Login } from "./Experience";
+import { FastExperience } from "./Fast";
 import { ApiError, webApi } from "./api";
 import type { Account, BingoInventory, Dashboard, LiveDraw, Lottery, Ticket, WebSession } from "./types";
 
@@ -55,22 +56,22 @@ export default function App() {
     if(!session)return;
     const update=()=>void refresh().catch(e=>setError(e instanceof Error?e.message:"Не удалось обновить данные"));
     update();
-    const timer=window.setInterval(update,30000);
+    const timer=window.setInterval(update,view==="fast"||view==="live"?5000:30000);
     const visible=()=>{if(!document.hidden)update()};
     document.addEventListener("visibilitychange",visible);
     return()=>{window.clearInterval(timer);document.removeEventListener("visibilitychange",visible)};
-  },[session,refresh]);
+  },[session,refresh,view]);
   useEffect(()=>{
     if(!session)return;
     const timer=window.setInterval(()=>setNow(Date.now()+clockOffset.current),1000);
     return()=>window.clearInterval(timer);
   },[session]);
   useEffect(()=>{
-    if(!session||(view!=="live"&&view!=="fast"))return;
+    if(!session||view!=="live")return;
     let cancelled=false;
     const update=async()=>{try {
-      const [standard,fast]=await Promise.all([webApi.live("standard"),webApi.live("fast")]);
-      if(!cancelled)setLive({standard:liveDraw(standard),fast:liveDraw(fast)});
+      const standard=await webApi.live("standard");
+      if(!cancelled)setLive({standard:liveDraw(standard),fast:null});
     }catch(e){if(!cancelled)setError(e instanceof Error?e.message:"Эфир временно недоступен")}};
     void update();const timer=window.setInterval(()=>void update(),3000);
     return()=>{cancelled=true;window.clearInterval(timer)};
@@ -101,8 +102,8 @@ export default function App() {
       {notice&&<div role="status" className="toast">{notice}<button aria-label="Закрыть уведомление" onClick={()=>setNotice("")}>×</button></div>}
       {error&&<div role="alert" className="error global-error">{error}<button onClick={()=>{setError("");void refresh().catch(()=>setError("Сервер недоступен. Повторите позже."))}}>Обновить</button></div>}
       {view==="lotteries"&&<LotteryGallery lotteries={ordered.filter(l=>!fastCodes.has(l.code))} now={now} onOpen={l=>void openLottery(l)}/>}
-      {view==="fast"&&<><FastExperience lotteries={ordered.filter(l=>fastCodes.has(l.code))} now={now} onOpen={l=>void openLottery(l)}/><section className="content"><LiveStage draw={live.fast} now={now}/></section></>}
-      {view==="live"&&<><div className="page-heading"><span className="eyebrow">CASPER LIVE / СОБЫТИЯ</span><h1>В первом ряду.</h1></div><section className="content live-grid"><LiveStage draw={live.standard} now={now}/><LiveStage draw={live.fast} now={now}/></section></>}
+      {view==="fast"&&<FastExperience lotteries={ordered.filter(l=>fastCodes.has(l.code))} now={now} balance={dashboard?.balance??0} userId={session.user_id} onBought={bought} onTickets={()=>setView("tickets")}/>}
+      {view==="live"&&<><div className="page-heading"><span className="eyebrow">CASPER LIVE / СОБЫТИЯ</span><h1>В первом ряду.</h1></div><section className="content live-grid"><LiveStage draw={live.standard} now={now}/></section><FastExperience lotteries={ordered.filter(l=>fastCodes.has(l.code))} now={now} balance={dashboard?.balance??0} userId={session.user_id} onBought={bought} onTickets={()=>setView("tickets")}/></>}
       {view==="tickets"&&<><div className="page-heading"><span className="eyebrow">ВАША КОЛЛЕКЦИЯ МОМЕНТОВ</span><h1>Мои билеты.</h1></div><div className="tabs"><button aria-pressed={ticketState==="active"} className={ticketState==="active"?"active":""} onClick={()=>setTicketState("active")}>В игре</button><button aria-pressed={ticketState==="history"} className={ticketState==="history"?"active":""} onClick={()=>setTicketState("history")}>История</button></div><Tickets key={ticketState} state={ticketState}/></>}
       {view==="profile"&&<><Profile account={account}/><section className="profile-identity"><span className="eyebrow">ВАШ УНИКАЛЬНЫЙ CASPER ID</span><code>{session.user_id}</code><button className="text-button" onClick={()=>void webApi.logout().then(()=>{setSession(null);setDashboard(null);setAccount(null)}).catch(()=>setError("Не удалось выйти. Повторите попытку."))}>Выйти из аккаунта ↗</button></section><AddPassword/></>}
     </main>
