@@ -31,6 +31,9 @@ export function fastPresentation(feed: LiveFeed | null, now: number) {
 
 // Use the draw's format, not the current sales format, for historical results.
 export function displayedNumber(draw: LiveDraw, value: number, index: number) {
+  if (draw.lottery_code === "pulse" && value > 1000) {
+    return String(value - 1000).padStart(3, "0");
+  }
   if (draw.lottery_code === "pulse" && draw.secondary_storage_offset !== undefined && index >= (draw.primary_numbers_to_pick || 2)) {
     return `P${value - draw.secondary_storage_offset}`;
   }
@@ -53,7 +56,7 @@ function sample(max: number, count: number) {
   return pool.slice(0, count).sort((a, b) => a - b);
 }
 export function randomFastTicket(lottery: Lottery): number[] {
-  if (lottery.ruleset_code === "code_4_digits") return Array.from({ length: lottery.primary_numbers_to_pick }, () => randomBelow(10));
+  if (lottery.ruleset_code.startsWith("code_")) return Array.from({ length: lottery.primary_numbers_to_pick }, () => randomBelow(10));
   return [...sample(lottery.primary_max_number, lottery.primary_numbers_to_pick),
     ...sample(lottery.secondary_max_number, lottery.secondary_numbers_to_pick).map(n => n + lottery.secondary_storage_offset)];
 }

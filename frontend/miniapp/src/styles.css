@@ -1407,7 +1407,7 @@ html.app-backgrounded *, .motion-paused, .motion-paused * { animation-play-state
 .fast-pulse-preview path,.fast-pulse-preview circle { fill: none; stroke: #ff5369; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .fast-pulse-preview path { stroke-dasharray: 34 86; animation: pulse-trace 1.7s linear infinite; }
 .fast-pulse-preview circle { fill: #fff; stroke-width: 0; opacity: .8; animation: pulse-trace-node 1.7s ease-in-out infinite; }
-.code-preview { position: relative; display: grid; grid-template-columns: repeat(4,1fr); gap: 5px; width: 112px; padding: 18px 9px; overflow: hidden; border: 1px solid rgba(82,232,174,.35); border-radius: 12px; background: rgba(1,16,12,.76); box-shadow: inset 0 0 24px rgba(60,224,165,.08); }
+.code-preview { position: relative; display: grid; grid-template-columns: repeat(5,1fr); gap: 4px; width: 122px; padding: 18px 8px; overflow: hidden; border: 1px solid rgba(82,232,174,.35); border-radius: 12px; background: rgba(1,16,12,.76); box-shadow: inset 0 0 24px rgba(60,224,165,.08); }
 .code-preview span { display: grid; height: 43px; place-items: center; border: 1px solid rgba(101,235,184,.27); border-radius: 7px; color: #72eabb; background: rgba(31,99,75,.12); font-size: 18px; text-shadow: 0 0 8px #56dba7; }
 .code-preview i { position: absolute; right: 8px; bottom: 8px; left: 8px; height: 1px; background: #63e5b3; box-shadow: 0 0 8px #63e5b3; animation: code-line 2.2s ease-in-out infinite; }
 .fast-card-jackpot { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 9px 11px; border: 1px solid color-mix(in srgb,var(--fast-accent) 26%,rgba(142,161,203,.18)); border-radius: 11px; background: rgba(4,10,26,.69); backdrop-filter: blur(5px); }
@@ -1459,7 +1459,8 @@ html.app-backgrounded *, .motion-paused, .motion-paused * { animation-play-state
 .fast-live-slots.pulse-slots i:nth-child(3) { grid-column: 4; }
 .fast-live-slots.pulse-slots i:nth-child(4) { grid-column: 5; }
 .fast-live-slots.pulse-slots i.special { border-color: #ff5369; background: radial-gradient(circle,rgba(255,52,79,.43),rgba(20,2,8,.96) 67%); }
-.fast-live-slots.code-slots { grid-template-columns: repeat(4,1fr); gap: 7px; }
+.fast-live-slots.pulse-slots.has-cipher i.cipher { grid-column: 1 / -1; min-height: 42px; border-color: rgba(255,117,136,.55); border-radius: 12px; font-size: 15px; letter-spacing: .08em; }
+.fast-live-slots.code-slots { grid-template-columns: repeat(5,1fr); gap: 7px; }
 .fast-live-slots.code-slots i { min-height: 58px; border-radius: 7px; font-family: ui-monospace,SFMono-Regular,Consolas,monospace; }
 .fast-live-scan { position: relative; height: 20px; overflow: hidden; margin-top: 9px; color: #8190ae; font-size: 7px; text-align: center; letter-spacing: .13em; text-transform: uppercase; }
 .fast-live-scan::before { position: absolute; top: 3px; right: 0; left: 0; height: 1px; content: ""; background: linear-gradient(90deg,transparent,color-mix(in srgb,var(--fast-accent) 48%,transparent),transparent); }
@@ -1554,10 +1555,15 @@ html.app-backgrounded *, .motion-paused, .motion-paused * { animation-play-state
 .signal-set.signal-pulse > span.pulse-special { border-radius: 50%; box-shadow: inset 0 0 13px rgba(255,43,70,.16); }
 .signal-set small { align-self: end; margin-bottom: 3px; color: #7385a9; font-size: 7px; }
 .signal-set > span.won { border-color: var(--gold); box-shadow: 0 0 16px rgba(230,183,77,.25); }
-.paper-code-field { display: grid; grid-template-columns: repeat(4,1fr); gap: 9px; margin-top: 12px; }
+.paper-code-field { display: grid; grid-template-columns: repeat(5,1fr); gap: 7px; margin-top: 12px; }
 .paper-code-field i { display: grid; min-height: 62px; place-items: center; border: 1px solid rgba(79,187,145,.34); border-radius: 8px; color: #b9ead7; background: linear-gradient(145deg,rgba(21,71,54,.2),rgba(3,19,15,.68)); font: 800 25px/1 ui-monospace,SFMono-Regular,Consolas,monospace; font-style: normal; }
 .paper-code-field i.winning { border-color: rgba(99,230,179,.65); }
 .paper-code-field i.matched { color: #f1d380; border-color: #e9c96f; box-shadow: 0 0 17px rgba(231,197,104,.2); }
+.paper-cipher { display: grid; grid-template-columns: 1fr auto; gap: 3px 12px; align-items: center; margin-top: 12px; padding: 11px 13px; border: 1px dashed rgba(220,72,95,.42); border-radius: 10px; color: #8f5360; background: rgba(91,12,29,.05); }
+.paper-cipher span { font-size: 8px; font-weight: 800; letter-spacing: .16em; }
+.paper-cipher strong { grid-row: 1 / 3; grid-column: 2; color: #ae1d3d; font: 900 24px/1 ui-monospace,SFMono-Regular,Consolas,monospace; letter-spacing: .08em; }
+.paper-cipher small { font-size: 9px; }
+.paper-cipher.matched { border-style: solid; border-color: #d4af4f; background: rgba(212,175,79,.08); }
 
 /* 1.12 — Home storefront: the next draw leads into a chronological exhibition. */
 .lottery-storefront { position: relative; margin: 0 calc(var(--space) * -1); padding: 22px var(--space) 14px; overflow: hidden; background: linear-gradient(180deg,rgba(4,11,28,.72),rgba(5,13,31,.18) 35%,transparent); }

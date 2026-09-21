@@ -7,7 +7,7 @@ import codeArt from "./assets/fast/code.jpg";
 import pulseArt from "./assets/fast/pulse.jpg";
 
 const art: Record<string, string> = { flash: flashArt, shadow: codeArt, pulse: pulseArt };
-const tagline: Record<string, string> = { flash: "Скорость света. Ваш момент.", shadow: "Четыре цифры. Ваш секрет.", pulse: "Два поля. Один ритм." };
+const tagline: Record<string, string> = { flash: "Пять чисел. Один джекпот.", shadow: "Пять цифр. Ваш секрет.", pulse: "Два поля. Секретный шифр." };
 const cas = (n: number) => `${n.toLocaleString("ru-RU")} CAS`;
 type Pending = { key: string; numbers: number[]; draw: number | null; price: number | null };
 
@@ -40,7 +40,7 @@ export function FastBroadcast({ feed, lottery, now, failed = false }: {
     <div className={`broadcast-slots ${lottery.code === "shadow" ? "cipher-slots" : ""}`} aria-label="Числа тиража">
       {Array.from({ length: slotCount }, (_, index) => <span key={`${draw?.draw_number}-${index}-${state.numbers[index] ?? "empty"}`}
         className={`${state.numbers[index] !== undefined ? "is-revealed" : ""} ${lottery.code === "pulse" && index >= (draw?.primary_numbers_to_pick || lottery.primary_numbers_to_pick) ? "is-secondary" : ""}`}>
-        <small>{lottery.code === "pulse" && index >= (draw?.primary_numbers_to_pick || lottery.primary_numbers_to_pick) ? "PULSE" : `0${index + 1}`}</small>
+        <small>{lottery.code === "pulse" && state.numbers[index] > 1000 ? "ШИФР" : lottery.code === "pulse" && index >= (draw?.primary_numbers_to_pick || lottery.primary_numbers_to_pick) ? "PULSE" : `0${index + 1}`}</small>
         <b>{draw && state.numbers[index] !== undefined ? displayedNumber(draw, state.numbers[index], index) : "—"}</b>
       </span>)}
     </div>
@@ -68,7 +68,7 @@ function FastStation({ lottery, feed, failed, now, balance, userId, onBought, on
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const inFlight = useRef(false);
-  const code = lottery.ruleset_code === "code_4_digits";
+  const code = lottery.ruleset_code.startsWith("code_");
   const stalePending = pending && (pending.draw !== lottery.draw_number || pending.price !== lottery.ticket_price);
   const open = lottery.purchase_available && lottery.sales_close_at !== null && Date.parse(lottery.sales_close_at) > now;
   const affordable = lottery.ticket_price !== null && balance >= lottery.ticket_price;
@@ -116,9 +116,9 @@ function FastStation({ lottery, feed, failed, now, balance, userId, onBought, on
     <div className="station-scene"><img src={art[lottery.code]} alt="" fetchPriority="high"/><div className="station-sheen"/>
       <div className="station-title"><h2 id={`title-${lottery.code}`}>{fastName(lottery.code)}</h2><p>{tagline[lottery.code]}</p></div>
       {lottery.code === "pulse" && <svg className="station-heartbeat" viewBox="0 0 400 80" aria-hidden="true"><path d="M0 40H92L111 28L125 42L147 5L170 73L191 30L209 40H400" pathLength="100"/></svg>}
-      {lottery.code === "shadow" && <div className="station-cipher" aria-hidden="true"><i/><i/><i/><i/></div>}
+      {lottery.code === "shadow" && <div className="station-cipher" aria-hidden="true">{Array.from({ length: lottery.primary_numbers_to_pick }, (_, index) => <i key={index}/>)}</div>}
       <div className="scene-atmosphere" aria-hidden="true"><i/><i/><i/></div>
-      <div className="station-format">{code ? "4 ЦИФРЫ · ПОРЯДОК ВАЖЕН" : `${lottery.primary_numbers_to_pick} из ${lottery.primary_max_number}${lottery.secondary_numbers_to_pick ? ` + ${lottery.secondary_numbers_to_pick} из ${lottery.secondary_max_number}` : ""}`}</div>
+      <div className="station-format">{code ? `${lottery.primary_numbers_to_pick} ЦИФР · ПОРЯДОК ВАЖЕН` : `${lottery.primary_numbers_to_pick} из ${lottery.primary_max_number}${lottery.secondary_numbers_to_pick ? ` + ${lottery.secondary_numbers_to_pick} из ${lottery.secondary_max_number}` : ""}${lottery.code === "pulse" ? " · ШИФР 001–199" : ""}`}</div>
       {choosing && <fieldset className="fast-selector" disabled={busy || !!pending} hidden={broadcasting}><legend>{code ? "Введите код · повторы разрешены" : "Ваши числа"}</legend>
         {code && <div className="chosen-code">{Array.from({ length: lottery.primary_numbers_to_pick }, (_, i) => <b key={i}>{main[i] ?? "—"}</b>)}<button aria-label="Удалить последнюю цифру" onClick={() => setMain(main.slice(0, -1))}>⌫</button></div>}
         <div className="fast-number-field">{Array.from({ length: code ? 10 : lottery.primary_max_number }, (_, i) => i + (code ? 0 : 1)).map(n => <button type="button" key={n} aria-label={`${code ? "Цифра" : "Число"} ${n}`} aria-pressed={!code && main.includes(n)} onClick={() => select(n)}>{n}</button>)}</div>

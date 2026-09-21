@@ -183,7 +183,10 @@ def build_fact_candidates(
 
         if len(recent) >= 5 and lottery.code != "bingo":
             frequency = Counter(
-                number for row in recent for number in row.winning_numbers
+                number
+                for row in recent
+                for number in row.winning_numbers
+                if 0 <= number <= lottery.max_number
             )
             frequent = [number for number, _ in frequency.most_common(3)]
             frequent_counts = [frequency[number] for number in frequent]
@@ -237,7 +240,14 @@ def build_fact_candidates(
             pairs = Counter(
                 pair
                 for row in recent
-                for pair in combinations(sorted(set(row.winning_numbers)), 2)
+                for pair in combinations(
+                    sorted(
+                        number
+                        for number in set(row.winning_numbers)
+                        if 0 <= number <= lottery.max_number
+                    ),
+                    2,
+                )
             )
             if pairs:
                 pair, pair_count = pairs.most_common(1)[0]

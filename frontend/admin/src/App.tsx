@@ -74,12 +74,14 @@ const notificationTypes: Record<string, string> = {
 
 function displayNumber(lotteryCode: string, number: number): string {
   if (lotteryCode === "weekly" && number > 35) return `★${number - 35}`;
-  if (lotteryCode === "pulse" && number > 10) return `P${number - 10}`;
+  if (lotteryCode === "pulse" && number > 1_000) return `ШИФР ${String(number - 1_000).padStart(3, "0")}`;
+  if (lotteryCode === "pulse" && number > 12) return `P${number - 12}`;
   return String(number);
 }
 
 function displayMatches(lotteryCode: string, matches: number | null, grandFormat: boolean): string {
   if (matches === null) return "—";
+  if (lotteryCode === "pulse" && matches >= 100) return `${Math.floor(matches / 100)}+${Math.floor(matches / 10) % 10} · шифр ${matches % 10 ? "да" : "нет"}`;
   return (lotteryCode === "weekly" && grandFormat) || lotteryCode === "pulse" ? `${Math.floor(matches / 10)}+${matches % 10}` : String(matches);
 }
 

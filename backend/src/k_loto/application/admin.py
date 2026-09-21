@@ -5,7 +5,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4, uuid5
 
-from sqlalchemy import String, cast, exists, func, or_, select
+from sqlalchemy import String, cast, exists, func, or_, select, true
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -639,6 +639,13 @@ class AdminQueryService:
         self._session = session
         self._scope = scope
 
+    def _current_fast_format(self) -> Any:
+        if self._scope != "fast":
+            return true()
+        return (
+            Draw.configuration_snapshot["ruleset_code"].astext == Lottery.ruleset_code
+        )
+
     async def players(
         self, *, search: str | None = None, limit: int = 200
     ) -> tuple[AdminPlayer, ...]:
@@ -1146,7 +1153,10 @@ class AdminQueryService:
         }
         for index, draw in enumerate(draws):
             for number in draw.winning_numbers or []:
-                positions[number].append(index)
+                # Some formats append an encoded server-only value (for example,
+                # the PULSE cipher) after the ordinary draw numbers.
+                if number in positions:
+                    positions[number].append(index)
         total = len(draws)
         return NumberStatisticsReport(
             lottery.id,
@@ -1185,14 +1195,19 @@ class AdminQueryService:
             await self._session.execute(
                 select(*metrics)
                 .select_from(Ticket)
+                .join(Draw, Draw.id == Ticket.draw_id)
                 .join(Lottery, Lottery.id == Ticket.lottery_id)
-                .where(lottery_scope(self._scope))
+                .where(lottery_scope(self._scope), self._current_fast_format())
             )
         ).all()[0]
         lottery_values = (
             await self._session.execute(
                 select(Lottery.id, Lottery.name, Lottery.is_active, *metrics)
-                .outerjoin(Ticket, Ticket.lottery_id == Lottery.id)
+                .outerjoin(
+                    Draw,
+                    (Draw.lottery_id == Lottery.id) & self._current_fast_format(),
+                )
+                .outerjoin(Ticket, Ticket.draw_id == Draw.id)
                 .where(lottery_scope(self._scope))
                 .group_by(Lottery.id, Lottery.name, Lottery.is_active)
                 .order_by(Lottery.is_active.desc(), Lottery.name)
@@ -1251,6 +1266,7 @@ class AdminQueryService:
                 .where(
                     lottery_scope(self._scope),
                     Draw.status == DrawStatus.COMPLETED,
+                    self._current_fast_format(),
                     Draw.scheduled_at
                     >= datetime.now(UTC) - timedelta(days=period_days),
                 )
@@ -1299,12 +1315,16 @@ class AdminQueryService:
             select(func.count(Ticket.id))
             .join(Draw, Draw.id == Ticket.draw_id)
             .join(Lottery, Lottery.id == Draw.lottery_id)
-            .where(lottery_scope(self._scope))
+            .where(lottery_scope(self._scope), self._current_fast_format())
         )
         completed = await self._session.scalar(
             select(func.count(Draw.id))
             .join(Lottery, Lottery.id == Draw.lottery_id)
-            .where(Draw.status == DrawStatus.COMPLETED, lottery_scope(self._scope))
+            .where(
+                Draw.status == DrawStatus.COMPLETED,
+                lottery_scope(self._scope),
+                self._current_fast_format(),
+            )
         )
         pending = await self._session.scalar(
             select(func.count(Draw.id))
@@ -1318,6 +1338,7 @@ class AdminQueryService:
                     Draw.status == DrawStatus.FAILED,
                 ),
                 lottery_scope(self._scope),
+                self._current_fast_format(),
             )
         )
         return {
@@ -1343,6 +1364,7 @@ class AdminQueryService:
                 Draw.scheduled_at >= start,
                 Draw.scheduled_at < end,
                 lottery_scope(self._scope),
+                self._current_fast_format(),
             )
         )
         ticket_count, sales = (
@@ -1357,6 +1379,7 @@ class AdminQueryService:
                     Ticket.purchased_at >= start,
                     Ticket.purchased_at < end,
                     lottery_scope(self._scope),
+                    self._current_fast_format(),
                 )
             )
         ).one()
@@ -1372,6 +1395,7 @@ class AdminQueryService:
                     Ticket.settled_at >= start,
                     Ticket.settled_at < end,
                     lottery_scope(self._scope),
+                    self._current_fast_format(),
                 )
             )
         ).one()
@@ -1389,6 +1413,7 @@ class AdminQueryService:
                     Ticket.purchased_at >= start,
                     Ticket.purchased_at < end,
                     lottery_scope(self._scope),
+                    self._current_fast_format(),
                 )
                 .group_by(Lottery.id)
             )
@@ -1400,11 +1425,13 @@ class AdminQueryService:
                     func.count(Ticket.id).filter(Ticket.prize_amount > 0),
                     func.coalesce(func.sum(Ticket.prize_amount), 0),
                 )
-                .join(Lottery, Lottery.id == Ticket.lottery_id)
+                .join(Draw, Draw.id == Ticket.draw_id)
+                .join(Lottery, Lottery.id == Draw.lottery_id)
                 .where(
                     Ticket.settled_at >= start,
                     Ticket.settled_at < end,
                     lottery_scope(self._scope),
+                    self._current_fast_format(),
                 )
                 .group_by(Lottery.id)
             )
@@ -1474,7 +1501,7 @@ class AdminQueryService:
                 select(JackpotWinEvent, Lottery, Draw.public_number)
                 .join(Lottery, Lottery.id == JackpotWinEvent.lottery_id)
                 .join(Draw, Draw.id == JackpotWinEvent.draw_id)
-                .where(lottery_scope(self._scope))
+                .where(lottery_scope(self._scope), self._current_fast_format())
                 .order_by(JackpotWinEvent.occurred_at.desc(), JackpotWinEvent.id.desc())
                 .limit(50)
             )
@@ -1487,7 +1514,8 @@ class AdminQueryService:
                     func.coalesce(func.max(JackpotWinEvent.jackpot_amount), 0),
                 )
                 .join(Lottery, Lottery.id == JackpotWinEvent.lottery_id)
-                .where(lottery_scope(self._scope))
+                .join(Draw, Draw.id == JackpotWinEvent.draw_id)
+                .where(lottery_scope(self._scope), self._current_fast_format())
             )
         ).one()
         grouped = (

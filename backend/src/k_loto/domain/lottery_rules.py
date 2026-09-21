@@ -113,6 +113,8 @@ class LotteryRuleStrategy:
     minimum_number: int = 1
     allow_repeats: bool = False
     ordered: bool = False
+    server_code_max: int = 0
+    server_code_storage_offset: int = 0
 
     @property
     def display_primary_numbers_to_pick(self) -> int:
@@ -139,8 +141,14 @@ class LotteryRuleStrategy:
             raise InvalidTicket("Ticket numbers must be integers.")
         if not self.allow_repeats and len(set(numbers)) != self.numbers_to_pick:
             raise InvalidTicket("Ticket numbers must be unique.")
+        ordinary_numbers = (
+            [value for value in numbers if value <= self.server_code_storage_offset]
+            if self.server_code_max
+            else list(numbers)
+        )
         if any(
-            value < self.minimum_number or value > self.max_number for value in numbers
+            value < self.minimum_number or value > self.max_number
+            for value in ordinary_numbers
         ):
             raise InvalidTicket(
                 f"{self.label} ticket numbers must be between "
@@ -157,10 +165,18 @@ class LotteryRuleStrategy:
                 < value
                 <= self.secondary_storage_offset + self.secondary_max_number
             ]
+            codes = [
+                value
+                for value in numbers
+                if self.server_code_storage_offset
+                < value
+                <= self.server_code_storage_offset + self.server_code_max
+            ]
             if (
                 len(primary) != self.display_primary_numbers_to_pick
                 or len(secondary) != self.secondary_numbers_to_pick
-                or len(primary) + len(secondary) != len(numbers)
+                or len(codes) != (1 if self.server_code_max else 0)
+                or len(primary) + len(secondary) + len(codes) != len(numbers)
             ):
                 raise InvalidTicket(
                     f"{self.label} tickets require "
@@ -168,6 +184,39 @@ class LotteryRuleStrategy:
                     f"{self.secondary_numbers_to_pick} special numbers."
                 )
         return tuple(numbers) if self.ordered else tuple(sorted(numbers))
+
+    def validate_purchase_combination(
+        self, numbers: tuple[int, ...] | list[int]
+    ) -> tuple[int, ...]:
+        """Validate the numbers chosen by a player before a server code is added."""
+        if not self.server_code_max:
+            return self.validate_combination(numbers)
+        if len(numbers) != self.numbers_to_pick - 1:
+            raise InvalidTicket(
+                f"{self.label} tickets require exactly {self.numbers_to_pick - 1} "
+                "player numbers."
+            )
+        placeholder = self.server_code_storage_offset + 1
+        return self.validate_combination([*numbers, placeholder])[:-1]
+
+    def complete_purchase_combination(
+        self,
+        numbers: tuple[int, ...] | list[int],
+        generator: NumberGenerator,
+    ) -> tuple[int, ...]:
+        chosen = self.validate_purchase_combination(numbers)
+        if not self.server_code_max:
+            return chosen
+        code = generator.draw(self.server_code_max, 1)[0]
+        return self.validate_combination(
+            [*chosen, self.server_code_storage_offset + code]
+        )
+
+    def generate_purchase_combination(
+        self, generator: NumberGenerator
+    ) -> tuple[int, ...]:
+        generated = self.generate_combination(generator)
+        return generated[:-1] if self.server_code_max else generated
 
     def generate_combination(self, generator: NumberGenerator) -> tuple[int, ...]:
         if self.code == "bingo_12_60":
@@ -186,10 +235,14 @@ class LotteryRuleStrategy:
         secondary = generator.draw(
             self.secondary_max_number, self.secondary_numbers_to_pick
         )
-        return tuple(
+        result = tuple(
             sorted(primary)
             + [self.secondary_storage_offset + value for value in sorted(secondary)]
         )
+        if self.server_code_max:
+            code = generator.draw(self.server_code_max, 1)[0]
+            result += (self.server_code_storage_offset + code,)
+        return result
 
     def match_count(
         self, ticket_numbers: tuple[int, ...], winning_numbers: tuple[int, ...]
@@ -216,13 +269,33 @@ class LotteryRuleStrategy:
             {
                 value
                 for value in ticket_numbers
-                if value > self.secondary_storage_offset
+                if self.secondary_storage_offset
+                < value
+                <= self.secondary_storage_offset + self.secondary_max_number
             }.intersection(
                 value
                 for value in winning_numbers
-                if value > self.secondary_storage_offset
+                if self.secondary_storage_offset
+                < value
+                <= self.secondary_storage_offset + self.secondary_max_number
             )
         )
+        if self.server_code_max:
+            ticket_code = next(
+                value
+                for value in ticket_numbers
+                if value > self.server_code_storage_offset
+            )
+            winning_code = next(
+                value
+                for value in winning_numbers
+                if value > self.server_code_storage_offset
+            )
+            return (
+                main_matches * 100
+                + special_matches * 10
+                + int(ticket_code == winning_code)
+            )
         return main_matches * 10 + special_matches
 
     def quote_purchase(
@@ -516,7 +589,7 @@ LEGACY_FLASH_RULES = LotteryRuleStrategy(
     MappingProxyType({1: 88, 2: 888}),
     True,
 )
-FAST_RULES = LotteryRuleStrategy(
+LEGACY_FLASH_V2_RULES = LotteryRuleStrategy(
     "fast_3_20",
     "FLASH",
     3,
@@ -528,6 +601,18 @@ FAST_RULES = LotteryRuleStrategy(
     3,
     MappingProxyType({1: 88, 2: 888}),
     True,
+)
+FAST_RULES = LotteryRuleStrategy(
+    "fast_5_20_jackpot_only",
+    "FLASH",
+    5,
+    20,
+    1,
+    PayoutRatio(1),
+    MappingProxyType({}),
+    None,
+    5,
+    jackpot_refill_from_reserve=True,
 )
 LEGACY_PULSE_RULES = LotteryRuleStrategy(
     code="pulse_2_10_1_5",
@@ -567,7 +652,7 @@ LEGACY_PULSE_V2_RULES = LotteryRuleStrategy(
     secondary_max_number=5,
     secondary_storage_offset=10,
 )
-PULSE_RULES = LotteryRuleStrategy(
+LEGACY_PULSE_V3_RULES = LotteryRuleStrategy(
     code="pulse_2_12_2_6",
     label="PULSE",
     numbers_to_pick=4,
@@ -587,7 +672,27 @@ PULSE_RULES = LotteryRuleStrategy(
     secondary_max_number=6,
     secondary_storage_offset=12,
 )
-CODE_RULES = LotteryRuleStrategy(
+PULSE_RULES = LotteryRuleStrategy(
+    code="pulse_2_12_2_6_cipher_199",
+    label="PULSE",
+    numbers_to_pick=5,
+    max_number=18,
+    price_divisor=1,
+    jackpot_share=PayoutRatio(1),
+    guaranteed_payouts=MappingProxyType({}),
+    distribution_pool_match=None,
+    jackpot_match=221,
+    fixed_payouts=MappingProxyType({220: 500_000}),
+    jackpot_refill_from_reserve=True,
+    primary_numbers_to_pick=2,
+    primary_max_number=12,
+    secondary_numbers_to_pick=2,
+    secondary_max_number=6,
+    secondary_storage_offset=12,
+    server_code_max=199,
+    server_code_storage_offset=1_000,
+)
+LEGACY_CODE_RULES = LotteryRuleStrategy(
     code="code_4_digits",
     label="CODE",
     numbers_to_pick=4,
@@ -597,6 +702,22 @@ CODE_RULES = LotteryRuleStrategy(
     guaranteed_payouts=MappingProxyType({}),
     distribution_pool_match=None,
     jackpot_match=4,
+    jackpot_refill_from_reserve=True,
+    minimum_number=0,
+    allow_repeats=True,
+    ordered=True,
+)
+CODE_RULES = LotteryRuleStrategy(
+    code="code_5_digits",
+    label="CODE",
+    numbers_to_pick=5,
+    max_number=9,
+    price_divisor=1,
+    jackpot_share=PayoutRatio(1),
+    guaranteed_payouts=MappingProxyType({}),
+    distribution_pool_match=None,
+    jackpot_match=5,
+    fixed_payouts=MappingProxyType({4: 1_500_000}),
     jackpot_refill_from_reserve=True,
     minimum_number=0,
     allow_repeats=True,
@@ -627,10 +748,13 @@ LOTTERY_RULES: Mapping[str, LotteryRuleStrategy] = MappingProxyType(
             GROB_RULES,
             LEGACY_FAST_RULES,
             LEGACY_FLASH_RULES,
+            LEGACY_FLASH_V2_RULES,
             FAST_RULES,
             LEGACY_PULSE_RULES,
             LEGACY_PULSE_V2_RULES,
+            LEGACY_PULSE_V3_RULES,
             PULSE_RULES,
+            LEGACY_CODE_RULES,
             CODE_RULES,
         )
     }

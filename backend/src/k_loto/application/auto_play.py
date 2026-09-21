@@ -145,7 +145,7 @@ class AutoPlayService:
         for candidate in await self._candidates(timestamp):
             rules = get_lottery_rules(candidate.ruleset_code)
             combinations: list[list[int] | tuple[int, ...]] = [
-                list(rules.generate_combination(self._number_generator))
+                list(rules.generate_purchase_combination(self._number_generator))
                 for _ in range(candidate.tickets_per_draw)
             ]
             try:

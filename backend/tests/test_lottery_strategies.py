@@ -12,10 +12,13 @@ from k_loto.domain.lottery_rules import (
     CODE_RULES,
     FAST_RULES,
     GROB_RULES,
+    LEGACY_CODE_RULES,
     LEGACY_FAST_RULES,
     LEGACY_FLASH_RULES,
+    LEGACY_FLASH_V2_RULES,
     LEGACY_PULSE_RULES,
     LEGACY_PULSE_V2_RULES,
+    LEGACY_PULSE_V3_RULES,
     PULSE_RULES,
     SEPTEMBER_RULES,
     LotteryRuleStrategy,
@@ -110,60 +113,60 @@ def test_interval_schedule_is_server_anchored_in_moscow() -> None:
     )
 
 
-def test_fast_purchase_and_fixed_payouts_use_unified_funding() -> None:
-    quote = FAST_RULES.quote_purchase([[1, 2, 3], [18, 19, 20]], 888, 10_000)
+def test_flash_five_of_twenty_only_pays_the_jackpot() -> None:
+    quote = FAST_RULES.quote_purchase(
+        [[1, 2, 3, 4, 5], [16, 17, 18, 19, 20]], 888, 10_000
+    )
     assert quote.total_cost == 1_776
     assert quote.jackpot_contribution == 1_776
     assert quote.distribution_contribution == 0
 
     tickets = [
-        SettlementTicket(UUID(int=61), 1, UUID(int=71), (1, 8, 9), 888),
-        SettlementTicket(UUID(int=62), 2, UUID(int=72), (1, 2, 9), 888),
-        SettlementTicket(UUID(int=63), 3, UUID(int=73), (1, 2, 3), 888),
-        SettlementTicket(UUID(int=64), 4, UUID(int=74), (1, 2, 3), 888),
+        SettlementTicket(UUID(int=61), 1, UUID(int=71), (1, 2, 3, 4, 9), 888),
+        SettlementTicket(UUID(int=62), 2, UUID(int=72), (1, 2, 3, 4, 5), 888),
     ]
     plan = FAST_RULES.calculate_settlement(
         tickets,
-        (1, 2, 3),
+        (1, 2, 3, 4, 5),
         distribution_balance=0,
         jackpot_balance=888_889,
         reserve_balance=2_000_000,
         base_jackpot=888_888,
     )
-    assert [item.amount for item in plan.payouts] == [88, 888, 444_445, 444_444]
+    assert [item.amount for item in plan.payouts] == [0, 888_889]
     assert plan.jackpot_closing == 888_888
-    assert plan.reserve_used == 889_864
+    assert plan.reserve_used == 888_888
 
 
 def test_code_preserves_order_allows_zero_and_repeated_digits() -> None:
-    assert CODE_RULES.validate_combination([0, 7, 0, 3]) == (0, 7, 0, 3)
+    assert CODE_RULES.validate_combination([0, 7, 0, 3, 9]) == (0, 7, 0, 3, 9)
 
-    quote = CODE_RULES.quote_purchase([[0, 7, 0, 3]], 999, 1_000)
+    quote = CODE_RULES.quote_purchase([[0, 7, 0, 3, 9]], 999, 1_000)
     assert quote.jackpot_contribution == 999
     assert quote.distribution_contribution == 0
 
 
-def test_code_only_exact_ordered_match_wins_jackpot() -> None:
+def test_code_pays_four_positions_and_jackpot_for_all_five() -> None:
     tickets = [
-        SettlementTicket(UUID(int=111), 1, UUID(int=121), (0, 7, 0, 3), 999),
-        SettlementTicket(UUID(int=112), 2, UUID(int=122), (0, 7, 3, 0), 999),
+        SettlementTicket(UUID(int=111), 1, UUID(int=121), (0, 7, 0, 3, 8), 999),
+        SettlementTicket(UUID(int=112), 2, UUID(int=122), (0, 7, 0, 3, 9), 999),
     ]
     plan = CODE_RULES.calculate_settlement(
         tickets,
-        (0, 7, 0, 3),
+        (0, 7, 0, 3, 9),
         distribution_balance=0,
         jackpot_balance=1_239_760,
-        reserve_balance=2_000_000,
+        reserve_balance=3_000_000,
         base_jackpot=1_000_000,
     )
 
-    assert [item.matches for item in plan.payouts] == [4, 2]
-    assert [item.amount for item in plan.payouts] == [1_239_760, 0]
+    assert [item.matches for item in plan.payouts] == [4, 5]
+    assert [item.amount for item in plan.payouts] == [1_500_000, 1_239_760]
     assert plan.jackpot_closing == 1_000_000
-    assert plan.reserve_used == 1_000_000
+    assert plan.reserve_used == 2_500_000
 
 
-def test_code_generator_uses_four_independent_digit_positions() -> None:
+def test_code_generator_uses_five_independent_digit_positions() -> None:
     class Generator:
         def draw(self, population_size: int, numbers_to_pick: int) -> tuple[int, ...]:
             raise AssertionError("CODE must not use a unique-number draw")
@@ -171,10 +174,10 @@ def test_code_generator_uses_four_independent_digit_positions() -> None:
         def draw_sequence(
             self, minimum: int, maximum: int, length: int
         ) -> tuple[int, ...]:
-            assert (minimum, maximum, length) == (0, 9, 4)
-            return (4, 4, 0, 9)
+            assert (minimum, maximum, length) == (0, 9, 5)
+            return (4, 4, 0, 9, 2)
 
-    assert CODE_RULES.generate_combination(Generator()) == (4, 4, 0, 9)
+    assert CODE_RULES.generate_combination(Generator()) == (4, 4, 0, 9, 2)
 
 
 def test_fast_schedules_rotate_every_three_minutes_without_collisions() -> None:
@@ -200,36 +203,54 @@ def test_fast_schedules_rotate_every_three_minutes_without_collisions() -> None:
     assert flash == datetime(2026, 9, 1, 9, 9, tzinfo=UTC)
 
 
-def test_pulse_two_field_format_and_fast_payouts() -> None:
-    assert PULSE_RULES.validate_combination([1, 12, 13, 18]) == (1, 12, 13, 18)
-    quote = PULSE_RULES.quote_purchase([[1, 12, 13, 18]], 1_234, 2_000)
-    assert quote.jackpot_contribution == 1_234
-    assert quote.distribution_contribution == 0
-
+def test_pulse_cipher_pays_numbers_only_or_the_jackpot() -> None:
     tickets = [
-        SettlementTicket(UUID(int=81), 1, UUID(int=91), (1, 8, 14, 15), 1_234),
-        SettlementTicket(UUID(int=82), 2, UUID(int=92), (1, 2, 16, 17), 1_234),
-        SettlementTicket(UUID(int=83), 3, UUID(int=93), (1, 2, 14, 15), 1_234),
+        SettlementTicket(UUID(int=81), 1, UUID(int=91), (1, 2, 14, 15, 1087), 1_234),
+        SettlementTicket(UUID(int=82), 2, UUID(int=92), (1, 2, 14, 15, 1042), 1_234),
+        SettlementTicket(UUID(int=83), 3, UUID(int=93), (1, 8, 14, 15, 1042), 1_234),
     ]
     plan = PULSE_RULES.calculate_settlement(
         tickets,
-        (1, 2, 14, 15),
+        (1, 2, 14, 15, 1042),
         distribution_balance=0,
         jackpot_balance=1_235_000,
         reserve_balance=2_000_000,
         base_jackpot=1_234_567,
     )
-    assert [item.matches for item in plan.payouts] == [12, 20, 22]
-    assert [item.amount for item in plan.payouts] == [888, 888, 1_235_000]
+    assert [item.matches for item in plan.payouts] == [220, 221, 121]
+    assert [item.amount for item in plan.payouts] == [500_000, 1_235_000, 0]
     assert plan.jackpot_closing == 1_234_567
-    assert plan.reserve_used == 1_236_343
+    assert plan.reserve_used == 1_734_567
+
+
+def test_pulse_cipher_is_assigned_by_the_server() -> None:
+    class Generator:
+        def draw(self, population_size: int, numbers_to_pick: int) -> tuple[int, ...]:
+            assert (population_size, numbers_to_pick) == (199, 1)
+            return (87,)
+
+        def draw_sequence(
+            self, minimum: int, maximum: int, length: int
+        ) -> tuple[int, ...]:
+            raise AssertionError("PULSE must not generate a sequence")
+
+    assert PULSE_RULES.complete_purchase_combination([1, 12, 13, 18], Generator()) == (
+        1,
+        12,
+        13,
+        18,
+        1087,
+    )
 
 
 def test_existing_fast_draws_keep_their_legacy_rules() -> None:
     assert get_lottery_rules("fast_3_15") is LEGACY_FAST_RULES
     assert get_lottery_rules("fast_3_16") is LEGACY_FLASH_RULES
+    assert get_lottery_rules("fast_3_20") is LEGACY_FLASH_V2_RULES
     assert get_lottery_rules("pulse_2_10_1_5") is LEGACY_PULSE_RULES
     assert get_lottery_rules("pulse_2_10_2_5") is LEGACY_PULSE_V2_RULES
+    assert get_lottery_rules("pulse_2_12_2_6") is LEGACY_PULSE_V3_RULES
+    assert get_lottery_rules("code_4_digits") is LEGACY_CODE_RULES
     assert LEGACY_FAST_RULES.validate_combination([13, 14, 15]) == (13, 14, 15)
     assert LEGACY_FLASH_RULES.validate_combination([14, 15, 16]) == (14, 15, 16)
     assert LEGACY_PULSE_RULES.validate_combination([1, 10, 15]) == (1, 10, 15)
@@ -242,14 +263,15 @@ def test_existing_fast_draws_keep_their_legacy_rules() -> None:
 
 
 def test_rebalanced_fast_jackpot_odds() -> None:
-    assert comb(FAST_RULES.max_number, FAST_RULES.numbers_to_pick) == 1_140
+    assert comb(FAST_RULES.max_number, FAST_RULES.numbers_to_pick) == 15_504
     assert (
         comb(PULSE_RULES.primary_max_number, PULSE_RULES.primary_numbers_to_pick)
         * comb(
             PULSE_RULES.secondary_max_number,
             PULSE_RULES.secondary_numbers_to_pick,
         )
-        == 990
+        * PULSE_RULES.server_code_max
+        == 197_010
     )
 
 

@@ -190,10 +190,12 @@ class WeeklyTicketPurchaseService:
         session: AsyncSession,
         lottery_code: str | None = None,
         target_draw_id: UUID | None = None,
+        number_generator: SecureNumberGenerator | None = None,
     ) -> None:
         self._session = session
         self._lottery_code = lottery_code or self.default_lottery_code
         self._target_draw_id = target_draw_id
+        self._number_generator = number_generator or SystemRandomNumberGenerator()
 
     async def purchase(
         self,
@@ -443,7 +445,8 @@ class WeeklyTicketPurchaseService:
                 raise InvalidTicket("A purchase cannot span different lottery formats.")
             purchase_rules = draw_rules[0]
             canonical = tuple(
-                purchase_rules.validate_combination(item) for item in combinations
+                purchase_rules.validate_purchase_combination(item)
+                for item in combinations
             )
             prices = [
                 int(_snapshot_value(item, "ticket_price", lottery.ticket_price))
@@ -465,6 +468,9 @@ class WeeklyTicketPurchaseService:
                 draws[:draw_count], prices, strict=True
             ):
                 for normalized in canonical:
+                    stored_numbers = purchase_rules.complete_purchase_combination(
+                        normalized, self._number_generator
+                    )
                     ticket_id = uuid4()
                     ticket_ids.append(ticket_id)
                     self._session.add(
@@ -474,7 +480,7 @@ class WeeklyTicketPurchaseService:
                             lottery_id=lottery.id,
                             draw_id=target_draw.id,
                             user_id=user_id,
-                            numbers=list(normalized),
+                            numbers=list(stored_numbers),
                             purchase_price=ticket_price,
                             source=source,
                             purchased_at=timestamp,

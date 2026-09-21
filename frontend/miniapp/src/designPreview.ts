@@ -9,9 +9,9 @@ const previewStartsAt = Date.now() + 5_000;
 
 const lotterySeed = [
   { code: "bingo", name: "Kasper Bingo", kind: "DAILY" as const, numbers_to_pick: 12, max_number: 60, ticket_price: 50_000, jackpot: 10_000_250_000, draw_number: 1, scheduled_at: future(180) },
-  { code: "shadow", name: "SHADOW", kind: "DAILY" as const, numbers_to_pick: 3, max_number: 15, ticket_price: 888, jackpot: 888_888, draw_number: 38, scheduled_at: future(7) },
-  { code: "flash", name: "FLASH", kind: "DAILY" as const, ruleset_code: "fast_3_20", numbers_to_pick: 3, max_number: 20, ticket_price: 888, jackpot: 901_320, draw_number: 42, scheduled_at: future(17) },
-  { code: "pulse", name: "PULSE", kind: "DAILY" as const, ruleset_code: "pulse_2_12_2_6", numbers_to_pick: 4, max_number: 18, primary_numbers_to_pick: 2, primary_max_number: 12, secondary_numbers_to_pick: 2, secondary_max_number: 6, secondary_storage_offset: 12, ticket_price: 1_234, jackpot: 1_234_567, draw_number: 1, scheduled_at: future(10) },
+  { code: "shadow", name: "CODE", kind: "DAILY" as const, ruleset_code: "code_5_digits", numbers_to_pick: 5, max_number: 9, ticket_price: 888, jackpot: 888_888, draw_number: 38, scheduled_at: future(7) },
+  { code: "flash", name: "FLASH", kind: "DAILY" as const, ruleset_code: "fast_5_20_jackpot_only", numbers_to_pick: 5, max_number: 20, ticket_price: 888, jackpot: 901_320, draw_number: 42, scheduled_at: future(17) },
+  { code: "pulse", name: "PULSE", kind: "DAILY" as const, ruleset_code: "pulse_2_12_2_6_cipher_199", numbers_to_pick: 5, max_number: 18, primary_numbers_to_pick: 2, primary_max_number: 12, secondary_numbers_to_pick: 2, secondary_max_number: 6, secondary_storage_offset: 12, ticket_price: 1_234, jackpot: 1_234_567, draw_number: 1, scheduled_at: future(10) },
   { code: "grob", name: "ГРОБ", kind: "DAILY" as const, numbers_to_pick: 3, max_number: 16, ticket_price: 6_666, jackpot: 6_666_666, draw_number: 1, scheduled_at: future(36) },
   { code: "september", name: "3 СЕНТЯБРЯ", kind: "DAILY" as const, numbers_to_pick: 3, max_number: 33, ticket_price: 333, jackpot: 33_333_333, draw_number: 1, scheduled_at: future(83) },
   { code: "pll", name: "ПЛЛ-Лото", kind: "DAILY" as const, numbers_to_pick: 4, max_number: 15, ticket_price: 24_000, jackpot: 18_640_000, draw_number: 418, scheduled_at: future(145) },
@@ -112,7 +112,7 @@ export function installDesignPreview(): void {
       const body = JSON.parse(String(init.body)) as { combinations: number[][]; draw_count: number };
       const totalCost = lottery.ticket_price * body.combinations.length * body.draw_count;
       balance -= totalCost;
-      const created = body.combinations.map((numbers, index): Ticket => ({ id: crypto.randomUUID(), public_number: purchasedTickets.length + index + 1, lottery_code: lottery.code, lottery_name: lottery.name, draw_number: lottery.draw_number, scheduled_at: lottery.scheduled_at, numbers, purchase_price: lottery.ticket_price, source: "MANUAL", status: "PURCHASED", matches: null, prize_amount: 0, winning_numbers: null }));
+      const created = body.combinations.map((numbers, index): Ticket => ({ id: crypto.randomUUID(), public_number: purchasedTickets.length + index + 1, lottery_code: lottery.code, lottery_name: lottery.name, draw_number: lottery.draw_number, scheduled_at: lottery.scheduled_at, numbers: lottery.code === "pulse" ? [...numbers, 1_001 + Math.floor(Math.random() * 199)] : numbers, purchase_price: lottery.ticket_price, source: "MANUAL", status: "PURCHASED", matches: null, prize_amount: 0, winning_numbers: null }));
       purchasedTickets = [...created, ...purchasedTickets];
       return json({ operation_id: crypto.randomUUID(), draw_id: "preview-draw", draw_ids: ["preview-draw"], draw_count: body.draw_count, ticket_ids: created.map((ticket) => ticket.id), total_cost: totalCost, balance_after: balance, already_processed: false });
     }

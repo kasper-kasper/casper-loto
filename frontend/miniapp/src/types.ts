@@ -82,6 +82,8 @@ export interface LiveDraw {
   live_starts_at: string;
   reveal_at: string[];
   live_ends_at: string;
+  primary_numbers_to_pick?: number;
+  secondary_storage_offset?: number;
 }
 
 export interface LiveFeed {

@@ -38,6 +38,7 @@ export function lotteryKindLabel(lottery: Lottery): string {
 }
 
 export function matchLabel(code: string, matches: number, grandFormat = matches >= 10): string {
+  if (code === "pulse" && matches >= 100) return `${Math.floor(matches / 100)}+${Math.floor(matches / 10) % 10}, шифр ${matches % 10 ? "совпал" : "не совпал"}`;
   if (!isGrandLottery(code) || !grandFormat) return String(matches);
   return `${Math.floor(matches / 10)}+${matches % 10}`;
 }
