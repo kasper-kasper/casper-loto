@@ -5,7 +5,7 @@ import hmac
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Annotated, Literal
-from uuid import UUID, uuid4
+from uuid import NAMESPACE_URL, UUID, uuid5
 
 from fastapi import (
     APIRouter,
@@ -14,6 +14,7 @@ from fastapi import (
     Header,
     HTTPException,
     Query,
+    Request,
     Response,
 )
 from pydantic import BaseModel, Field
@@ -36,8 +37,8 @@ from k_loto.api.routes.miniapp import (
 )
 from k_loto.application.bingo import BingoQueryService
 from k_loto.application.miniapp import MiniAppQueryService
+from k_loto.application.web_identity import WebIdentityError, WebIdentityService
 from k_loto.application.weekly import LotteryTicketPurchaseService, PurchaseResult
-from k_loto.application.welcome import WelcomeGrantService
 from k_loto.core.config import Settings, get_settings
 from k_loto.domain.errors import (
     ConfigurationError,
@@ -46,18 +47,15 @@ from k_loto.domain.errors import (
     NoAvailableDraw,
 )
 from k_loto.infrastructure.database.models import (
-    Balance,
     User,
-    UserNotificationPreference,
     WebAccount,
 )
-from k_loto.infrastructure.rate_limit import purchase_rate_limiter
+from k_loto.infrastructure.rate_limit import PurchaseRateLimiter, purchase_rate_limiter
 from k_loto.infrastructure.web_auth import (
     WEB_COOKIE,
     WEB_CSRF_HEADER,
     InvalidWebSession,
     WebSession,
-    hash_web_password,
     issue_web_session,
     normalize_web_username,
     validate_web_session,
@@ -65,6 +63,23 @@ from k_loto.infrastructure.web_auth import (
 )
 
 router = APIRouter(prefix="/api/v1/web", tags=["web"])
+auth_limiter = PurchaseRateLimiter()
+
+
+def limit_auth(request: Request) -> None:
+    identity = request.headers.get("x-forwarded-for") or (
+        request.client.host if request.client else "unknown"
+    )
+    if not auth_limiter.allow(
+        uuid5(NAMESPACE_URL, identity), limit=12, window_seconds=60
+    ):
+        raise HTTPException(
+            status_code=429, detail="Слишком много попыток. Подождите минуту."
+        )
+
+
+class TelegramCodeRequest(BaseModel):
+    code: str = Field(min_length=16, max_length=32)
 
 
 class CredentialsRequest(BaseModel):
@@ -73,6 +88,7 @@ class CredentialsRequest(BaseModel):
 
 
 class SessionResponse(BaseModel):
+    user_id: UUID
     display_name: str
     csrf_token: str
     expires_at: datetime
@@ -105,6 +121,7 @@ def _set_cookie(response: Response, token: str, settings: Settings) -> None:
 
 def _session_response(display_name: str, issued: WebSession) -> SessionResponse:
     return SessionResponse(
+        user_id=issued.user_id,
         display_name=display_name,
         csrf_token=issued.csrf_token,
         expires_at=issued.expires_at,
@@ -122,6 +139,18 @@ async def current_web_player(
         web_session = validate_web_session(token, _secret(settings))
     except InvalidWebSession as error:
         raise HTTPException(status_code=401) from error
+    if web_session.account_id is None:
+        user = await session.scalar(
+            select(User).where(
+                User.id == web_session.user_id,
+                User.telegram_id.is_not(None),
+                User.is_active.is_(True),
+                User.is_admin.is_(False),
+            )
+        )
+        if user is None:
+            raise HTTPException(status_code=401)
+        return CurrentWebPlayer(user.id, user.display_name, web_session)
     row = (
         await session.execute(
             select(WebAccount, User)
@@ -164,56 +193,33 @@ async def _issue_login(
     return _session_response(user.display_name, issued)
 
 
-@router.post("/auth/register", response_model=SessionResponse, status_code=201)
+@router.post(
+    "/auth/register",
+    response_model=SessionResponse,
+    status_code=201,
+    dependencies=[Depends(limit_auth)],
+)
 async def register(
     payload: CredentialsRequest,
     response: Response,
     session: Annotated[AsyncSession, Depends(get_db_session)],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> SessionResponse:
+    _secret(settings)
     try:
-        username = normalize_web_username(payload.username)
-        encoded = hash_web_password(payload.password)
+        account, user = await WebIdentityService(session).register(
+            payload.username, payload.password
+        )
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
-    user = User(
-        id=uuid4(),
-        telegram_id=None,
-        username=None,
-        display_name=username,
-        is_active=True,
-        is_admin=False,
-    )
-    account = WebAccount(
-        id=uuid4(),
-        user_id=user.id,
-        username=username,
-        password_hash=encoded,
-        is_active=True,
-    )
-    try:
-        async with session.begin():
-            if await session.scalar(
-                select(WebAccount.id).where(WebAccount.username == username)
-            ):
-                raise HTTPException(status_code=409, detail="Такой логин уже занят.")
-            session.add(user)
-            await session.flush()
-            session.add_all(
-                [
-                    Balance(user_id=user.id, amount=0, version=1),
-                    UserNotificationPreference(user_id=user.id),
-                    account,
-                ]
-            )
-            await session.flush()
-            await WelcomeGrantService.ensure_in_transaction(session, user.id)
     except IntegrityError as error:
         raise HTTPException(status_code=409, detail="Такой логин уже занят.") from error
     return await _issue_login(account, user, response, settings)
 
 
-@router.post("/auth/login", response_model=SessionResponse)
+@router.post(
+    "/auth/login", response_model=SessionResponse, dependencies=[Depends(limit_auth)]
+)
 async def login(
     payload: CredentialsRequest,
     response: Response,
@@ -237,12 +243,50 @@ async def login(
         row is None
         or not row[0].is_active
         or not row[1].is_active
+        or row[1].is_admin
         or not verify_web_password(payload.password, row[0].password_hash)
     ):
         raise HTTPException(status_code=401, detail="Неверный логин или пароль.")
     row[0].last_login_at = datetime.now(UTC)
     await session.commit()
     return await _issue_login(row[0], row[1], response, settings)
+
+
+@router.post(
+    "/auth/telegram", response_model=SessionResponse, dependencies=[Depends(limit_auth)]
+)
+async def telegram_login(
+    payload: TelegramCodeRequest,
+    response: Response,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> SessionResponse:
+    secret = _secret(settings)
+    try:
+        user = await WebIdentityService(session).redeem_telegram_code(payload.code)
+    except WebIdentityError as error:
+        raise HTTPException(status_code=401, detail=str(error)) from error
+    token, issued = issue_web_session(
+        None, user.id, secret, max_age_seconds=settings.web_session_max_age_seconds
+    )
+    _set_cookie(response, token, settings)
+    return _session_response(user.display_name, issued)
+
+
+@router.post("/auth/password", status_code=204, dependencies=[Depends(limit_auth)])
+async def add_password(
+    payload: CredentialsRequest,
+    player: Annotated[CurrentWebPlayer, Depends(web_player_with_csrf)],
+    session: Annotated[AsyncSession, Depends(get_db_session, use_cache=False)],
+) -> None:
+    try:
+        await WebIdentityService(session).add_password(
+            player.user_id, payload.username, payload.password
+        )
+    except (ValueError, IntegrityError) as error:
+        raise HTTPException(
+            status_code=409, detail="Логин занят или у профиля уже есть пароль."
+        ) from error
 
 
 @router.get("/auth/session", response_model=SessionResponse)

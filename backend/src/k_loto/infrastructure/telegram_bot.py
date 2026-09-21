@@ -19,6 +19,7 @@ from aiogram.types import (
 
 from k_loto.application.identity import TelegramIdentityService
 from k_loto.application.notifications import ClaimedNotification, NotificationDispatcher
+from k_loto.application.web_identity import WebIdentityError, WebIdentityService
 from k_loto.core.config import get_settings
 from k_loto.infrastructure.database.session import session_factory
 from k_loto.infrastructure.notification_repository import SqlNotificationRepository
@@ -85,10 +86,31 @@ async def start(message: Message) -> None:
 
 
 @router.message(Command("menu"))
-@router.message(Command("web"))
 async def miniapp_command(message: Message) -> None:
     await _bind_player(message)
     await _send_miniapp(message)
+
+
+@router.message(Command("web"))
+async def browser_login_command(message: Message) -> None:
+    if message.chat.type != "private" or message.from_user is None:
+        return
+    async with session_factory() as session:
+        profile = await TelegramIdentityService(session).bind(
+            telegram_id=message.from_user.id,
+            username=message.from_user.username,
+            display_name=message.from_user.full_name,
+        )
+        try:
+            code = await WebIdentityService(session).issue_telegram_code(profile.id)
+        except WebIdentityError:
+            await message.answer("Вход в Web для этого профиля недоступен.")
+            return
+    await message.answer(
+        f"Код входа в Casper Loto: {code}\n\n"
+        "Введите его на странице Web-входа. Код действует 5 минут и только один раз. "
+        "Никому его не отправляйте. Баланс и билеты останутся теми же."
+    )
 
 
 @router.callback_query(F.data == "bot:web")
@@ -139,7 +161,10 @@ async def run_bot() -> None:
 
     bot = Bot(token=token)
     await bot.set_my_commands(
-        [BotCommand(command="start", description="Открыть K-Loto")]
+        [
+            BotCommand(command="start", description="Открыть K-Loto"),
+            BotCommand(command="web", description="Код входа на сайт"),
+        ]
     )
     miniapp_url = str(settings.miniapp_url) if settings.miniapp_url else None
     if miniapp_url:

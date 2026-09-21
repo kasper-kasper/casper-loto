@@ -21,7 +21,7 @@ class InvalidWebSession(ValueError):
 
 @dataclass(frozen=True, slots=True)
 class WebSession:
-    account_id: UUID
+    account_id: UUID | None
     user_id: UUID
     csrf_token: str
     expires_at: datetime
@@ -47,7 +47,7 @@ def verify_web_password(value: str, encoded_hash: str) -> bool:
 
 
 def issue_web_session(
-    account_id: UUID,
+    account_id: UUID | None,
     user_id: UUID,
     secret: str,
     *,
@@ -65,7 +65,7 @@ def issue_web_session(
     )
     payload = json.dumps(
         {
-            "account_id": str(account_id),
+            "account_id": str(account_id) if account_id else None,
             "csrf": issued.csrf_token,
             "expires_at": int(issued.expires_at.timestamp()),
             "purpose": "k-loto-web",
@@ -92,7 +92,7 @@ def validate_web_session(
         if payload.get("purpose") != "k-loto-web" or payload.get("version") != 2:
             raise InvalidWebSession("Web session purpose is invalid.")
         result = WebSession(
-            UUID(str(payload["account_id"])),
+            UUID(str(payload["account_id"])) if payload["account_id"] else None,
             UUID(str(payload["user_id"])),
             str(payload["csrf"]),
             datetime.fromtimestamp(int(payload["expires_at"]), tz=UTC),
