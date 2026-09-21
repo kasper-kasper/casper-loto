@@ -249,21 +249,24 @@ function Login({ onAuthenticated }: { onAuthenticated: (session: AdminSession) =
   );
 }
 
-function DashboardView({ data, analytics, refreshedAt, onOpen, onNavigate }: { data: Dashboard; analytics: TicketAnalytics; refreshedAt: number; onOpen: (id: string) => void; onNavigate: (view: View) => void }) {
+function DashboardView({ data, project, analytics, refreshedAt, onOpen, onNavigate }: { data: Dashboard; project: Dashboard; analytics: TicketAnalytics; refreshedAt: number; onOpen: (id: string) => void; onNavigate: (view: View) => void }) {
   const overall = analytics.overall;
   const today = data.operations.today;
+  const projectToday = project.operations.today;
+  const fastDraws = Math.max(0, project.counts.completed_draws - data.counts.completed_draws);
   const todayRows = today.by_lottery ?? [];
   const margin = today.sales ? (today.net / today.sales) * 100 : 0;
   const attention = data.operations.stuck_draw_count > 0 || !data.database_healthy || !data.scheduler_enabled || !!data.operations.scheduler.last_error;
   return <>
-    <section className="today-command"><div><span>ОПЕРАТИВНАЯ СВОДКА · МСК</span><h2>Сегодня в K-Loto</h2><p>{today.net >= 0 ? "Лото сегодня в плюсе" : "Сегодня выплаты выше продаж"} · продажи минус выплаты: <b className={today.net >= 0 ? "positive" : "negative"}>{cas(today.net)}</b></p></div><button className={attention ? "attention-button warning" : "attention-button"} onClick={() => onNavigate("system")}>{attention ? "Требует внимания" : "Система работает"}<span>→</span></button></section>
+    <section className="today-command"><div><span>ОБЫЧНЫЕ ЛОТЕРЕИ · МСК</span><h2>Сегодня в лото</h2><p>{today.net >= 0 ? "Обычные лото сегодня в плюсе" : "Сегодня выплаты выше продаж"} · продажи минус выплаты: <b className={today.net >= 0 ? "positive" : "negative"}>{cas(today.net)}</b></p></div><button className={attention ? "attention-button warning" : "attention-button"} onClick={() => onNavigate("system")}>{attention ? "Требует внимания" : "Система работает"}<span>→</span></button></section>
     <div className="today-ticker"><div><span>СЕГОДНЯ</span><b>{today.completed_draws} тиражей проведено</b><i>•</i><b>{today.purchased_tickets} билетов куплено</b><i>•</i><b>{cas(today.sales)} продажи</b><i>•</i><b>{cas(today.payout)} выиграно</b><i>•</i><b className={today.net >= 0 ? "positive" : "negative"}>итог {cas(today.net)}</b></div></div>
     <section className="metric-grid today-metrics"><article className="metric"><small>ТИРАЖИ СЕГОДНЯ</small><strong>{today.completed_draws}</strong><em>уже завершены</em></article><article className="metric"><small>ПРОДАНО БИЛЕТОВ</small><strong>{today.purchased_tickets.toLocaleString("ru-RU")}</strong><em>выручка {cas(today.sales)}</em></article><article className="metric"><small>ВЫПЛАТЫ СЕГОДНЯ</small><strong>{cas(today.payout)}</strong><em>{today.winning_tickets} выигрышных билетов</em></article><article className={`metric today-result ${today.net >= 0 ? "is-positive" : "is-negative"}`}><small>ПЛЮС ЛОТО ЗА ДЕНЬ</small><strong>{today.net >= 0 ? "+" : ""}{cas(today.net)}</strong><em>продажи − все выплаты · {margin.toLocaleString("ru-RU", { maximumFractionDigits: 1 })}%</em></article></section>
     <section className="panel today-breakdown"><header><div><h2>Из чего сложился итог дня</h2><span>Покупки и выплаты за текущие сутки по Москве</span></div></header><div className="table-wrap"><table><thead><tr><th>Лотерея</th><th>Продано билетов</th><th>Продажи</th><th>Выплаты</th><th>Плюс / минус</th></tr></thead><tbody>{todayRows.map((row) => <tr key={row.lottery_id}><td><b>{row.lottery_name}</b></td><td>{row.purchased_tickets.toLocaleString("ru-RU")}</td><td>{cas(row.sales)}</td><td>{cas(row.payout)}<small>{row.winning_tickets} выигрышных</small></td><td className={row.net >= 0 ? "positive" : "negative"}><b>{row.net >= 0 ? "+" : ""}{cas(row.net)}</b></td></tr>)}</tbody></table></div>{!todayRows.length && <p className="source-note">Сегодня ещё не было продаж или выплат.</p>}<p className="source-note">Это оперативный денежный результат: сумма покупок за день минус сумма фактически начисленных выигрышей за день.</p></section>
     <section className="panel"><header><div><h2>Ближайшие тиражи</h2><span>Когда играем и сколько билетов уже куплено · МСК</span></div><button className="text-action" onClick={() => onNavigate("schedule")}>Всё расписание →</button></header><div className="table-wrap"><table><thead><tr><th>Лотерея / тираж</th><th>Розыгрыш</th><th>Продажи до</th><th>Игроки</th><th>Билеты</th><th>Стоимость билетов</th></tr></thead><tbody>{data.operations.next_draws.map((draw) => <tr key={draw.id}><td><button className="text-action" onClick={() => onOpen(draw.id)}>{draw.lottery_name} №{drawNumber(draw.draw_number)}</button></td><td>{date(draw.scheduled_at)}</td><td>{date(draw.sales_close_at)}</td><td>{draw.participant_count}</td><td>{draw.ticket_count}</td><td>{cas(draw.total_sales)}</td></tr>)}</tbody></table></div>{!data.operations.next_draws.length && <p className="source-note">Ближайших тиражей пока нет.</p>}</section>
     <JackpotPanel data={data} analytics={analytics} onOpen={onOpen} />
-    <ActivityChart refreshedAt={refreshedAt} scope="all" />
+    <ActivityChart refreshedAt={refreshedAt} scope="standard" />
     <section className="metric-grid business-metrics"><article className="metric"><small>ВСЕГО ТИРАЖЕЙ</small><strong>{data.counts.completed_draws.toLocaleString("ru-RU")}</strong><em>за всю историю</em></article><article className="metric"><small>ВСЕГО БИЛЕТОВ</small><strong>{overall.total_tickets.toLocaleString("ru-RU")}</strong><em>{overall.active_tickets.toLocaleString("ru-RU")} активны</em></article><article className="metric"><small>ИГРОКИ</small><strong>{data.counts.users}</strong><em>{overall.participants} участвовали</em></article></section>
+    <section className="panel"><header><div><h2>Весь проект одним взглядом</h2><span>Fast не смешивается с обычными лото, но общие цифры остаются рядом</span></div></header><section className="metric-grid today-metrics"><article className="metric"><small>ВСЕ РОЗЫГРЫШИ</small><strong>{project.counts.completed_draws.toLocaleString("ru-RU")}</strong><em>обычные тиражи и Fast</em></article><article className="metric"><small>ОБЫЧНЫЕ ТИРАЖИ</small><strong>{data.counts.completed_draws.toLocaleString("ru-RU")}</strong><em>за всю историю</em></article><article className="metric"><small>FAST-РАУНДЫ</small><strong>{fastDraws.toLocaleString("ru-RU")}</strong><em>подробности во вкладке Fast</em></article><article className={`metric today-result ${projectToday.net >= 0 ? "is-positive" : "is-negative"}`}><small>ВСЕ ИГРЫ СЕГОДНЯ</small><strong>{projectToday.net >= 0 ? "+" : ""}{cas(projectToday.net)}</strong><em>продажи {cas(projectToday.sales)} · выплаты {cas(projectToday.payout)}</em></article></section></section>
   </>;
 }
 
@@ -653,6 +656,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
+  const [projectDashboard, setProjectDashboard] = useState<Dashboard | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [playerSearch, setPlayerSearch] = useState("");
   const [lotteries, setLotteries] = useState<Lottery[]>([]);
@@ -697,8 +701,8 @@ export default function App() {
     setError("");
     try {
       if (target === "dashboard") {
-        const [dashboardData, analyticsData] = await Promise.all([adminApi.dashboard("all"), adminApi.ticketAnalytics("all")]);
-        apply(() => { setDashboard(dashboardData); });
+        const [dashboardData, analyticsData, projectData] = await Promise.all([adminApi.dashboard("standard"), adminApi.ticketAnalytics("standard"), adminApi.dashboard("all")]);
+        apply(() => { setDashboard(dashboardData); setProjectDashboard(projectData); });
         apply(() => { setTicketAnalytics(analyticsData); });
       }
       if (target === "fast") {
@@ -772,7 +776,7 @@ export default function App() {
     <main className="workspace"><header className="topbar"><div><small>Kasper Loto · управление</small><h1>{title}</h1></div><div className="refresh-control"><span>{loadedAt ? `Обновлено ${date(new Date(loadedAt).toISOString())} МСК` : "Загружаем данные"}</span><button disabled={loading || refreshing} onClick={() => void load(view, true)}>{refreshing ? "Обновляем…" : "Обновить данные"}</button></div></header>
       {["lotteries", "schedule", "draws", "analytics"].includes(view) && <div className="scope-toolbar"><SectionTabs label="Тип игр" value={scope} items={[{ id: "standard", label: "Лотереи" }, { id: "fast", label: "Fast" }, { id: "all", label: "Всё" }]} onChange={setScope} /><p>{scope === "standard" ? "Обычные лотереи. Быстрые тиражи и их выигрыши — в Fast." : scope === "fast" ? "Только быстрые игры: FLASH, SHADOW и PULSE." : "Полная картина: обычные лотереи и Fast вместе."} Игроки и Фонд Каспера общие.</p></div>}
       {error && <div className="error banner">{error}</div>}{loading && <div className="loading">ЗАГРУЖАЕМ ДАННЫЕ…</div>}
-      {!loading && view === "dashboard" && dashboard && ticketAnalytics && <DashboardView data={dashboard} analytics={ticketAnalytics} refreshedAt={loadedAt} onOpen={openDraw} onNavigate={navigate} />}
+      {!loading && view === "dashboard" && dashboard && projectDashboard && ticketAnalytics && <DashboardView data={dashboard} project={projectDashboard} analytics={ticketAnalytics} refreshedAt={loadedAt} onOpen={openDraw} onNavigate={navigate} />}
       {!loading && view === "fast" && dashboard && ticketAnalytics && <FastDashboard data={dashboard} analytics={ticketAnalytics} refreshedAt={loadedAt} onOpen={openDraw} />}
       {!loading && view === "players" && <PlayersView players={players} search={playerSearch} onSearch={setPlayerSearch} onResults={applyPlayerResults} onReload={() => load("players")} />}
       {!loading && view === "lotteries" && <section className="stack">{visibleLotteries.filter((lottery) => lottery.is_active).map((lottery) => <LotteryCard key={lottery.id} lottery={lottery} onSaved={() => load("lotteries")} />)}</section>}

@@ -62,7 +62,7 @@ it("restores an authenticated session and renders Russian system truth", async (
 
   expect(await screen.findByText("Всего сорвано джекпотов")).toBeInTheDocument();
   expect(screen.getByText("ТИРАЖИ СЕГОДНЯ")).toBeInTheDocument();
-  expect(screen.getByText("за всю историю")).toBeInTheDocument();
+  expect(screen.getByText("Весь проект одним взглядом")).toBeInTheDocument();
   expect(screen.getByText("12 000 CAS")).toBeInTheDocument();
   expect(screen.queryByText("v0.8.0 · работает 2 мин.")).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /^10Система$/ }));
@@ -287,7 +287,7 @@ it("keeps expanded jackpot history when the owner refreshes data", async () => {
   render(<App />);
   fireEvent.click(await screen.findByRole("button", { name: /Показать последние выигрыши/ }));
   fireEvent.click(await screen.findByRole("button", { name: "Обновить данные" }));
-  await waitFor(() => expect(adminApi.dashboard).toHaveBeenCalledTimes(2));
+  await waitFor(() => expect(adminApi.dashboard).toHaveBeenCalledTimes(4));
   expect(screen.getByRole("button", { name: /Скрыть историю джекпотов/ })).toHaveAttribute("aria-expanded", "true");
 });
 
@@ -381,6 +381,7 @@ it("summarizes Bingo by stages and keeps the full ball protocol collapsed", asyn
 it("opens the dedicated Fast control room and requests a bounded Fast draw page", async () => {
   render(<App />);
   await screen.findByText("Всего сорвано джекпотов");
+  expect(adminApi.dashboard).toHaveBeenCalledWith("standard");
   expect(adminApi.dashboard).toHaveBeenCalledWith("all");
   fireEvent.click(screen.getByRole("button", { name: /^02Fast$/ }));
   await waitFor(() => expect(adminApi.dashboard).toHaveBeenCalledWith("fast"));
