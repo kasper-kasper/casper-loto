@@ -17,6 +17,8 @@ WORKDIR /build/web
 COPY frontend/web/package*.json ./
 RUN npm ci
 COPY frontend/web/ ./
+COPY frontend/miniapp/src/assets/lotteries/ /build/miniapp/src/assets/lotteries/
+COPY frontend/miniapp/public/brand/ /build/miniapp/public/brand/
 RUN npm run build
 
 FROM caddy:2.10-alpine

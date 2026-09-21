@@ -5,6 +5,6 @@ export interface Account { display_name:string; balance:number; ticket_count:num
 export interface TicketPage { tickets:Ticket[]; total:number; has_more:boolean; }
 export interface LiveDraw { lottery_code:string; lottery_name:string; draw_number:number; scheduled_at:string; status:string; winning_numbers:number[]|null; jackpot:number; player_ticket_count:number; player_total_prize:number; highlighted_tickets:{public_number:number;numbers:number[];matches:number|null;prize_amount:number}[]; live_starts_at:string; reveal_at:string[]; live_ends_at:string; }
 export interface LiveFeed { server_time:string; latest_completed:LiveDraw|null; next_scheduled:LiveDraw|null; recent_completed:LiveDraw[]; }
-export interface WebSession { display_name:string; csrf_token:string; expires_at:string; }
+export interface WebSession { user_id:string; display_name:string; csrf_token:string; expires_at:string; }
 export interface BingoTicket { id:string; public_number:number; numbers:number[]; }
 export interface BingoInventory { draw_id:string; draw_number:number; scheduled_at:string; price:number; tickets:BingoTicket[]; has_more:boolean; }

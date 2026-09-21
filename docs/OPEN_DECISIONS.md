@@ -2,6 +2,8 @@
 
 | ID | Topic | Status | Decision |
 |---|---|---|---|
+| OD-029 | Premium Web and shared identity | Resolved 2026-09-21 | Owner authorizes independent premium Web on the existing VPS, Telegram login plus username/password without email, canonical existing users.id as unique ID. Mini App, lottery mechanics, draw settlement and database remain shared and unchanged. Initial Telegram login uses a five-minute single-use code from the existing bot; a password can be added to that same profile. |
+| OD-030 | Existing-account merge and password recovery | Open | No automatic merge by names, no reassignment of historical tickets, no password reset by guessed identity. If two existing profiles already exist, their consolidation and recovery of a password-only account require a separate owner-approved policy. |
 | OD-001 | Daily lineup | Resolved 2026-09-02 | PLL 02:22/13:45, PSS 12:00/20:30 and KHAN 09:00/18:00 are independent entities. |
 | OD-002 | Daily numbering | Resolved 2026-08-31 | Each entity starts at the current production Daily counters and advances independently. |
 | OD-003 | Daily price | Resolved 2026-08-31 | Each starts with the current production Daily ticket price; Admin may configure later. |

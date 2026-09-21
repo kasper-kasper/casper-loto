@@ -9,7 +9,11 @@ The Telegram bot is the notification and entry adapter; all active gameplay is
 in the Telegram Mini App. The Mini App authenticates signed Telegram `initData`
 on every request. A loopback-only
 development cookie exists only when `APP_ENV=development` and the explicit dev
-switch is enabled. The ordinary username/password player Web adapter is retired.
+switch is enabled. The independent player Web adapter shares these services and
+the same PostgreSQL database. It supports username/password accounts and signed
+sessions for an existing Telegram user after a single-use bot-issued login code.
+The canonical player identifier is users.id; adding password credentials to a
+Telegram profile does not create another user, balance or grant.
 
 The Admin Panel is a separate HTTPS application with signed sessions, CSRF
 protection and audited mutations. Administrators cannot mutate completed draws

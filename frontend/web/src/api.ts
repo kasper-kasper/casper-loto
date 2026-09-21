@@ -4,6 +4,8 @@ export class ApiError extends Error { constructor(message:string, public status:
 async function request<T>(path:string, init?:RequestInit):Promise<T>{const headers=new Headers(init?.headers);headers.set("Content-Type","application/json");if(csrf&&init?.method&&init.method!=="GET")headers.set("X-Web-CSRF",csrf);const response=await fetch(`/api/v1/web${path}`,{...init,credentials:"include",cache:"no-store",headers});if(!response.ok){const body=await response.json().catch(()=>({})) as {detail?:string};throw new ApiError(body.detail??"Запрос не выполнен.",response.status);}if(response.status===204)return undefined as T;return response.json() as Promise<T>}
 const remember=(value:WebSession)=>{csrf=value.csrf_token;return value};
 export const webApi={
+ telegram:(code:string)=>request<WebSession>("/auth/telegram",{method:"POST",body:JSON.stringify({code})}).then(remember),
+ addPassword:(username:string,password:string)=>request<void>("/auth/password",{method:"POST",body:JSON.stringify({username,password})}),
  login:(username:string,password:string)=>request<WebSession>("/auth/login",{method:"POST",body:JSON.stringify({username,password})}).then(remember),
  register:(username:string,password:string)=>request<WebSession>("/auth/register",{method:"POST",body:JSON.stringify({username,password})}).then(remember),
  session:()=>request<WebSession>("/auth/session").then(remember), logout:()=>request<void>("/auth/logout",{method:"POST"}).finally(()=>{csrf=""}),
