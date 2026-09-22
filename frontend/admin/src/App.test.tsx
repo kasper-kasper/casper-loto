@@ -8,7 +8,7 @@ import type { Dashboard, Lottery, NumberStatisticsReport, Player, ScheduleEntry,
 vi.mock("./api", () => ({
   ApiError: class ApiError extends Error { status = 500; },
   adminApi: {
-    login: vi.fn(), session: vi.fn(), logout: vi.fn(), dashboard: vi.fn(),
+    login: vi.fn(), session: vi.fn(), logout: vi.fn(), dashboard: vi.fn(), kasperLive: vi.fn(),
     players: vi.fn(), lotteries: vi.fn(), schedule: vi.fn(), draws: vi.fn(), draw: vi.fn(),
     transactions: vi.fn(), playerTransactions: vi.fn(), statistics: vi.fn(), ticketAnalytics: vi.fn(), activity: vi.fn(), audit: vi.fn(),
     notifications: vi.fn(), releaseNotes: vi.fn(), interestingFacts: vi.fn(), setInterestingFactStatus: vi.fn(),
@@ -34,6 +34,7 @@ beforeEach(() => {
   vi.mocked(adminApi.login).mockResolvedValue(session);
   vi.mocked(adminApi.logout).mockResolvedValue();
   vi.mocked(adminApi.dashboard).mockResolvedValue(dashboard);
+  vi.mocked(adminApi.kasperLive).mockResolvedValue({ ticket_count: 100, winning_tickets: 30, losing_tickets: 70, result: 79_000 });
   vi.mocked(adminApi.players).mockResolvedValue([player]);
   vi.mocked(adminApi.lotteries).mockResolvedValue([lottery]);
   vi.mocked(adminApi.draws).mockResolvedValue([]);
@@ -115,18 +116,30 @@ it("adjusts a player balance only with a mandatory reason", async () => {
   await waitFor(() => expect(adminApi.setBalance).toHaveBeenCalledWith("player", 9000, "Тестовое начисление"));
 });
 
-it("groups administration into ten owner-oriented sections", async () => {
+it("groups administration into eleven owner-oriented sections", async () => {
   render(<App />);
   await screen.findByText("Всего сорвано джекпотов");
 
   const nav = within(screen.getByRole("navigation"));
-  for (const label of ["Сегодня", "Fast", "Лотереи", "Расписание", "Тиражи", "Игроки", "Аналитика", "Interesting Facts", "Тест эфира", "Система"]) {
+  for (const label of ["Сегодня", "Fast", "Kasper LIVE", "Лотереи", "Расписание", "Тиражи", "Игроки", "Аналитика", "Interesting Facts", "Тест эфира", "Система"]) {
     expect(nav.getByRole("button", { name: new RegExp(label) })).toBeInTheDocument();
   }
   fireEvent.click(nav.getByRole("button", { name: /Система/ }));
   expect(await screen.findByRole("tab", { name: "Журнал CAS" })).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: "Уведомления" })).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: "Аудит действий" })).toBeInTheDocument();
+});
+
+it("shows only the four agreed Kasper LIVE aggregates", async () => {
+  render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /Kasper LIVE/ }));
+
+  expect(await screen.findByText("КОЛИЧЕСТВО БИЛЕТОВ")).toBeInTheDocument();
+  expect(screen.getByText("ВЫИГРЫШИ")).toBeInTheDocument();
+  expect(screen.getByText("ПРОИГРЫШИ")).toBeInTheDocument();
+  expect(screen.getByText("РЕЗУЛЬТАТ")).toBeInTheDocument();
+  expect(screen.getByText("+79 000 CAS")).toBeInTheDocument();
+  expect(adminApi.kasperLive).toHaveBeenCalledTimes(1);
 });
 
 it("shows the daily owner result and its lottery breakdown", async () => {

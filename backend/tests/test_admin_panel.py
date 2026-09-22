@@ -628,6 +628,7 @@ def test_admin_routes_cover_milestone_and_completed_draws_have_no_mutation() -> 
     required = {
         "/api/v1/admin/auth/login",
         "/api/v1/admin/dashboard",
+        "/api/v1/admin/kasper-live",
         "/api/v1/admin/players",
         "/api/v1/admin/players/{user_id}/balance-adjustments",
         "/api/v1/admin/lotteries",

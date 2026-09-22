@@ -22,6 +22,10 @@ from k_loto.api.dependencies import (
 from k_loto.application.daily import DailyTicketPurchaseService
 from k_loto.application.dev_mode import DevBootstrapConfig, DevBootstrapService
 from k_loto.application.favorites import FavoriteCombinationService
+from k_loto.application.instant import (
+    InstantTicketPurchaseService,
+    InstantTicketQueryService,
+)
 from k_loto.application.miniapp import (
     MiniAppDashboard,
     MiniAppLiveDraw,
@@ -232,6 +236,27 @@ class PurchaseResponse(BaseModel):
     draw_count: int
     ticket_ids: list[UUID]
     total_cost: int
+    balance_after: int
+    already_processed: bool
+
+
+class InstantPurchaseRequest(BaseModel):
+    quantity: Literal[1, 3]
+    idempotency_key: str = Field(min_length=1, max_length=100)
+
+
+class InstantTicketResponse(BaseModel):
+    id: UUID
+    public_number: int
+    symbols: list[int]
+    prize_amount: int
+
+
+class InstantPurchaseResponse(BaseModel):
+    operation_id: UUID
+    tickets: list[InstantTicketResponse]
+    total_cost: int
+    total_prize: int
     balance_after: int
     already_processed: bool
 
@@ -664,6 +689,78 @@ async def delete_favorite(
     if not deleted:
         raise HTTPException(status_code=404, detail="Favorite was not found.")
     return Response(status_code=204)
+
+
+@router.get("/kasper-live/tickets", response_model=list[InstantTicketResponse])
+async def kasper_live_history(
+    user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    limit: Annotated[int, Query(ge=1, le=100)] = 30,
+) -> list[InstantTicketResponse]:
+    return [
+        InstantTicketResponse(
+            id=item.id,
+            public_number=item.public_number,
+            symbols=list(item.symbols),
+            prize_amount=item.prize_amount,
+        )
+        for item in await InstantTicketQueryService(session).history(
+            user.id, limit=limit
+        )
+    ]
+
+
+@router.post(
+    "/kasper-live/purchases",
+    response_model=InstantPurchaseResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def purchase_kasper_live(
+    request: InstantPurchaseRequest,
+    user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> InstantPurchaseResponse:
+    if not purchase_rate_limiter.allow(
+        user.id, limit=settings.miniapp_purchase_requests_per_minute
+    ):
+        raise HTTPException(
+            status_code=429,
+            detail="Too many purchase requests. Try again in a few seconds.",
+            headers={"Retry-After": "5"},
+        )
+    try:
+        result = await InstantTicketPurchaseService(session).purchase(
+            user_id=user.id,
+            quantity=request.quantity,
+            idempotency_key=request.idempotency_key,
+        )
+    except InsufficientBalance as error:
+        raise HTTPException(
+            status_code=402, detail="Insufficient CAS balance."
+        ) from error
+    except InvalidTicket as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    except ConfigurationError as error:
+        raise HTTPException(
+            status_code=503, detail="Kasper LIVE is temporarily unavailable."
+        ) from error
+    return InstantPurchaseResponse(
+        operation_id=result.operation_id,
+        tickets=[
+            InstantTicketResponse(
+                id=item.id,
+                public_number=item.public_number,
+                symbols=list(item.symbols),
+                prize_amount=item.prize_amount,
+            )
+            for item in result.tickets
+        ],
+        total_cost=result.total_cost,
+        total_prize=result.total_prize,
+        balance_after=result.balance_after,
+        already_processed=result.already_processed,
+    )
 
 
 @router.post(

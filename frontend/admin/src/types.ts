@@ -256,6 +256,13 @@ export interface NotificationItem {
   created_at: string;
 }
 
+export interface KasperLiveSummary {
+  ticket_count: number;
+  winning_tickets: number;
+  losing_tickets: number;
+  result: number;
+}
+
 export type InterestingFactStatus = "new" | "viewed" | "used" | "hidden";
 
 export interface InterestingFact {

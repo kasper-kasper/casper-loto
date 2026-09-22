@@ -21,6 +21,7 @@ import {
 import { countdown, formatCas, formatDrawLabel, formatMoscow, formatTicketLabel } from "./format";
 import { MINIAPP_TEXTS as copy } from "./content";
 import { FastPicker, FastView } from "./FastView";
+import { KasperLiveView } from "./KasperLiveView";
 import { isFastLottery } from "./fast";
 import { newestLiveFeed } from "./live";
 import { broadcastPreviewConfig } from "./broadcastPreview";
@@ -271,6 +272,7 @@ export default function App({ initData, localDev = false }: AppProps) {
   const [fastHighlights, setFastHighlights] = useState<Highlights | null>(null);
   const [highlights, setHighlights] = useState<Highlights | null>(null);
   const [bingoOpen, setBingoOpen] = useState((import.meta.env.VITE_DESIGN_PREVIEW === "true" && new URLSearchParams(window.location.search).get("screen") === "bingo") || broadcastPreviewConfig()?.lotteryCode === "bingo");
+  const [kasperLiveOpen, setKasperLiveOpen] = useState(import.meta.env.VITE_DESIGN_PREVIEW === "true" && new URLSearchParams(window.location.search).get("screen") === "kasper-live");
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
   const [purchaseProgress, setPurchaseProgress] = useState<{ done: number; total: number } | null>(null);
   const [cartReceipt, setCartReceipt] = useState<CartReceipt | null>(null);
@@ -495,6 +497,7 @@ export default function App({ initData, localDev = false }: AppProps) {
   }, [error]);
 
   const openLottery = async (lotteryCode: string, initialNumbers: number[] = [], initialLive = false) => {
+    if (lotteryCode === "kasper-live") { setKasperLiveOpen(true); return; }
     setRoomLive(initialLive);
     if (lotteryCode === "bingo") { setBingoOpen(true); return; }
     setError(null);
@@ -656,6 +659,11 @@ export default function App({ initData, localDev = false }: AppProps) {
   if (loading) return <Skeleton />;
   if (!dashboard) return <main className="centered-message"><div className="offline-mark">!</div><h1>Нет связи с K-Loto</h1><p>{error}</p></main>;
   const bingoLottery = dashboard.lotteries.find(item => item.code === "bingo");
+  if (kasperLiveOpen) return <KasperLiveView initData={initData} balance={dashboard.balance} onClose={() => setKasperLiveOpen(false)} onSettled={(result) => {
+    const winning = result.tickets.filter((ticket) => ticket.prize_amount > 0);
+    setDashboard((current) => current ? { ...current, balance: result.balance_after, total_ticket_count: current.total_ticket_count + result.tickets.length, total_winning_ticket_count: current.total_winning_ticket_count + winning.length } : current);
+    setAccount((current) => current ? { ...current, balance: result.balance_after, ticket_count: current.ticket_count + result.tickets.length, winning_ticket_count: current.winning_ticket_count + winning.length, total_spent: current.total_spent + result.total_cost, total_won: current.total_won + result.total_prize, best_win: Math.max(current.best_win, ...result.tickets.map((ticket) => ticket.prize_amount)) } : current);
+  }} />;
   if (bingoOpen && bingoLottery) return <BingoView initialTab={roomLive ? "live" : "choose"} lottery={bingoLottery} initData={initData} now={serverNow} balance={dashboard.balance} onClose={() => setBingoOpen(false)} onPurchased={(result) => { applyPurchaseSnapshot("bingo", result, result.ticket_ids.length); void Promise.allSettled([refreshDashboard(), refreshAccount()]); }} />;
   if (pickerLottery) return <main className="app-shell picker-page">{isFastLottery(pickerLottery.code) ? <FastPicker lottery={pickerLottery} purchasing={purchasing} success={purchaseSuccess} onBuy={(numbers) => purchaseDirect(pickerLottery.code, [numbers], 1)} onClose={() => { setPickerLottery(null); setView("fast"); }} /> : <LotteryRoom balance={dashboard.balance} initialLive={roomLive} key={pickerLottery.code} lottery={pickerLottery} initData={initData} now={serverNow} onClose={() => { setRoomLive(false); setPickerLottery(null); }} onLiveModeChange={setRoomLive} onTickets={() => { setRoomLive(false); setPickerLottery(null); setTicketLotteryFilter(pickerLottery.code); setTicketsLoading(true); setAccountView("tickets"); setView("account"); }}><NumberPicker lottery={pickerLottery} balance={dashboard.balance} purchasing={purchasing} initialNumbers={pickerInitialNumbers} favorites={favorites} cartRemaining={CART_MAX_TICKETS - cart.length} onAdd={(numbers, drawCount) => addManyToCart(pickerLottery, [numbers], drawCount)} onAddMany={(combinations, drawCount) => addManyToCart(pickerLottery, combinations, drawCount)} onBuy={(numbers, drawCount) => purchaseDirect(pickerLottery.code, [numbers], drawCount)} onBuyMany={(combinations, drawCount) => purchaseDirect(pickerLottery.code, combinations, drawCount)} onSaveFavorite={(numbers) => void saveFavorite(numbers)} onDeleteFavorite={(id) => void deleteFavorite(id)} /></LotteryRoom>}</main>;
 

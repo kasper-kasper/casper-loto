@@ -1,4 +1,4 @@
-import type { Account, Dashboard, Favorite, LiveDraw, LiveFeed, Ticket, UserNotification } from "./types";
+import type { Account, Dashboard, Favorite, InstantTicket, LiveDraw, LiveFeed, Ticket, UserNotification } from "./types";
 import { broadcastPreviewConfig } from "./broadcastPreview";
 
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status, headers: { "Content-Type": "application/json" } });
@@ -23,6 +23,10 @@ const lotterySeed = [
 let balance = 100_000_000_000;
 let purchasedTickets: Ticket[] = [];
 let favoriteRows: Favorite[] = [];
+let instantTickets: InstantTicket[] = [
+  { id: "instant-preview-1", public_number: 10_042, symbols: [1, 6, 8], prize_amount: 20_000 },
+  { id: "instant-preview-2", public_number: 10_041, symbols: [3, 4, 2], prize_amount: 0 },
+];
 
 const dashboard = (): Dashboard => ({
   server_time: nowIso(),
@@ -88,6 +92,16 @@ export function installDesignPreview(): void {
     if (path.endsWith("/dev/refill")) { balance = 100_000_000_000; return json({ balance }); }
     if (path.endsWith("/highlights")) return json({ last_jackpot: null, next_event: null });
     if (path.endsWith("/dashboard")) return json(dashboard());
+    if (path.endsWith("/kasper-live/tickets")) return json(instantTickets);
+    if (path.endsWith("/kasper-live/purchases") && init?.method === "POST") {
+      const quantity = (JSON.parse(String(init.body)) as { quantity: 1 | 3 }).quantity;
+      const created = Array.from({ length: quantity }, (_, index): InstantTicket => ({ id: crypto.randomUUID(), public_number: 10_043 + index, symbols: [2 + index, 5, 8 - index], prize_amount: index === 0 ? 5_000 : 0 }));
+      const totalCost = quantity * 2_000;
+      const totalPrize = created.reduce((sum, ticket) => sum + ticket.prize_amount, 0);
+      balance = balance - totalCost + totalPrize;
+      instantTickets = [...created, ...instantTickets];
+      return json({ operation_id: crypto.randomUUID(), tickets: created, total_cost: totalCost, total_prize: totalPrize, balance_after: balance, already_processed: false }, 201);
+    }
     if (path.endsWith("/account")) return json(account());
     if (path.endsWith("/live/stream")) {
       const payload = new TextEncoder().encode(`data: ${JSON.stringify(liveFeed())}\n\n`);

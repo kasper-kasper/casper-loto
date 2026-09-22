@@ -27,6 +27,7 @@ from k_loto.application.admin import (
     AdminQueryService,
     ensure_admin_user,
 )
+from k_loto.application.instant import InstantTicketQueryService
 from k_loto.application.interesting_facts import InterestingFactAdminService
 from k_loto.application.query_scope import LotteryScope
 from k_loto.application.release_notes import ReleaseNoteKind, load_release_notes
@@ -250,6 +251,13 @@ class DashboardResponse(BaseModel):
     recent_transactions: list[TransactionResponse]
     operations: dict[str, Any]
     jackpots: dict[str, Any]
+
+
+class KasperLiveSummaryResponse(BaseModel):
+    ticket_count: int
+    winning_tickets: int
+    losing_tickets: int
+    result: int
 
 
 class ReleaseNoteResponse(BaseModel):
@@ -491,6 +499,20 @@ async def dashboard(
         ],
         operations=await service.operational_status(),
         jackpots=await service.jackpot_analytics(),
+    )
+
+
+@router.get("/kasper-live", response_model=KasperLiveSummaryResponse)
+async def kasper_live_summary(
+    _admin: Annotated[CurrentAdmin, Depends(get_current_admin)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> KasperLiveSummaryResponse:
+    item = await InstantTicketQueryService(session).summary()
+    return KasperLiveSummaryResponse(
+        ticket_count=item.ticket_count,
+        winning_tickets=item.winning_tickets,
+        losing_tickets=item.losing_tickets,
+        result=item.result,
     )
 
 

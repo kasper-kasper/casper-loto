@@ -12,6 +12,7 @@ import type {
   DrawDetail,
   InterestingFact,
   InterestingFactStatus,
+  KasperLiveSummary,
   Lottery,
   NumberStatisticsReport,
   NotificationItem,
@@ -22,13 +23,14 @@ import type {
   Transaction,
 } from "./types";
 
-type View = "dashboard" | "fast" | "lotteries" | "schedule" | "draws" | "players" | "analytics" | "facts" | "broadcast" | "system";
+type View = "dashboard" | "fast" | "kasper-live" | "lotteries" | "schedule" | "draws" | "players" | "analytics" | "facts" | "broadcast" | "system";
 type AnalyticsTab = "lotteries" | "tickets" | "numbers" | "finances";
 type SystemTab = "events" | "health" | "ledger" | "notifications" | "audit" | "development";
 
 const navigation: { id: View; label: string; code: string }[] = [
   { id: "dashboard", label: "Сегодня", code: "01" },
   { id: "fast", label: "Fast", code: "02" },
+  { id: "kasper-live", label: "Kasper LIVE", code: "LIVE" },
   { id: "lotteries", label: "Лотереи", code: "03" },
   { id: "schedule", label: "Расписание", code: "04" },
   { id: "draws", label: "Тиражи", code: "05" },
@@ -649,6 +651,18 @@ function InterestingFactsView({ facts, lotteries, onStatus }: { facts: Interesti
   </>;
 }
 
+function KasperLiveAdmin({ data }: { data: KasperLiveSummary }) {
+  return <section className="kasper-live-admin">
+    <header><small>МГНОВЕННАЯ ЛОТЕРЕЯ</small><h2>Kasper LIVE</h2><p>Только общий итог. Данные игроков в этом разделе не показываются.</p></header>
+    <div className="kasper-live-admin-grid">
+      <article><span>КОЛИЧЕСТВО БИЛЕТОВ</span><strong>{data.ticket_count.toLocaleString("ru-RU")}</strong></article>
+      <article><span>ВЫИГРЫШИ</span><strong>{data.winning_tickets.toLocaleString("ru-RU")}</strong></article>
+      <article><span>ПРОИГРЫШИ</span><strong>{data.losing_tickets.toLocaleString("ru-RU")}</strong></article>
+      <article><span>РЕЗУЛЬТАТ</span><strong className={data.result >= 0 ? "positive" : "negative"}>{data.result >= 0 ? "+" : "−"}{cas(Math.abs(data.result))}</strong></article>
+    </div>
+  </section>;
+}
+
 export default function App() {
   const [session, setSession] = useState<AdminSession | null>(null);
   const [checking, setChecking] = useState(true);
@@ -673,6 +687,7 @@ export default function App() {
   const [interestingFacts, setInterestingFacts] = useState<InterestingFact[]>([]);
   const [releaseNotes, setReleaseNotes] = useState<{ changelog: ReleaseNote[]; devlog: ReleaseNote[] }>({ changelog: [], devlog: [] });
   const [ticketAnalytics, setTicketAnalytics] = useState<TicketAnalytics | null>(null);
+  const [kasperLive, setKasperLive] = useState<KasperLiveSummary | null>(null);
   const [analyticsTab, setAnalyticsTab] = useState<AnalyticsTab>("lotteries");
   const [systemTab, setSystemTab] = useState<SystemTab>(() => window.location.pathname === "/development" ? "development" : "health");
   const [loadedAt, setLoadedAt] = useState(0);
@@ -709,6 +724,7 @@ export default function App() {
         const [dashboardData, analyticsData] = await Promise.all([adminApi.dashboard("fast"), adminApi.ticketAnalytics("fast")]);
         apply(() => { setDashboard(dashboardData); setTicketAnalytics(analyticsData); });
       }
+      if (target === "kasper-live") { const data = await adminApi.kasperLive(); apply(() => setKasperLive(data)); }
       if (target === "players") { const rows = await adminApi.players(); apply(() => setPlayers(rows)); }
       if (target === "lotteries") { const rows = await adminApi.lotteries(); apply(() => setLotteries(rows)); }
       if (target === "schedule") {
@@ -778,6 +794,7 @@ export default function App() {
       {error && <div className="error banner">{error}</div>}{loading && <div className="loading">ЗАГРУЖАЕМ ДАННЫЕ…</div>}
       {!loading && view === "dashboard" && dashboard && projectDashboard && ticketAnalytics && <DashboardView data={dashboard} project={projectDashboard} analytics={ticketAnalytics} refreshedAt={loadedAt} onOpen={openDraw} onNavigate={navigate} />}
       {!loading && view === "fast" && dashboard && ticketAnalytics && <FastDashboard data={dashboard} analytics={ticketAnalytics} refreshedAt={loadedAt} onOpen={openDraw} />}
+      {!loading && view === "kasper-live" && kasperLive && <KasperLiveAdmin data={kasperLive} />}
       {!loading && view === "players" && <PlayersView players={players} search={playerSearch} onSearch={setPlayerSearch} onResults={applyPlayerResults} onReload={() => load("players")} />}
       {!loading && view === "lotteries" && <section className="stack">{visibleLotteries.filter((lottery) => lottery.is_active).map((lottery) => <LotteryCard key={lottery.id} lottery={lottery} onSaved={() => load("lotteries")} />)}</section>}
       {!loading && view === "schedule" && <ScheduleView key={scope} entries={scheduleEntries} lotteries={visibleLotteries} loadedAt={scheduleLoadedAt} />}

@@ -39,6 +39,7 @@ from k_loto.domain.lottery_rules import get_lottery_rules
 from k_loto.infrastructure.database.models import (
     Balance,
     Draw,
+    InstantTicket,
     JackpotAccount,
     JackpotWinEvent,
     LedgerTransaction,
@@ -306,6 +307,17 @@ class MiniAppQueryService:
                 ).where(Ticket.user_id == user_id)
             )
         ).one()
+        instant_stats = (
+            await self._session.execute(
+                select(
+                    func.count(InstantTicket.id),
+                    func.count(InstantTicket.id).filter(InstantTicket.prize_amount > 0),
+                    func.coalesce(func.sum(InstantTicket.purchase_price), 0),
+                    func.coalesce(func.sum(InstantTicket.prize_amount), 0),
+                    func.coalesce(func.max(InstantTicket.prize_amount), 0),
+                ).where(InstantTicket.user_id == user_id)
+            )
+        ).one()
         preference = await self._session.get(UserNotificationPreference, user_id)
         unread = int(
             await self._session.scalar(
@@ -347,12 +359,12 @@ class MiniAppQueryService:
         return MiniAppAccount(
             display_name=user.display_name,
             balance=balance,
-            ticket_count=int(stats[0]),
+            ticket_count=int(stats[0]) + int(instant_stats[0]),
             active_ticket_count=int(stats[1]),
-            winning_ticket_count=int(stats[2]),
-            total_spent=int(stats[3]),
-            total_won=int(stats[4]),
-            best_win=int(stats[5]),
+            winning_ticket_count=int(stats[2]) + int(instant_stats[1]),
+            total_spent=int(stats[3]) + int(instant_stats[2]),
+            total_won=int(stats[4]) + int(instant_stats[3]),
+            best_win=max(int(stats[5]), int(instant_stats[4])),
             favorite_lottery_code=(
                 str(favorite_lottery.code) if favorite_lottery is not None else None
             ),
@@ -598,11 +610,27 @@ class MiniAppQueryService:
             )
             or 0
         )
+        monthly_total_payout += int(
+            await self._session.scalar(
+                select(func.coalesce(func.sum(InstantTicket.prize_amount), 0)).where(
+                    InstantTicket.settled_at >= month_start
+                )
+            )
+            or 0
+        )
         ticket_totals = (
             await self._session.execute(
                 select(
                     func.count(Ticket.id),
                     func.count(Ticket.id).filter(Ticket.prize_amount > 0),
+                )
+            )
+        ).one()
+        instant_ticket_totals = (
+            await self._session.execute(
+                select(
+                    func.count(InstantTicket.id),
+                    func.count(InstantTicket.id).filter(InstantTicket.prize_amount > 0),
                 )
             )
         ).one()
@@ -613,8 +641,9 @@ class MiniAppQueryService:
             lotteries=tuple(lotteries),
             recent_results=recent_results,
             monthly_total_payout=monthly_total_payout,
-            total_ticket_count=int(ticket_totals[0]),
-            total_winning_ticket_count=int(ticket_totals[1]),
+            total_ticket_count=int(ticket_totals[0]) + int(instant_ticket_totals[0]),
+            total_winning_ticket_count=int(ticket_totals[1])
+            + int(instant_ticket_totals[1]),
         )
 
     async def tickets(

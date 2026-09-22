@@ -104,6 +104,22 @@ export interface PurchaseResult {
   already_processed: boolean;
 }
 
+export interface InstantTicket {
+  id: string;
+  public_number: number;
+  symbols: number[];
+  prize_amount: number;
+}
+
+export interface InstantPurchaseResult {
+  operation_id: string;
+  tickets: InstantTicket[];
+  total_cost: number;
+  total_prize: number;
+  balance_after: number;
+  already_processed: boolean;
+}
+
 export interface CartTicket {
   id: string;
   lotteryCode: string;

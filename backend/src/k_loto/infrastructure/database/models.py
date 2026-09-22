@@ -12,6 +12,7 @@ from sqlalchemy import (
     DateTime,
     Enum,
     ForeignKey,
+    Identity,
     Index,
     Integer,
     String,
@@ -294,6 +295,40 @@ class Ticket(Base):
     prize_amount: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
     settled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     bingo_result: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+
+
+class InstantTicket(Base):
+    """Immutable, immediately settled ticket for Kasper LIVE."""
+
+    __tablename__ = "instant_tickets"
+    __table_args__ = (
+        CheckConstraint("public_number >= 1", name="public_number_positive"),
+        CheckConstraint("purchase_price > 0", name="purchase_price_positive"),
+        CheckConstraint("prize_amount >= 0", name="prize_amount_nonnegative"),
+        CheckConstraint("cardinality(symbols) = 3", name="three_symbols"),
+        Index("ix_instant_ticket_user_purchased", "user_id", "purchased_at"),
+        Index("ix_instant_ticket_purchased", "purchased_at"),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), primary_key=True, default=uuid4
+    )
+    public_number: Mapped[int] = mapped_column(
+        BigInteger, Identity(start=1), unique=True
+    )
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT")
+    )
+    symbols: Mapped[list[int]] = mapped_column(ARRAY(Integer))
+    purchase_price: Mapped[int] = mapped_column(BigInteger)
+    prize_amount: Mapped[int] = mapped_column(BigInteger)
+    odds_version: Mapped[str] = mapped_column(String(32))
+    purchased_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    settled_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
 
 class BingoPoolTicket(Base):

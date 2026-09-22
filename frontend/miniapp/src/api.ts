@@ -1,6 +1,6 @@
 import type { Highlights } from "./Discovery";
 import type { BingoFeed, BingoInventory } from "./BingoView";
-import type { Account, Dashboard, Favorite, LiveFeed, NotificationPreferences, PurchaseResult, TicketPage, UserNotification } from "./types";
+import type { Account, Dashboard, Favorite, InstantPurchaseResult, InstantTicket, LiveFeed, NotificationPreferences, PurchaseResult, TicketPage, UserNotification } from "./types";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "";
 
@@ -59,6 +59,13 @@ export const miniAppApi = {
     }),
   dashboard: (initData: string) =>
     request<Dashboard>("/api/v1/miniapp/dashboard", initData),
+  kasperLiveHistory: (initData: string) =>
+    request<InstantTicket[]>("/api/v1/miniapp/kasper-live/tickets", initData),
+  kasperLivePurchase: (initData: string, quantity: 1 | 3, idempotencyKey: string) =>
+    request<InstantPurchaseResult>("/api/v1/miniapp/kasper-live/purchases", initData, {
+      method: "POST",
+      body: JSON.stringify({ quantity, idempotency_key: idempotencyKey }),
+    }),
   account: (initData: string) =>
     request<Account>("/api/v1/miniapp/account", initData),
   notifications: (initData: string) =>
