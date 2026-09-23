@@ -6,6 +6,8 @@ import type { CSSProperties } from "react";
 import { motion } from "motion/react";
 
 import { ApiError, miniAppApi } from "./api";
+import logoHorizontal from "../../shared/assets/brand/logo-horizontal.png";
+import logoSymbol from "../../shared/assets/brand/logo-symbol.png";
 import { CART_MAX_TICKETS, configuredCartTtl, loadCart, saveCart } from "./cart";
 import {
   Balance,
@@ -136,7 +138,7 @@ function TicketDetail({ ticket, lottery, onClose }: { ticket: Ticket; lottery?: 
     {secondaryMax > 0 && <section className="paper-special"><div className="paper-field-title"><b>Специальное поле</b><small>{ticket.numbers.filter((value) => value > offset && value <= offset + secondaryMax).map((value) => value - offset).join(" · ")}</small></div>{renderField(secondaryMax, offset)}</section>}
     {cipher && <section className={`paper-cipher ${completed && cipher === winningCipher ? "matched" : ""}`}><span>ШИФР БИЛЕТА</span><strong>{String(cipher - 1_000).padStart(3, "0")}</strong>{completed && <small>Шифр тиража: {winningCipher ? String(winningCipher - 1_000).padStart(3, "0") : "—"}</small>}</section>}
     {completed && <section className="paper-result"><div><span>Выпавшие числа</span><strong>{compactCombination({ ...ticket, numbers: ticket.winning_numbers ?? [] }, lottery)}</strong></div><p>{ticket.matches ? `Совпало ${matchLabel(ticket.lottery_code, ticket.matches, ticket.numbers.length === 7)}` : "Совпадений нет"}</p><b className={ticket.prize_amount > 0 ? "win" : "loss"}>{ticket.prize_amount > 0 ? `Выигрыш: ${formatCas(ticket.prize_amount)}` : "Без выигрыша"}</b></section>}
-    <footer><span>Стоимость</span><strong>{formatCas(ticket.purchase_price)}</strong><small>CAS · KASPER LOTO</small></footer>
+    <footer><span>Стоимость</span><strong>{formatCas(ticket.purchase_price)}</strong><small>CAS · CASPER LOTO</small></footer>
   </motion.article></div>;
 }
 
@@ -417,7 +419,7 @@ export default function App({ initData, localDev = false }: AppProps) {
   useEffect(() => {
     if (!authenticated) return;
     const prepare = localDev && !initData ? miniAppApi.devSession() : Promise.resolve();
-    prepare.then(() => Promise.all([refreshDashboard(), refreshAccount()])).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Не удалось загрузить K-Loto.")).finally(() => setLoading(false));
+    prepare.then(() => Promise.all([refreshDashboard(), refreshAccount()])).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Не удалось загрузить Casper Loto.")).finally(() => setLoading(false));
   }, [authenticated, initData, localDev, refreshAccount, refreshDashboard]);
   useEffect(() => {
     if (!authenticated) return;
@@ -670,9 +672,9 @@ export default function App({ initData, localDev = false }: AppProps) {
     } catch (reason) { errorHaptic(); setError(reason instanceof Error ? reason.message : "Баланс не пополнен."); }
   };
 
-  if (!authenticated) return <main className="centered-message"><img alt="Kasper Loto" className="standalone-brand-mark" src="/brand/kasper-symbol.svg" /><h1>Откройте Kasper Loto в Telegram</h1><p>Безопасный вход выполняется автоматически при запуске Mini App.</p></main>;
+  if (!authenticated) return <main className="centered-message"><img alt="Casper Loto" className="standalone-brand-mark" src={logoSymbol} /><h1>Откройте Casper Loto в Telegram</h1><p>Безопасный вход выполняется автоматически при запуске Mini App.</p></main>;
   if (loading) return <Skeleton />;
-  if (!dashboard) return <main className="centered-message"><div className="offline-mark">!</div><h1>Нет связи с K-Loto</h1><p>{error}</p></main>;
+  if (!dashboard) return <main className="centered-message"><div className="offline-mark">!</div><h1>Нет связи с Casper Loto</h1><p>{error}</p></main>;
   const bingoLottery = dashboard.lotteries.find(item => item.code === "bingo");
   if (kasperLiveOpen) return <KasperLiveView initData={initData} balance={dashboard.balance} onClose={() => setKasperLiveOpen(false)} onSettled={(result) => {
     const winning = result.tickets.filter((ticket) => ticket.prize_amount > 0);
@@ -683,7 +685,7 @@ export default function App({ initData, localDev = false }: AppProps) {
   if (pickerLottery) return <main className="app-shell picker-page">{isFastLottery(pickerLottery.code) ? <FastPicker lottery={pickerLottery} purchasing={purchasing} success={purchaseSuccess} onBuy={(numbers) => purchaseDirect(pickerLottery.code, [numbers], 1)} onClose={() => { setPickerLottery(null); setView("fast"); }} /> : <LotteryRoom balance={dashboard.balance} initialLive={roomLive} key={pickerLottery.code} lottery={pickerLottery} initData={initData} now={serverNow} onClose={() => { setRoomLive(false); setPickerLottery(null); }} onLiveModeChange={setRoomLive} onTickets={() => { setRoomLive(false); setPickerLottery(null); setTicketLotteryFilter(pickerLottery.code); setTicketsLoading(true); setAccountView("tickets"); setView("account"); }}><NumberPicker lottery={pickerLottery} balance={dashboard.balance} purchasing={purchasing} initialNumbers={pickerInitialNumbers} favorites={favorites} cartRemaining={CART_MAX_TICKETS - cart.length} onAdd={(numbers, drawCount) => addManyToCart(pickerLottery, [numbers], drawCount)} onBuy={(numbers, drawCount) => purchaseDirect(pickerLottery.code, [numbers], drawCount)} onBuyMany={(combinations, drawCount) => purchaseDirect(pickerLottery.code, combinations, drawCount)} onSaveFavorite={(numbers) => void saveFavorite(numbers)} onDeleteFavorite={(id) => void deleteFavorite(id)} /></LotteryRoom>}</main>;
 
   return <main className={`app-shell ${view === "fast" ? "fast-shell" : ""}`}>
-    <header className="app-header"><div aria-label="Kasper Loto" className="brand-lockup"><img alt="" className="brand-logo-horizontal" src="/brand/kasper-loto-horizontal.svg" /><img alt="" className="brand-logo-symbol" src="/brand/kasper-symbol.svg" /></div><div className="header-actions">{localDev && import.meta.env.VITE_DESIGN_PREVIEW !== "true" && <button className="dev-badge" onClick={() => void refillDevBalance()} type="button">+ TEST CAS</button>}{cart.length > 0 && <button aria-label={`Корзина: ${cart.length} ${plural(cart.length, "комбинация", "комбинации", "комбинаций")}`} className="header-cart" onClick={() => setView("cart")} type="button"><Icon name="cart" /><small>{cart.length}</small></button>}<Balance value={dashboard.balance} /></div></header>
+    <header className="app-header"><div aria-label="Casper Loto" className="brand-lockup"><img alt="" className="brand-logo-horizontal" src={logoHorizontal} /><img alt="" className="brand-logo-symbol" src={logoSymbol} /></div><div className="header-actions">{localDev && import.meta.env.VITE_DESIGN_PREVIEW !== "true" && <button className="dev-badge" onClick={() => void refillDevBalance()} type="button">+ TEST CAS</button>}{cart.length > 0 && <button aria-label={`Корзина: ${cart.length} ${plural(cart.length, "комбинация", "комбинации", "комбинаций")}`} className="header-cart" onClick={() => setView("cart")} type="button"><Icon name="cart" /><small>{cart.length}</small></button>}<Balance value={dashboard.balance} /></div></header>
     {updateAvailable && <aside className="update-banner"><span><strong>Доступно обновление</strong><small>Корзина сохранена на этом устройстве.</small></span><button onClick={() => { const url = new URL(window.location.href); url.searchParams.set("app_update", String(Date.now())); window.location.replace(url.toString()); }} type="button">Обновить</button></aside>}
     {(error || notice) && <button className={`toast ${error ? "error" : "success"}`} onClick={() => { setError(null); setNotice(null); }} type="button"><span>{error ? "!" : "✓"}</span><span className="toast-message">{error ?? notice}</span><Icon name="close" /></button>}
     {selectedTicket && (selectedTicket.lottery_code === "bingo" ? <BingoTicketDetail ticket={selectedTicket} onClose={() => setSelectedTicket(null)} /> : <TicketDetail lottery={dashboard.lotteries.find((item) => item.code === selectedTicket.lottery_code)} onClose={() => setSelectedTicket(null)} ticket={selectedTicket} />)}

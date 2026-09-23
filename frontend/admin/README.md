@@ -1,4 +1,4 @@
-# K-Loto Web Admin Panel
+# Casper Loto Web Admin Panel
 
 Separate React/TypeScript administrator client for Milestone 6. It uses a
 signed HttpOnly session cookie, an in-memory CSRF token and the backend

@@ -1,6 +1,6 @@
 # Telegram Mini App
 
-React, TypeScript and Vite client for K-Loto. It authenticates every API request
+React, TypeScript and Vite client for Casper Loto. It authenticates every API request
 with Telegram `initData`; balance, price, draw assignment and payout remain
 server-authoritative.
 

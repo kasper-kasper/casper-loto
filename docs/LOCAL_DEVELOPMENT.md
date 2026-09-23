@@ -113,7 +113,7 @@ changes whenever the tunnel restarts and is suitable only for testing.
    python -m bot
    ```
 
-8. Send `/start` to the bot and press **Open K-Loto**. Telegram supplies signed
+8. Send `/start` to the bot and press **Open Casper Loto**. Telegram supplies signed
    `initData`; the local browser cookie bypass remains disabled.
 
 Keep the frontend, API, tunnel and bot terminals open while testing. A new

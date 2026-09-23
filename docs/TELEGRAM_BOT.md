@@ -2,7 +2,7 @@
 
 `/start` idempotently binds the Telegram identity, brings its total automatic
 welcome allocation to 100,000,000,000 CAS through the immutable ledger and
-immediately offers the signed Mini App. A persistent **Играть в K-Loto** button
+immediately offers the signed Mini App. A persistent **Играть в Casper Loto** button
 beside the Telegram message field opens the Mini App in one tap.
 
 The bot is now the permission-based notification and entry channel. New player

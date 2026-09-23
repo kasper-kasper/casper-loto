@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { webApi } from "./api";
 import type { Lottery, WebSession } from "./types";
-import symbol from "../../miniapp/public/brand/kasper-symbol.svg";
+import logoHorizontal from "../../shared/assets/brand/logo-horizontal.png";
 import grand from "../../miniapp/src/assets/lotteries/kasper-grand-scene.webp";
 import khan from "../../miniapp/src/assets/lotteries/khan-scene.webp";
 import grob from "../../miniapp/src/assets/lotteries/grob-scene.webp";
@@ -11,7 +11,7 @@ import september from "../../miniapp/src/assets/lotteries/september-embankment.j
 
 const scenes: Record<string, string> = { weekly: grand, khan, grob, pll, pss, september };
 const money = (n: number) => n.toLocaleString("ru-RU");
-export function Brand() { return <span className="identity"><img src={symbol} alt=""/><span>CASPER<small>LOTO · PRIVATE CLUB</small></span></span>; }
+export function Brand() { return <span className="identity"><img src={logoHorizontal} alt="Casper Loto"/></span>; }
 
 export function Login({ onDone }: { onDone: (session: WebSession) => void }) {
   const [mode, setMode] = useState<"telegram" | "login" | "register">("telegram");

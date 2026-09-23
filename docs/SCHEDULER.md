@@ -1,6 +1,6 @@
 # Scheduler and recovery
 
-K-Loto calculates every official schedule in `Europe/Moscow` and stores aware
+Casper Loto calculates every official schedule in `Europe/Moscow` and stores aware
 UTC timestamps. The authoritative human-readable table is
 [`LOTTERY_SCHEDULE.md`](LOTTERY_SCHEDULE.md).
 

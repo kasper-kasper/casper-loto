@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, miniAppApi } from "./api";
+import logoSymbol from "../../shared/assets/brand/logo-symbol.png";
 import { Money } from "./components";
 import { countdown, formatCas, formatMoscow } from "./format";
 import type { Lottery, PurchaseResult, Ticket } from "./types";
@@ -13,7 +14,7 @@ export interface BingoFeed { rules: { total_moves: number; jackpot_move: number;
 
 function serial(ticket: number) { return `KB-${String(ticket).padStart(6, "0")}`; }
 
-function BingoMark() { return <span className="bingo-mark" aria-hidden="true"><img src="/brand/kasper-symbol.svg" alt="" /></span>; }
+function BingoMark() { return <span className="bingo-mark" aria-hidden="true"><img src={logoSymbol} alt="" /></span>; }
 
 export function BingoInvitation({ lottery, now, onOpen }: { lottery: Lottery; now: number; onOpen: () => void }) {
   return <button className="bingo-invitation" type="button" onClick={onOpen}>

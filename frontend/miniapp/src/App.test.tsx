@@ -192,7 +192,7 @@ async function openWeeklyFromStorefront(): Promise<void> {
 it("requires a signed Telegram launch", () => {
   render(<App initData="" />);
 
-  expect(screen.getByText("Откройте Kasper Loto в Telegram")).toBeInTheDocument();
+  expect(screen.getByText("Откройте Casper Loto в Telegram")).toBeInTheDocument();
 });
 
 it("opens a loopback development session outside Telegram", async () => {
@@ -207,8 +207,8 @@ it("renders server-authoritative balance and lottery states", async () => {
   const { container } = render(<App initData="signed" />);
 
   expect(await screen.findByLabelText("5 000 CAS")).toHaveTextContent("5 000C");
-  expect(screen.getByLabelText("Kasper Loto")).toBeInTheDocument();
-  expect(container.querySelector(".brand-logo-horizontal")).toHaveAttribute("src", "/brand/kasper-loto-horizontal.svg");
+  expect(screen.getByLabelText("Casper Loto")).toBeInTheDocument();
+  expect(container.querySelector(".brand-logo-horizontal")).toHaveAttribute("src", expect.stringContaining("logo-horizontal.png"));
   expect(within(container.querySelector(".bottom-nav") as HTMLElement).getAllByRole("button").map(b => b.textContent)).toEqual(["Сегодня", "Лотереи", "Kasper Fast", "Моё"]);
   fireEvent.click(screen.getByRole("button", { name: "Лотереи" }));
   expect(screen.getByRole("button", { name: "Открыть Weekly 5/20" })).toBeEnabled();

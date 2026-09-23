@@ -1,8 +1,8 @@
-# K-Loto
+# Casper Loto
 
-Current release: **1.45.1**.
+Current release: **1.46.1**.
 
-K-Loto is a multi-user lottery platform with integer CAS accounting, an
+Casper Loto is a multi-user lottery platform with integer CAS accounting, an
 immutable transaction ledger, recoverable draw scheduling, ten independent
 draw lotteries and Kasper LIVE. Player interfaces are the Telegram bot and Telegram Mini App. The
 administrator uses a separate HTTPS Web Admin Panel.

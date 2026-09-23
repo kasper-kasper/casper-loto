@@ -1,0 +1,16 @@
+{
+  "brand": "Casper Loto",
+  "masterLogoHasSlogan": false,
+  "primaryMode": "warm-ivory-muted-gold-on-deep-navy",
+  "assets": {
+    "logo-primary.png": "approved gold/ivory horizontal master logo",
+    "logo-symbol.png": "approved transparent gold/ivory C symbol",
+    "logo-horizontal.png": "approved gold/ivory horizontal master logo",
+    "logo-monochrome-light.png": "approved light horizontal logo",
+    "logo-monochrome-dark.png": "approved dark horizontal logo",
+    "logo-gold.png": "approved transparent gold/ivory C symbol",
+    "logo-accent-cyan.png": "secondary digital accent only",
+    "app-icon.png": "approved gold/ivory icon on deep navy",
+    "favicon.png": "approved gold/ivory icon on deep navy"
+  }
+}

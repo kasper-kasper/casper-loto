@@ -1,6 +1,6 @@
 # Architecture
 
-K-Loto uses a layered backend. Domain calculations are pure; application
+Casper Loto uses a layered backend. Domain calculations are pure; application
 services own transactions and idempotency; FastAPI, Telegram, scheduler and Web
 Admin are adapters. PostgreSQL is authoritative. CAS is always an integer and
 every balance/fund movement has an immutable ledger record.

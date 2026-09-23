@@ -3,6 +3,7 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
 import { ApiError, adminApi } from "./api";
+import logoHorizontal from "../../shared/assets/brand/logo-horizontal.png";
 import "./owner-catalog.css";
 import type {
   ActivityPoint,
@@ -241,10 +242,10 @@ function Login({ onAuthenticated }: { onAuthenticated: (session: AdminSession) =
   return (
     <main className="login-shell">
       <section className="login-card">
-        <div className="brand"><span>K</span><div>Kasper Loto<small>Панель владельца</small></div></div>
+        <div className="brand"><img alt="Casper Loto" src={logoHorizontal} /><small>Панель владельца</small></div>
         <div className="secure-line"><i /> Вход для владельца</div>
         <h1>Идентификация агента</h1>
-        <p>Закрытое пространство владельца K-Loto. Доступ к оперативной сводке и управлению системой.</p>
+        <p>Закрытое пространство владельца Casper Loto. Доступ к оперативной сводке и управлению системой.</p>
         <form onSubmit={(event) => void submit(event)}>
           <label>ЛОГИН АДМИНИСТРАТОРА<input autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)} /></label>
           <label>ПАРОЛЬ<input autoComplete="current-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></label>
@@ -861,14 +862,14 @@ export default function App() {
   };
   const openPlayerById = (userId: string) => { setPlayerSearch(userId); navigate("players"); };
 
-  if (checking) return <main className="boot">K-LOTO // ПРОВЕРКА СЕССИИ</main>;
+  if (checking) return <main className="boot">CASPER LOTO // ПРОВЕРКА СЕССИИ</main>;
   if (!session) return <Login onAuthenticated={setSession} />;
 
   const visibleLotteries = lotteries.filter(l => scope === "all" || ["flash", "shadow", "pulse"].includes(l.code) === (scope === "fast"));
   const title = navigation.find((item) => item.id === view)?.label ?? "Управление";
   return <div className={`admin-shell ${view === "fast" ? "fast-admin" : ""}`}>
-    <aside><div className="brand"><span>K</span><div>Kasper Loto<small>Панель владельца</small></div></div><nav>{navigation.map((item) => <button className={view === item.id ? "active" : ""} key={item.id} onClick={() => navigate(item.id)}><small>{item.code}</small>{item.label}</button>)}</nav><div className="operator"><small>ВЛАДЕЛЕЦ</small><b>{session.username}</b><button onClick={() => void adminApi.logout().finally(() => setSession(null))}>ЗАВЕРШИТЬ СЕАНС</button></div></aside>
-    <main className="workspace"><header className="topbar"><div><small>Kasper Loto · управление</small><h1>{title}</h1></div><div className="refresh-control"><span>{loadedAt ? `Обновлено ${date(new Date(loadedAt).toISOString())} МСК` : "Загружаем данные"}</span><button disabled={loading || refreshing} onClick={() => void load(view, true)}>{refreshing ? "Обновляем…" : "Обновить данные"}</button></div></header>
+    <aside><div className="brand"><img alt="Casper Loto" src={logoHorizontal} /><small>Панель владельца</small></div><nav>{navigation.map((item) => <button className={view === item.id ? "active" : ""} key={item.id} onClick={() => navigate(item.id)}><small>{item.code}</small>{item.label}</button>)}</nav><div className="operator"><small>ВЛАДЕЛЕЦ</small><b>{session.username}</b><button onClick={() => void adminApi.logout().finally(() => setSession(null))}>ЗАВЕРШИТЬ СЕАНС</button></div></aside>
+    <main className="workspace"><header className="topbar"><div><small>Casper Loto · управление</small><h1>{title}</h1></div><div className="refresh-control"><span>{loadedAt ? `Обновлено ${date(new Date(loadedAt).toISOString())} МСК` : "Загружаем данные"}</span><button disabled={loading || refreshing} onClick={() => void load(view, true)}>{refreshing ? "Обновляем…" : "Обновить данные"}</button></div></header>
       {["lotteries", "schedule", "draws", "jackpots", "analytics"].includes(view) && <div className="scope-toolbar"><SectionTabs label="Тип игр" value={scope} items={[{ id: "standard", label: "Лотереи" }, { id: "fast", label: "Fast" }, { id: "all", label: "Всё" }]} onChange={setScope} /><p>{scope === "standard" ? "Обычные лотереи. Быстрые тиражи и их выигрыши — в Fast." : scope === "fast" ? "Только быстрые игры: FLASH, SHADOW и PULSE." : "Полная картина: обычные лотереи и Fast вместе."} Игроки и Фонд Каспера общие.</p></div>}
       {error && <div className="error banner">{error}</div>}{loading && <div className="loading">ЗАГРУЖАЕМ ДАННЫЕ…</div>}
       {!loading && view === "dashboard" && dashboard && projectDashboard && ticketAnalytics && <DashboardView data={dashboard} project={projectDashboard} analytics={ticketAnalytics} refreshedAt={loadedAt} onOpen={openDraw} onNavigate={(target) => { if (target === "system") setSystemTab("health"); navigate(target); }} />}

@@ -153,7 +153,7 @@ export function EmptyState({
 }
 
 export function Skeleton() {
-  return <main className="app-shell skeleton-shell" aria-label="Загружаем K-Loto">
+  return <main className="app-shell skeleton-shell" aria-label="Загружаем Casper Loto">
     <div className="skeleton header-skeleton" />
     <div className="skeleton hero-skeleton" />
     <div className="skeleton draw-skeleton" />

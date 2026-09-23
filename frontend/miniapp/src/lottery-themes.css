@@ -43,7 +43,7 @@
 .lottery-room { padding-bottom:20px; }
 .lottery-room .room-topbar { display:flex; padding:5px 0 17px; gap:12px; align-items:center; }
 .lottery-room .room-topbar>button { width:32px; height:32px; border-color:rgba(var(--game-rgb),.25); color:var(--game-accent); font-size:20px; flex-shrink:0; }
-.room-topbar>img { width:125px; max-width:33%; }
+.room-topbar>img { display:block; width:125px; max-width:33%; height:auto; object-fit:contain; object-position:left center; }
 .room-topbar>span { margin-left:auto; color:#e0d9c6; font-size:11px; font-variant-numeric:tabular-nums; white-space:nowrap; }
 .room-masthead { position:relative; isolation:isolate; overflow:hidden; border-radius:22px; border:1px solid rgba(var(--game-rgb),.4); background:var(--game-base); min-height:365px; box-shadow:0 18px 40px #0004,inset 0 1px #ffffff10; }
 .room-masthead>.lottery-visual { position:absolute; inset:0; height:290px; width:100%; z-index:-2; opacity:1; }
