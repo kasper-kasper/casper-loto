@@ -1,3 +1,3 @@
 """K-Loto backend package."""
 
-__version__ = "1.42.9"
+__version__ = "1.43.0"

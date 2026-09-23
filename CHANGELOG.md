@@ -1453,3 +1453,6 @@ All notable changes follow Keep a Changelog and Semantic Versioning principles.
 
 - Web: placed the GROБ artwork directly into the ritual picker scene so the experience has a real visual focal point instead of only CSS geometry.
 - Web: added an isolated Phaser 2D scene layer for GROБ with animated bats and tombstone reveal states.
+## [1.43.0] - 2026-09-23
+
+- Web: consolidated GROБ into one coherent artwork-led scene and removed the experimental overlay that duplicated the sarcophagus visual.

@@ -2814,3 +2814,6 @@ Known limitations:
 
 - Added the existing GROБ coffin artwork as the visual backdrop for the web picker and increased scene contrast.
 - Added a lazy-loaded Phaser canvas layer isolated to GROБ; React remains responsible for controls and server-backed state.
+## [1.43.0] - 2026-09-23
+
+- Reworked GROБ visual composition after production review: one real coffin scene, no overlapping canvas/wireframe treatment.
