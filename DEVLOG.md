@@ -2813,3 +2813,4 @@ Known limitations:
 ## [1.42.9] - 2026-09-23
 
 - Added the existing GROБ coffin artwork as the visual backdrop for the web picker and increased scene contrast.
+- Added a lazy-loaded Phaser canvas layer isolated to GROБ; React remains responsible for controls and server-backed state.
