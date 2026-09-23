@@ -1,6 +1,6 @@
 # K-Loto
 
-Current release: **1.42.2**.
+Current release: **1.42.3**.
 
 K-Loto is a multi-user lottery platform with integer CAS accounting, an
 immutable transaction ledger, recoverable draw scheduling, ten independent

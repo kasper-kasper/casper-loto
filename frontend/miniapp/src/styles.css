@@ -1750,6 +1750,29 @@ html.app-backgrounded *, .motion-paused, .motion-paused * { animation-play-state
   .fast-card > img,.fast-live-card > img,.fast-live-card > header i,.fast-live-scan i,.fast-picker-scene,.code-card-scene *,.code-picker-scene *,.code-preview i,.fast-divider::after,.fast-divider > i,.storefront-rail > i,.storefront-card,.storefront-card::after { animation: none; }
 }
 
+/* Keep the mobile canvas inside the viewport even when long balances, titles,
+   or action labels are rendered by Telegram's narrow webview. */
+@media (max-width: 520px) {
+  #root { width: 100%; max-width: 100vw; overflow-x: clip; }
+  .app-shell { width: 100%; max-width: 100vw; min-width: 0; overflow-x: clip; }
+  .app-header { min-width: 0; gap: 8px; }
+  .brand-lockup { min-width: 0; width: clamp(108px, 36vw, 138px); }
+  .brand-logo-horizontal { width: 100%; }
+  .header-actions { min-width: 0; flex: 1 1 auto; }
+  .balance { min-width: 0; max-width: 112px; flex: 1 1 auto; }
+  .featured-draw,
+  .featured-draw > *,
+  .draw-product-bar,
+  .draw-product-title,
+  .draw-product-title > div,
+  .draw-control-panel,
+  .featured-meta,
+  .featured-actions { min-width: 0; max-width: 100%; }
+  .featured-actions > * { min-width: 0; }
+  .draw-product-title strong,
+  .featured-jackpot strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+}
+
 /* 1.12.2 — keep number selection above the fold on compact Telegram viewports. */
 .picker-heading { min-height: 88px !important; padding: 39px 12px 9px 56px !important; }
 .picker-heading h1 { font-size: clamp(18px,5.7vw,22px); }

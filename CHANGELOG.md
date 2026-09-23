@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.42.3] - 2026-09-23
+
+- Improved Mini App narrow-screen layout so header values and purchase actions stay within the viewport.
+- Added overflow protection for Kasper LIVE ticket purchase cards.
+
 ## [1.42.2] - 2026-09-23
 
 ### Исправлено

@@ -1,5 +1,10 @@
 # Development log
 
+## [1.42.3] - 2026-09-23
+
+- Reviewed the Mini App at mobile widths and tightened responsive sizing for shared screens and Kasper LIVE.
+- Kept the changes presentation-only; purchase, prize generation, history, and ledger flows were not altered.
+
 ## [1.42.2] - 2026-09-23
 
 - История из обзора аккаунта теперь сразу загружает общий список игр, включая Kasper LIVE.
