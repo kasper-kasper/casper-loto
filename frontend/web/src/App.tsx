@@ -96,7 +96,7 @@ export default function App() {
   return <div className={`app ${view==="fast"?"fast-mode":""}`}>
     <header className="site-header"><button className="brand-button" onClick={()=>setView("lotteries")} aria-label="Casper Loto — коллекция"><Brand/></button>
       <nav aria-label="Основная навигация">{(Object.keys(names) as View[]).map(item=><button key={item} aria-current={view===item?"page":undefined} className={`${view===item?"active":""} ${item==="fast"?"fast-nav":""}`} onClick={()=>{setView(item);setError("")}}>{names[item]}</button>)}</nav>
-      <button className="balance-button" onClick={()=>setView("profile")}><span>ВАШ БАЛАНС</span><strong>{cas(dashboard?.balance??0)}</strong></button>
+      <div className="header-live-status"><i /> <span>LIVE / СЕЙЧАС</span><b>Открыть эфир</b></div><button className="balance-button" onClick={()=>setView("profile")}><span>ВАШ БАЛАНС</span><strong>{cas(dashboard?.balance??0)}</strong></button>
     </header>
     <main className="main-stage">
       {notice&&<div role="status" className="toast">{notice}<button aria-label="Закрыть уведомление" onClick={()=>setNotice("")}>×</button></div>}

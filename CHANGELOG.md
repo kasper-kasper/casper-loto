@@ -1443,3 +1443,6 @@ All notable changes follow Keep a Changelog and Semantic Versioning principles.
 ## [1.42.6] - 2026-09-23
 
 - Mini App: keep the header balance on one line, strengthen bottom navigation hierarchy, and use the configured PULSE offset in live reveal copy.
+## [1.42.7] - 2026-09-23
+
+- Web: introduced the atmospheric club shell with a desktop rail, live status, layered background and responsive fallback navigation.
