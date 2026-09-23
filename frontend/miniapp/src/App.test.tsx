@@ -564,7 +564,7 @@ it("opens completed tickets directly from the account overview", async () => {
   render(<App initData="test" />);
   fireEvent.click(await screen.findByRole("button", { name: "Моё" }));
   fireEvent.click(await screen.findByRole("button", { name: /История участия/ }));
-  await waitFor(() => expect(miniAppApi.tickets).toHaveBeenCalledWith("test", "history", "scope:standard", false));
+  await waitFor(() => expect(miniAppApi.tickets).toHaveBeenCalledWith("test", "history", "", false));
 });
 
 
@@ -598,9 +598,9 @@ it("does not apply the wins-only filter to active tickets", async () => {
   fireEvent.click(await screen.findByRole("button", { name: "Моё" }));
   fireEvent.click(await screen.findByRole("button", { name: /История участия/ }));
   fireEvent.click(await screen.findByRole("button", { name: "Только выигрыши" }));
-  await waitFor(() => expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "history", "scope:standard", true));
+  await waitFor(() => expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "history", "", true));
   fireEvent.click(screen.getByRole("button", { name: "Активные" }));
-  await waitFor(() => expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "active", "scope:standard", false));
+  await waitFor(() => expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "active", "", false));
 });
 
 it("does not replace history with a late active-ticket response", async () => {
