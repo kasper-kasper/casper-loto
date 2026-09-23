@@ -1967,6 +1967,30 @@ html { overflow-x: clip; scrollbar-gutter: stable; }
 
 @media(max-width:350px){.picker-page .picker-actions{width:calc(100% - 16px)}.account-overview .account-shortcuts{grid-template-columns:1fr}.account-overview .account-shortcuts button{min-height:86px}}
 
+/* Personal hub: answer the player's most common questions above the fold. */
+.balance { display: grid; min-width: 0; min-height: 38px; padding: 0 10px; place-items: center end; }
+.balance strong { margin: 0; }
+.account-glance { padding: 17px; border: 1px solid rgba(211,185,112,.3); border-radius: 22px; background: radial-gradient(circle at 88% 6%,rgba(218,190,112,.2),transparent 36%),linear-gradient(145deg,#183027,#0d1e1a 67%,#17251f); box-shadow: 0 17px 38px rgba(0,0,0,.28); }
+.account-glance-head { display: flex; min-width: 0; align-items: center; gap: 12px; }
+.account-glance-head .account-name { flex: 1; min-width: 0; }
+.account-glance-head .account-name h2 { margin: 4px 0; }
+.account-glance-head .account-balance { flex: 0 1 auto; max-width: 38%; margin: 0; padding: 0; border: 0; text-align: right; }
+.account-glance-head .account-balance span { color: rgba(226,211,170,.58); font-size: 7px; letter-spacing: .12em; }
+.account-glance-head .account-balance strong { margin-top: 4px; color: #f4d688; font-size: 15px; }
+.account-stat-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; margin-top: 16px; }
+.account-stat-grid article { min-width: 0; padding: 12px; border: 1px solid rgba(153,177,158,.16); border-radius: 13px; background: rgba(5,15,14,.27); }
+.account-stat-grid span,.account-stat-grid strong,.account-stat-grid small { display: block; }
+.account-stat-grid span { color: rgba(208,219,211,.62); font-size: 8px; }
+.account-stat-grid strong { margin-top: 7px; overflow: hidden; color: #f0f3ee; font-size: 19px; text-overflow: ellipsis; white-space: nowrap; }
+.account-stat-grid strong.positive { color: #f4d688; }.account-stat-grid strong.negative { color: #ef9b9b; }
+.account-stat-grid small { margin-top: 3px; overflow: hidden; color: #7d9589; font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
+.account-next-draw { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 12px; padding: 15px 16px; border: 1px solid rgba(121,156,243,.2); border-radius: 16px; background: linear-gradient(120deg,rgba(21,47,89,.88),rgba(11,25,52,.9)); }
+.account-next-draw > div { min-width: 0; }.account-next-draw span,.account-next-draw strong,.account-next-draw small { display: block; }.account-next-draw span { color: #8298c8; font-size: 7px; letter-spacing: .13em; }.account-next-draw strong { margin-top: 5px; overflow: hidden; color: #f5f7fc; font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }.account-next-draw small { margin-top: 4px; overflow: hidden; color: #9eadd0; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }.account-next-draw button { flex: 0 0 auto; min-height: 38px; padding: 0 12px; border: 1px solid rgba(239,199,110,.3); border-radius: 10px; color: #f4d688; background: rgba(239,199,110,.08); font-size: 9px; font-weight: 800; }.account-next-draw button span { display: inline; margin-left: 6px; color: inherit; font-size: 12px; }.account-next-draw.empty { border-color: rgba(153,177,158,.16); background: rgba(12,29,24,.75); }.account-next-draw.empty strong { color: #d8e1da; }
+.account-quick-actions { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 7px; }
+.account-quick-actions button { display: flex; min-width: 0; min-height: 76px; padding: 11px 10px; flex-direction: column; align-items: flex-start; gap: 8px; border: 1px solid rgba(153,177,158,.16); border-radius: 14px; color: #e7eee9; background: linear-gradient(145deg,#12251f,#0a1815); text-align: left; }.account-quick-actions .icon { width: 17px; height: 17px; color: #efc76e; }.account-quick-actions span { min-width: 0; }.account-quick-actions strong,.account-quick-actions small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.account-quick-actions strong { font-size: 9px; }.account-quick-actions small { margin-top: 4px; color: #82958a; font-size: 7px; }
+.account-secondary { display: grid; gap: 12px; }
+@media(max-width:399px){.account-glance{padding:14px}.account-next-draw{align-items:flex-start;flex-direction:column}.account-next-draw button{width:100%}.account-quick-actions button{min-height:72px;padding-inline:8px}.account-quick-actions strong{font-size:8px}}
+
 .fast-live-card { display: grid; grid-template-rows: 12px 66px 136px 72px; gap: 8px; }
 .fast-live-title { min-width: 0; margin: 0; align-items: center; }
 .fast-live-title > div { min-width: 0; }
@@ -2047,3 +2071,8 @@ html { overflow-x: clip; scrollbar-gutter: stable; }
 @keyframes khan-status-pulse{50%{opacity:.5;box-shadow:0 0 3px #66e7a4}}
 @media(max-width:350px){.khan-machine{width:248px;transform:scale(.92);transform-origin:center}.khan-best-ticket .number{width:31px;height:31px}}
 @media(prefers-reduced-motion:reduce){.khan-drum-ring,.khan-drum>b,.khan-ball-rack i.filled,.khan-output.has-ball,.khan-chute.releasing>b,.khan-lototron>header span>i{animation:none}}
+
+/* Final account-hub overrides: keep the useful answers above the fold. */
+.account-overview { gap: 13px; overflow: visible; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.account-secondary { display: grid; gap: 12px; }
+.account-overview .account-ledger,.account-overview .account-favorites,.account-overview .notification-settings { margin: 0; }

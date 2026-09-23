@@ -1,5 +1,10 @@
 # Development log
 
+## [1.42.5] - 2026-09-23
+
+- Reorganized the account overview around the player's immediate questions instead of profile details.
+- Kept detailed history, favorites, and notification settings available below the primary hub actions.
+
 ## [1.42.4] - 2026-09-23
 
 - Consolidated ordinary-lottery Mini App purchase actions around the shared number picker.

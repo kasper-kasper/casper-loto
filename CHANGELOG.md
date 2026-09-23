@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.42.5] - 2026-09-23
+
+- Reworked the Mini App “Моё” section into a player hub with above-the-fold stats, next-draw context, and direct links to tickets, history, and notifications.
+- Simplified the top-right balance display to a compact one-line CAS amount.
+
 ## [1.42.4] - 2026-09-23
 
 - Unified ordinary lottery ticket purchase in Mini App: direct random purchase, manual ticket building, multi-ticket cart, and optional five-draw participation now share one picker flow.

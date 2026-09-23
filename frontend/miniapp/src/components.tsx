@@ -54,7 +54,7 @@ function useAnimatedValue(value: number): number {
 
 export function Balance({ value }: { value: number }) {
   const displayed = useAnimatedValue(value);
-  return <div className="balance"><span>Баланс</span><strong><Money value={displayed} /></strong></div>;
+  return <div aria-label={`Баланс: ${new Intl.NumberFormat("ru-RU").format(displayed)} CAS`} className="balance"><strong><Money compact value={displayed} /></strong></div>;
 }
 
 export function Money({ value, compact = false, prefix = "" }: { value: number; compact?: boolean; prefix?: string }) {
