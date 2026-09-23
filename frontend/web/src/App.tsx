@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AddPassword, Brand, LotteryGallery, Login } from "./Experience";
 import { FastExperience } from "./Fast";
+import { GrobGame } from "./GrobGame";
 import { ApiError, webApi } from "./api";
 import grobScene from "../../miniapp/src/assets/lotteries/grob-scene.webp";
 import type { Account, BingoInventory, Dashboard, LiveDraw, Lottery, Ticket, WebSession } from "./types";
@@ -99,6 +100,7 @@ export default function App() {
     void refresh().catch(()=>setError("Покупка завершена. Обновление баланса задерживается."));
   };
   const names:Record<View,string>={lotteries:"Коллекция",fast:"Casper Fast",live:"Эфир",tickets:"Мои билеты",profile:"Профиль"};
+  if(picker?.code.toLowerCase()==="grob")return <GrobGame lottery={picker} balance={dashboard?.balance??0} onClose={()=>setPicker(null)} onBought={bought}/>;
   return <div className={`app ${view==="fast"?"fast-mode":""}`}>
     <header className="site-header"><button className="brand-button" onClick={()=>setView("lotteries")} aria-label="Casper Loto — коллекция"><Brand/></button>
       <nav aria-label="Основная навигация">{(Object.keys(names) as View[]).map(item=><button key={item} aria-current={view===item?"page":undefined} className={`${view===item?"active":""} ${item==="fast"?"fast-nav":""}`} onClick={()=>{setView(item);setError("")}}>{names[item]}</button>)}</nav>

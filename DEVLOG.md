@@ -1,5 +1,10 @@
 # Development log
 
+## [1.44.0] - 2026-09-23
+
+- Replaced the GROБ modal presentation in web with a dedicated responsive game scene, custom environment artwork, numbered tombstone controls, and reduced-motion fallbacks.
+- Routed the existing purchase interaction to the unchanged server purchase endpoint; only web presentation changed.
+
 ## [1.42.5] - 2026-09-23
 
 - Reorganized the account overview around the player's immediate questions instead of profile details.

@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.44.0] - 2026-09-23
+
+- Rebuilt the web GROБ picker as a full-screen 2D game room with bespoke crypt artwork, atmospheric motion, a ticket seal, and tactile tombstone number selection.
+- Kept ticket generation, pricing, and purchase authoritative on the existing server API.
+
 ## [1.42.5] - 2026-09-23
 
 - Reworked the Mini App “Моё” section into a player hub with above-the-fold stats, next-draw context, and direct links to tickets, history, and notifications.
