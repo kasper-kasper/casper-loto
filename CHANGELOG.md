@@ -1449,3 +1449,6 @@ All notable changes follow Keep a Changelog and Semantic Versioning principles.
 ## [1.42.8] - 2026-09-23
 
 - Web: recognize GROБ by its displayed name as well as its code, so the immersive experience opens for the production lottery configuration.
+## [1.42.9] - 2026-09-23
+
+- Web: placed the GROБ artwork directly into the ritual picker scene so the experience has a real visual focal point instead of only CSS geometry.

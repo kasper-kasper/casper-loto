@@ -2810,3 +2810,6 @@ Known limitations:
 ## [1.42.8] - 2026-09-23
 
 - Hardened GROБ routing for production data where the display name and internal lottery code can differ.
+## [1.42.9] - 2026-09-23
+
+- Added the existing GROБ coffin artwork as the visual backdrop for the web picker and increased scene contrast.
