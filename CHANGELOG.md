@@ -1,5 +1,19 @@
 # Changelog
 
+## [Unreleased]
+
+- Documented the approved Casper Loto brand system, reserved a shared asset
+  registry for the final reference pack, and standardized safe master-brand UI
+  labels without replacing the existing legacy K artwork.
+
+## [1.46.0] - 2026-09-24
+
+- Rebuilt the web «ГРОБ» experience as a lazy-loaded Phaser 3 game scene with a physical sarcophagus machine, sixteen spatial number seals, ambient motion, responsive desktop/mobile staging, and an in-world catalog portal.
+- Added confirmation-free manual and x1/x5/x25 purchases with persisted idempotent attempts, immediate empty-ticket reset, and non-destructive in-scene errors.
+- Added a dedicated «ГРОБ» broadcast inside the global «Эфир» tab, driven by server timestamps, sequential physical-stele reveals, highlighted player-ticket matches, and server-authored final winnings.
+- Deepened the «ГРОБ» 2.5D interaction with an illuminated central purchase seal, curved seal travel into physical sockets, engraved fire-channel reactions, grounded shadows, layered mist/parallax, and distinct x1/x5/x25 feedback.
+- Simplified the broadcast composition: the draw number now occupies the sarcophagus plaque, while ticket identifiers and the former top banner are no longer shown.
+
 ## [1.45.1] - 2026-09-23
 
 - Added a dedicated, paginated jackpot catalog with direct links to draw winners and payout details; added recent jackpot shortcuts to Fast.

@@ -1,5 +1,32 @@
 # Development log
 
+## Casper Loto brand foundation - 2026-09-24
+
+- Зафиксированы утверждённые название Casper Loto, направление C-монограммы со
+  сферой, основная navy/ivory/gold палитра, secondary cyan, правила слогана и
+  запреты в `docs/brand.md`.
+- Подготовлен общий реестр будущих бренд-ассетов без временных изображений;
+  существующие K-SVG и все их подключения перечислены как legacy до получения
+  финального reference/asset pack.
+- Безопасные master-brand подписи в Mini App и панели владельца приведены к
+  `Casper Loto`. Backend, игровая механика, сохранённые названия лотерей и
+  исторические записи не изменялись.
+
+## Phaser «ГРОБ» vertical slice - 2026-09-23
+
+- Replaced the previous web-only React/CSS GROБ screen with a dynamically imported Phaser 3 experience; catalog/login/other lotteries keep the existing initial bundle and behavior.
+- Added an instance-scoped typed bridge, application controller, unbiased Web Crypto quick-ticket generation, persisted purchase attempts, single-flight protection, and server-time live phase derivation.
+- Built a layered crypt scene with an optimized WebP matte, production sarcophagus and seal sprites, two readable 8+8 number arcs, physical socket placement, ambient dust, responsive staging, keyboard/screen-reader mirrors, and reduced-motion behavior.
+- Added the dedicated grob-only live scene and verified the manual cycle, automatic empty draft, x1/x5/x25, desktop, 390×844 portrait, and a clean browser console against a local mocked API fixture; the fixture was removed after QA.
+- Backend, lottery mathematics, ledger, migrations, and Telegram Mini App were not changed.
+- Final owner review replaced the detached lever with the existing central lid seal as the manual-purchase control, strengthened its ready-state glow, grounded the sarcophagus, and moved the live draw number onto the machine while removing ticket metadata from the broadcast.
+- Release version: web 1.46.0. The localhost-only review entry and fixture were removed before publication.
+
+## Design documentation - 2026-09-23
+
+- Зафиксирована эталонная визуальная и UX-концепция веб-версии «ГРОБ»: единая 2D/2.5D-сцена с саркофагом-машиной, физическим выбором 3 из 16, мгновенными покупками, отдельной режиссурой эфира, требованиями к доступности и производительности.
+- Production-код и действующая механика лотереи не изменялись.
+
 ## [1.45.1] - 2026-09-23
 
 - Added `/admin/jackpots` paging over immutable jackpot-win events and `period=archived` to completed-draw search for inactive lotteries or draws whose ruleset snapshot differs from the current ruleset.
@@ -2834,3 +2861,23 @@ Known limitations:
 ## [1.43.0] - 2026-09-23
 
 - Reworked GROБ visual composition after production review: one real coffin scene, no overlapping canvas/wireframe treatment.
+
+## 2026-09-23 — «ГРОБ» 2.5D polish and global live-tab routing
+
+- Removed the in-experience live switch. The Grob broadcast now mounts only in
+  the shared web «Эфир» tab; that tab polls both the ordinary standard feed and
+  the existing Grob-filtered feed so an active Grob window is not hidden by a
+  different standard draw.
+- Added a central illuminated purchase-seal control and result-stele asset, curved
+  number-seal travel, channel illumination, layered mist/parallax, purchase sealing/cassette
+  motion and distinct quick-purchase feedback without changing purchase/API rules.
+- Rebuilt the live composition around three stone stelae, server-timed reveal,
+  highlighted player seals and a server-authored result ribbon. Late join renders
+  already revealed numbers immediately and animates only a newly reached marker.
+- Used a temporary local review entry with simulated presentation state for owner
+  acceptance, then removed it before release.
+- Focused validation: TypeScript and ESLint passed; Vitest 27/27 passed; Vite
+  production build passed. Desktop and 390×844 browser QA covered manual purchase,
+  automatic empty-ticket reset, x5/x25 feedback, live reveal/result and a clean
+  console after fixing the reveal camera tween. No deploy was attempted pending
+  explicit owner visual approval.

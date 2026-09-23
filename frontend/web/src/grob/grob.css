@@ -1,0 +1,12 @@
+.grob-experience{position:fixed;inset:0;z-index:1000;width:100%;height:100dvh;overflow:hidden;background:#050609;color:#d8c9aa}
+.grob-canvas,.grob-canvas canvas{display:block;width:100%!important;height:100%!important;outline:none}
+.grob-sr-controls{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.grob-live-region{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.grob-live-embed{box-sizing:border-box;position:relative;width:100%;max-width:100%;height:min(74dvh,850px);min-height:540px;overflow:hidden;border:1px solid #342b24;background:#050609;box-shadow:0 32px 90px #0009}
+.grob-live-grid{max-width:none!important;padding:0!important}
+.grob-live-loading{display:grid;place-items:center;width:100%;height:min(74dvh,850px);min-height:540px;background:radial-gradient(circle at 50% 55%,#241116,#050609 58%);color:#c9b58e;font:12px Georgia,serif;letter-spacing:.25em;text-transform:uppercase}
+.grob-loading-shell{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;overflow:hidden;background:radial-gradient(circle at 50% 56%,#281217 0,#090b0e 40%,#030405 100%);color:#d8c9aa;font:12px/1.5 Georgia,serif;letter-spacing:.28em;text-transform:uppercase}
+.grob-loading-shell::before{content:"";position:absolute;width:86px;height:86px;border:1px solid #7f6944;border-top-color:#d8bd7a;border-radius:50%;animation:grob-loading 1.8s linear infinite}
+@keyframes grob-loading{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.grob-loading-shell::before{animation:none}}
+@media(max-width:759px){.grob-live-embed,.grob-live-loading{height:72dvh;min-height:520px}}
