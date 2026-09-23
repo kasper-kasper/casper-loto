@@ -1,5 +1,10 @@
 # Development log
 
+## [1.42.4] - 2026-09-23
+
+- Consolidated ordinary-lottery Mini App purchase actions around the shared number picker.
+- Kept random purchases confirmation-free, preserved the cart for users building multiple manual tickets, and kept five-draw participation explicit.
+
 ## [1.42.3] - 2026-09-23
 
 - Reviewed the Mini App at mobile widths and tightened responsive sizing for shared screens and Kasper LIVE.

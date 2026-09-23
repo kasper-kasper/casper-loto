@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.42.4] - 2026-09-23
+
+- Unified ordinary lottery ticket purchase in Mini App: direct random purchase, manual ticket building, multi-ticket cart, and optional five-draw participation now share one picker flow.
+- Manual ticket selection clears after adding, making it easy to prepare another combination before checkout.
+- Fast, Bingo, and Kasper LIVE purchase flows remain unchanged.
+
 ## [1.42.3] - 2026-09-23
 
 - Improved Mini App narrow-screen layout so header values and purchase actions stay within the viewport.
