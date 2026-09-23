@@ -2800,3 +2800,7 @@ Known limitations:
   cutoff 21:58; inventory 2,000 tickets; owner auto-play bought five tickets;
   jackpot 10,000,250,000 CAS; base 10bn; paired startup ledger sums to zero;
   scheduler has no error. Admin remains 1.19.0; existing bot process preserved.
+## [1.42.6] - 2026-09-23
+
+- Polished Mini App navigation and balance capsule responsiveness.
+- Fixed PULSE live status text to format secondary values with the draw's server-provided offset.

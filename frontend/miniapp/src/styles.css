@@ -2076,3 +2076,25 @@ html { overflow-x: clip; scrollbar-gutter: stable; }
 .account-overview { gap: 13px; overflow: visible; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 .account-secondary { display: grid; gap: 12px; }
 .account-overview .account-ledger,.account-overview .account-favorites,.account-overview .notification-settings { margin: 0; }
+
+/* Keep the currency capsule legible at every mini-app width. The amount and
+   its currency mark are one unit and must never fall onto separate lines. */
+.app-header .balance { flex: 0 0 auto; width: max-content; min-width: 0; max-width: none; }
+.app-header .balance strong,
+.app-header .balance .money-value { overflow: visible; white-space: nowrap; }
+.app-header .balance .money-value { display: inline-flex; width: max-content; }
+
+/* Give the primary menu a little more structure without making it heavier. */
+.bottom-nav { min-height: 74px; padding-inline: 9px; gap: 4px; border-radius: 23px; background: linear-gradient(110deg, rgba(8,19,46,.97), rgba(13,24,54,.97) 60%, rgba(30,14,38,.96)); }
+.bottom-nav button { min-height: 57px; padding-inline: 3px; border-radius: 15px; }
+.bottom-nav button > span { width: 39px; height: 33px; border-radius: 11px 11px 14px 11px; }
+.bottom-nav button:not(.active):hover > span { border-color: rgba(121,156,243,.14); background: rgba(70,109,197,.07); }
+.bottom-nav button > b { font-size: 8px; letter-spacing: .015em; }
+.bottom-nav button.active > b { color: #edf2ff; }
+.bottom-nav button.active > span { box-shadow: 0 6px 18px rgba(0,0,0,.22), inset 0 1px rgba(255,255,255,.06); }
+.bottom-nav::after { content: ""; position: absolute; top: 6px; left: 50%; width: 30px; height: 2px; border-radius: 4px; background: rgba(149,171,222,.18); transform: translateX(-50%); }
+@media (max-width: 399px) {
+  .app-header .balance { padding-inline: 8px; }
+  .bottom-nav { padding-inline: 6px; }
+  .bottom-nav button > b { font-size: 7px; }
+}

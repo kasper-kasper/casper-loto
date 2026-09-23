@@ -1440,3 +1440,6 @@ All notable changes follow Keep a Changelog and Semantic Versioning principles.
 - Docker Compose development stack.
 - Test, lint, format and type-check configuration.
 - Architecture, security and unresolved-decision documentation.
+## [1.42.6] - 2026-09-23
+
+- Mini App: keep the header balance on one line, strengthen bottom navigation hierarchy, and use the configured PULSE offset in live reveal copy.
