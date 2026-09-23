@@ -2807,3 +2807,6 @@ Known limitations:
 ## [1.42.7] - 2026-09-23
 
 - Started the web visual foundation: fixed club navigation on desktop, responsive navigation on smaller screens, live status treatment and layered scene styling.
+## [1.42.8] - 2026-09-23
+
+- Hardened GROБ routing for production data where the display name and internal lottery code can differ.

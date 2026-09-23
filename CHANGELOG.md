@@ -1446,3 +1446,6 @@ All notable changes follow Keep a Changelog and Semantic Versioning principles.
 ## [1.42.7] - 2026-09-23
 
 - Web: introduced the atmospheric club shell with a desktop rail, live status, layered background and responsive fallback navigation.
+## [1.42.8] - 2026-09-23
+
+- Web: recognize GROБ by its displayed name as well as its code, so the immersive experience opens for the production lottery configuration.
