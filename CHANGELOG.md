@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.45.0] - 2026-09-23
+
+- Added searchable player dossiers with visible/copyable internal IDs, all-time stats for each lottery, and complete paginated ticket history including Kasper LIVE.
+- Added ticket purchase/win and lottery filters, plus paginated per-player CAS ledger history and direct player links from the global ledger.
+
 ## [1.44.0] - 2026-09-23
 
 - Rebuilt the web GROБ picker as a full-screen 2D game room with bespoke crypt artwork, atmospheric motion, a ticket seal, and tactile tombstone number selection.

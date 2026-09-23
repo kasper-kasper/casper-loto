@@ -11,6 +11,7 @@ import type {
   NumberStatisticsReport,
   NotificationItem,
   Player,
+  PlayerHistoryPage,
   Transaction, TicketAnalytics,
   ReleaseNote,
   ScheduleEntry,
@@ -106,14 +107,23 @@ export const adminApi = {
   logout: () => request<void>("/auth/logout", { method: "POST" }),
   dashboard: (scope: LotteryScope = "all") => request<Dashboard>(`/dashboard?scope=${scope}`),
   kasperLive: () => request<KasperLiveSummary>("/kasper-live"),
-  players: (query = "") => request<Player[]>(`/players${query ? `?q=${encodeURIComponent(query)}` : ""}`),
+  players: (query = "") => request<Player[]>(`/players?limit=500${query ? `&q=${encodeURIComponent(query)}` : ""}`),
+  playerTicketHistory: (userId: string, filter = "all", lotteryCode = "", offset = 0) => {
+    const params = new URLSearchParams({ filter, limit: "100", offset: String(offset) });
+    if (lotteryCode) params.set("lottery_code", lotteryCode);
+    return request<PlayerHistoryPage>(`/players/${encodeURIComponent(userId)}/ticket-history?${params.toString()}`);
+  },
   lotteries: () => request<Lottery[]>("/lotteries"),
   draws: drawPage,
   schedule: (scope: LotteryScope = "all") => request<ScheduleEntry[]>(`/schedule?scope=${scope}`),
   draw: (id: string) => request<DrawDetail>(`/draws/${id}`),
   transactions: (query = "") =>
     request<Transaction[]>(`/transactions${query ? `?${query}` : ""}`),
-  playerTransactions: (userId: string) => request<Transaction[]>(`/transactions?user_id=${encodeURIComponent(userId)}&limit=6`),
+  playerTransactions: (userId: string, offset = 0, type = "") => {
+    const params = new URLSearchParams({ user_id: userId, limit: "100", offset: String(offset) });
+    if (type) params.set("type", type);
+    return request<Transaction[]>(`/transactions?${params.toString()}`);
+  },
   statistics: (lotteryId: string, limit = 20, dateFrom = "2026-08-31T21:00:00.000Z") => {
     const params = new URLSearchParams({ limit: String(limit), date_from: dateFrom });
     return request<NumberStatisticsReport>(`/lotteries/${lotteryId}/number-statistics?${params.toString()}`);

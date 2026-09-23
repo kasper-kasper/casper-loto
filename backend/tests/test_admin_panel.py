@@ -66,6 +66,9 @@ class RowResult:
     def all(self) -> Any:
         return self._value
 
+    def mappings(self) -> "RowResult":
+        return self
+
 
 class FakeSession:
     def __init__(
@@ -166,6 +169,51 @@ async def test_draw_detail_exposes_bingo_stage_result() -> None:
     assert tickets[0].player_username == "winner"
     assert tickets[0].player_telegram_id == 123456
     assert tickets[0].is_jackpot_winner is True
+
+
+async def test_player_ticket_history_combines_draw_and_instant_ticket_pages() -> None:
+    user_id = UUID(int=900)
+    ticket_id = UUID(int=901)
+    lottery_id = UUID(int=902)
+    purchased_at = datetime(2026, 9, 20, 12, tzinfo=UTC)
+    ticket_row = {
+        "id": ticket_id,
+        "ticket_kind": "DRAW",
+        "purchased_at": purchased_at,
+        "lottery_id": lottery_id,
+        "lottery_code": "weekly",
+        "lottery_name": "Weekly 5/20",
+        "draw_number": 7,
+        "public_number": 77,
+        "numbers": [1, 2, 3, 4, 5],
+        "purchase_price": 100,
+        "prize_amount": 250,
+        "status": "SETTLED",
+        "source": "MANUAL",
+        "matches": 5,
+        "winning_numbers": [1, 2, 3, 4, 5],
+        "bingo_result": None,
+    }
+    fake = FakeSession(
+        scalar_values=[user_id, 1],
+        execute_rows=[
+            [ticket_row],
+            [(lottery_id, "weekly", "Weekly 5/20", 1, 0, 1, 100, 250)],
+            (0, 0, 0, 0),
+        ],
+    )
+
+    history, total, stats = await AdminQueryService(
+        cast(AsyncSession, fake)
+    ).player_ticket_history(user_id, history_filter="wins", limit=1, offset=0)
+
+    assert total == 1
+    assert history[0].id == ticket_id
+    assert history[0].numbers == (1, 2, 3, 4, 5)
+    assert history[0].prize_amount == 250
+    assert stats[0].lottery_code == "weekly"
+    assert stats[0].ticket_count == 1
+    assert stats[-1].lottery_code == "kasper-live"
 
 
 def test_admin_session_is_signed_expiring_and_contains_csrf() -> None:

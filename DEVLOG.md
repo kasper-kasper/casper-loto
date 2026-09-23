@@ -1,5 +1,11 @@
 # Development log
 
+## [1.45.0] - 2026-09-23
+
+- Extended admin player search results to 500 entries, made internal UUIDs visible/copyable, and routed global ledger player IDs to their dossiers.
+- Added a unified paginated player ticket query spanning draw tickets and instant tickets plus all-time per-lottery totals; added filters and unbounded page-through to both ticket and CAS histories.
+- Counted instant tickets in the player's all-time ticket total while keeping them out of active-ticket counts.
+
 ## [1.44.0] - 2026-09-23
 
 - Replaced the GROБ modal presentation in web with a dedicated responsive game scene, custom environment artwork, numbered tombstone controls, and reduced-motion fallbacks.

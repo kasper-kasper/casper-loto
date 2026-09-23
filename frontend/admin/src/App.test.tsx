@@ -3,13 +3,13 @@ import { vi } from "vitest";
 
 import App from "./App";
 import { adminApi } from "./api";
-import type { Dashboard, Lottery, NumberStatisticsReport, Player, ScheduleEntry, TicketAnalytics } from "./types";
+import type { Dashboard, Lottery, NumberStatisticsReport, Player, PlayerHistoryPage, ScheduleEntry, TicketAnalytics, Transaction } from "./types";
 
 vi.mock("./api", () => ({
   ApiError: class ApiError extends Error { status = 500; },
   adminApi: {
     login: vi.fn(), session: vi.fn(), logout: vi.fn(), dashboard: vi.fn(), kasperLive: vi.fn(),
-    players: vi.fn(), lotteries: vi.fn(), schedule: vi.fn(), draws: vi.fn(), draw: vi.fn(),
+    players: vi.fn(), playerTicketHistory: vi.fn(), lotteries: vi.fn(), schedule: vi.fn(), draws: vi.fn(), draw: vi.fn(),
     transactions: vi.fn(), playerTransactions: vi.fn(), statistics: vi.fn(), ticketAnalytics: vi.fn(), activity: vi.fn(), audit: vi.fn(),
     notifications: vi.fn(), releaseNotes: vi.fn(), interestingFacts: vi.fn(), setInterestingFactStatus: vi.fn(),
     setBalance: vi.fn(), configureLottery: vi.fn(), setReserve: vi.fn(), setJackpot: vi.fn(),
@@ -21,6 +21,8 @@ const session = { username: "owner", csrf_token: "csrf", expires_at: "2026-08-16
 const lottery: Lottery = { id: "lottery", code: "weekly", name: "Weekly 5/20", kind: "WEEKLY", ticket_price: 100, base_jackpot: 10_000, current_jackpot: 12_000, distribution_fund: 500, reserve: 100_000, schedule: { weekday: "sunday" }, sales_cutoff_minutes: 5, max_tickets_per_purchase: 1000, max_tickets_per_user_per_draw: 5000, is_active: true, next_draw_number: 8, next_draw_at: "2026-08-16T17:00:00Z" };
 const dashboard: Dashboard = { version: "0.8.0", uptime_seconds: 120, database_healthy: true, bot_configured: true, scheduler_enabled: true, counts: { users: 1, tickets: 6, completed_draws: 3, pending_draws: 1 }, lotteries: [lottery], recent_draws: [], recent_transactions: [], operations: { today: { completed_draws: 2, purchased_tickets: 4, sales: 400, winning_tickets: 1, payout: 250, net: 150, by_lottery: [{ lottery_id: "lottery", lottery_name: "Weekly 5/20", purchased_tickets: 4, sales: 400, winning_tickets: 1, payout: 250, net: 150 }] }, scheduler: { last_started_at: null, last_succeeded_at: null, last_failed_at: null, last_error: null, settled_count: 0, prepared_count: 0 }, stuck_draw_count: 0, notifications: {}, next_draws: [] }, jackpots: { kasper_fund_balance: 1_000_000_000_000_000, total_wins: 0, total_paid: 0, largest_win: 0, lotteries: [{ code: "weekly", name: "Weekly 5/20", win_count: 0, total_paid: 0, last_win_at: null }], history: [] } };
 const player: Player = { id: "player", display_name: "Test Player", username: "player", telegram_id: 123, is_active: true, balance: 5_000, ticket_count: 6, active_ticket_count: 2, spent: 600, won: 250, net: -350, telegram_notifications_enabled: false, auto_play_enabled: false, auto_play_tickets_per_draw: 5, auto_play_last_attempted_at: null, auto_play_last_succeeded_at: null, auto_play_last_error: null };
+const playerTransaction: Transaction = { id: "ledger-row", operation_id: "operation", type: "TICKET_PURCHASE", account_kind: "USER_BALANCE", amount: -100, balance_before: 5_100, balance_after: 5_000, user_id: "player", lottery_id: "lottery", draw_id: "draw", ticket_id: "ticket", created_at: "2026-09-20T12:00:00Z", details: {} };
+const playerHistory: PlayerHistoryPage = { items: [{ id: "ticket-1", ticket_kind: "DRAW", purchased_at: "2026-09-20T12:00:00Z", lottery_id: "lottery", lottery_code: "weekly", lottery_name: "Weekly 5/20", draw_number: 7, public_number: 77, numbers: [1, 2, 3, 4, 5], purchase_price: 100, prize_amount: 250, status: "SETTLED", source: "MANUAL", matches: 5, winning_numbers: [1, 2, 3, 4, 5], bingo_result: null }], total: 1, offset: 0, limit: 100, lottery_stats: [{ lottery_id: "lottery", lottery_code: "weekly", lottery_name: "Weekly 5/20", ticket_count: 6, active_ticket_count: 2, winning_ticket_count: 1, spent: 600, won: 250 }] };
 const analytics: TicketAnalytics = { overall: { lottery_id: null, lottery_name: "Все лотереи", is_active: null, total_tickets: 100, active_tickets: 10, settled_tickets: 90, winning_tickets: 21, participants: 8, winning_players: 5, total_sales: 10_000, total_payout: 2_500 }, lotteries: [{ lottery_id: "lottery", lottery_name: "Weekly 5/20", is_active: true, total_tickets: 100, active_tickets: 10, settled_tickets: 90, winning_tickets: 21, participants: 8, winning_players: 5, total_sales: 10_000, total_payout: 2_500 }] };
 const numberStatistics: NumberStatisticsReport = { lottery_id: "lottery", lottery_name: "Weekly 5/20", period_start: "2026-08-31T21:00:00Z", window_size: 20, draw_count: 2, first_draw_at: "2026-09-01T09:00:00Z", last_draw_at: "2026-09-01T15:00:00Z", numbers: [{ number: 7, appearances: 2, draw_percentage: 100, last_appearance: "2026-09-01T15:00:00Z", draws_since_last: 0 }] };
 const scheduleEntries: ScheduleEntry[] = [{ id: "scheduled-draw", lottery_id: "lottery", lottery_name: "Weekly 5/20", public_number: 8, scheduled_at: "2026-09-02T17:00:00Z" }];
@@ -36,6 +38,7 @@ beforeEach(() => {
   vi.mocked(adminApi.dashboard).mockResolvedValue(dashboard);
   vi.mocked(adminApi.kasperLive).mockResolvedValue({ ticket_count: 100, winning_tickets: 30, losing_tickets: 70, result: 79_000 });
   vi.mocked(adminApi.players).mockResolvedValue([player]);
+  vi.mocked(adminApi.playerTicketHistory).mockResolvedValue(playerHistory);
   vi.mocked(adminApi.lotteries).mockResolvedValue([lottery]);
   vi.mocked(adminApi.draws).mockResolvedValue([]);
   vi.mocked(adminApi.schedule).mockResolvedValue(scheduleEntries);
@@ -114,6 +117,41 @@ it("adjusts a player balance only with a mandatory reason", async () => {
   fireEvent.click(await screen.findByRole("button", { name: "Подтвердить" }));
 
   await waitFor(() => expect(adminApi.setBalance).toHaveBeenCalledWith("player", 9000, "Тестовое начисление"));
+});
+
+it("shows a player's internal ID, per-lottery stats, and searchable ticket history", async () => {
+  render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /Игроки/ }));
+
+  expect(await screen.findByText("История билетов")).toBeInTheDocument();
+  expect(screen.getByText("player", { selector: "code" })).toBeInTheDocument();
+  expect(screen.getByText("Результаты по лотереям")).toBeInTheDocument();
+  expect(screen.getByText("Билет №77 · тираж №7")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Выигрыши" }));
+  await waitFor(() => expect(adminApi.playerTicketHistory).toHaveBeenLastCalledWith("player", "wins", "", 0));
+});
+
+it("loads player ticket history in pages beyond the first hundred records", async () => {
+  vi.mocked(adminApi.playerTicketHistory)
+    .mockResolvedValueOnce({ ...playerHistory, total: 101 })
+    .mockResolvedValueOnce({ ...playerHistory, items: [{ ...playerHistory.items[0], id: "ticket-101", public_number: 101 }], offset: 1, total: 101 });
+  render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /Игроки/ }));
+
+  fireEvent.click(await screen.findByRole("button", { name: /Показать ещё/ }));
+  await waitFor(() => expect(adminApi.playerTicketHistory).toHaveBeenLastCalledWith("player", "all", "", 1));
+  expect(await screen.findByText("Билет №101 · тираж №7")).toBeInTheDocument();
+});
+
+it("opens a player dossier directly from the event log", async () => {
+  vi.mocked(adminApi.transactions).mockResolvedValue([playerTransaction]);
+  render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /Система/ }));
+  fireEvent.click(await screen.findByRole("tab", { name: "Лента событий" }));
+
+  fireEvent.click(await screen.findByRole("button", { name: /Игрок · player/ }));
+  expect(await screen.findByLabelText("Поиск игрока")).toHaveValue("player");
+  expect(await screen.findByText("История билетов")).toBeInTheDocument();
 });
 
 it("groups administration into eleven owner-oriented sections", async () => {

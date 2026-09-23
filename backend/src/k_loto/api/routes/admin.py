@@ -156,6 +156,44 @@ class TransactionResponse(ApiModel):
     details: dict[str, Any]
 
 
+class PlayerTicketHistoryItemResponse(ApiModel):
+    id: UUID
+    ticket_kind: str
+    purchased_at: datetime
+    lottery_id: UUID | None
+    lottery_code: str
+    lottery_name: str
+    draw_number: int | None
+    public_number: int
+    numbers: tuple[int, ...]
+    purchase_price: int
+    prize_amount: int
+    status: str
+    source: str
+    matches: int | None
+    winning_numbers: tuple[int, ...] | None
+    bingo_result: dict[str, Any] | None
+
+
+class PlayerLotteryStatsResponse(ApiModel):
+    lottery_id: UUID | None
+    lottery_code: str
+    lottery_name: str
+    ticket_count: int
+    active_ticket_count: int
+    winning_ticket_count: int
+    spent: int
+    won: int
+
+
+class PlayerHistoryResponse(BaseModel):
+    items: list[PlayerTicketHistoryItemResponse]
+    total: int
+    offset: int
+    limit: int
+    lottery_stats: list[PlayerLotteryStatsResponse]
+
+
 class DrawResponse(ApiModel):
     id: UUID
     lottery_id: UUID
@@ -553,6 +591,39 @@ async def player(
     except LookupError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from error
     return PlayerResponse.model_validate(item)
+
+
+@router.get("/players/{user_id}/ticket-history", response_model=PlayerHistoryResponse)
+async def player_ticket_history(
+    user_id: UUID,
+    _admin: Annotated[CurrentAdmin, Depends(get_current_admin)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    history_filter: Annotated[
+        Literal["all", "purchases", "wins"], Query(alias="filter")
+    ] = "all",
+    lottery_code: Annotated[str | None, Query(min_length=1, max_length=64)] = None,
+    limit: int = Query(default=100, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+) -> PlayerHistoryResponse:
+    try:
+        items, total, stats = await AdminQueryService(session).player_ticket_history(
+            user_id,
+            history_filter=history_filter,
+            lottery_code=lottery_code,
+            limit=limit,
+            offset=offset,
+        )
+    except LookupError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from error
+    return PlayerHistoryResponse(
+        items=[PlayerTicketHistoryItemResponse.model_validate(item) for item in items],
+        total=total,
+        offset=offset,
+        limit=limit,
+        lottery_stats=[
+            PlayerLotteryStatsResponse.model_validate(item) for item in stats
+        ],
+    )
 
 
 @router.post(

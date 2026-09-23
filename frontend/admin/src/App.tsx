@@ -17,6 +17,7 @@ import type {
   NumberStatisticsReport,
   NotificationItem,
   Player,
+  PlayerHistoryPage,
   ReleaseNote,
   ScheduleEntry,
   TicketAnalytics,
@@ -42,6 +43,7 @@ const navigation: { id: View; label: string; code: string }[] = [
 ];
 
 const viewStorageKey = "k-loto:admin-view";
+const instantSymbolGlyphs = ["★", "◆", "●", "✦", "☾", "⚡", "♣", "7"];
 
 function storedView(): View {
   const path = window.location.pathname.split("/").filter(Boolean).at(-1);
@@ -306,6 +308,43 @@ function PlayerCard({ player, onSaved }: { player: Player; onSaved: () => Promis
   const [autoBusy, setAutoBusy] = useState(false);
   const [confirmation, setConfirmation] = useState<"balance" | "auto-on" | "auto-off" | null>(null);
   const [operations, setOperations] = useState<Transaction[] | null>(null);
+  const [operationsHasMore, setOperationsHasMore] = useState(false);
+  const [operationsFilter, setOperationsFilter] = useState("");
+  const [history, setHistory] = useState<PlayerHistoryPage | null>(null);
+  const [historyFilter, setHistoryFilter] = useState("all");
+  const [historyLottery, setHistoryLottery] = useState("");
+  const [historyPageLoading, setHistoryPageLoading] = useState(false);
+  const [historyError, setHistoryError] = useState("");
+  const [loadedHistoryKey, setLoadedHistoryKey] = useState("");
+  const [copiedPlayerId, setCopiedPlayerId] = useState(false);
+  const historyKey = `${player.id}:${historyFilter}:${historyLottery}`;
+  const historyLoading = loadedHistoryKey !== historyKey || historyPageLoading;
+  const shownHistory = historyLoading ? null : history;
+  useEffect(() => {
+    let current = true;
+    void adminApi.playerTicketHistory(player.id, historyFilter, historyLottery, 0)
+      .then((page) => { if (current) { setHistory(page); setHistoryError(""); setLoadedHistoryKey(historyKey); } })
+      .catch((reason: Error) => { if (current) { setHistoryError(reason.message); setLoadedHistoryKey(historyKey); } });
+    return () => { current = false; };
+  }, [player.id, historyFilter, historyLottery, historyKey]);
+  const loadMoreHistory = async () => {
+    if (!history || historyLoading || history.items.length >= history.total) return;
+    setHistoryPageLoading(true);
+    setHistoryError("");
+    try {
+      const page = await adminApi.playerTicketHistory(player.id, historyFilter, historyLottery, history.items.length);
+      setHistory((current) => current ? { ...page, items: [...current.items, ...page.items] } : page);
+    } catch (reason) { setHistoryError(reason instanceof Error ? reason.message : "Не удалось загрузить билеты."); }
+    finally { setHistoryPageLoading(false); }
+  };
+  const loadMoreOperations = async () => {
+    if (!operations || operations.length % 100 !== 0) return;
+    try {
+      const next = await adminApi.playerTransactions(player.id, operations.length, operationsFilter);
+      setOperations((current) => current ? [...current, ...next] : next);
+      setOperationsHasMore(next.length === 100);
+    } catch (reason) { setFormError(reason instanceof Error ? reason.message : "Не удалось загрузить операции."); }
+  };
   const save = async () => {
     setBusy(true); setFormError("");
     try {
@@ -327,11 +366,13 @@ function PlayerCard({ player, onSaved }: { player: Player; onSaved: () => Promis
   const autoStatus = !player.auto_play_enabled ? "Отключено" : player.auto_play_last_error ? (autoPlayReasons[player.auto_play_last_error] ?? "Техническая ошибка") : player.auto_play_last_succeeded_at ? "Работает" : "Ожидает открытого тиража";
   return <article className="player-card">
     {formError && <p className="error" role="alert">{formError}</p>}
-    <div className="player-head"><div className="avatar">{player.display_name.slice(0, 1)}</div><div><h3>{player.display_name}</h3><small>@{player.username ?? "без_логина"} · TG {player.telegram_id ?? "—"}</small></div><Status active={player.is_active}>{player.is_active ? "АКТИВЕН" : "ОТКЛЮЧЁН"}</Status></div>
+    <div className="player-head"><div className="avatar">{player.display_name.slice(0, 1)}</div><div><h3>{player.display_name}</h3><small>@{player.username ?? "без_логина"} · Telegram ID {player.telegram_id ?? "—"}</small><div className="player-id-line"><span>Внутренний ID</span><code title={player.id}>{player.id}</code><button type="button" onClick={() => void navigator.clipboard?.writeText(player.id).then(() => { setCopiedPlayerId(true); window.setTimeout(() => setCopiedPlayerId(false), 1500); })}>{copiedPlayerId ? "Скопирован" : "Копировать"}</button></div></div><Status active={player.is_active}>{player.is_active ? "АКТИВЕН" : "ОТКЛЮЧЁН"}</Status></div>
     <div className="player-stats"><span><small>БАЛАНС</small><b>{cas(player.balance)}</b></span><span><small>АКТИВНЫЕ БИЛЕТЫ</small><b>{player.active_ticket_count}</b><em>{player.ticket_count} всего</em></span><span><small>ПОТРАЧЕНО</small><b>{cas(player.spent)}</b></span><span><small>ВЫИГРАНО</small><b>{cas(player.won)}</b></span><span><small>ИТОГ</small><b className={player.net >= 0 ? "positive" : "negative"}>{cas(player.net)}</b></span></div>
+    <section className="player-lottery-history"><header><div><small>СТАТИСТИКА ИГРОКА</small><h4>Результаты по лотереям</h4></div><span>За всё время</span></header><div className="table-wrap"><table><thead><tr><th>Лотерея</th><th>Билеты</th><th>Активные</th><th>Выигрыши</th><th>Потрачено</th><th>Выплачено</th><th>Итог</th></tr></thead><tbody>{shownHistory?.lottery_stats.map((stat) => <tr key={stat.lottery_code}><td>{stat.lottery_name}</td><td>{stat.ticket_count}</td><td>{stat.active_ticket_count}</td><td>{stat.winning_ticket_count}</td><td>{cas(stat.spent)}</td><td>{cas(stat.won)}</td><td className={stat.won - stat.spent >= 0 ? "positive" : "negative"}>{cas(stat.won - stat.spent)}</td></tr>)}</tbody></table></div></section>
+    <section className="player-ticket-history"><header><div><small>ПОКУПКИ И РЕЗУЛЬТАТЫ</small><h4>История билетов</h4></div><span>{shownHistory ? `${shownHistory.total.toLocaleString("ru-RU")} записей` : "Загружаем…"}</span></header><div className="player-history-controls"><div className="player-history-tabs" role="group" aria-label="Фильтр билетов">{[["all", "Все"], ["purchases", "Покупки"], ["wins", "Выигрыши"]].map(([key, label]) => <button key={key} className={historyFilter === key ? "active" : ""} onClick={() => setHistoryFilter(key)}>{label}</button>)}</div><select aria-label="Фильтр по лотерее" value={historyLottery} onChange={(event) => setHistoryLottery(event.target.value)}><option value="">Все лотереи</option>{shownHistory?.lottery_stats.map((stat) => <option key={stat.lottery_code} value={stat.lottery_code}>{stat.lottery_name}</option>)}</select></div>{historyError && <p role="alert" className="source-note negative">{historyError}</p>}{shownHistory?.items.length ? <div className="player-ticket-list">{shownHistory.items.map((ticket) => <article key={ticket.id} className={ticket.prize_amount > 0 ? "winner" : ""}><div className="player-ticket-main"><strong>{ticket.lottery_name}</strong><span>Билет №{ticket.public_number}{ticket.draw_number ? ` · тираж №${ticket.draw_number}` : " · мгновенный"}</span><small>{date(ticket.purchased_at)} · {ticket.source === "AUTO_PLAY" ? "Автоучастие" : ticket.ticket_kind === "INSTANT" ? "Мгновенный билет" : "Покупка"}</small></div><div className="player-ticket-number-group"><code className="player-ticket-numbers">{ticket.ticket_kind === "INSTANT" ? `Символы: ${ticket.numbers.map((value) => instantSymbolGlyphs[value - 1] ?? "●").join(" · ")}` : ticket.numbers.map((number) => displayNumber(ticket.lottery_code, number)).join(" · ")}</code>{ticket.winning_numbers?.length ? <small>Выпали: {ticket.winning_numbers.map((number) => displayNumber(ticket.lottery_code, number)).join(" · ")}</small> : null}</div><div className="player-ticket-outcome"><span>Покупка {cas(ticket.purchase_price)}</span><b className={ticket.prize_amount > 0 ? "positive" : ""}>{ticket.prize_amount > 0 ? `Выигрыш +${cas(ticket.prize_amount)}` : ticket.status === "REFUNDED" ? "Возврат" : ticket.status === "PURCHASED" ? "Тираж ещё не завершён" : "Без выигрыша"}</b></div></article>)}</div> : !historyLoading && <p className="source-note">В этой выборке билетов нет.</p>}{shownHistory && shownHistory.items.length < shownHistory.total && <button className="player-history-more" disabled={historyLoading} onClick={() => void loadMoreHistory()}>{historyLoading ? "Загружаем…" : `Показать ещё · ${Math.min(100, shownHistory.total - shownHistory.items.length)} из ${shownHistory.total - shownHistory.items.length}`}</button>}</section>
     <div className="player-automation"><div><small>АВТОУЧАСТИЕ · {autoStatus.toLocaleUpperCase("ru-RU")}</small><b>{player.auto_play_enabled ? `${player.auto_play_tickets_per_draw} случайных билетов на каждый тираж` : "Выключена"}</b><span>Последняя проверка: {date(player.auto_play_last_attempted_at)} · успех: {date(player.auto_play_last_succeeded_at)}</span></div><div className="notification-state"><small>УВЕДОМЛЕНИЯ</small><b>{player.telegram_notifications_enabled ? "Telegram разрешён" : "Telegram выключен"}</b></div><label>Билетов на тираж<input aria-label="Билетов автоучастия на тираж" type="number" min="1" max="5" value={autoTickets} onChange={(event) => setAutoTickets(event.target.value)} /></label><label>Причина автоучастия<input value={autoReason} onChange={(event) => setAutoReason(event.target.value)} placeholder="Почему меняется автоучастие?" /></label><button disabled={autoBusy || !autoReason.trim() || Number(autoTickets) < 1 || Number(autoTickets) > 5} onClick={() => setConfirmation("auto-on")}>{player.auto_play_enabled ? "СОХРАНИТЬ АВТОУЧАСТИЕ" : "ВКЛЮЧИТЬ АВТОУЧАСТИЕ"}</button>{player.auto_play_enabled && <button className="secondary-action" disabled={autoBusy || !autoReason.trim()} onClick={() => setConfirmation("auto-off")}>ОТКЛЮЧИТЬ</button>}</div>
     <div className="adjust"><label>Новый баланс<input min="0" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} /></label><label>Обязательная причина<input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Почему требуется изменение?" /></label><button disabled={busy || !reason.trim()} onClick={() => setConfirmation("balance")}>ПРОВЕРИТЬ ИЗМЕНЕНИЕ</button></div>
-    <button className="player-operations-toggle" onClick={() => operations ? setOperations(null) : void adminApi.playerTransactions(player.id).then(setOperations).catch((reason: Error) => setFormError(reason.message))}>{operations ? "Скрыть последние операции" : "Показать последние операции"}</button>{operations && <div className="player-operations"><TransactionTable rows={operations} /></div>}
+    <button className="player-operations-toggle" onClick={() => operations ? setOperations(null) : void adminApi.playerTransactions(player.id).then((rows) => { setOperations(rows); setOperationsHasMore(rows.length === 100); }).catch((reason: Error) => setFormError(reason.message))}>{operations ? "Скрыть движения CAS" : "Показать все движения CAS"}</button>{operations && <div className="player-operations"><p className="ledger-explainer">Одна запись — одно движение по счёту. Покупку и комбинацию каждого билета смотрите в истории билетов выше.</p><div className="player-history-controls"><select aria-label="Фильтр движения CAS" value={operationsFilter} onChange={(event) => { const filter = event.target.value; setOperationsFilter(filter); void adminApi.playerTransactions(player.id, 0, filter).then((rows) => { setOperations(rows); setOperationsHasMore(rows.length === 100); }).catch((reason: Error) => setFormError(reason.message)); }}><option value="">Все движения</option><option value="TICKET_PURCHASE">Покупки билетов</option><option value="PRIZE_PAYOUT">Выплаты выигрышей</option><option value="JACKPOT_PAYOUT">Выплаты джекпота</option></select><span>Загружено: {operations.length}{operationsHasMore ? "+" : ""}</span></div><TransactionTable rows={operations} userId={player.id} />{operationsHasMore && <button className="player-history-more" onClick={() => void loadMoreOperations()}>Загрузить ещё 100 операций CAS</button>}</div>}
     {confirmation === "balance" && <ActionConfirm title={`Баланс · ${player.display_name}`} details={[`Было: ${cas(player.balance)}`, `Станет: ${cas(Number(amount))}`, `Изменение: ${cas(Number(amount) - player.balance)}`, `Причина: ${reason}`]} busy={busy} onCancel={() => setConfirmation(null)} onConfirm={() => void save()} />}
     {(confirmation === "auto-on" || confirmation === "auto-off") && <ActionConfirm title={`Автоучастие · ${player.display_name}`} details={[`Состояние: ${confirmation === "auto-on" ? "включено" : "выключено"}`, `Билетов на тираж: ${autoTickets}`, `Причина: ${autoReason}`]} busy={autoBusy} onCancel={() => setConfirmation(null)} onConfirm={() => void configureAutoPlay(confirmation === "auto-on")} />}
   </article>;
@@ -410,12 +451,11 @@ function PlayersView({ players, search, onSearch, onResults, onReload }: { playe
   const selected = players.find((player) => player.id === activeId);
   return <section className="player-directory">
     <div className="player-finder">
-      <label><span>Быстрый поиск игрока</span><input autoFocus aria-label="Поиск игрока" placeholder="Имя, @username, Telegram ID" value={search} onChange={(event) => onSearch(event.target.value)} /></label>
+      <label><span>Быстрый поиск игрока</span><input autoFocus aria-label="Поиск игрока" placeholder="Внутренний ID, имя, @username или Telegram ID" value={search} onChange={(event) => onSearch(event.target.value)} /></label>
       <div className="player-search-meta"><b>{visible.length}</b><span>{query ? "найдено" : `последних игроков: ${players.length}`}</span>{search && <button onClick={() => onSearch("")}>Сбросить</button>}</div>
-      <div className="player-results" role="list" aria-label="Результаты поиска игроков">{visible.slice(0, 100).map((player) => <button type="button" role="listitem" aria-label={`Открыть игрока ${player.display_name}`} className={player.id === activeId ? "active" : ""} key={player.id} onClick={() => setSelectedId(player.id)}><span className="avatar">{player.display_name.slice(0, 1)}</span><span><b>{player.display_name} ·</b><small>{player.username ? `@${player.username}` : `TG ${player.telegram_id ?? "—"}`}</small></span><span><b>{cas(player.balance)}</b><small>{player.active_ticket_count} активных бил.</small></span></button>)}</div>
+      <div className="player-results" role="list" aria-label="Результаты поиска игроков">{visible.map((player) => <button type="button" role="listitem" aria-label={`Открыть игрока ${player.display_name}`} className={player.id === activeId ? "active" : ""} key={player.id} onClick={() => setSelectedId(player.id)}><span className="avatar">{player.display_name.slice(0, 1)}</span><span><b>{player.display_name} ·</b><small>{player.username ? `@${player.username}` : `TG ${player.telegram_id ?? "—"}`} · ID {player.id.slice(0, 8)}</small></span><span><b>{cas(player.balance)}</b><small>{player.active_ticket_count} активных бил.</small></span></button>)}</div>
       {!visible.length && <p className="source-note">Игрок не найден. Проверьте username или Telegram ID.</p>}
       {searchError && <p role="alert" className="source-note negative">{searchError}</p>}
-      {visible.length > 100 && <p className="source-note">Показаны первые 100 результатов. Уточните запрос.</p>}
     </div>
     <div className="player-detail">{selected ? <PlayerCard key={selected.id} player={selected} onSaved={onReload} /> : <div className="player-empty"><b>Выберите игрока</b><span>Справа появятся баланс, билеты, выигрыши и действия.</span></div>}</div>
   </section>;
@@ -425,8 +465,8 @@ function DrawTable({ draws, onOpen }: { draws: Draw[]; onOpen?: (id: string) => 
   return <div className="table-wrap"><table><thead><tr><th>Лотерея / тираж</th><th>Статус</th><th>По расписанию</th><th>Результат</th><th>Билеты</th><th>Продажи / выплаты</th></tr></thead><tbody>{draws.map((draw) => <tr key={draw.id} onClick={() => onOpen?.(draw.id)} className={onOpen ? "clickable" : ""}><td><b>{draw.lottery_name}</b> №{drawNumber(draw.public_number)}</td><td><span className={`tag ${draw.status.toLowerCase()}`}>{translated(draw.status, drawStatuses)}</span></td><td>{date(draw.scheduled_at)}</td><td><DrawResult draw={draw} /></td><td>{draw.ticket_count}</td><td>{cas(draw.total_sales)}<small>{cas(draw.total_payout)}</small></td></tr>)}</tbody></table></div>;
 }
 
-function TransactionTable({ rows }: { rows: Transaction[] }) {
-  return <div className="table-wrap"><table><thead><tr><th>Время</th><th>Тип операции</th><th>Счёт</th><th>Изменение</th><th>До → После</th><th>Код операции</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><td>{date(row.created_at)}</td><td><span className="tag">{translated(row.type, transactionTypes)}</span></td><td>{translated(row.account_kind, accountKinds)}</td><td className={row.amount >= 0 ? "positive" : "negative"}>{row.amount > 0 ? "+" : ""}{cas(row.amount)}</td><td>{cas(row.balance_before)} → {cas(row.balance_after)}</td><td><code>{row.operation_id.slice(0, 8)}</code></td></tr>)}</tbody></table></div>;
+function TransactionTable({ rows, userId, onOpenPlayer }: { rows: Transaction[]; userId?: string; onOpenPlayer?: (userId: string) => void }) {
+  return <div className="table-wrap"><table><thead><tr><th>Время</th><th>Игрок</th><th>Тип операции</th><th>Счёт</th><th>Изменение</th><th>До → После</th><th>Код операции</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><td>{date(row.created_at)}</td><td>{row.user_id ? row.user_id === userId ? "Этот игрок" : onOpenPlayer ? <button type="button" className="transaction-player-link" onClick={() => onOpenPlayer(row.user_id!)}>{row.user_id.slice(0, 8)}…</button> : <code>{row.user_id.slice(0, 8)}…</code> : "—"}</td><td><span className="tag">{translated(row.type, transactionTypes)}</span></td><td>{translated(row.account_kind, accountKinds)}</td><td className={row.amount >= 0 ? "positive" : "negative"}>{row.amount > 0 ? "+" : ""}{cas(row.amount)}</td><td>{cas(row.balance_before)} → {cas(row.balance_after)}</td><td><code>{row.operation_id.slice(0, 8)}</code></td></tr>)}</tbody></table></div>;
 }
 
 function DrawDetailPanel({ detail, onClose, onOpenPlayer }: { detail: DrawDetail; onClose: () => void; onOpenPlayer: (ticket: DrawDetail["tickets"][number]) => void }) {
@@ -563,28 +603,28 @@ function AnalyticsView({ tab, onTab, dashboard, analytics, lotteries, statistics
   </>;
 }
 
-function OperationalLog({ transactions, notifications, audit, dashboard }: { transactions: Transaction[]; notifications: NotificationItem[]; audit: AuditEntry[]; dashboard: Dashboard | null }) {
+function OperationalLog({ transactions, notifications, audit, dashboard, onOpenPlayer }: { transactions: Transaction[]; notifications: NotificationItem[]; audit: AuditEntry[]; dashboard: Dashboard | null; onOpenPlayer: (userId: string) => void }) {
   const [source, setSource] = useState<"all" | "money" | "draw" | "admin" | "notification">("all");
   const [search, setSearch] = useState("");
   const entries = [
-    ...transactions.map((item) => ({ id: `money-${item.id}`, source: "money" as const, at: item.created_at, level: "info", title: translated(item.type, transactionTypes), detail: `${item.amount > 0 ? "+" : ""}${cas(item.amount)} · ${translated(item.account_kind, accountKinds)}`, link: item.draw_id })),
-    ...notifications.map((item) => ({ id: `notification-${item.id}`, source: "notification" as const, at: item.created_at, level: item.status === "FAILED" ? "error" : item.status === "PENDING" ? "warn" : "info", title: `Уведомление: ${translated(item.type, notificationTypes)}`, detail: `${translated(item.status, { PENDING: "ожидает", PROCESSING: "отправляется", SENT: "доставлено", FAILED: "ошибка", CANCELLED: "отменено" })}${item.last_error ? ` · ${item.last_error}` : ""}`, link: null })),
-    ...audit.map((item) => ({ id: `admin-${item.id}`, source: "admin" as const, at: item.created_at, level: "warn", title: translated(item.action, auditActions), detail: `${translated(item.entity_type, entityTypes)} · ${item.reason ?? "без комментария"}`, link: null })),
-    ...(dashboard?.recent_draws ?? []).map((item) => ({ id: `draw-${item.id}`, source: "draw" as const, at: item.executed_at ?? item.scheduled_at, level: item.status === "FAILED" ? "error" : "info", title: `${item.lottery_name} №${drawNumber(item.public_number)}`, detail: `${translated(item.status, drawStatuses)} · ${item.ticket_count} бил. · продажи ${cas(item.total_sales)} · выплаты ${cas(item.total_payout)}`, link: item.id })),
+    ...transactions.map((item) => ({ id: `money-${item.id}`, source: "money" as const, at: item.created_at, level: "info", title: translated(item.type, transactionTypes), detail: `${item.amount > 0 ? "+" : ""}${cas(item.amount)} · ${translated(item.account_kind, accountKinds)}`, link: item.draw_id, userId: item.user_id })),
+    ...notifications.map((item) => ({ id: `notification-${item.id}`, source: "notification" as const, at: item.created_at, level: item.status === "FAILED" ? "error" : item.status === "PENDING" ? "warn" : "info", title: `Уведомление: ${translated(item.type, notificationTypes)}`, detail: `${translated(item.status, { PENDING: "ожидает", PROCESSING: "отправляется", SENT: "доставлено", FAILED: "ошибка", CANCELLED: "отменено" })}${item.last_error ? ` · ${item.last_error}` : ""}`, link: null, userId: item.user_id })),
+    ...audit.map((item) => ({ id: `admin-${item.id}`, source: "admin" as const, at: item.created_at, level: "warn", title: translated(item.action, auditActions), detail: `${translated(item.entity_type, entityTypes)} · ${item.reason ?? "без комментария"}`, link: null, userId: null })),
+    ...(dashboard?.recent_draws ?? []).map((item) => ({ id: `draw-${item.id}`, source: "draw" as const, at: item.executed_at ?? item.scheduled_at, level: item.status === "FAILED" ? "error" : "info", title: `${item.lottery_name} №${drawNumber(item.public_number)}`, detail: `${translated(item.status, drawStatuses)} · ${item.ticket_count} бил. · продажи ${cas(item.total_sales)} · выплаты ${cas(item.total_payout)}`, link: item.id, userId: null })),
   ].sort((left, right) => new Date(right.at).getTime() - new Date(left.at).getTime());
   const normalized = search.trim().toLocaleLowerCase("ru-RU");
-  const visible = entries.filter((entry) => (source === "all" || entry.source === source) && (!normalized || `${entry.title} ${entry.detail}`.toLocaleLowerCase("ru-RU").includes(normalized)));
+  const visible = entries.filter((entry) => (source === "all" || entry.source === source) && (!normalized || `${entry.title} ${entry.detail} ${entry.userId ?? ""}`.toLocaleLowerCase("ru-RU").includes(normalized)));
   const sourceLabels = { money: "CAS", draw: "Тираж", admin: "Админ", notification: "Уведомление" };
-  return <section className="panel operational-log"><header><div><h2>Лента событий</h2><span>Деньги, тиражи, действия администратора и доставка сообщений в одном месте</span></div><b>{visible.length} записей</b></header><div className="log-controls"><input aria-label="Поиск в логах" placeholder="Найти событие или ошибку" value={search} onChange={(event) => setSearch(event.target.value)} /><div>{(["all", "money", "draw", "admin", "notification"] as const).map((item) => <button className={source === item ? "active" : ""} key={item} onClick={() => setSource(item)}>{item === "all" ? "Все" : sourceLabels[item]}</button>)}</div></div><div className="event-log">{visible.map((entry) => <article className={entry.level} key={entry.id}><time>{date(entry.at)}</time><span className={`log-source ${entry.source}`}>{sourceLabels[entry.source]}</span><div><b>{entry.title}</b><p>{entry.detail}</p></div></article>)}</div>{!visible.length && <p className="source-note">По этому фильтру событий нет.</p>}</section>;
+  return <section className="panel operational-log"><header><div><h2>Лента событий</h2><span>Деньги, тиражи, действия администратора и доставка сообщений в одном месте</span></div><b>{visible.length} записей</b></header><div className="log-controls"><input aria-label="Поиск в логах" placeholder="Найти событие, игрока или ошибку" value={search} onChange={(event) => setSearch(event.target.value)} /><div>{(["all", "money", "draw", "admin", "notification"] as const).map((item) => <button className={source === item ? "active" : ""} key={item} onClick={() => setSource(item)}>{item === "all" ? "Все" : sourceLabels[item]}</button>)}</div></div><div className="event-log">{visible.map((entry) => <article className={entry.level} key={entry.id}><time>{date(entry.at)}</time><span className={`log-source ${entry.source}`}>{sourceLabels[entry.source]}</span><div><b>{entry.title}</b><p>{entry.detail}</p>{entry.userId && <button className="transaction-player-link" onClick={() => onOpenPlayer(entry.userId!)}>Игрок · {entry.userId.slice(0, 8)}…</button>}</div></article>)}</div>{!visible.length && <p className="source-note">По этому фильтру событий нет.</p>}</section>;
 }
 
-function SystemView({ tab, onTab, transactions, notifications, audit, onTransactions, dashboard, releaseNotes }: { dashboard: Dashboard | null; releaseNotes: { changelog: ReleaseNote[]; devlog: ReleaseNote[] }; tab: SystemTab; onTab: (tab: SystemTab) => void; transactions: Transaction[]; notifications: NotificationItem[]; audit: AuditEntry[]; onTransactions: (query: string) => void }) {
+function SystemView({ tab, onTab, transactions, notifications, audit, onTransactions, onOpenPlayer, dashboard, releaseNotes }: { dashboard: Dashboard | null; releaseNotes: { changelog: ReleaseNote[]; devlog: ReleaseNote[] }; tab: SystemTab; onTab: (tab: SystemTab) => void; transactions: Transaction[]; notifications: NotificationItem[]; audit: AuditEntry[]; onTransactions: (query: string) => void; onOpenPlayer: (userId: string) => void }) {
   return <>
     <SectionTabs value={tab} label="Системные журналы" items={[{ id: "events", label: "Лента событий" }, { id: "health", label: "Состояние" }, { id: "ledger", label: "Журнал CAS" }, { id: "notifications", label: "Уведомления" }, { id: "audit", label: "Аудит действий" }, { id: "development", label: "Разработка" }]} onChange={onTab} />
-    {tab === "events" && <OperationalLog transactions={transactions} notifications={notifications} audit={audit} dashboard={dashboard} />}
+    {tab === "events" && <OperationalLog transactions={transactions} notifications={notifications} audit={audit} dashboard={dashboard} onOpenPlayer={onOpenPlayer} />}
     {tab === "health" && dashboard && <SystemHealth data={dashboard} />}
     {tab === "development" && <DevelopmentView changelog={releaseNotes.changelog} devlog={releaseNotes.devlog} />}
-    {tab === "ledger" && <><TransactionFilters onApply={onTransactions} /><section className="panel"><header><h2>Неизменяемый журнал CAS</h2><span>ЗАПИСЕЙ: {transactions.length}</span></header><TransactionTable rows={transactions} /></section></>}
+    {tab === "ledger" && <><TransactionFilters onApply={onTransactions} /><section className="panel"><header><div><h2>Неизменяемый журнал CAS</h2><small>Нажмите ID игрока, чтобы открыть его историю</small></div><span>ЗАПИСЕЙ: {transactions.length}</span></header><TransactionTable rows={transactions} onOpenPlayer={onOpenPlayer} /></section></>}
     {tab === "notifications" && <section className="panel"><header><h2>Очередь уведомлений</h2><span>ДОСТАВЛЕНО · ОШИБКА · ОЖИДАЕТ</span></header><div className="table-wrap"><table><thead><tr><th>Создано</th><th>Тип</th><th>Игрок</th><th>Статус</th><th>Попытки</th><th>Ошибка</th></tr></thead><tbody>{notifications.map((item) => <tr key={item.id}><td>{date(item.created_at)}</td><td>{translated(item.type, notificationTypes)}</td><td><code>{item.user_id.slice(0, 8)}</code></td><td><span className={`tag ${item.status.toLowerCase()}`}>{translated(item.status, { PENDING: "ожидает", PROCESSING: "отправляется", SENT: "доставлено", FAILED: "ошибка", CANCELLED: "отменено" })}</span></td><td>{item.attempts}</td><td>{item.last_error ?? "—"}</td></tr>)}</tbody></table></div></section>}
     {tab === "audit" && <section className="panel"><header><h2>Аудит действий администратора</h2><span>ХРАНИТСЯ ПОСТОЯННО</span></header><div className="audit-list">{audit.map((item) => <article key={item.id}><time>{date(item.created_at)}</time><b>{translated(item.action, auditActions)} · {translated(item.entity_type, entityTypes)}</b><p>{item.reason ?? "Причина не указана"}</p><code>{JSON.stringify(item.old_values)} → {JSON.stringify(item.new_values)}</code></article>)}</div></section>}
   </>;
@@ -781,6 +821,7 @@ export default function App() {
     setDrawDetail(null);
     navigate("players");
   };
+  const openPlayerById = (userId: string) => { setPlayerSearch(userId); navigate("players"); };
 
   if (checking) return <main className="boot">K-LOTO // ПРОВЕРКА СЕССИИ</main>;
   if (!session) return <Login onAuthenticated={setSession} />;
@@ -802,7 +843,7 @@ export default function App() {
       {!loading && view === "analytics" && dashboard && ticketAnalytics && <AnalyticsView tab={analyticsTab} onTab={setAnalyticsTab} dashboard={dashboard} analytics={ticketAnalytics} lotteries={visibleLotteries} statistics={statistics} selectedLotteryId={statisticsLotteryId} windowSize={statisticsWindow} onLottery={setStatisticsLotteryId} onWindow={setStatisticsWindow} />}
       {!loading && view === "facts" && <InterestingFactsView facts={interestingFacts} lotteries={lotteries} onStatus={async (fact, factStatus) => { try { const updated = await adminApi.setInterestingFactStatus(fact.id, factStatus); setInterestingFacts((current) => current.map((item) => item.id === updated.id ? updated : item)); } catch (reason) { setError(reason instanceof Error ? reason.message : "Не удалось изменить статус факта."); } }} />}
       {!loading && view === "broadcast" && <BroadcastTestView lotteries={lotteries} miniappUrl={session.miniapp_url} />}
-      {!loading && view === "system" && <SystemView dashboard={dashboard} releaseNotes={releaseNotes} tab={systemTab} onTab={setSystemTab} transactions={transactions} notifications={notifications} audit={audit} onTransactions={(query) => void adminApi.transactions(query).then(setTransactions).catch((reason: Error) => setError(reason.message))} />}
+      {!loading && view === "system" && <SystemView dashboard={dashboard} releaseNotes={releaseNotes} tab={systemTab} onTab={setSystemTab} transactions={transactions} notifications={notifications} audit={audit} onTransactions={(query) => void adminApi.transactions(query).then(setTransactions).catch((reason: Error) => setError(reason.message))} onOpenPlayer={openPlayerById} />}
     </main>{drawDetail && <DrawDetailPanel detail={drawDetail} onClose={() => setDrawDetail(null)} onOpenPlayer={openPlayerFromTicket} />}
   </div>;
 }

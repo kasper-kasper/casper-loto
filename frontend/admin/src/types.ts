@@ -61,6 +61,44 @@ export interface Transaction {
   details: Record<string, unknown>;
 }
 
+export interface PlayerTicketHistoryItem {
+  id: string;
+  ticket_kind: "DRAW" | "INSTANT";
+  purchased_at: string;
+  lottery_id: string | null;
+  lottery_code: string;
+  lottery_name: string;
+  draw_number: number | null;
+  public_number: number;
+  numbers: number[];
+  purchase_price: number;
+  prize_amount: number;
+  status: string;
+  source: string;
+  matches: number | null;
+  winning_numbers: number[] | null;
+  bingo_result: Record<string, unknown> | null;
+}
+
+export interface PlayerLotteryStats {
+  lottery_id: string | null;
+  lottery_code: string;
+  lottery_name: string;
+  ticket_count: number;
+  active_ticket_count: number;
+  winning_ticket_count: number;
+  spent: number;
+  won: number;
+}
+
+export interface PlayerHistoryPage {
+  items: PlayerTicketHistoryItem[];
+  total: number;
+  offset: number;
+  limit: number;
+  lottery_stats: PlayerLotteryStats[];
+}
+
 export interface Draw {
   id: string;
   lottery_id: string;

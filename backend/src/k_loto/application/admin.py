@@ -5,8 +5,20 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4, uuid5
 
-from sqlalchemy import String, cast, exists, func, or_, select, true
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import (
+    BigInteger,
+    Integer,
+    String,
+    cast,
+    exists,
+    func,
+    literal,
+    or_,
+    select,
+    true,
+    union_all,
+)
+from sqlalchemy.dialects.postgresql import ARRAY, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from k_loto.application.query_scope import LotteryScope, lottery_scope
@@ -29,6 +41,7 @@ from k_loto.infrastructure.database.models import (
     Balance,
     DistributionFund,
     Draw,
+    InstantTicket,
     JackpotAccount,
     JackpotWinEvent,
     KasperFundAccount,
@@ -107,6 +120,38 @@ class AdminTransaction:
     ticket_id: UUID | None
     created_at: datetime
     details: dict[str, Any]
+
+
+@dataclass(frozen=True, slots=True)
+class AdminPlayerTicket:
+    id: UUID
+    ticket_kind: str
+    purchased_at: datetime
+    lottery_id: UUID | None
+    lottery_code: str
+    lottery_name: str
+    draw_number: int | None
+    public_number: int
+    numbers: tuple[int, ...]
+    purchase_price: int
+    prize_amount: int
+    status: str
+    source: str
+    matches: int | None
+    winning_numbers: tuple[int, ...] | None
+    bingo_result: dict[str, Any] | None
+
+
+@dataclass(frozen=True, slots=True)
+class AdminPlayerLotteryStats:
+    lottery_id: UUID | None
+    lottery_code: str
+    lottery_name: str
+    ticket_count: int
+    active_ticket_count: int
+    winning_ticket_count: int
+    spent: int
+    won: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -657,6 +702,9 @@ class AdminQueryService:
             select(func.count(Ticket.id))
             .where(Ticket.user_id == User.id)
             .scalar_subquery()
+            + select(func.count(InstantTicket.id))
+            .where(InstantTicket.user_id == User.id)
+            .scalar_subquery()
         )
         active_ticket_count = (
             select(func.count(Ticket.id))
@@ -768,7 +816,182 @@ class AdminQueryService:
         user, balance, ticket_count = row
         return await self._player(user, balance or 0, ticket_count or 0)
 
+    async def player_ticket_history(
+        self,
+        user_id: UUID,
+        *,
+        history_filter: str = "all",
+        lottery_code: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> tuple[tuple[AdminPlayerTicket, ...], int, tuple[AdminPlayerLotteryStats, ...]]:
+        exists = await self._session.scalar(
+            select(User.id).where(User.id == user_id, User.is_admin.is_(False))
+        )
+        if exists is None:
+            raise LookupError("Player does not exist.")
+
+        draw_tickets = (
+            select(
+                Ticket.id.label("id"),
+                literal("DRAW").label("ticket_kind"),
+                Ticket.purchased_at.label("purchased_at"),
+                Ticket.lottery_id.label("lottery_id"),
+                Lottery.code.label("lottery_code"),
+                Lottery.name.label("lottery_name"),
+                Draw.public_number.label("draw_number"),
+                Ticket.public_number.label("public_number"),
+                Ticket.numbers.label("numbers"),
+                Ticket.purchase_price.label("purchase_price"),
+                Ticket.prize_amount.label("prize_amount"),
+                cast(Ticket.status, String).label("status"),
+                cast(Ticket.source, String).label("source"),
+                Ticket.matches.label("matches"),
+                Draw.winning_numbers.label("winning_numbers"),
+                Ticket.bingo_result.label("bingo_result"),
+            )
+            .join(Lottery, Lottery.id == Ticket.lottery_id)
+            .join(Draw, Draw.id == Ticket.draw_id)
+            .where(Ticket.user_id == user_id)
+        )
+        instant_tickets = select(
+            InstantTicket.id.label("id"),
+            literal("INSTANT").label("ticket_kind"),
+            InstantTicket.purchased_at.label("purchased_at"),
+            cast(literal(None), Lottery.id.type).label("lottery_id"),
+            literal("kasper-live").label("lottery_code"),
+            literal("Kasper LIVE").label("lottery_name"),
+            cast(literal(None), BigInteger).label("draw_number"),
+            InstantTicket.public_number.label("public_number"),
+            InstantTicket.symbols.label("numbers"),
+            InstantTicket.purchase_price.label("purchase_price"),
+            InstantTicket.prize_amount.label("prize_amount"),
+            literal("SETTLED").label("status"),
+            literal("INSTANT").label("source"),
+            cast(literal(None), Integer).label("matches"),
+            cast(literal(None), ARRAY(Integer)).label("winning_numbers"),
+            cast(literal(None), Ticket.bingo_result.type).label("bingo_result"),
+        ).where(InstantTicket.user_id == user_id)
+        combined = union_all(draw_tickets, instant_tickets).subquery("player_tickets")
+        statement = select(combined)
+        if history_filter == "wins":
+            statement = statement.where(combined.c.prize_amount > 0)
+        elif history_filter == "purchases":
+            statement = statement.where(combined.c.status != "REFUNDED")
+        if lottery_code:
+            statement = statement.where(combined.c.lottery_code == lottery_code)
+        total = int(
+            await self._session.scalar(
+                select(func.count()).select_from(statement.order_by(None).subquery())
+            )
+            or 0
+        )
+        rows = (
+            (
+                await self._session.execute(
+                    statement.order_by(
+                        combined.c.purchased_at.desc(), combined.c.id.desc()
+                    )
+                    .limit(limit)
+                    .offset(offset)
+                )
+            )
+            .mappings()
+            .all()
+        )
+        history = tuple(
+            AdminPlayerTicket(
+                row["id"],
+                row["ticket_kind"],
+                row["purchased_at"],
+                row["lottery_id"],
+                row["lottery_code"],
+                row["lottery_name"],
+                row["draw_number"],
+                row["public_number"],
+                tuple(row["numbers"] or ()),
+                int(row["purchase_price"]),
+                int(row["prize_amount"]),
+                row["status"],
+                row["source"],
+                row["matches"],
+                tuple(row["winning_numbers"])
+                if row["winning_numbers"] is not None
+                else None,
+                row["bingo_result"],
+            )
+            for row in rows
+        )
+
+        grouped = (
+            await self._session.execute(
+                select(
+                    Lottery.id,
+                    Lottery.code,
+                    Lottery.name,
+                    func.count(Ticket.id),
+                    func.count(Ticket.id).filter(
+                        Ticket.status == TicketStatus.PURCHASED
+                    ),
+                    func.count(Ticket.id).filter(Ticket.prize_amount > 0),
+                    func.coalesce(func.sum(Ticket.purchase_price), 0),
+                    func.coalesce(func.sum(Ticket.prize_amount), 0),
+                )
+                .select_from(Lottery)
+                .outerjoin(
+                    Ticket,
+                    (Ticket.lottery_id == Lottery.id) & (Ticket.user_id == user_id),
+                )
+                .group_by(Lottery.id, Lottery.code, Lottery.name)
+                .order_by(Lottery.name)
+            )
+        ).all()
+        stats = [
+            AdminPlayerLotteryStats(
+                lottery_id,
+                code,
+                name,
+                int(count),
+                int(active),
+                int(wins),
+                int(spent),
+                int(won),
+            )
+            for lottery_id, code, name, count, active, wins, spent, won in grouped
+        ]
+        instant_stats = (
+            await self._session.execute(
+                select(
+                    func.count(InstantTicket.id),
+                    func.count(InstantTicket.id).filter(InstantTicket.prize_amount > 0),
+                    func.coalesce(func.sum(InstantTicket.purchase_price), 0),
+                    func.coalesce(func.sum(InstantTicket.prize_amount), 0),
+                ).where(InstantTicket.user_id == user_id)
+            )
+        ).one()
+        stats.append(
+            AdminPlayerLotteryStats(
+                None,
+                "kasper-live",
+                "Kasper LIVE",
+                int(instant_stats[0]),
+                0,
+                int(instant_stats[1]),
+                int(instant_stats[2]),
+                int(instant_stats[3]),
+            )
+        )
+        return history, total, tuple(stats)
+
     async def _player(self, user: User, balance: int, ticket_count: int) -> AdminPlayer:
+        ticket_count += int(
+            await self._session.scalar(
+                select(func.count(InstantTicket.id)).where(
+                    InstantTicket.user_id == user.id
+                )
+            )
+            or 0
+        )
         active_ticket_count = int(
             await self._session.scalar(
                 select(func.count(Ticket.id)).where(
