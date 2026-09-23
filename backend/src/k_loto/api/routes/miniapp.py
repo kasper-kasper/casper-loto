@@ -107,6 +107,7 @@ class TicketResponse(BaseModel):
     winning_numbers: list[int] | None
     draw_ticket_count: int
     bingo_result: dict[str, Any] | None = None
+    instant_symbols: list[int] | None = None
 
 
 class DashboardResponse(BaseModel):
@@ -371,6 +372,7 @@ def _ticket_response(item: MiniAppTicket) -> TicketResponse:
         winning_numbers=(list(item.winning_numbers) if item.winning_numbers else None),
         draw_ticket_count=item.draw_ticket_count,
         bingo_result=item.bingo_result,
+        instant_symbols=(list(item.instant_symbols) if item.instant_symbols else None),
     )
 
 

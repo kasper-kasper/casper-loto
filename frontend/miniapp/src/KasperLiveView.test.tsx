@@ -21,7 +21,7 @@ vi.mock("./telegram", () => ({
 const purchase = {
   operation_id: "operation",
   tickets: [
-    { id: "one", public_number: 101, symbols: [1, 2, 3], prize_amount: 5_000 },
+    { id: "one", public_number: 101, symbols: [4, 4, 4], prize_amount: 5_000 },
     { id: "two", public_number: 102, symbols: [4, 5, 6], prize_amount: 0 },
     { id: "three", public_number: 103, symbols: [7, 8, 1], prize_amount: 1_000 },
   ],

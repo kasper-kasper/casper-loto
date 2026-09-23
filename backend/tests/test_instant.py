@@ -12,7 +12,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from k_loto.application.instant import InstantTicketPurchaseService
 from k_loto.application.weekly import KASPER_FUND_ID
 from k_loto.domain.enums import LedgerAccountKind, TransactionType
-from k_loto.domain.instant import PRIZE_BANDS, TICKET_PRICE, prize_for_roll
+from k_loto.domain.instant import (
+    PRIZE_BANDS,
+    TICKET_PRICE,
+    prize_for_roll,
+    symbols_for_prize,
+)
 from k_loto.infrastructure.database.models import (
     Balance,
     InstantTicket,
@@ -124,6 +129,11 @@ async def test_three_ticket_purchase_burns_price_and_ledgers_prize() -> None:
     assert result.total_prize == 1_001_000
     assert result.balance_after == 1_005_000
     assert [ticket.prize_amount for ticket in result.tickets] == [0, 1_000, 1_000_000]
+    assert [ticket.symbols for ticket in result.tickets] == [
+        (1, 2, 3),
+        (2, 2, 2),
+        (7, 7, 7),
+    ]
     assert balance.amount == 1_005_000
     assert fund.balance == 999_000
 
@@ -139,3 +149,13 @@ async def test_three_ticket_purchase_burns_price_and_ledgers_prize() -> None:
         and item.type == TransactionType.TICKET_PURCHASE
         for item in ledger
     )
+
+
+@pytest.mark.parametrize("prize", (0, 1_000, 2_000, 5_000, 20_000, 100_000, 1_000_000))
+def test_symbols_identify_prize_category(prize: int) -> None:
+    symbols = symbols_for_prize(prize)
+    assert len(symbols) == 3
+    if prize == 0:
+        assert len(set(symbols)) == 3
+    else:
+        assert symbols[0] == symbols[1] == symbols[2]

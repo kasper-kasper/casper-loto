@@ -13,10 +13,9 @@ from k_loto.domain.enums import LedgerAccountKind, TransactionType
 from k_loto.domain.errors import ConfigurationError, InsufficientBalance, InvalidTicket
 from k_loto.domain.instant import (
     ODDS_VERSION,
-    SYMBOL_COUNT,
-    SYMBOL_VARIANTS,
     TICKET_PRICE,
     prize_for_roll,
+    symbols_for_prize,
 )
 from k_loto.domain.weekly import SystemRandomNumberGenerator
 from k_loto.infrastructure.database.models import (
@@ -191,10 +190,7 @@ class InstantTicketPurchaseService:
                 prize_for_roll(self._number_generator.draw_sequence(1, 10_000, 1)[0])
                 for _ in range(quantity)
             )
-            symbols = tuple(
-                self._number_generator.draw_sequence(1, SYMBOL_VARIANTS, SYMBOL_COUNT)
-                for _ in range(quantity)
-            )
+            symbols = tuple(symbols_for_prize(prize) for prize in prizes)
             total_prize = sum(prizes)
             if fund.balance < total_prize:
                 raise ConfigurationError("Kasper fund cannot cover this prize.")

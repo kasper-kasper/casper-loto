@@ -95,6 +95,7 @@ class MiniAppTicket:
     winning_numbers: tuple[int, ...] | None
     draw_ticket_count: int
     bingo_result: dict[str, Any] | None = None
+    instant_symbols: tuple[int, ...] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -657,6 +658,8 @@ class MiniAppQueryService:
         wins_only: bool = False,
         scope: LotteryScope = "all",
     ) -> tuple[MiniAppTicket, ...]:
+        only_instant = lottery_code == "kasper-live"
+        include_instant = not active and (scope == "all" or only_instant)
         filters = [Ticket.user_id == user_id, lottery_scope(scope)]
         if active:
             filters.append(Ticket.status == TicketStatus.PURCHASED)
@@ -664,7 +667,7 @@ class MiniAppQueryService:
             filters.append(
                 Ticket.status.in_((TicketStatus.SETTLED, TicketStatus.REFUNDED))
             )
-        if lottery_code:
+        if lottery_code and not only_instant:
             filters.append(Lottery.code == lottery_code)
         if wins_only:
             filters.append(Ticket.prize_amount > 0)
@@ -673,49 +676,96 @@ class MiniAppQueryService:
             if active
             else (Draw.scheduled_at.desc(), Ticket.public_number.desc())
         )
-        rows = (
-            await self._session.execute(
-                select(
-                    Ticket,
-                    Draw,
-                    Lottery,
-                    func.count(Ticket.id).over(partition_by=Ticket.draw_id),
+        regular: list[MiniAppTicket] = []
+        if not only_instant:
+            regular_rows = (
+                await self._session.execute(
+                    select(
+                        Ticket,
+                        Draw,
+                        Lottery,
+                        func.count(Ticket.id).over(partition_by=Ticket.draw_id),
+                    )
+                    .join(Draw, Draw.id == Ticket.draw_id)
+                    .join(Lottery, Lottery.id == Ticket.lottery_id)
+                    .where(*filters)
+                    .order_by(*ordering)
+                    .limit(limit + offset if include_instant else limit)
+                    .offset(0 if include_instant else offset)
                 )
-                .join(Draw, Draw.id == Ticket.draw_id)
-                .join(Lottery, Lottery.id == Ticket.lottery_id)
-                .where(*filters)
-                .order_by(*ordering)
-                .limit(limit)
-                .offset(offset)
+            ).all()
+            regular = [
+                MiniAppTicket(
+                    id=ticket.id,
+                    public_number=ticket.public_number,
+                    lottery_code=lottery.code,
+                    lottery_name=draw_display_name(
+                        lottery.code, lottery.name, draw.scheduled_at
+                    ),
+                    draw_number=draw.public_number,
+                    scheduled_at=draw.scheduled_at,
+                    numbers=tuple(ticket.numbers),
+                    purchase_price=ticket.purchase_price,
+                    source=ticket.source,
+                    status=ticket.status,
+                    matches=ticket.matches,
+                    prize_amount=ticket.prize_amount,
+                    winning_numbers=(
+                        tuple(draw.winning_numbers)
+                        if draw.winning_numbers
+                        and (
+                            lottery.code != "bingo"
+                            or draw.status == DrawStatus.COMPLETED
+                        )
+                        else None
+                    ),
+                    draw_ticket_count=int(draw_ticket_count),
+                    bingo_result=ticket.bingo_result,
+                )
+                for ticket, draw, lottery, draw_ticket_count in regular_rows
+            ]
+        if not include_instant:
+            return tuple(regular)
+        instant_filters = [InstantTicket.user_id == user_id]
+        if wins_only:
+            instant_filters.append(InstantTicket.prize_amount > 0)
+        instant_rows = (
+            await self._session.scalars(
+                select(InstantTicket)
+                .where(*instant_filters)
+                .order_by(
+                    InstantTicket.purchased_at.desc(),
+                    InstantTicket.public_number.desc(),
+                )
+                .limit(limit + offset)
             )
         ).all()
-        return tuple(
+        instant = [
             MiniAppTicket(
-                id=ticket.id,
-                public_number=ticket.public_number,
-                lottery_code=lottery.code,
-                lottery_name=draw_display_name(
-                    lottery.code, lottery.name, draw.scheduled_at
-                ),
-                draw_number=draw.public_number,
-                scheduled_at=draw.scheduled_at,
-                numbers=tuple(ticket.numbers),
-                purchase_price=ticket.purchase_price,
-                source=ticket.source,
-                status=ticket.status,
-                matches=ticket.matches,
-                prize_amount=ticket.prize_amount,
-                winning_numbers=(
-                    tuple(draw.winning_numbers)
-                    if draw.winning_numbers
-                    and (lottery.code != "bingo" or draw.status == DrawStatus.COMPLETED)
-                    else None
-                ),
-                draw_ticket_count=int(draw_ticket_count),
-                bingo_result=ticket.bingo_result,
+                id=item.id,
+                public_number=item.public_number,
+                lottery_code="kasper-live",
+                lottery_name="Kasper LIVE",
+                draw_number=0,
+                scheduled_at=item.purchased_at,
+                numbers=(),
+                purchase_price=item.purchase_price,
+                source=TicketSource.MANUAL,
+                status=TicketStatus.SETTLED,
+                matches=None,
+                prize_amount=item.prize_amount,
+                winning_numbers=None,
+                draw_ticket_count=1,
+                instant_symbols=tuple(item.symbols),
             )
-            for ticket, draw, lottery, draw_ticket_count in rows
+            for item in instant_rows
+        ]
+        merged = sorted(
+            regular + instant,
+            key=lambda item: (item.scheduled_at, item.public_number),
+            reverse=True,
         )
+        return tuple(merged[offset : offset + limit])
 
     async def ticket_count(
         self,
@@ -726,6 +776,7 @@ class MiniAppQueryService:
         wins_only: bool = False,
         scope: LotteryScope = "all",
     ) -> int:
+        only_instant = lottery_code == "kasper-live"
         filters = [Ticket.user_id == user_id, lottery_scope(scope)]
         if active:
             filters.append(Ticket.status == TicketStatus.PURCHASED)
@@ -733,18 +784,34 @@ class MiniAppQueryService:
             filters.append(
                 Ticket.status.in_((TicketStatus.SETTLED, TicketStatus.REFUNDED))
             )
-        if lottery_code:
+        if lottery_code and not only_instant:
             filters.append(Lottery.code == lottery_code)
         if wins_only:
             filters.append(Ticket.prize_amount > 0)
-        return int(
-            await self._session.scalar(
-                select(func.count(Ticket.id))
-                .join(Lottery, Lottery.id == Ticket.lottery_id)
-                .where(*filters)
+        regular_count = (
+            0
+            if only_instant
+            else int(
+                await self._session.scalar(
+                    select(func.count(Ticket.id))
+                    .join(Lottery, Lottery.id == Ticket.lottery_id)
+                    .where(*filters)
+                )
+                or 0
             )
-            or 0
         )
+        instant_count = 0
+        if not active and (scope == "all" or only_instant):
+            instant_filters = [InstantTicket.user_id == user_id]
+            if wins_only:
+                instant_filters.append(InstantTicket.prize_amount > 0)
+            instant_count = int(
+                await self._session.scalar(
+                    select(func.count(InstantTicket.id)).where(*instant_filters)
+                )
+                or 0
+            )
+        return regular_count + instant_count
 
     async def results(self, *, limit: int = 50) -> tuple[MiniAppDrawResult, ...]:
         rows = (

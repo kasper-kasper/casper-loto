@@ -42,6 +42,7 @@ export interface Ticket {
   winning_numbers: number[] | null;
   draw_ticket_count?: number;
   bingo_result?: { moves: number[]; amounts: number[] } | null;
+  instant_symbols?: number[] | null;
 }
 
 export interface Dashboard {
