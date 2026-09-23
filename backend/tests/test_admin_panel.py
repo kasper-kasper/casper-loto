@@ -2,6 +2,7 @@
 
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, cast
 from uuid import UUID
 
@@ -786,3 +787,72 @@ async def test_jackpot_empty_history_has_no_invented_last_win() -> None:
     report = await AdminQueryService(cast(AsyncSession, fake)).jackpot_analytics()
     assert report["last_win"] is None
     assert report["total_wins"] == report["total_paid"] == 0
+
+
+async def test_jackpot_catalog_returns_draw_links_and_winner_counts() -> None:
+    occurred_at = datetime(2026, 9, 19, 12, tzinfo=UTC)
+    event = SimpleNamespace(
+        id=UUID(int=801),
+        draw_id=UUID(int=802),
+        jackpot_amount=25_000,
+        winner_ticket_count=2,
+        winner_user_count=1,
+        base_jackpot_after=1_000,
+        occurred_at=occurred_at,
+    )
+    lottery = SimpleNamespace(code="flash", name="FLASH")
+    fake = FakeSession(scalar_values=[], execute_rows=[[(event, lottery, 411)]])
+
+    rows = await AdminQueryService(
+        cast(AsyncSession, fake), scope="fast"
+    ).jackpot_events(limit=100, offset=0)
+
+    assert rows == (
+        {
+            "id": event.id,
+            "lottery_code": "flash",
+            "lottery_name": "FLASH",
+            "draw_id": event.draw_id,
+            "draw_number": 411,
+            "jackpot_amount": 25_000,
+            "winner_ticket_count": 2,
+            "winner_user_count": 1,
+            "base_jackpot_after": 1_000,
+            "occurred_at": occurred_at,
+        },
+    )
+
+
+async def test_archive_draw_query_includes_previous_format_metadata() -> None:
+    scheduled_at = datetime(2026, 9, 19, 12, tzinfo=UTC)
+    draw = SimpleNamespace(
+        id=UUID(int=901),
+        lottery_id=UUID(int=902),
+        public_number=411,
+        status=DrawStatus.COMPLETED,
+        scheduled_at=scheduled_at,
+        sales_close_at=scheduled_at,
+        executed_at=scheduled_at,
+        winning_numbers=[1, 2, 3],
+        ticket_count=5,
+        total_sales=500,
+        total_payout=2_500,
+        jackpot_opening=2_000,
+        jackpot_closing=0,
+        distribution_opening=0,
+        distribution_closing=0,
+        reserve_used=0,
+        kasper_fund_used=0,
+        correlation_id=UUID(int=903),
+        configuration_snapshot={"ruleset_code": "flash-legacy"},
+    )
+    lottery = SimpleNamespace(id=draw.lottery_id, code="flash", name="FLASH")
+    fake = FakeSession(scalar_values=[], execute_rows=[[(draw, lottery)]])
+
+    rows = await AdminQueryService(cast(AsyncSession, fake), scope="fast").draws(
+        period="archived"
+    )
+
+    assert len(rows) == 1
+    assert rows[0].id == draw.id
+    assert rows[0].ruleset_code == "flash-legacy"

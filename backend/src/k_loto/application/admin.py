@@ -177,6 +177,7 @@ class AdminDraw:
     kasper_fund_used: int
     correlation_id: UUID
     jackpot_amount: int | None = None
+    ruleset_code: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -1180,6 +1181,16 @@ class AdminQueryService:
             )
         elif period == "completed":
             statement = statement.where(Draw.status == DrawStatus.COMPLETED)
+        elif period == "archived":
+            statement = statement.where(
+                Draw.status == DrawStatus.COMPLETED,
+                or_(
+                    Lottery.is_active.is_(False),
+                    Draw.configuration_snapshot["ruleset_code"].astext.is_distinct_from(
+                        Lottery.ruleset_code
+                    ),
+                ),
+            )
         elif period == "failed":
             statement = statement.where(Draw.status == DrawStatus.FAILED)
         if lottery_id:
@@ -1344,6 +1355,47 @@ class AdminQueryService:
             draw.kasper_fund_used,
             draw.correlation_id,
             jackpot_amount,
+            (draw.configuration_snapshot or {}).get("ruleset_code"),
+        )
+
+    async def jackpot_events(
+        self,
+        *,
+        lottery_id: UUID | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> tuple[dict[str, Any], ...]:
+        statement = (
+            select(JackpotWinEvent, Lottery, Draw.public_number)
+            .join(Lottery, Lottery.id == JackpotWinEvent.lottery_id)
+            .join(Draw, Draw.id == JackpotWinEvent.draw_id)
+            .where(lottery_scope(self._scope))
+        )
+        if lottery_id is not None:
+            statement = statement.where(JackpotWinEvent.lottery_id == lottery_id)
+        rows = (
+            await self._session.execute(
+                statement.order_by(
+                    JackpotWinEvent.occurred_at.desc(), JackpotWinEvent.id.desc()
+                )
+                .limit(limit)
+                .offset(offset)
+            )
+        ).all()
+        return tuple(
+            {
+                "id": event.id,
+                "lottery_code": lottery.code,
+                "lottery_name": lottery.name,
+                "draw_id": event.draw_id,
+                "draw_number": draw_number,
+                "jackpot_amount": event.jackpot_amount,
+                "winner_ticket_count": event.winner_ticket_count,
+                "winner_user_count": event.winner_user_count,
+                "base_jackpot_after": event.base_jackpot_after,
+                "occurred_at": event.occurred_at,
+            }
+            for event, lottery, draw_number in rows
         )
 
     async def number_statistics(

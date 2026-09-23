@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.45.1] - 2026-09-23
+
+- Added a dedicated, paginated jackpot catalog with direct links to draw winners and payout details; added recent jackpot shortcuts to Fast.
+- Added a separate archive for completed inactive lotteries and superseded rule formats, including older Fast rounds.
+- Reworked the system area to open on useful event logs; service health now leads with diagnostics and keeps lottery funds available in a collapsed details panel.
+
 ## [1.45.0] - 2026-09-23
 
 - Added searchable player dossiers with visible/copyable internal IDs, all-time stats for each lottery, and complete paginated ticket history including Kasper LIVE.

@@ -1,5 +1,11 @@
 # Development log
 
+## [1.45.1] - 2026-09-23
+
+- Added `/admin/jackpots` paging over immutable jackpot-win events and `period=archived` to completed-draw search for inactive lotteries or draws whose ruleset snapshot differs from the current ruleset.
+- Added the owner-side jackpot catalog and historical-format archive; each item opens the existing immutable draw detail view.
+- Made the Fast control room surface jackpot history directly, defaulted system navigation to event logs, and moved lottery balances below primary service diagnostics.
+
 ## [1.45.0] - 2026-09-23
 
 - Extended admin player search results to 500 entries, made internal UUIDs visible/copyable, and routed global ledger player IDs to their dossiers.

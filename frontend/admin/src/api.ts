@@ -6,6 +6,7 @@ import type {
   DrawDetail,
   InterestingFact,
   InterestingFactStatus,
+  JackpotEvent,
   KasperLiveSummary,
   Lottery,
   NumberStatisticsReport,
@@ -115,6 +116,11 @@ export const adminApi = {
   },
   lotteries: () => request<Lottery[]>("/lotteries"),
   draws: drawPage,
+  jackpotEvents: (scope: LotteryScope = "all", lotteryId = "", offset = 0) => {
+    const params = new URLSearchParams({ scope, limit: "100", offset: String(offset) });
+    if (lotteryId) params.set("lottery_id", lotteryId);
+    return request<JackpotEvent[]>(`/jackpots?${params.toString()}`);
+  },
   schedule: (scope: LotteryScope = "all") => request<ScheduleEntry[]>(`/schedule?scope=${scope}`),
   draw: (id: string) => request<DrawDetail>(`/draws/${id}`),
   transactions: (query = "") =>

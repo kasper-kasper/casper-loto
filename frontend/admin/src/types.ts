@@ -121,6 +121,7 @@ export interface Draw {
   kasper_fund_used: number;
   correlation_id: string;
   jackpot_amount?: number | null;
+  ruleset_code?: string | null;
 }
 
 export interface DrawTicket {

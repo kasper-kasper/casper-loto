@@ -9,7 +9,7 @@ vi.mock("./api", () => ({
   ApiError: class ApiError extends Error { status = 500; },
   adminApi: {
     login: vi.fn(), session: vi.fn(), logout: vi.fn(), dashboard: vi.fn(), kasperLive: vi.fn(),
-    players: vi.fn(), playerTicketHistory: vi.fn(), lotteries: vi.fn(), schedule: vi.fn(), draws: vi.fn(), draw: vi.fn(),
+    players: vi.fn(), playerTicketHistory: vi.fn(), lotteries: vi.fn(), schedule: vi.fn(), draws: vi.fn(), draw: vi.fn(), jackpotEvents: vi.fn(),
     transactions: vi.fn(), playerTransactions: vi.fn(), statistics: vi.fn(), ticketAnalytics: vi.fn(), activity: vi.fn(), audit: vi.fn(),
     notifications: vi.fn(), releaseNotes: vi.fn(), interestingFacts: vi.fn(), setInterestingFactStatus: vi.fn(),
     setBalance: vi.fn(), configureLottery: vi.fn(), setReserve: vi.fn(), setJackpot: vi.fn(),
@@ -41,6 +41,7 @@ beforeEach(() => {
   vi.mocked(adminApi.playerTicketHistory).mockResolvedValue(playerHistory);
   vi.mocked(adminApi.lotteries).mockResolvedValue([lottery]);
   vi.mocked(adminApi.draws).mockResolvedValue([]);
+  vi.mocked(adminApi.jackpotEvents).mockResolvedValue([]);
   vi.mocked(adminApi.schedule).mockResolvedValue(scheduleEntries);
   vi.mocked(adminApi.transactions).mockResolvedValue([]);
   vi.mocked(adminApi.playerTransactions).mockResolvedValue([]);
@@ -69,7 +70,8 @@ it("restores an authenticated session and renders Russian system truth", async (
   expect(screen.getByText("Весь проект одним взглядом")).toBeInTheDocument();
   expect(screen.getByText("12 000 CAS")).toBeInTheDocument();
   expect(screen.queryByText("v0.8.0 · работает 2 мин.")).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: /^10Система$/ }));
+  fireEvent.click(screen.getByRole("button", { name: /^12Журналы$/ }));
+  fireEvent.click(screen.getByRole("tab", { name: "Состояние" }));
   expect(await screen.findByText("БАЗА ДАННЫХ РАБОТАЕТ")).toBeInTheDocument();
   expect(screen.getByText("v0.8.0 · работает 2 мин.")).toBeInTheDocument();
 });
@@ -126,7 +128,7 @@ it("shows a player's internal ID, per-lottery stats, and searchable ticket histo
   expect(await screen.findByText("История билетов")).toBeInTheDocument();
   expect(screen.getByText("player", { selector: "code" })).toBeInTheDocument();
   expect(screen.getByText("Результаты по лотереям")).toBeInTheDocument();
-  expect(screen.getByText("Билет №77 · тираж №7")).toBeInTheDocument();
+  expect(await screen.findByText("Билет №77 · тираж №7")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Выигрыши" }));
   await waitFor(() => expect(adminApi.playerTicketHistory).toHaveBeenLastCalledWith("player", "wins", "", 0));
 });
@@ -146,7 +148,7 @@ it("loads player ticket history in pages beyond the first hundred records", asyn
 it("opens a player dossier directly from the event log", async () => {
   vi.mocked(adminApi.transactions).mockResolvedValue([playerTransaction]);
   render(<App />);
-  fireEvent.click(await screen.findByRole("button", { name: /Система/ }));
+  fireEvent.click(await screen.findByRole("button", { name: /Журналы/ }));
   fireEvent.click(await screen.findByRole("tab", { name: "Лента событий" }));
 
   fireEvent.click(await screen.findByRole("button", { name: /Игрок · player/ }));
@@ -154,15 +156,15 @@ it("opens a player dossier directly from the event log", async () => {
   expect(await screen.findByText("История билетов")).toBeInTheDocument();
 });
 
-it("groups administration into eleven owner-oriented sections", async () => {
+it("groups administration into thirteen owner-oriented sections", async () => {
   render(<App />);
   await screen.findByText("Всего сорвано джекпотов");
 
   const nav = within(screen.getByRole("navigation"));
-  for (const label of ["Сегодня", "Fast", "Kasper LIVE", "Лотереи", "Расписание", "Тиражи", "Игроки", "Аналитика", "Interesting Facts", "Тест эфира", "Система"]) {
+  for (const label of ["Сегодня", "Fast", "Kasper LIVE", "Лотереи", "Расписание", "Тиражи", "Джекпоты", "Архив", "Игроки", "Аналитика", "Interesting Facts", "Тест эфира", "Журналы"]) {
     expect(nav.getByRole("button", { name: new RegExp(label) })).toBeInTheDocument();
   }
-  fireEvent.click(nav.getByRole("button", { name: /Система/ }));
+  fireEvent.click(nav.getByRole("button", { name: /Журналы/ }));
   expect(await screen.findByRole("tab", { name: "Журнал CAS" })).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: "Уведомления" })).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: "Аудит действий" })).toBeInTheDocument();
@@ -232,7 +234,7 @@ it("loads the daily schedule only after opening its section", async () => {
 
 it("shows complete changelog and devlog in separate protected tabs", async () => {
   render(<App />);
-  fireEvent.click(await screen.findByRole("button", { name: /^10Система$/ }));
+  fireEvent.click(await screen.findByRole("button", { name: /^12Журналы$/ }));
   fireEvent.click(await screen.findByRole("tab", { name: "Разработка" }));
 
   expect(await screen.findByText("Публичное изменение")).toBeInTheDocument();
@@ -346,7 +348,7 @@ it("restores an old development URL inside System", async () => {
   window.history.replaceState({}, "", "/development");
   render(<App />);
   expect(await screen.findByText("Публичное изменение")).toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "Система" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Журналы" })).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: "Разработка" })).toHaveAttribute("aria-selected", "true");
 });
 
@@ -442,4 +444,44 @@ it("opens the dedicated Fast control room and requests a bounded Fast draw page"
   await waitFor(() => expect(adminApi.draws).toHaveBeenCalledWith("scope=fast&period=today&limit=100&offset=0"));
   fireEvent.click(screen.getByRole("tab", { name: "Завершённые" }));
   await waitFor(() => expect(adminApi.draws).toHaveBeenLastCalledWith("scope=fast&period=completed&limit=100&offset=0"));
+});
+
+it("opens the last Fast jackpot directly from the Fast control room", async () => {
+  vi.mocked(adminApi.dashboard).mockResolvedValue({
+    ...dashboard,
+    jackpots: {
+      ...dashboard.jackpots,
+      total_wins: 1,
+      last_win: {
+        id: "fast-jackpot", lottery_code: "flash", lottery_name: "FLASH", draw_id: "fast-draw",
+        draw_number: 411, jackpot_amount: 25_000, winner_ticket_count: 2, winner_user_count: 1,
+        base_jackpot_after: 1_000, occurred_at: "2026-09-19T12:00:00Z",
+      },
+    },
+  });
+  render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /^02Fast$/ }));
+  fireEvent.click(await screen.findByRole("button", { name: /Тираж №0411/ }));
+  expect(adminApi.draw).toHaveBeenCalledWith("fast-draw");
+});
+
+it("opens a Fast jackpot from its own catalog and routes to the draw details", async () => {
+  vi.mocked(adminApi.jackpotEvents).mockResolvedValue([{
+    id: "jackpot-event", lottery_code: "flash", lottery_name: "FLASH", draw_id: "flash-draw", draw_number: 411,
+    jackpot_amount: 25_000, winner_ticket_count: 2, winner_user_count: 1, base_jackpot_after: 1_000,
+    occurred_at: "2026-09-19T12:00:00Z",
+  }]);
+  render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /Джекпоты/ }));
+  fireEvent.click(within(screen.getByRole("tablist", { name: "Тип игр" })).getByRole("tab", { name: "Fast" }));
+  await waitFor(() => expect(adminApi.jackpotEvents).toHaveBeenCalledWith("fast", "", 0));
+  fireEvent.click(await screen.findByRole("button", { name: /Открыть детали/ }));
+  expect(adminApi.draw).toHaveBeenCalledWith("flash-draw");
+});
+
+it("opens the separate archive on historical completed formats", async () => {
+  render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /Архив/ }));
+  await waitFor(() => expect(adminApi.draws).toHaveBeenCalledWith("scope=all&period=archived&limit=100&offset=0"));
+  expect(await screen.findByText("Архив завершённых лотерей")).toBeInTheDocument();
 });

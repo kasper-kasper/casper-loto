@@ -216,6 +216,20 @@ class DrawResponse(ApiModel):
     kasper_fund_used: int
     correlation_id: UUID
     jackpot_amount: int | None = None
+    ruleset_code: str | None = None
+
+
+class JackpotEventResponse(ApiModel):
+    id: UUID
+    lottery_code: str
+    lottery_name: str
+    draw_id: UUID
+    draw_number: int
+    jackpot_amount: int
+    winner_ticket_count: int
+    winner_user_count: int
+    base_jackpot_after: int
+    occurred_at: datetime
 
 
 class ScheduleEntryResponse(ApiModel):
@@ -806,7 +820,7 @@ async def draws(
     limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
     scope: LotteryScope = "all",
-    period: Literal["today", "future", "completed", "failed"] | None = None,
+    period: Literal["today", "future", "completed", "failed", "archived"] | None = None,
 ) -> list[DrawResponse]:
     items = await AdminQueryService(session, scope=scope).draws(
         lottery_id=lottery_id,
@@ -816,6 +830,21 @@ async def draws(
         period=period,
     )
     return [DrawResponse.model_validate(item) for item in items]
+
+
+@router.get("/jackpots", response_model=list[JackpotEventResponse])
+async def jackpot_events(
+    _admin: Annotated[CurrentAdmin, Depends(get_current_admin)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    lottery_id: UUID | None = None,
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    scope: LotteryScope = "all",
+) -> list[JackpotEventResponse]:
+    items = await AdminQueryService(session, scope=scope).jackpot_events(
+        lottery_id=lottery_id, limit=limit, offset=offset
+    )
+    return [JackpotEventResponse.model_validate(item) for item in items]
 
 
 @router.get("/schedule", response_model=list[ScheduleEntryResponse])

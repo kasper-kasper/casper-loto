@@ -1,0 +1,18 @@
+.archive-command{display:flex;align-items:center;min-height:170px;margin-bottom:18px;padding:28px 32px;border:1px solid #cbb27338;border-radius:16px;background:radial-gradient(ellipse at 88% 15%,#d7b76b1b,transparent 38%),linear-gradient(125deg,#192a27,#101916);box-shadow:0 16px 40px #070c0a55}
+.archive-command span{color:#dec990;font-size:10px;letter-spacing:.18em}
+.archive-command h2{margin:10px 0;font-size:27px;color:#f3e8cb}
+.archive-command p{max-width:740px;color:#b4bbaa;line-height:1.6}
+.archive-table-note,.archive-filter-hint{padding:12px 16px;color:#afbaaa;font-size:12px;line-height:1.6}
+.jackpot-catalog-hero{background:radial-gradient(ellipse at 90% 20%,#fc546621,transparent 40%),linear-gradient(120deg,#32171d,#15151b);border-color:#b247533d}
+.jackpot-catalog-hero h2{color:#f7dfe0}
+.jackpot-event-row{cursor:default}
+.jackpot-event-row:hover{background:#ffffff06}
+.jackpot-event-row td:first-child{white-space:nowrap}
+.jackpot-event-row td small{display:block;margin-top:4px;color:#9fa99f}
+.system-health-panel .control-status article{min-height:130px}
+.system-health-panel .health-good{border-color:#72a38355}
+.system-health-panel .health-warning{border-color:#dc697055;background:#3a1b2055}
+.system-account-details{margin-top:18px;border-top:1px solid #ffffff12;padding-top:14px}
+.system-account-details summary{color:#c4b47e;font-size:12px;cursor:pointer}
+.system-account-details .table-wrap{margin-top:12px}
+@media(max-width:760px){.archive-command{padding:22px 18px}.archive-command h2{font-size:22px}.jackpot-event-row td:first-child{white-space:normal}}
