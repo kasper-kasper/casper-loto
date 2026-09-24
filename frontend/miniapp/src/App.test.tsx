@@ -650,8 +650,14 @@ it("keeps Casper Dual as one 2+2 ticket with no favorites or five-draw repeat", 
   fireEvent.click(screen.getByRole("button", { name: "Открыть Casper Dual" }));
   fireEvent.click(screen.getByRole("button", { name: "NIGHT 3" }));
   fireEvent.click(screen.getByRole("button", { name: "NIGHT 10" }));
+  fireEvent.click(screen.getByRole("button", { name: "NIGHT 11" }));
   fireEvent.click(screen.getByRole("button", { name: "DAWN 5" }));
   fireEvent.click(screen.getByRole("button", { name: "DAWN 11" }));
+  fireEvent.click(screen.getByRole("button", { name: "DAWN 12" }));
+  expect(screen.getByRole("button", { name: "NIGHT 11" })).toHaveAttribute("aria-pressed", "false");
+  expect(screen.getByRole("button", { name: "DAWN 12" })).toHaveAttribute("aria-pressed", "false");
+  expect(screen.getByRole("button", { name: "NIGHT 3" })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByRole("button", { name: "DAWN 5" })).toHaveAttribute("aria-pressed", "true");
   expect(screen.getByRole("button", { name: "Купить билет" })).toBeEnabled();
   expect(screen.queryByText("Избранные комбинации")).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "5 тиражей" })).not.toBeInTheDocument();
