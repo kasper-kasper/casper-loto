@@ -149,9 +149,11 @@
 .dual-night .pick-number.selected { color:#06142d; background:linear-gradient(145deg,#dceeff,#4290ff); box-shadow:0 0 16px #428fff88; }
 .dual-dawn .pick-number.selected { color:#241508; background:linear-gradient(145deg,#fff2b2,#e39a35); box-shadow:0 0 16px #e39a3588; }
 .dual-field>b { display:block; margin-top:10px; color:#a9b8d4; font-size:9px; font-weight:600; text-align:center; }
-.room-dual .selected-combination { border-color:rgba(255,204,102,.3); background:linear-gradient(120deg,#0a1730,#181525); }
-.dual-selected { display:flex; gap:6px; margin-top:9px; }
-.dual-selected i { flex:1; padding:8px 7px; border:1px solid currentColor; border-radius:10px; font-size:10px; font-style:normal; text-align:center; }
+.room-dual .selected-combination { display:grid; grid-template-columns:minmax(78px,1fr) minmax(0,1.8fr); gap:9px; border-color:rgba(255,204,102,.3); background:linear-gradient(120deg,#0a1730,#181525); }
+.room-dual .selected-combination .dual-selected { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); min-width:0; width:100%; gap:6px; }
+.dual-selected>span { display:grid; min-width:0; min-height:45px; padding:5px 3px; place-content:center; gap:2px; border:1px solid currentColor; border-radius:10px; text-align:center; }
+.dual-selected small { font-size:8px; font-weight:700; letter-spacing:.08em; }
+.dual-selected strong { white-space:nowrap; font-size:clamp(11px,3.4vw,15px); line-height:1.15; font-variant-numeric:tabular-nums; }
 .dual-selected .night-chip { color:#76b6ff; background:#1e6bff14; }.dual-selected .dawn-chip { color:#ffd36d; background:#ffb63214; }
 .room-dual .instant-ticket-row { border-color:rgba(255,204,102,.26); background:linear-gradient(110deg,#101d35,#1b1827); }
 .room-dual .instant-ticket-row button { border-color:rgba(255,204,102,.45); color:#ffe19a; background:#ffd66f12; }
