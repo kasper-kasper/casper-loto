@@ -29,6 +29,8 @@ def _ledger(
     user_id: object | None = None,
     details: dict[str, object] | None = None,
 ) -> None:
+    if amount == 0:
+        return
     connection.execute(
         sa.text(
             """
