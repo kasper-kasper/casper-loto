@@ -8,6 +8,7 @@ from k_loto.domain.errors import ConfigurationError
 MOSCOW = ZoneInfo("Europe/Moscow")
 DUAL_PRICE = 20_000
 DUAL_JACKPOT = 5_000_000
+DUAL_PURCHASE_DRAW_WINDOW = 5
 DUAL_PAYOUTS = {11: 10_000, 12: 100_000, 21: 100_000, 22: DUAL_JACKPOT}
 
 

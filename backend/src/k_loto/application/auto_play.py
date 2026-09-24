@@ -9,6 +9,7 @@ from sqlalchemy import exists, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from k_loto.application.weekly import LotteryTicketPurchaseService
+from k_loto.domain.dual import DUAL_PURCHASE_DRAW_WINDOW
 from k_loto.domain.enums import DrawStatus, LotteryKind, TicketSource, TicketStatus
 from k_loto.domain.errors import (
     ConfigurationError,
@@ -76,6 +77,25 @@ class AutoPlayService:
 
     async def _candidates(self, now: datetime) -> tuple[AutoPlayCandidate, ...]:
         async with self._session_factory() as session:
+            dual_draw_ids = list(
+                (
+                    await session.scalars(
+                        select(Draw.id)
+                        .join(Lottery, Lottery.id == Draw.lottery_id)
+                        .where(
+                            Lottery.code == "dual",
+                            Draw.status == DrawStatus.SCHEDULED,
+                            Draw.sales_close_at > now,
+                        )
+                        .order_by(Draw.scheduled_at)
+                        .limit(DUAL_PURCHASE_DRAW_WINDOW)
+                    )
+                ).all()
+            )
+            # A Dual ticket occupies two consecutive draws. Keep its second
+            # round inside the five-draw window, even when more draws already
+            # exist (for example, after restoring a scheduler backlog).
+            dual_start_ids = set(dual_draw_ids[:-1])
             query = (
                 select(AutoPlaySetting, Draw, Lottery)
                 .join(User, User.id == AutoPlaySetting.user_id)
@@ -106,6 +126,8 @@ class AutoPlayService:
             rows = (await session.execute(query)).all()
         candidates: list[AutoPlayCandidate] = []
         for setting, draw, lottery in rows:
+            if lottery.code == "dual" and draw.id not in dual_start_ids:
+                continue
             ruleset_code = str(
                 (draw.configuration_snapshot or {}).get(
                     "ruleset_code", lottery.ruleset_code

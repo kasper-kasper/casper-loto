@@ -18,7 +18,7 @@ from k_loto.domain.dual import (
     dual_prize,
 )
 from k_loto.domain.enums import DrawStatus, LotteryKind, TicketStatus
-from k_loto.domain.errors import InvalidTicket
+from k_loto.domain.errors import InvalidTicket, NoAvailableDraw
 from k_loto.domain.lottery_rules import DUAL_RULES
 from k_loto.domain.schedules import next_draw_at, sales_close_at
 from k_loto.infrastructure.database.models import (
@@ -101,6 +101,40 @@ class PurchaseSession:
 
     def add_all(self, items: Iterable[Any]) -> None:
         self.added.extend(items)
+
+
+@pytest.mark.parametrize("target_index", [4, 5])
+async def test_dual_rejects_explicit_purchase_outside_five_draw_window(
+    target_index: int,
+) -> None:
+    draw_ids = [uuid4() for _ in range(6)]
+    lottery = SimpleNamespace(
+        id=uuid4(),
+        code="dual",
+        kind=LotteryKind.DAILY,
+        ruleset_code=DUAL_RULES.code,
+        ticket_price=20_000,
+        numbers_to_pick=4,
+        max_number=24,
+        max_tickets_per_purchase=1000,
+    )
+    target = SimpleNamespace(id=draw_ids[target_index])
+
+    class TargetSession(PurchaseSession):
+        async def scalars(self, _statement: Any) -> ScalarRows:
+            return ScalarRows(draw_ids[:5])
+
+    session = TargetSession([None, lottery, object(), None, target])
+    with pytest.raises(NoAvailableDraw, match="next five draws"):
+        await LotteryTicketPurchaseService(
+            cast(AsyncSession, session), lottery_code="dual", target_draw_id=target.id
+        ).purchase(
+            user_id=uuid4(),
+            combinations=[[3, 10, 15, 22]],
+            idempotency_key=f"dual-window-{target_index}",
+            now=datetime(2026, 9, 25, tzinfo=UTC),
+        )
+    assert session.added == []
 
 
 @pytest.mark.asyncio

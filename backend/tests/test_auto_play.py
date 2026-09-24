@@ -1,6 +1,7 @@
 """Auto-play orchestration regressions."""
 
 from datetime import UTC, datetime
+from types import SimpleNamespace
 from typing import Any
 from uuid import UUID
 
@@ -19,6 +20,7 @@ from k_loto.domain.errors import (
     InvalidTicket,
     NoAvailableDraw,
 )
+from k_loto.domain.lottery_rules import DUAL_RULES
 from k_loto.infrastructure import scheduler as scheduler_module
 
 
@@ -54,6 +56,43 @@ class FakeSession:
 
     async def __aexit__(self, *_args: object) -> None:
         return None
+
+
+async def test_dual_auto_play_only_starts_within_five_draw_window() -> None:
+    draw_ids = [UUID(int=value) for value in range(1, 8)]
+    setting = SimpleNamespace(user_id=UUID(int=20), tickets_per_draw=5)
+    lottery = SimpleNamespace(
+        code="dual", kind=LotteryKind.DAILY, ruleset_code=DUAL_RULES.code
+    )
+
+    class Rows:
+        def __init__(self, values: list[Any]) -> None:
+            self.values = values
+
+        def all(self) -> list[Any]:
+            return self.values
+
+    class Session(FakeSession):
+        async def scalars(self, _query: object) -> Rows:
+            return Rows(draw_ids[:5])
+
+        async def execute(self, _query: object) -> Rows:
+            return Rows(
+                [
+                    (
+                        setting,
+                        SimpleNamespace(id=draw_id, configuration_snapshot={}),
+                        lottery,
+                    )
+                    for draw_id in draw_ids
+                ]
+            )
+
+    service = AutoPlayService(lambda: Session())  # type: ignore[arg-type]
+    candidates = await service._candidates(datetime(2026, 9, 25, tzinfo=UTC))
+
+    assert [candidate.draw_id for candidate in candidates] == draw_ids[:4]
+    assert all(candidate.tickets_per_draw == 5 for candidate in candidates)
 
 
 class AutoPlayHarness(AutoPlayService):

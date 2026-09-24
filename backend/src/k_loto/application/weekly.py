@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from k_loto.application.ports import SecureNumberGenerator
 from k_loto.domain.draw_state import ensure_draw_transition
-from k_loto.domain.dual import DUAL_PRICE, dual_phase
+from k_loto.domain.dual import DUAL_PRICE, DUAL_PURCHASE_DRAW_WINDOW, dual_phase
 from k_loto.domain.enums import (
     DrawStatus,
     InAppNotificationType,
@@ -301,6 +301,25 @@ class WeeklyTicketPurchaseService:
                 raise NoAvailableDraw(
                     "The selected draw is no longer available for ticket sales."
                 )
+            if lottery.code == "dual" and self._target_draw_id is not None:
+                open_draw_ids = list(
+                    (
+                        await self._session.scalars(
+                            select(Draw.id)
+                            .where(
+                                Draw.lottery_id == lottery.id,
+                                Draw.status == DrawStatus.SCHEDULED,
+                                Draw.sales_close_at > timestamp,
+                            )
+                            .order_by(Draw.scheduled_at)
+                            .limit(DUAL_PURCHASE_DRAW_WINDOW)
+                        )
+                    ).all()
+                )
+                if draw is None or draw.id not in open_draw_ids[:-1]:
+                    raise NoAvailableDraw(
+                        "Casper Dual is limited to the next five draws."
+                    )
             if draw is None:
                 latest = await self._session.scalar(
                     select(Draw)
