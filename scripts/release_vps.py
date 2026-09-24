@@ -161,7 +161,7 @@ def main() -> None:
     plan += "backup -> upload -> build " + ", ".join(services)
     if any(item != "gateway" for item in services):
         plan += " -> migrate"
-    print(f"Release plan: {plan} -> health")
+    print(f"Release plan: {plan} -> health -> Docker cache maintenance")
     if args.dry_run:
         return
 
@@ -255,6 +255,19 @@ def main() -> None:
                 'test "$attempt" -lt 30 || exit 1; sleep 2; done; '
                 f"{compose} ps",
                 timeout=120,
+            )
+            run_remote(
+                client,
+                "Docker build-cache maintenance",
+                "docker builder prune --all --force --keep-storage 2GB >/dev/null",
+                timeout=300,
+            )
+            run_remote(
+                client,
+                "Old unused K-Loto image maintenance",
+                "docker image prune --all --force --filter 'until=48h' "
+                "--filter 'label=com.docker.compose.project=k-loto' >/dev/null",
+                timeout=300,
             )
         finally:
             client.close()

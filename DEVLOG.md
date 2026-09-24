@@ -2971,3 +2971,9 @@ Known limitations:
 - Деньги проходят через ledger и Kasper Fund; стартовый фиксированный джекпот 5 млн CAS выделен в отдельный счёт. NIGHT/DAWN — терминология игрока, backend использует draw. Веб-канал исключает Dual до отдельного запуска.
 - Mini App использует предоставленную сцену в WebP (около 303 КБ), фирменный логотип, два тактильных циферблата, карточку каталога, ×1/×5/×25 и отдельный билет с фазами. Избранные числа не показаны.
 - Проверки: новые backend-тесты покрытия фаз, цены и выплат; Mini App lint/typecheck/build и браузерная визуальная проверка. Полный набор backend-тестов пройден вне sandbox для доступа к временным файлам.
+
+# 2026-09-25 — Docker storage maintenance
+
+- Production disk audit found 9.855 GB of unused build cache and 7.595 GB of nominally reclaimable images; 64 database dumps occupied 1.30 GiB and system journals about 1 GiB.
+- Pruned only unused build cache above a 2 GB reserve and unused images older than 48 hours; free disk space rose from 18 GB to 26 GB. Running containers, volumes, and backups were preserved.
+- Added post-health release housekeeping to cap build cache and remove only old, unused K-Loto-labelled images, leaving recent release images available for rollback.
