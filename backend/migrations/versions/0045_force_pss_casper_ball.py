@@ -23,14 +23,15 @@ def upgrade() -> None:
         SET name='Casper Ball', ruleset_code='casper_ball_5_36_1_8', numbers_to_pick=6, max_number=44, updated_at=now()
         WHERE id=:lottery_id
     """), {"lottery_id": lottery_id})
+    ticket_price = connection.execute(sa.text("SELECT ticket_price FROM lotteries WHERE id=:lottery_id"), {"lottery_id": lottery_id}).scalar_one()
     connection.execute(sa.text("""
         UPDATE draws
         SET configuration_snapshot=jsonb_build_object(
-            'ruleset_code', 'casper_ball_5_36_1_8', 'ticket_price', ticket_price,
+            'ruleset_code', 'casper_ball_5_36_1_8', 'ticket_price', :ticket_price,
             'numbers_to_pick', 6, 'max_number', 44, 'base_jackpot', 50000000
         ), updated_at=now()
         WHERE lottery_id=:lottery_id AND status='SCHEDULED'
-    """), {"lottery_id": lottery_id})
+    """), {"lottery_id": lottery_id, "ticket_price": ticket_price})
     current = connection.execute(sa.text("SELECT ruleset_code, numbers_to_pick, max_number FROM lotteries WHERE id=:lottery_id"), {"lottery_id": lottery_id}).mappings().one()
     if (current["ruleset_code"], current["numbers_to_pick"], current["max_number"]) != (RULESET, 6, 44):
         raise RuntimeError(f"PSS format update did not persist: {dict(current)}")
