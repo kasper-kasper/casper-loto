@@ -108,6 +108,13 @@ class TicketResponse(BaseModel):
     draw_ticket_count: int
     bingo_result: dict[str, Any] | None = None
     instant_symbols: list[int] | None = None
+    second_draw_number: int | None = None
+    second_scheduled_at: datetime | None = None
+    first_phase: str | None = None
+    first_winning_numbers: list[int] | None = None
+    second_winning_numbers: list[int] | None = None
+    dual_night_matches: int | None = None
+    dual_dawn_matches: int | None = None
 
 
 class DashboardResponse(BaseModel):
@@ -373,6 +380,17 @@ def _ticket_response(item: MiniAppTicket) -> TicketResponse:
         draw_ticket_count=item.draw_ticket_count,
         bingo_result=item.bingo_result,
         instant_symbols=(list(item.instant_symbols) if item.instant_symbols else None),
+        second_draw_number=item.second_draw_number,
+        second_scheduled_at=item.second_scheduled_at,
+        first_phase=item.first_phase,
+        first_winning_numbers=list(item.first_winning_numbers)
+        if item.first_winning_numbers
+        else None,
+        second_winning_numbers=list(item.second_winning_numbers)
+        if item.second_winning_numbers
+        else None,
+        dual_night_matches=item.dual_night_matches,
+        dual_dawn_matches=item.dual_dawn_matches,
     )
 
 

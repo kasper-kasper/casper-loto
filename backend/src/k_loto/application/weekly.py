@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from k_loto.application.ports import SecureNumberGenerator
 from k_loto.domain.draw_state import ensure_draw_transition
+from k_loto.domain.dual import DUAL_PRICE, dual_phase
 from k_loto.domain.enums import (
     DrawStatus,
     InAppNotificationType,
@@ -136,7 +137,7 @@ def _existing_purchase_result(existing: LedgerTransaction) -> PurchaseResult:
         total_cost=-existing.amount,
         balance_after=existing.balance_after,
         draw_ids=draw_ids,
-        draw_count=len(draw_ids),
+        draw_count=int(existing.details.get("draw_count", len(draw_ids))),
         already_processed=True,
     )
 
@@ -247,6 +248,8 @@ class WeeklyTicketPurchaseService:
             current_rules = _rules_for_lottery(lottery, expected=self.ruleset_code)
             if lottery.code == "bingo" and draw_count != 1:
                 raise InvalidTicket("Bingo purchases cover one draw.")
+            if lottery.code == "dual" and draw_count != 1:
+                raise InvalidTicket("Casper Dual uses one ticket across two rounds.")
             if (
                 lottery.numbers_to_pick != current_rules.numbers_to_pick
                 or lottery.max_number != current_rules.max_number
@@ -306,6 +309,8 @@ class WeeklyTicketPurchaseService:
                     .limit(1)
                 )
                 schedule_base = latest.scheduled_at if latest is not None else timestamp
+                if lottery.code == "dual":
+                    schedule_base = max(schedule_base, timestamp)
                 scheduled_at = next_draw_at(
                     lottery.kind, schedule_base, lottery.schedule
                 )
@@ -376,12 +381,78 @@ class WeeklyTicketPurchaseService:
                     draws.append(future_draw)
                     schedule_base = scheduled_at
 
-            for target_draw in draws[:draw_count]:
+            dual_second_draw: Draw | None = None
+            if lottery.code == "dual":
+                if (
+                    int(_snapshot_value(draw, "ticket_price", lottery.ticket_price))
+                    != DUAL_PRICE
+                ):
+                    raise ConfigurationError(
+                        "Casper Dual ticket price snapshot must be 20,000 CAS."
+                    )
+                expected_at = next_draw_at(
+                    lottery.kind, draw.scheduled_at, lottery.schedule
+                )
+                dual_second_draw = await self._session.scalar(
+                    select(Draw)
+                    .where(
+                        Draw.lottery_id == lottery.id, Draw.scheduled_at == expected_at
+                    )
+                    .with_for_update()
+                )
+                if dual_second_draw is None:
+                    dual_second_draw = Draw(
+                        id=uuid4(),
+                        lottery_id=lottery.id,
+                        public_number=lottery.next_draw_number,
+                        status=DrawStatus.SCHEDULED,
+                        scheduled_at=expected_at,
+                        sales_close_at=sales_close_at(
+                            lottery.kind,
+                            expected_at,
+                            lottery.sales_cutoff_minutes,
+                            lottery.schedule,
+                        ),
+                        correlation_id=uuid4(),
+                        ticket_count=0,
+                        total_sales=0,
+                        total_payout=0,
+                        reserve_used=0,
+                        kasper_fund_used=0,
+                        configuration_snapshot=draw_configuration_snapshot(
+                            lottery, jackpot.base_amount
+                        ),
+                    )
+                    lottery.next_draw_number += 1
+                    self._session.add(dual_second_draw)
+                if (
+                    dual_second_draw.status != DrawStatus.SCHEDULED
+                    or dual_second_draw.scheduled_at <= draw.scheduled_at
+                ):
+                    raise NoAvailableDraw("Casper Dual second round is unavailable.")
+                if dual_phase(draw.scheduled_at) == dual_phase(
+                    dual_second_draw.scheduled_at
+                ):
+                    raise ConfigurationError("Casper Dual rounds must alternate.")
+                if draw.sales_close_at <= timestamp:
+                    raise NoAvailableDraw(
+                        "Casper Dual sales are closed for this round."
+                    )
+
+            capacity_draws = draws[:draw_count]
+            if dual_second_draw is not None:
+                capacity_draws = [*capacity_draws, dual_second_draw]
+            for target_draw in capacity_draws:
                 existing_count = int(
                     await self._session.scalar(
                         select(func.count(Ticket.id)).where(
                             Ticket.user_id == user_id,
-                            Ticket.draw_id == target_draw.id,
+                            (Ticket.draw_id == target_draw.id)
+                            | (
+                                (Ticket.second_draw_id == target_draw.id)
+                                if lottery.code == "dual"
+                                else (Ticket.draw_id == target_draw.id)
+                            ),
                         )
                     )
                     or 0
@@ -430,6 +501,15 @@ class WeeklyTicketPurchaseService:
                     )
                 combinations = [entry.numbers for entry in pool_entries]
 
+            fund = None
+            if lottery.code == "dual":
+                fund = await self._session.scalar(
+                    select(KasperFundAccount)
+                    .where(KasperFundAccount.id == KASPER_FUND_ID)
+                    .with_for_update()
+                )
+                if fund is None:
+                    raise ConfigurationError("Kasper Fund is missing.")
             balance = await self._session.scalar(
                 select(Balance).where(Balance.user_id == user_id).with_for_update()
             )
@@ -479,6 +559,9 @@ class WeeklyTicketPurchaseService:
                             public_number=first_number + offset,
                             lottery_id=lottery.id,
                             draw_id=target_draw.id,
+                            second_draw_id=dual_second_draw.id
+                            if dual_second_draw
+                            else None,
                             user_id=user_id,
                             numbers=list(stored_numbers),
                             purchase_price=ticket_price,
@@ -491,6 +574,8 @@ class WeeklyTicketPurchaseService:
                     offset += 1
                 target_draw.ticket_count += len(combinations)
                 target_draw.total_sales += len(combinations) * ticket_price
+            if dual_second_draw is not None:
+                dual_second_draw.ticket_count += len(combinations)
             lottery.next_ticket_number += len(ticket_ids)
             if pool_entries:
                 # Persist tickets before setting the inventory foreign keys.
@@ -503,11 +588,20 @@ class WeeklyTicketPurchaseService:
             balance.amount -= total_cost
             balance.version += 1
             jackpot_before = jackpot.balance
-            jackpot.balance += total_cost
-            jackpot.version += 1
+            fund_before = 0
+            if lottery.code == "dual":
+                assert fund is not None
+                fund_before = fund.balance
+                fund.balance += total_cost
+                fund.version += 1
+            else:
+                jackpot.balance += total_cost
+                jackpot.version += 1
             shared_details = {
                 "draw_id": str(draw.id),
-                "draw_ids": [str(value.id) for value in draws[:draw_count]],
+                "draw_ids": [str(draw.id), str(dual_second_draw.id)]
+                if dual_second_draw
+                else [str(value.id) for value in draws[:draw_count]],
                 "draw_count": draw_count,
                 "combinations_per_draw": len(combinations),
                 "ticket_ids": [str(value) for value in ticket_ids],
@@ -545,6 +639,22 @@ class WeeklyTicketPurchaseService:
                         details=shared_details,
                     )
                 )
+            if fund is not None:
+                purchase_ledger.append(
+                    _ledger_entry(
+                        operation_id=operation_id,
+                        idempotency_key=f"purchase:{idempotency_key}:kasper-fund",
+                        account_kind=LedgerAccountKind.KASPER_FUND,
+                        account_id=fund.id,
+                        transaction_type=TransactionType.TICKET_PURCHASE,
+                        before=fund_before,
+                        after=fund.balance,
+                        user_id=user_id,
+                        lottery_id=lottery.id,
+                        draw_id=draw.id,
+                        details=shared_details,
+                    )
+                )
             self._session.add_all(purchase_ledger)
         return PurchaseResult(
             operation_id=operation_id,
@@ -552,7 +662,9 @@ class WeeklyTicketPurchaseService:
             ticket_ids=tuple(ticket_ids),
             total_cost=total_cost,
             balance_after=balance.amount,
-            draw_ids=tuple(value.id for value in draws[:draw_count]),
+            draw_ids=(draw.id, dual_second_draw.id)
+            if dual_second_draw
+            else tuple(value.id for value in draws[:draw_count]),
             draw_count=draw_count,
         )
 
@@ -603,6 +715,12 @@ class WeeklySettlementService:
             if lottery is None:
                 raise ConfigurationError(
                     f"Draw is not attached to a {self.lottery_label} lottery."
+                )
+            if lottery.code == "dual":
+                from k_loto.application.dual import settle_dual_draw
+
+                return await settle_dual_draw(
+                    self._session, draw, lottery, timestamp, self._number_generator
                 )
             if lottery.code == "bingo":
                 from k_loto.domain.bingo import DRAW_MOVES, generate_sequence

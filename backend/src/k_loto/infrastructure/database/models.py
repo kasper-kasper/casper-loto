@@ -260,6 +260,19 @@ class Ticket(Base):
         CheckConstraint("matches IS NULL OR matches >= 0", name="matches_nonnegative"),
         Index("ix_ticket_user_status", "user_id", "status"),
         Index("ix_ticket_draw", "draw_id"),
+        Index("ix_ticket_second_draw", "second_draw_id"),
+        CheckConstraint(
+            "second_draw_id IS NULL OR second_draw_id <> draw_id",
+            name="distinct_dual_draws",
+        ),
+        CheckConstraint(
+            "dual_night_matches IS NULL OR dual_night_matches BETWEEN 0 AND 2",
+            name="dual_night_matches",
+        ),
+        CheckConstraint(
+            "dual_dawn_matches IS NULL OR dual_dawn_matches BETWEEN 0 AND 2",
+            name="dual_dawn_matches",
+        ),
         Index("ix_ticket_status_settled_lottery", "status", "settled_at", "lottery_id"),
     )
 
@@ -273,6 +286,11 @@ class Ticket(Base):
     draw_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True), ForeignKey("draws.id", ondelete="RESTRICT")
     )
+    second_draw_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("draws.id", ondelete="RESTRICT")
+    )
+    dual_night_matches: Mapped[int | None] = mapped_column(Integer)
+    dual_dawn_matches: Mapped[int | None] = mapped_column(Integer)
     user_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT")
     )

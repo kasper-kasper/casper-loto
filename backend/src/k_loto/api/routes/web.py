@@ -309,8 +309,13 @@ async def dashboard(
     player: Annotated[CurrentWebPlayer, Depends(current_web_player)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> DashboardResponse:
-    return _dashboard_response(
+    response = _dashboard_response(
         await MiniAppQueryService(session).dashboard(player.user_id)
+    )
+    return response.model_copy(
+        update={
+            "lotteries": [item for item in response.lotteries if item.code != "dual"]
+        }
     )
 
 
@@ -370,10 +375,29 @@ async def live(
     scope: Annotated[Literal["standard", "fast"], Query()] = "standard",
     lottery_code: Annotated[str | None, Query(max_length=32)] = None,
 ) -> LiveFeedResponse:
-    return _live_response(
+    if lottery_code == "dual":
+        raise HTTPException(status_code=404, detail="Lottery unavailable on web.")
+    response = _live_response(
         await MiniAppQueryService(session).live(
             player.user_id, fast_only=scope == "fast", lottery_code=lottery_code
         )
+    )
+    return response.model_copy(
+        update={
+            "latest_completed": response.latest_completed
+            if response.latest_completed is not None
+            and response.latest_completed.lottery_code != "dual"
+            else None,
+            "next_scheduled": response.next_scheduled
+            if response.next_scheduled is not None
+            and response.next_scheduled.lottery_code != "dual"
+            else None,
+            "recent_completed": [
+                item
+                for item in response.recent_completed
+                if item.lottery_code != "dual"
+            ],
+        }
     )
 
 
@@ -412,6 +436,8 @@ async def _purchase(
     session: AsyncSession,
     settings: Settings,
 ) -> PurchaseResponse:
+    if lottery_code == "dual":
+        raise HTTPException(status_code=404, detail="Lottery unavailable on web.")
     if not purchase_rate_limiter.allow(
         player.user_id, limit=settings.miniapp_purchase_requests_per_minute
     ):

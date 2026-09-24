@@ -562,6 +562,22 @@ CLASSIC_6_36_RULES = LotteryRuleStrategy(
     6,
     jackpot_refill_from_reserve=True,
 )
+DUAL_RULES = LotteryRuleStrategy(
+    code="casper_dual_2_12_2_12",
+    label="Casper Dual",
+    numbers_to_pick=4,
+    max_number=24,
+    price_divisor=1,
+    jackpot_share=PayoutRatio(0),
+    guaranteed_payouts=MappingProxyType({}),
+    distribution_pool_match=None,
+    jackpot_match=22,
+    primary_numbers_to_pick=2,
+    primary_max_number=12,
+    secondary_numbers_to_pick=2,
+    secondary_max_number=12,
+    secondary_storage_offset=12,
+)
 SEPTEMBER_RULES = LotteryRuleStrategy(
     "september_3_33",
     "3 СЕНТЯБРЯ",
@@ -770,6 +786,7 @@ LOTTERY_RULES: Mapping[str, LotteryRuleStrategy] = MappingProxyType(
             DAILY_RULES,
             PSS_CASPER_BALL_RULES,
             CLASSIC_6_36_RULES,
+            DUAL_RULES,
             SEPTEMBER_RULES,
             GROB_RULES,
             LEGACY_FAST_RULES,

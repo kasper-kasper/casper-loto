@@ -9,9 +9,11 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 from sqlalchemy.sql.elements import ColumnElement
 
 from k_loto.application.query_scope import LotteryScope, lottery_scope
+from k_loto.domain.dual import dual_phase
 from k_loto.domain.enums import (
     DrawStatus,
     InAppNotificationType,
@@ -96,6 +98,13 @@ class MiniAppTicket:
     draw_ticket_count: int
     bingo_result: dict[str, Any] | None = None
     instant_symbols: tuple[int, ...] | None = None
+    second_draw_number: int | None = None
+    second_scheduled_at: datetime | None = None
+    first_phase: str | None = None
+    first_winning_numbers: tuple[int, ...] | None = None
+    second_winning_numbers: tuple[int, ...] | None = None
+    dual_night_matches: int | None = None
+    dual_dawn_matches: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -546,14 +555,22 @@ class MiniAppQueryService:
                     await self._session.scalar(
                         select(func.count(Ticket.id)).where(
                             Ticket.user_id == user_id,
-                            Ticket.draw_id == draw.id,
+                            or_(
+                                Ticket.draw_id == draw.id,
+                                Ticket.second_draw_id == draw.id,
+                            )
+                            if lottery.code == "dual"
+                            else Ticket.draw_id == draw.id,
                             Ticket.status == TicketStatus.PURCHASED,
                         )
                     )
                     or 0
                 )
             timeline = (
-                draw_timeline(draw.scheduled_at, rules.numbers_to_pick)
+                draw_timeline(
+                    draw.scheduled_at,
+                    2 if lottery.code == "dual" else rules.numbers_to_pick,
+                )
                 if draw is not None
                 else None
             )
@@ -678,15 +695,18 @@ class MiniAppQueryService:
         )
         regular: list[MiniAppTicket] = []
         if not only_instant:
+            second_draw = aliased(Draw)
             regular_rows = (
                 await self._session.execute(
                     select(
                         Ticket,
                         Draw,
+                        second_draw,
                         Lottery,
                         func.count(Ticket.id).over(partition_by=Ticket.draw_id),
                     )
                     .join(Draw, Draw.id == Ticket.draw_id)
+                    .outerjoin(second_draw, second_draw.id == Ticket.second_draw_id)
                     .join(Lottery, Lottery.id == Ticket.lottery_id)
                     .where(*filters)
                     .order_by(*ordering)
@@ -703,7 +723,14 @@ class MiniAppQueryService:
                         lottery.code, lottery.name, draw.scheduled_at
                     ),
                     draw_number=draw.public_number,
-                    scheduled_at=draw.scheduled_at,
+                    scheduled_at=(
+                        second.scheduled_at
+                        if lottery.code == "dual"
+                        and second is not None
+                        and draw.status == DrawStatus.COMPLETED
+                        and ticket.status == TicketStatus.PURCHASED
+                        else draw.scheduled_at
+                    ),
                     numbers=tuple(ticket.numbers),
                     purchase_price=ticket.purchase_price,
                     source=ticket.source,
@@ -713,6 +740,7 @@ class MiniAppQueryService:
                     winning_numbers=(
                         tuple(draw.winning_numbers)
                         if draw.winning_numbers
+                        and lottery.code != "dual"
                         and (
                             lottery.code != "bingo"
                             or draw.status == DrawStatus.COMPLETED
@@ -721,8 +749,25 @@ class MiniAppQueryService:
                     ),
                     draw_ticket_count=int(draw_ticket_count),
                     bingo_result=ticket.bingo_result,
+                    second_draw_number=second.public_number
+                    if second is not None
+                    else None,
+                    second_scheduled_at=second.scheduled_at
+                    if second is not None
+                    else None,
+                    first_phase=dual_phase(draw.scheduled_at)
+                    if lottery.code == "dual"
+                    else None,
+                    first_winning_numbers=tuple(draw.winning_numbers)
+                    if lottery.code == "dual" and draw.winning_numbers
+                    else None,
+                    second_winning_numbers=tuple(second.winning_numbers)
+                    if second is not None and second.winning_numbers
+                    else None,
+                    dual_night_matches=ticket.dual_night_matches,
+                    dual_dawn_matches=ticket.dual_dawn_matches,
                 )
-                for ticket, draw, lottery, draw_ticket_count in regular_rows
+                for ticket, draw, second, lottery, draw_ticket_count in regular_rows
             ]
         if not include_instant:
             return tuple(regular)
@@ -925,6 +970,11 @@ class MiniAppQueryService:
         lottery: Lottery,
         jackpot: int | None,
     ) -> MiniAppLiveDraw:
+        round_ticket_filter = (
+            or_(Ticket.draw_id == draw.id, Ticket.second_draw_id == draw.id)
+            if lottery.code == "dual"
+            else Ticket.draw_id == draw.id
+        )
         aggregate = (
             await self._session.execute(
                 select(
@@ -932,7 +982,7 @@ class MiniAppQueryService:
                     func.count(Ticket.id).filter(Ticket.prize_amount > 0),
                     func.max(Ticket.matches),
                     func.coalesce(func.sum(Ticket.prize_amount), 0),
-                ).where(Ticket.user_id == user_id, Ticket.draw_id == draw.id)
+                ).where(Ticket.user_id == user_id, round_ticket_filter)
             )
         ).one()
         timeline_factory = (
@@ -945,7 +995,7 @@ class MiniAppQueryService:
         timeline = timeline_factory(
             draw.scheduled_at,
             draw.executed_at if draw.status == DrawStatus.COMPLETED else None,
-            lottery.numbers_to_pick,
+            2 if lottery.code == "dual" else lottery.numbers_to_pick,
         )
         presentation_now = datetime.now(UTC)
         highlighted: tuple[MiniAppLiveTicket, ...] = ()
@@ -991,7 +1041,7 @@ class MiniAppQueryService:
                 ranked_tickets = (
                     await self._session.execute(
                         select(Ticket)
-                        .where(Ticket.user_id == user_id, Ticket.draw_id == draw.id)
+                        .where(Ticket.user_id == user_id, round_ticket_filter)
                         .order_by(
                             Ticket.prize_amount.desc(),
                             Ticket.matches.desc().nullslast(),
