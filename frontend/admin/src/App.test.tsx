@@ -161,7 +161,7 @@ it("groups administration into thirteen owner-oriented sections", async () => {
   await screen.findByText("Всего сорвано джекпотов");
 
   const nav = within(screen.getByRole("navigation"));
-  for (const label of ["Сегодня", "Fast", "Kasper LIVE", "Лотереи", "Расписание", "Тиражи", "Джекпоты", "Архив", "Игроки", "Аналитика", "Interesting Facts", "Тест эфира", "Журналы"]) {
+  for (const label of ["Сегодня", "Fast", "Kasper LIVE", "Лотереи", "Расписание", "Тиражи", "Джекпоты", "Архив", "Игроки", "Аналитика", "Интересные факты", "Тест эфира", "Журналы"]) {
     expect(nav.getByRole("button", { name: new RegExp(label) })).toBeInTheDocument();
   }
   fireEvent.click(nav.getByRole("button", { name: /Журналы/ }));
@@ -191,7 +191,7 @@ it("shows the daily owner result and its lottery breakdown", async () => {
 
 it("shows precomputed interesting facts and updates their workflow status", async () => {
   render(<App />);
-  fireEvent.click(await screen.findByRole("button", { name: /Interesting Facts/ }));
+  fireEvent.click(await screen.findByRole("button", { name: /Интересные факты/ }));
 
   expect(await screen.findByText("12 тиражей без джекпота")).toBeInTheDocument();
   expect(screen.getByLabelText("Статус факта")).toHaveValue("new");

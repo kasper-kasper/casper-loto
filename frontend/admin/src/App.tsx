@@ -42,7 +42,7 @@ const navigation: { id: View; label: string; code: string }[] = [
   { id: "analytics", label: "Аналитика", code: "07" },
   { id: "jackpots", label: "Джекпоты", code: "08" },
   { id: "archive", label: "Архив", code: "09" },
-  { id: "facts", label: "Interesting Facts", code: "10" },
+  { id: "facts", label: "Интересные факты", code: "10" },
   { id: "broadcast", label: "Тест эфира", code: "11" },
   { id: "system", label: "Журналы", code: "12" },
 ];
