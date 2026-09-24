@@ -918,7 +918,7 @@ async def interesting_facts(
     fact_status: Annotated[InterestingFactStatus | None, Query()] = None,
     lottery_id: Annotated[UUID | None, Query()] = None,
     fact_type: Annotated[str | None, Query(max_length=64)] = None,
-    limit: Annotated[int, Query(ge=1, le=500)] = 200,
+    limit: Annotated[int, Query(ge=1, le=50)] = 50,
 ) -> list[InterestingFactResponse]:
     items = await InterestingFactAdminService(session).list(
         status=fact_status,

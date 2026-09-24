@@ -140,7 +140,7 @@ export const adminApi = {
   notifications: () => request<NotificationItem[]>("/notifications"),
   releaseNotes: (kind: "changelog" | "devlog") =>
     request<ReleaseNote[]>(`/release-notes/${kind}`),
-  interestingFacts: (query = "fact_status=new") =>
+  interestingFacts: (query = "fact_status=new&limit=50") =>
     request<InterestingFact[]>(`/interesting-facts${query ? `?${query}` : ""}`),
   setInterestingFactStatus: (id: string, status: InterestingFactStatus) =>
     request<InterestingFact>(`/interesting-facts/${id}/status`, {

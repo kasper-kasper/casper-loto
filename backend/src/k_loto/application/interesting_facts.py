@@ -606,7 +606,7 @@ class InterestingFactAdminService:
         status: InterestingFactStatus | None = None,
         lottery_id: UUID | None = None,
         fact_type: str | None = None,
-        limit: int = 200,
+        limit: int = 50,
     ) -> tuple[StoredFact, ...]:
         statement = select(InterestingFact, Lottery.code, Lottery.name).join(
             Lottery, Lottery.id == InterestingFact.lottery_id
@@ -624,8 +624,9 @@ class InterestingFactAdminService:
                 ).limit(limit)
             )
         ).all()
-        return tuple(
-            StoredFact(
+        unique: dict[tuple[UUID, str, str], StoredFact] = {}
+        for fact, code, name in rows:
+            item = StoredFact(
                 fact.id,
                 fact.generation_date,
                 fact.generated_at,
@@ -639,7 +640,15 @@ class InterestingFactAdminService:
                 fact.score,
                 InterestingFactStatus(fact.status),
             )
-            for fact, code, name in rows
+            key = (item.lottery_id, item.fact_type, item.title.casefold().strip())
+            if key not in unique:
+                unique[key] = item
+        return tuple(
+            sorted(
+                unique.values(),
+                key=lambda item: (item.generation_date, item.score),
+                reverse=True,
+            )[:limit]
         )
 
     async def set_status(
