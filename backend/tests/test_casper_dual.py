@@ -17,9 +17,9 @@ from k_loto.domain.dual import (
     dual_phase,
     dual_prize,
 )
-from k_loto.domain.enums import DrawStatus, LotteryKind, TicketStatus
+from k_loto.domain.enums import DrawStatus, LotteryKind, TicketSource, TicketStatus
 from k_loto.domain.errors import InvalidTicket, NoAvailableDraw
-from k_loto.domain.lottery_rules import DUAL_RULES
+from k_loto.domain.lottery_rules import DUAL_RULES, WEEKLY_RULES
 from k_loto.domain.schedules import next_draw_at, sales_close_at
 from k_loto.infrastructure.database.models import (
     Balance,
@@ -135,6 +135,72 @@ async def test_dual_rejects_explicit_purchase_outside_five_draw_window(
             now=datetime(2026, 9, 25, tzinfo=UTC),
         )
     assert session.added == []
+
+
+async def test_dual_rejects_auto_play_even_with_admin_setting_enabled() -> None:
+    lottery = SimpleNamespace(
+        code="dual",
+        ticket_price=20_000,
+    )
+    session = PurchaseSession([None, lottery])
+    with pytest.raises(InvalidTicket, match="Auto-play is not enabled"):
+        await LotteryTicketPurchaseService(
+            cast(AsyncSession, session), lottery_code="dual", target_draw_id=uuid4()
+        ).purchase(
+            user_id=uuid4(),
+            combinations=[[3, 10, 15, 22]],
+            idempotency_key="dual-auto-play-blocked",
+            source=TicketSource.AUTO_PLAY,
+            now=datetime(2026, 9, 25, tzinfo=UTC),
+        )
+    assert session.added == []
+
+
+async def test_other_lottery_auto_play_rejects_sixth_upcoming_draw() -> None:
+    draw_ids = [uuid4() for _ in range(6)]
+    lottery = SimpleNamespace(
+        id=uuid4(),
+        code="weekly",
+        kind=LotteryKind.WEEKLY,
+        ruleset_code=WEEKLY_RULES.code,
+        ticket_price=20_000,
+        numbers_to_pick=5,
+        max_number=20,
+        max_tickets_per_purchase=1000,
+    )
+
+    class TargetSession(PurchaseSession):
+        async def scalars(self, _statement: Any) -> ScalarRows:
+            return ScalarRows(draw_ids[:5])
+
+    session = TargetSession(
+        [None, lottery, object(), None, SimpleNamespace(id=draw_ids[5])]
+    )
+    with pytest.raises(NoAvailableDraw, match="next five draws"):
+        await LotteryTicketPurchaseService(
+            cast(AsyncSession, session),
+            lottery_code="weekly",
+            target_draw_id=draw_ids[5],
+        ).purchase(
+            user_id=uuid4(),
+            combinations=[[1, 2, 3, 4, 5]],
+            idempotency_key="weekly-auto-play-window",
+            source=TicketSource.AUTO_PLAY,
+            now=datetime(2026, 9, 25, tzinfo=UTC),
+        )
+    assert session.added == []
+
+
+async def test_auto_play_cannot_create_an_unselected_draw() -> None:
+    with pytest.raises(InvalidTicket, match="requires a selected draw"):
+        await LotteryTicketPurchaseService(
+            cast(AsyncSession, PurchaseSession([])), lottery_code="weekly"
+        ).purchase(
+            user_id=uuid4(),
+            combinations=[[1, 2, 3, 4, 5]],
+            idempotency_key="auto-play-without-target",
+            source=TicketSource.AUTO_PLAY,
+        )
 
 
 @pytest.mark.asyncio

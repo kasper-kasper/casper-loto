@@ -29,7 +29,12 @@ from k_loto.domain.errors import (
     InvalidTicket,
     NoAvailableDraw,
 )
-from k_loto.domain.lotteries import draw_display_name, is_fast_lottery
+from k_loto.domain.lotteries import (
+    AUTO_PLAY_ALLOWED_CODES,
+    AUTO_PLAY_DRAW_WINDOW,
+    draw_display_name,
+    is_fast_lottery,
+)
 from k_loto.domain.lottery_rules import (
     DAILY_RULES,
     WEEKLY_RULES,
@@ -217,6 +222,8 @@ class WeeklyTicketPurchaseService:
             raise InvalidTicket("A purchase can cover either 1 or 5 draws.")
         if self._target_draw_id is not None and draw_count != 1:
             raise InvalidTicket("A selected draw purchase cannot span multiple draws.")
+        if source == TicketSource.AUTO_PLAY and self._target_draw_id is None:
+            raise InvalidTicket("Auto-play requires a selected draw.")
         if not 1 <= len(combinations) <= MAX_TICKETS_PER_PURCHASE:
             raise InvalidTicket(
                 f"A purchase must contain 1 to {MAX_TICKETS_PER_PURCHASE} tickets."
@@ -245,6 +252,11 @@ class WeeklyTicketPurchaseService:
                 raise ConfigurationError(
                     f"Active {self.lottery_label} lottery is not configured."
                 )
+            if (
+                source == TicketSource.AUTO_PLAY
+                and lottery.code not in AUTO_PLAY_ALLOWED_CODES
+            ):
+                raise InvalidTicket("Auto-play is not enabled for this lottery.")
             current_rules = _rules_for_lottery(lottery, expected=self.ruleset_code)
             if lottery.code == "bingo" and draw_count != 1:
                 raise InvalidTicket("Bingo purchases cover one draw.")
@@ -301,7 +313,9 @@ class WeeklyTicketPurchaseService:
                 raise NoAvailableDraw(
                     "The selected draw is no longer available for ticket sales."
                 )
-            if lottery.code == "dual" and self._target_draw_id is not None:
+            if self._target_draw_id is not None and (
+                lottery.code == "dual" or source == TicketSource.AUTO_PLAY
+            ):
                 open_draw_ids = list(
                     (
                         await self._session.scalars(
@@ -312,13 +326,20 @@ class WeeklyTicketPurchaseService:
                                 Draw.sales_close_at > timestamp,
                             )
                             .order_by(Draw.scheduled_at)
-                            .limit(DUAL_PURCHASE_DRAW_WINDOW)
+                            .limit(
+                                DUAL_PURCHASE_DRAW_WINDOW
+                                if lottery.code == "dual"
+                                else AUTO_PLAY_DRAW_WINDOW
+                            )
                         )
                     ).all()
                 )
-                if draw is None or draw.id not in open_draw_ids[:-1]:
+                eligible_ids = (
+                    open_draw_ids[:-1] if lottery.code == "dual" else open_draw_ids
+                )
+                if draw is None or draw.id not in eligible_ids:
                     raise NoAvailableDraw(
-                        "Casper Dual is limited to the next five draws."
+                        "This lottery is limited to the next five draws."
                     )
             if draw is None:
                 latest = await self._session.scalar(

@@ -9,7 +9,6 @@ from sqlalchemy import exists, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from k_loto.application.weekly import LotteryTicketPurchaseService
-from k_loto.domain.dual import DUAL_PURCHASE_DRAW_WINDOW
 from k_loto.domain.enums import DrawStatus, LotteryKind, TicketSource, TicketStatus
 from k_loto.domain.errors import (
     ConfigurationError,
@@ -17,6 +16,7 @@ from k_loto.domain.errors import (
     InvalidTicket,
     NoAvailableDraw,
 )
+from k_loto.domain.lotteries import AUTO_PLAY_ALLOWED_CODES, AUTO_PLAY_DRAW_WINDOW
 from k_loto.domain.lottery_rules import WEEKLY_RULES, get_lottery_rules
 from k_loto.domain.weekly import SystemRandomNumberGenerator
 from k_loto.infrastructure.database.models import (
@@ -77,25 +77,28 @@ class AutoPlayService:
 
     async def _candidates(self, now: datetime) -> tuple[AutoPlayCandidate, ...]:
         async with self._session_factory() as session:
-            dual_draw_ids = list(
-                (
-                    await session.scalars(
-                        select(Draw.id)
-                        .join(Lottery, Lottery.id == Draw.lottery_id)
-                        .where(
-                            Lottery.code == "dual",
-                            Draw.status == DrawStatus.SCHEDULED,
-                            Draw.sales_close_at > now,
-                        )
-                        .order_by(Draw.scheduled_at)
-                        .limit(DUAL_PURCHASE_DRAW_WINDOW)
+            open_draws = (
+                await session.execute(
+                    select(Draw.id, Draw.lottery_id)
+                    .join(Lottery, Lottery.id == Draw.lottery_id)
+                    .where(
+                        Lottery.code.in_(AUTO_PLAY_ALLOWED_CODES),
+                        Lottery.is_active.is_(True),
+                        Draw.status == DrawStatus.SCHEDULED,
+                        Draw.sales_close_at > now,
                     )
-                ).all()
-            )
-            # A Dual ticket occupies two consecutive draws. Keep its second
-            # round inside the five-draw window, even when more draws already
-            # exist (for example, after restoring a scheduler backlog).
-            dual_start_ids = set(dual_draw_ids[:-1])
+                    .order_by(Draw.lottery_id, Draw.scheduled_at)
+                )
+            ).all()
+            eligible_draw_ids: set[UUID] = set()
+            draw_counts: dict[UUID, int] = {}
+            for draw_id, lottery_id in open_draws:
+                position = draw_counts.get(lottery_id, 0)
+                if position < AUTO_PLAY_DRAW_WINDOW:
+                    eligible_draw_ids.add(draw_id)
+                draw_counts[lottery_id] = position + 1
+            if not eligible_draw_ids:
+                return ()
             query = (
                 select(AutoPlaySetting, Draw, Lottery)
                 .join(User, User.id == AutoPlaySetting.user_id)
@@ -110,6 +113,8 @@ class AutoPlayService:
                     AutoPlaySetting.enabled.is_(True),
                     User.is_active.is_(True),
                     User.is_admin.is_(False),
+                    Lottery.code.in_(AUTO_PLAY_ALLOWED_CODES),
+                    Draw.id.in_(eligible_draw_ids),
                     ~exists(
                         select(Ticket.id).where(
                             Ticket.user_id == AutoPlaySetting.user_id,
@@ -126,7 +131,10 @@ class AutoPlayService:
             rows = (await session.execute(query)).all()
         candidates: list[AutoPlayCandidate] = []
         for setting, draw, lottery in rows:
-            if lottery.code == "dual" and draw.id not in dual_start_ids:
+            if (
+                lottery.code not in AUTO_PLAY_ALLOWED_CODES
+                or draw.id not in eligible_draw_ids
+            ):
                 continue
             ruleset_code = str(
                 (draw.configuration_snapshot or {}).get(

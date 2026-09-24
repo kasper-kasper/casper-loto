@@ -34,6 +34,24 @@ DAILY_LOTTERY_CODES = frozenset(
     item.code for item in LOTTERY_DEFINITIONS if item.kind == LotteryKind.DAILY
 )
 FAST_LOTTERY_CODES = frozenset({"flash", "shadow", "pulse"})
+# Auto-play is opt-in per product. New lotteries must be reviewed before they
+# can inherit existing players' enabled auto-play settings.
+AUTO_PLAY_ALLOWED_CODES = frozenset(
+    {
+        "bingo",
+        "daily",
+        "flash",
+        "grob",
+        "khan",
+        "pll",
+        "pss",
+        "pulse",
+        "september",
+        "shadow",
+        "weekly",
+    }
+)
+AUTO_PLAY_DRAW_WINDOW = 5
 
 
 def is_fast_lottery(code: str) -> bool:
