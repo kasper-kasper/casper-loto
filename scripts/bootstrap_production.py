@@ -108,19 +108,19 @@ async def main() -> None:
         {"weekday": "sunday", "draw_time": "20:00"},
         "weekly_grand_5_35_2_5",
     )
-    for code, name, slots in (
-        ("pll", "ПЛЛ-лото", ["02:22", "13:45"]),
-        ("pss", "ПСС-Лото", ["12:00", "20:30"]),
+    for code, name, slots, pick, maximum, ruleset_code in (
+        ("pll", "ПЛЛ-лото", ["02:22", "13:45"], 4, 15, "daily_4_15"),
+        ("pss", "Casper Ball", ["12:00", "20:30"], 6, 44, "casper_ball_5_36_1_8"),
     ):
         await ensure_lottery(
             code,
             name,
             LotteryKind.DAILY,
-            4,
-            15,
+            pick,
+            maximum,
             2,
             {"slots": slots},
-            "daily_4_15",
+            ruleset_code,
         )
     await ensure_lottery(
         "khan",
