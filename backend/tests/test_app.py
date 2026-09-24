@@ -13,7 +13,7 @@ from k_loto.main import create_app
 def test_application_metadata() -> None:
     app = create_app()
 
-    assert app.title == "K-Loto API"
+    assert app.title == "Casper Loto API"
     assert app.version == "1.45.1"
 
 

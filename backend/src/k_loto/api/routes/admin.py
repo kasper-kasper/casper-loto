@@ -355,6 +355,7 @@ class NotificationResponse(ApiModel):
     available_at: datetime
     sent_at: datetime | None
     last_error: str | None
+    payload: dict[str, Any]
     created_at: datetime
 
 

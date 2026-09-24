@@ -36,7 +36,7 @@ def miniapp_markup(url: str | None) -> InlineKeyboardMarkup | None:
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="🎟 Играть в K-Loto",
+                    text="🎟 Играть в Casper Loto",
                     web_app=WebAppInfo(url=url),
                 )
             ]
@@ -46,7 +46,7 @@ def miniapp_markup(url: str | None) -> InlineKeyboardMarkup | None:
 
 def miniapp_menu_button(url: str) -> MenuButtonWebApp:
     return MenuButtonWebApp(
-        text="🎟 Играть в K-Loto",
+        text="🎟 Играть в Casper Loto",
         web_app=WebAppInfo(url=url),
     )
 
@@ -70,11 +70,11 @@ async def _send_miniapp(message: Message) -> None:
     settings = get_settings()
     if settings.miniapp_url is None:
         await message.answer(
-            "Mini App временно недоступен. Попробуйте открыть K-Loto немного позже."
+            "Mini App временно недоступен. Попробуйте открыть Casper Loto немного позже."
         )
         return
     await message.answer(
-        "✨ Открой K-Loto — вход выполнится автоматически через Telegram.",
+        "✨ Открой Casper Loto — вход выполнится автоматически через Telegram.",
         reply_markup=miniapp_markup(str(settings.miniapp_url)),
     )
 
@@ -162,7 +162,7 @@ async def run_bot() -> None:
     bot = Bot(token=token)
     await bot.set_my_commands(
         [
-            BotCommand(command="start", description="Открыть K-Loto"),
+            BotCommand(command="start", description="Открыть Casper Loto"),
             BotCommand(command="web", description="Код входа на сайт"),
         ]
     )

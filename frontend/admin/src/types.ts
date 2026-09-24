@@ -292,6 +292,7 @@ export interface NotificationItem {
   available_at: string;
   sent_at: string | null;
   last_error: string | null;
+  payload: Record<string, unknown>;
   created_at: string;
 }
 

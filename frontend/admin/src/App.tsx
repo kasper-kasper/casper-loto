@@ -107,6 +107,19 @@ function translated(value: string, dictionary: Record<string, string>): string {
   return dictionary[value] ?? value.replaceAll("_", " ").toLocaleLowerCase("ru-RU");
 }
 
+function notificationDetail(item: NotificationItem): string {
+  if (item.type !== "SYSTEM_ALERT") return item.last_error ?? "—";
+  const kind = String(item.payload.kind ?? "");
+  const labels: Record<string, string> = {
+    stuck_draws: "Обнаружены зависшие тиражи",
+    stuck_notifications: "Обнаружены зависшие уведомления",
+    scheduler_error: "Ошибка планировщика",
+  };
+  const count = typeof item.payload.count === "number" ? ` · количество: ${item.payload.count}` : "";
+  const code = item.payload.error_code ? ` · код: ${String(item.payload.error_code)}` : "";
+  return `${labels[kind] ?? "Системная проверка"}${count}${code}`;
+}
+
 function schedule(value: Record<string, unknown>): string {
   if (typeof value.interval_minutes === "number") return `Каждые ${value.interval_minutes} минут · МСК`;
   const weekday = value.weekday === "sunday" ? "воскресенье" : String(value.weekday ?? "");
@@ -662,7 +675,7 @@ function SystemView({ tab, onTab, transactions, notifications, audit, onTransact
     {tab === "health" && dashboard && <SystemHealth data={dashboard} />}
     {tab === "development" && <DevelopmentView changelog={releaseNotes.changelog} devlog={releaseNotes.devlog} />}
     {tab === "ledger" && <><TransactionFilters onApply={onTransactions} /><section className="panel"><header><div><h2>Неизменяемый журнал CAS</h2><small>Нажмите ID игрока, чтобы открыть его историю</small></div><span>ЗАПИСЕЙ: {transactions.length}</span></header><TransactionTable rows={transactions} onOpenPlayer={onOpenPlayer} /></section></>}
-    {tab === "notifications" && <section className="panel"><header><h2>Очередь уведомлений</h2><span>ДОСТАВЛЕНО · ОШИБКА · ОЖИДАЕТ</span></header><div className="table-wrap"><table><thead><tr><th>Создано</th><th>Тип</th><th>Игрок</th><th>Статус</th><th>Попытки</th><th>Ошибка</th></tr></thead><tbody>{notifications.map((item) => <tr key={item.id}><td>{date(item.created_at)}</td><td>{translated(item.type, notificationTypes)}</td><td><code>{item.user_id.slice(0, 8)}</code></td><td><span className={`tag ${item.status.toLowerCase()}`}>{translated(item.status, { PENDING: "ожидает", PROCESSING: "отправляется", SENT: "доставлено", FAILED: "ошибка", CANCELLED: "отменено" })}</span></td><td>{item.attempts}</td><td>{item.last_error ?? "—"}</td></tr>)}</tbody></table></div></section>}
+    {tab === "notifications" && <section className="panel"><header><h2>Очередь уведомлений</h2><span>ДОСТАВЛЕНО · ОШИБКА · ОЖИДАЕТ</span></header><div className="table-wrap"><table><thead><tr><th>Создано</th><th>Тип и что произошло</th><th>Игрок</th><th>Статус</th><th>Попытки</th><th>Ключ события</th></tr></thead><tbody>{notifications.map((item) => <tr key={item.id}><td>{date(item.created_at)}</td><td><b>{translated(item.type, notificationTypes)}</b><small>{notificationDetail(item)}</small></td><td><code>{item.user_id.slice(0, 8)}</code></td><td><span className={`tag ${item.status.toLowerCase()}`}>{translated(item.status, { PENDING: "ожидает", PROCESSING: "отправляется", SENT: "доставлено", FAILED: "ошибка", CANCELLED: "отменено" })}</span></td><td>{item.attempts}</td><td><code>{item.event_key}</code></td></tr>)}</tbody></table></div></section>}
     {tab === "audit" && <section className="panel"><header><h2>Аудит действий администратора</h2><span>ХРАНИТСЯ ПОСТОЯННО</span></header><div className="audit-list">{audit.map((item) => <article key={item.id}><time>{date(item.created_at)}</time><b>{translated(item.action, auditActions)} · {translated(item.entity_type, entityTypes)}</b><p>{item.reason ?? "Причина не указана"}</p><code>{JSON.stringify(item.old_values)} → {JSON.stringify(item.new_values)}</code></article>)}</div></section>}
   </>;
 }

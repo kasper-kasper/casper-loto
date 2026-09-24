@@ -16,6 +16,10 @@ def format_cas(amount: int) -> str:
 
 
 def _display_numbers(numbers: list[int], lottery_code: str) -> str:
+    if lottery_code == "pss" and len(numbers) == 6:
+        main = [value for value in numbers if value <= 36]
+        special = [value - 36 for value in numbers if value > 36]
+        return f"{' · '.join(map(str, main))}  +  Casper Ball {special[0]}"
     if lottery_code == "weekly" and len(numbers) == 7:
         main = [value for value in numbers if value <= 35]
         special = [value - 35 for value in numbers if value > 35]
@@ -144,7 +148,7 @@ def format_inactivity_reminder(payload: dict[str, Any]) -> str:
         f"Ближайший тираж — {payload['lottery_name']} "
         f"№{int(payload['draw_number']):04d}.\n"
         f"🕒 {scheduled:%d.%m.%Y · %H:%M} МСК\n\n"
-        "Вы давно не выбирали числа. Откройте K-Loto, если хотите участвовать."
+        "Вы давно не выбирали числа. Откройте Casper Loto, если хотите участвовать."
     )
 
 
@@ -161,18 +165,29 @@ def format_jackpot_win(payload: dict[str, Any]) -> str:
 
 def format_delivery_test() -> str:
     return (
-        "✅ Уведомления K-Loto работают\n\n"
+        "✅ Уведомления Casper Loto работают\n\n"
         "Это проверочное сообщение, которое вы запросили в профиле Mini App. "
         "Сюда придёт сообщение о вашем джекпоте или напоминание об игре."
     )
 
 
 def format_system_alert(payload: dict[str, Any]) -> str:
+    labels = {
+        "stuck_draws": "зависшие тиражи",
+        "stuck_notifications": "зависшие уведомления",
+        "scheduler_error": "ошибка планировщика",
+    }
+    kind = str(payload.get("kind", "unknown"))
+    label = labels.get(kind, "системная проверка")
+    count = int(payload.get("count", 1))
+    error_code = str(payload.get("error_code", "")).strip()
+    details = f"\nТехнический код: {error_code}" if error_code else ""
     return (
-        "🚨 K-Loto: требуется внимание владельца\n\n"
-        f"Событие: {payload.get('kind', 'unknown')}\n"
-        f"Количество: {int(payload.get('count', 1))}\n"
-        "Подробности доступны в Admin Panel. Секретные данные в сообщение не включены."
+        "🚨 Casper Loto: требуется внимание владельца\n\n"
+        f"Что произошло: обнаружены {label}.\n"
+        f"Количество: {count}.{details}\n\n"
+        "Что проверить: Admin Panel → Журналы → Состояние или Уведомления. "
+        "Секретные данные в сообщение не включены."
     )
 
 

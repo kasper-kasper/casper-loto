@@ -35,7 +35,7 @@ class TelegramIdentityService:
     ) -> UserProfile:
         if telegram_id <= 0:
             raise ValueError("telegram_id must be positive.")
-        clean_name = display_name.strip() or "K-Loto Player"
+        clean_name = display_name.strip() or "Casper Loto Player"
         clean_username = username.strip() if username else None
         new_user_id = uuid4()
 

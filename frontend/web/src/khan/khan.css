@@ -1,0 +1,8 @@
+.khan-experience{position:fixed;inset:0;z-index:1000;width:100%;height:100dvh;overflow:hidden;background:#06163b;color:#fff2c9}
+.khan-canvas,.khan-canvas canvas{display:block;width:100%!important;height:100%!important;outline:none}
+.khan-sr-controls{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.khan-status-region{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.khan-loading-shell{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;background:radial-gradient(circle at 50% 42%,#1a4386,#061332 65%,#03091a);color:#ffe2a0;font:700 11px/1.5 Arial,sans-serif;letter-spacing:.28em;text-transform:uppercase}
+.khan-loading-shell::before{content:"";position:absolute;width:82px;height:82px;border:2px solid #c99a35;border-top-color:#fff4bd;border-radius:50%;animation:khan-spin 1.5s linear infinite;box-shadow:0 0 35px #deb54544}
+@keyframes khan-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.khan-loading-shell::before{animation:none}}

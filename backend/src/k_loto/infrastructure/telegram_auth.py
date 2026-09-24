@@ -74,5 +74,5 @@ def validate_init_data(
     return TelegramWebAppUser(
         telegram_id=telegram_id,
         username=username,
-        display_name=display_name or "K-Loto Player",
+        display_name=display_name or "Casper Loto Player",
     )

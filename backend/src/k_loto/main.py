@@ -34,7 +34,7 @@ def create_app() -> FastAPI:
     configure_logging(settings.log_level)
 
     app = FastAPI(
-        title="K-Loto API",
+        title="Casper Loto API",
         version=__version__,
         docs_url="/docs" if settings.docs_enabled else None,
         redoc_url=None,

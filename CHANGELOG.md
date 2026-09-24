@@ -2,9 +2,27 @@
 
 ## [Unreleased]
 
-- Documented the approved Casper Loto brand system, reserved a shared asset
-  registry for the final reference pack, and standardized safe master-brand UI
-  labels without replacing the existing legacy K artwork.
+- PSS Lotto переведён на Casper Ball 5/36 + 1/8: базовый джекпот 50 000 000 CAS,
+  новая таблица фиксированных выплат и обновлённый эфир. Будущие PSS-билеты
+  возвращаются через ledger с сохранением номеров тиражей, времени и билетов;
+  прежний формат остаётся в архиве и исключён из текущей статистики.
+
+- Added a local-review Phaser 3 scene for the web «6 из 36» experience: an
+  empty glass lottery drum, 36 tactile balls, six animated ticket sockets,
+  confirmation-free manual purchase, and in-world random x1/x5/x25 controls.
+- Rebuilt its foreground controls as a reusable physical lottery terminal with
+  a perspective gold-and-navy table, integrated quick-play tablet, dynamic
+  jackpot display, volumetric ball textures, and dedicated brand/balance
+  plaques.
+- Added a custom blue-and-gold catalog preview and responsive desktop/mobile
+  staging for «6 из 36». Its broadcast remains unchanged and is intentionally
+  outside this visual-review slice.
+- Added the approved Casper Loto production asset pack and replaced the legacy
+  K mark across Web, Telegram Mini App, owner UI, favicons and app icons with
+  the gold/ivory C symbol and wordmark.
+- Standardized active user-facing master-brand copy as `Casper Loto`; cyan
+  remains an unused secondary asset and lottery-specific visual worlds retain
+  their own palettes.
 
 ## [1.46.0] - 2026-09-24
 

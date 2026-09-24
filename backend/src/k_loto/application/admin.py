@@ -15,7 +15,6 @@ from sqlalchemy import (
     literal,
     or_,
     select,
-    true,
     union_all,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, insert
@@ -279,6 +278,7 @@ class AdminNotification:
     available_at: datetime
     sent_at: datetime | None
     last_error: str | None
+    payload: dict[str, Any]
     created_at: datetime
 
 
@@ -292,7 +292,7 @@ async def ensure_admin_user(session: AsyncSession, username: str) -> UUID:
                 id=admin_id,
                 telegram_id=None,
                 username=username,
-                display_name="K-Loto Administrator",
+                display_name="Casper Loto Administrator",
                 is_active=True,
                 is_admin=True,
             )
@@ -686,11 +686,15 @@ class AdminQueryService:
         self._scope = scope
 
     def _current_fast_format(self) -> Any:
-        if self._scope != "fast":
-            return true()
-        return (
-            Draw.configuration_snapshot["ruleset_code"].astext == Lottery.ruleset_code
+        current = (
+            Draw.configuration_snapshot["ruleset_code"].astext
+            == Lottery.ruleset_code
         )
+        if self._scope == "fast":
+            return current
+        # PSS format history is immutable, but old PSS results must not be mixed
+        # into current statistics after the Casper Ball transition.
+        return or_(Lottery.code != "pss", current)
 
     async def players(
         self, *, search: str | None = None, limit: int = 200
@@ -1164,7 +1168,7 @@ class AdminQueryService:
         statement = (
             select(Draw, Lottery)
             .join(Lottery, Lottery.id == Draw.lottery_id)
-            .where(lottery_scope(self._scope))
+            .where(lottery_scope(self._scope), self._current_fast_format())
         )
         now = datetime.now(UTC)
         if period == "today":
@@ -1369,7 +1373,7 @@ class AdminQueryService:
             select(JackpotWinEvent, Lottery, Draw.public_number)
             .join(Lottery, Lottery.id == JackpotWinEvent.lottery_id)
             .join(Draw, Draw.id == JackpotWinEvent.draw_id)
-            .where(lottery_scope(self._scope))
+            .where(lottery_scope(self._scope), self._current_fast_format())
         )
         if lottery_id is not None:
             statement = statement.where(JackpotWinEvent.lottery_id == lottery_id)
@@ -1806,7 +1810,14 @@ class AdminQueryService:
                     func.coalesce(func.max(JackpotWinEvent.jackpot_amount), 0),
                 )
                 .outerjoin(JackpotWinEvent, JackpotWinEvent.lottery_id == Lottery.id)
-                .where(lottery_scope(self._scope))
+                .outerjoin(Draw, Draw.id == JackpotWinEvent.draw_id)
+                .where(
+                    lottery_scope(self._scope),
+                    or_(
+                        JackpotWinEvent.id.is_(None),
+                        self._current_fast_format(),
+                    ),
+                )
                 .group_by(Lottery.id)
                 .order_by(Lottery.is_active.desc(), Lottery.code)
             )
@@ -1828,7 +1839,8 @@ class AdminQueryService:
                 select(JackpotWinEvent, Draw.public_number)
                 .join(ranked, ranked.c.event_id == JackpotWinEvent.id)
                 .join(Draw, Draw.id == JackpotWinEvent.draw_id)
-                .where(ranked.c.position == 1)
+                .join(Lottery, Lottery.id == JackpotWinEvent.lottery_id)
+                .where(ranked.c.position == 1, self._current_fast_format())
             )
         ).all()
         last_by_lottery = {
@@ -1975,6 +1987,7 @@ class AdminQueryService:
                 row.available_at,
                 row.sent_at,
                 row.last_error,
+                row.payload,
                 row.created_at,
             )
             for row in rows

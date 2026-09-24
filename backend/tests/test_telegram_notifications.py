@@ -139,12 +139,12 @@ def test_miniapp_launch_button_is_only_added_when_url_is_configured() -> None:
 
     assert markup is not None
     button = markup.inline_keyboard[0][0]
-    assert button.text == "🎟 Играть в K-Loto"
+    assert button.text == "🎟 Играть в Casper Loto"
     assert button.web_app is not None
     assert button.web_app.url == "https://example.test/miniapp"
 
     menu_button = miniapp_menu_button("https://example.test/miniapp")
-    assert menu_button.text == "🎟 Играть в K-Loto"
+    assert menu_button.text == "🎟 Играть в Casper Loto"
     assert menu_button.web_app.url == "https://example.test/miniapp"
 
 
@@ -237,9 +237,9 @@ def test_owner_alert_is_redacted_and_points_to_admin_panel() -> None:
         {"kind": "scheduler_error", "count": 1, "error_code": "DatabaseError"}
     )
 
-    assert "scheduler_error" in message
+    assert "ошибка планировщика" in message
     assert "Admin Panel" in message
-    assert "DatabaseError" not in message
+    assert "DatabaseError" in message
 
 
 async def test_dispatcher_sends_claimed_event_only_once() -> None:

@@ -252,7 +252,7 @@ class DevBootstrapService:
     async def _ensure_daily(self, now: datetime) -> None:
         for code, name, slots, ruleset_code, numbers_to_pick, max_number in (
             ("pll", "ПЛЛ-лото", ["02:22", "13:45"], "daily_4_15", 4, 15),
-            ("pss", "ПСС-Лото", ["12:00", "20:30"], "daily_4_15", 4, 15),
+            ("pss", "Casper Ball", ["12:00", "20:30"], "casper_ball_5_36_1_8", 6, 44),
             ("khan", "6 из 36", ["09:00", "18:00"], "classic_6_36", 6, 36),
         ):
             lottery = await self._session.scalar(

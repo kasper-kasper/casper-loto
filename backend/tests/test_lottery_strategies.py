@@ -19,6 +19,7 @@ from k_loto.domain.lottery_rules import (
     LEGACY_PULSE_RULES,
     LEGACY_PULSE_V2_RULES,
     LEGACY_PULSE_V3_RULES,
+    PSS_CASPER_BALL_RULES,
     PULSE_RULES,
     SEPTEMBER_RULES,
     LotteryRuleStrategy,
@@ -27,6 +28,37 @@ from k_loto.domain.lottery_rules import (
     get_lottery_rules,
 )
 from k_loto.domain.schedules import future_draw_target, next_draw_at
+
+
+def test_casper_ball_uses_main_and_special_field_payouts() -> None:
+    rules = PSS_CASPER_BALL_RULES
+    assert rules.validate_combination([1, 2, 3, 4, 5, 37]) == (1, 2, 3, 4, 5, 37)
+    tickets = [
+        SettlementTicket(UUID(int=301), 1, UUID(int=401), (1, 2, 3, 4, 5, 37), 48_000),
+        SettlementTicket(UUID(int=302), 2, UUID(int=402), (1, 2, 3, 4, 5, 38), 48_000),
+        SettlementTicket(UUID(int=303), 3, UUID(int=403), (1, 2, 3, 4, 6, 38), 48_000),
+        SettlementTicket(UUID(int=304), 4, UUID(int=404), (1, 2, 3, 4, 6, 37), 48_000),
+        SettlementTicket(
+            UUID(int=305), 5, UUID(int=405), (10, 11, 12, 13, 14, 37), 48_000
+        ),
+    ]
+    plan = rules.calculate_settlement(
+        tickets,
+        (1, 2, 3, 4, 5, 37),
+        distribution_balance=0,
+        jackpot_balance=50_000_000,
+        reserve_balance=100_000_000,
+        base_jackpot=50_000_000,
+    )
+    assert [item.matches for item in plan.payouts] == [51, 50, 40, 41, 1]
+    assert [item.amount for item in plan.payouts] == [
+        50_000_000,
+        10_000_000,
+        100_000,
+        1_000_000,
+        12_000,
+    ]
+    assert plan.jackpot_closing == 50_000_000
 
 
 def test_new_three_of_thirty_three_format_needs_no_new_service_math() -> None:
