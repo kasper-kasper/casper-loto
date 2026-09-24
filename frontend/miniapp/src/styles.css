@@ -2093,8 +2093,8 @@ html { overflow-x: clip; scrollbar-gutter: stable; }
 .room-khan .room-masthead-copy { display: none; }
 .room-khan .room-masthead-copy > h1, .room-khan .room-masthead-copy > p { display: none; }
 .room-khan .room-prize span { color: #88bfff; font-size: 9px; letter-spacing: .16em; }
-.room-khan .room-prize { position: absolute; z-index: 2; right: 10px; bottom: 10px; left: 10px; display: grid; grid-template-columns: 1fr auto; min-width: 0; align-items: center; gap: 5px 10px; padding: 9px 11px; border: 1px solid rgba(137,198,255,.24); border-radius: 12px 4px 12px 4px; background: linear-gradient(110deg,rgba(7,24,53,.82),rgba(12,37,73,.5)); box-shadow: 0 8px 18px rgba(0,7,23,.22), inset 0 1px rgba(255,255,255,.06); backdrop-filter: blur(8px); }
-.room-khan .room-prize strong { grid-row: 2; color: #f8d887; font-size: clamp(21px,6vw,28px); white-space: nowrap; text-shadow: 0 4px 16px rgba(247,203,112,.16); }
+.room-khan .room-prize { position: absolute; z-index: 2; right: 16px; bottom: 13px; left: 16px; display: grid; grid-template-columns: 1fr auto; min-width: 0; align-items: end; gap: 4px 12px; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; backdrop-filter: none; }
+.room-khan .room-prize strong { grid-row: 2; color: #f8d887; font-size: clamp(21px,6vw,28px); white-space: nowrap; text-shadow: 0 4px 16px rgba(247,203,112,.24); }
 .room-khan .room-prize small { display: grid; gap: 3px; color: #9bb1d0; font-size: 9px; text-align: right; }
 .room-khan .room-prize small b { display: none; }
 .picker-favorites-top { display: grid; gap: 8px; padding: 11px 12px; border: 1px solid rgba(117,181,246,.22); border-radius: 15px; background: linear-gradient(135deg,rgba(24,67,119,.48),rgba(7,22,49,.66)); }
@@ -2108,7 +2108,7 @@ html { overflow-x: clip; scrollbar-gutter: stable; }
 .picker-favorite-item > button:last-child { width: 36px; border: 1px solid rgba(138,193,246,.16); border-radius: 9px; color: #7895b7; background: rgba(5,20,45,.45); font-size: 17px; }
 
 .picker-shell.lottery-khan .selection-heading { position: relative; overflow: hidden; padding: 17px 15px 15px; border: 1px solid rgba(105,180,255,.22); border-radius: 18px 6px 18px 6px; background: radial-gradient(circle at 84% 5%,rgba(113,190,255,.28),transparent 30%),linear-gradient(135deg,#0e2c5b,#071731 70%); box-shadow: 0 14px 28px rgba(0,8,27,.24),inset 0 1px rgba(255,255,255,.1); }
-.picker-shell.lottery-khan .selection-heading::after { content: "6 / 36"; position: absolute; right: 11px; bottom: -14px; color: rgba(136,199,255,.09); font-size: 66px; font-weight: 900; letter-spacing: -.1em; }
+.picker-shell.lottery-khan .selection-heading::after { content: none; }
 .picker-shell.lottery-khan .selection-heading > * { position: relative; z-index: 1; }
 .picker-shell.lottery-khan .picker-board { border-color: rgba(105,180,255,.26); background: radial-gradient(circle at 82% 0,rgba(98,173,255,.18),transparent 34%),linear-gradient(145deg,#0a2854,#05152e); box-shadow: 0 17px 34px rgba(0,9,31,.3),inset 0 1px rgba(255,255,255,.08); }
 .picker-shell.lottery-khan .number-grid { background: radial-gradient(circle at 50% 0,rgba(109,194,255,.2),transparent 38%),linear-gradient(145deg,#0d3974,#061f4a); box-shadow: inset 0 1px rgba(255,255,255,.11), inset 0 -18px 30px rgba(0,8,30,.2); }
