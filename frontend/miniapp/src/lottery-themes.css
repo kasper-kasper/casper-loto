@@ -115,17 +115,22 @@
 .lottery-dual .catalog-art:before { content:""; position:absolute; z-index:1; inset:0; background:linear-gradient(90deg,rgba(4,16,43,.1),rgba(255,165,70,.12)),linear-gradient(0deg,#081326,transparent 72%); pointer-events:none; }
 .lottery-dual .catalog-game-body>strong,.lottery-dual .catalog-game footer i { color:#ffd66f; }
 .lottery-dual .catalog-game-body>small,.lottery-dual .catalog-game time { color:#aabbd7; }
-.room-dual .room-masthead { min-height:290px; border-color:rgba(255,204,102,.45); background:#081326; }
-.room-dual .room-masthead>.lottery-visual { height:250px; }
-.room-dual .room-masthead:after { background:linear-gradient(0deg,#081326 5%,transparent 96%); }
-.room-dual .room-masthead-copy { padding-top:155px; }
+.room-dual { padding:0 10px 20px; margin:0 -10px; background-image:linear-gradient(180deg,rgba(5,13,31,.25) 0%,rgba(5,13,31,.5) 27%,#081326ed 64%,#081326 85%),url('./assets/lotteries/casper-dual-scene.webp'); background-size:100% 100%,100% auto; background-position:center top; background-repeat:no-repeat; }
+.room-dual .room-masthead { min-height:0; padding:12px 13px; border-color:rgba(255,204,102,.48); background:linear-gradient(135deg,#07152ad9,#1c1a2bcb); backdrop-filter:blur(3px); }
+.room-dual .room-masthead:after { content:none; }
+.room-dual .room-masthead-copy { padding:0; }
 .room-dual .room-masthead-copy h1 { color:#fff5dc; text-shadow:0 0 24px rgba(255,190,70,.22); }
-.room-dual .room-prize { border-color:rgba(255,204,102,.35); background:linear-gradient(120deg,rgba(255,190,70,.13),rgba(5,17,38,.82)); }
+.room-dual .room-prize { margin:10px 0 0; padding:11px 13px; border-color:rgba(255,204,102,.48); background:linear-gradient(120deg,rgba(255,190,70,.14),rgba(5,17,38,.8)); text-align:left; }
 .room-dual .room-prize>strong { color:#ffd66f; }
+.room-dual .room-prize>small { align-items:baseline; }
+.room-dual .room-prize>small>span:last-child { white-space:nowrap; }
+.room-dual .room-prize b { margin-left:4px; font-size:14px; }
+.room-dual>nav { margin:9px 0 0; gap:6px; }
+.room-dual>nav>button { padding:9px 6px; font-size:11px; }
+.room-dual .picker-shell { margin-top:9px; }
 .room-dual .picker-shell { --picker-accent:#ffd66f; }
-.dual-brief { margin:0 0 12px; color:#d9e5f8; font-size:11px; line-height:1.45; text-align:center; }
+.dual-brief { margin:0 0 8px; color:#fff0c7; font-size:11px; line-height:1.3; text-align:center; text-shadow:0 2px 8px #000; }
 .dual-brief span { color:#ffd66f; padding:0 4px; }
-.room-dual .selection-heading h1 { font-size:clamp(27px,8vw,36px); }
 .dual-fields { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .dual-field { position:relative; overflow:hidden; padding:13px 10px 11px; border:1px solid rgba(255,255,255,.16); border-radius:18px; background:#0a1730; box-shadow:0 12px 22px #0003, inset 0 1px #fff1; }
 .dual-field:after { content:""; position:absolute; inset:auto -25% -44% 15%; height:80px; border-radius:50%; filter:blur(20px); opacity:.5; pointer-events:none; }
@@ -156,28 +161,25 @@
 @media (max-width:390px) { .dual-fields { gap:6px; }.dual-field { padding-inline:7px; }.dual-clock-grid { gap:4px; }.dual-clock-grid .pick-number { min-height:32px; font-size:11px; } }
 
 .room-dual .picker-shell { display:flex; flex-direction:column; }
-.room-dual .selection-heading { order:1; padding-bottom:9px; text-align:center; }
-.room-dual .dual-brief { order:2; }
-.room-dual .dual-fields { order:3; }
-.room-dual .selected-combination { order:4; }
-.room-dual .random-button { order:5; margin-top:10px; }
-.room-dual .instant-ticket-row { order:6; margin-top:12px; }
-.room-dual .picker-actions { order:7; }
-.room-dual .picker-note { order:8; }
+.room-dual .dual-brief { order:1; }
+.room-dual .dual-fields { order:2; }
+.room-dual .selected-combination { order:3; }
+.room-dual .random-button { order:4; margin-top:10px; }
+.room-dual .instant-ticket-row { order:5; margin-top:12px; }
+.room-dual .picker-actions { order:6; }
+.room-dual .picker-note { order:7; }
 .lottery-dual .catalog-art .dual-catalog-logo { z-index:2; width:38px; height:38px; top:8px; right:8px; filter:drop-shadow(0 3px 8px #000a); }
-.room-dual .room-masthead-copy { position:relative; z-index:2; text-align:center; }
-.room-dual .dual-hero-logo { display:block; width:42px; height:42px; margin:0 auto 5px; object-fit:contain; filter:drop-shadow(0 0 12px #ffdd8470); }
-.room-dual .room-masthead-copy h1 { margin:5px 0; font-size:clamp(36px,10vw,53px); }
-.room-dual .room-prize { position:relative; z-index:2; text-align:center; }
-.room-dual .room-prize>strong { margin:4px 0 8px; }
-.room-dual .room-prize>small { text-align:left; }
+.room-dual .room-masthead-copy { position:relative; z-index:2; display:grid; grid-template-columns:34px 1fr; column-gap:9px; align-items:center; text-align:left; }
+.room-dual .dual-hero-logo { grid-row:1 / 4; display:block; width:34px; height:34px; object-fit:contain; filter:drop-shadow(0 0 9px #ffdd8470); }
+.room-dual .room-masthead-copy h1 { margin:1px 0 2px; font-size:clamp(29px,8vw,38px); }
+.room-dual .room-masthead-copy p { font-size:10px; color:#e3d8be; }
+.room-dual .room-prize>strong { margin:3px 0 7px; font-size:clamp(23px,6vw,29px); }
 .visual-dual.raster-visual .scene-depth { background:linear-gradient(0deg,#081326 1%,#08132699 30%,transparent 80%),linear-gradient(90deg,#07142b55,transparent 45%,#25172122); }
 .visual-dual .dual-scene-glow { position:absolute; z-index:1; inset:0; background:radial-gradient(circle at 50% 62%,#ffcc6938,transparent 25%),radial-gradient(circle at 28% 12%,#3980ed22,transparent 40%); pointer-events:none; }
-.dual-field { min-width:0; padding:12px 7px 11px; isolation:isolate; background-image:linear-gradient(180deg,rgba(4,13,31,.38),rgba(4,12,29,.94)),url('./assets/lotteries/casper-dual-scene.webp'); background-size:100% 100%,200% 100%; }
-.dual-night { background-position:center,left center; }
-.dual-dawn { background-position:center,right center; }
+.dual-field { min-width:0; padding:9px 6px 8px; isolation:isolate; background:linear-gradient(180deg,rgba(4,13,31,.38),rgba(4,12,29,.88)); backdrop-filter:blur(2px); }
+.dual-dawn { background:linear-gradient(180deg,rgba(84,45,25,.4),rgba(25,15,24,.88)); }
 .dual-field:before { content:""; position:absolute; inset:0; z-index:0; border-radius:inherit; box-shadow:inset 0 1px #ffffff44,inset 0 -20px 35px #0007; pointer-events:none; }
-.dual-field header { text-align:center; margin-bottom:10px; }
+.dual-field header { text-align:center; margin-bottom:7px; }
 .dual-field header span { font-size:clamp(17px,5vw,25px); text-shadow:0 3px 14px #000; }
 .dual-clock-grid { position:relative; display:block; width:100%; max-width:210px; aspect-ratio:1; margin:auto; border:2px solid rgba(255,223,157,.75); border-radius:50%; background:radial-gradient(circle,#163761dd 0 9%,#071938ed 11% 50%,#061020f2 70%); box-shadow:0 0 0 4px #101827,0 0 0 5px #ffde9d45,0 11px 24px #0009,inset 0 0 20px #162950; }
 .dual-night .dual-clock-grid { border-color:#a5d5ff; box-shadow:0 0 0 4px #0c1e41,0 0 0 5px #7abaff70,0 0 17px #267bff65,0 12px 24px #0009,inset 0 0 22px #173f83; }
@@ -185,9 +187,13 @@
 .dual-clock-grid:before { content:""; position:absolute; inset:9%; border-radius:50%; background:repeating-conic-gradient(from 0deg,#ffffff36 0deg 1deg,transparent 1deg 30deg); mask-image:radial-gradient(circle,transparent 0 57%,#000 59% 64%,transparent 66%); pointer-events:none; }
 .dual-clock-grid:after { content:"☾"; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); color:#c3e1ff; font:28px Georgia,serif; text-shadow:0 0 12px #74b4ff; pointer-events:none; }
 .dual-dawn .dual-clock-grid:after { content:"✺"; color:#fff0b1; text-shadow:0 0 14px #ffc15d; }
-.dual-clock-grid .pick-number { position:absolute; z-index:2; width:clamp(23px,7vw,35px); height:clamp(23px,7vw,35px); min-height:0; aspect-ratio:1; transform:translate(-50%,-50%); border-radius:50%; font:600 clamp(10px,3vw,14px) Georgia,serif; box-shadow:inset 0 1px #ffffff44,0 3px 8px #0006; touch-action:manipulation; transition:background-color .16s,border-color .16s,color .16s,box-shadow .16s; }
-.dual-night .dual-clock-grid .pick-number.selected { color:#fff; border-color:#e6f7ff; background:#087bff; box-shadow:0 0 0 2px #d5efff,0 0 15px 4px #1485ff,inset 0 1px #fff9; }
-.dual-dawn .dual-clock-grid .pick-number.selected { color:#39250c; border-color:#fff6d2; background:#ffdc79; box-shadow:0 0 0 2px #fff1c0,0 0 16px 4px #ffb339,inset 0 1px #fff; }
+.dual-clock-grid .dual-number-slot { position:absolute; z-index:2; display:block; width:clamp(24px,6.5vw,30px); height:clamp(24px,6.5vw,30px); transform:translate(-50%,-50%); }
+.room-dual .dual-clock-grid .dual-number-slot .pick-number { position:relative; display:grid; width:100%; height:100%; min-height:0; padding:0; place-items:center; border-radius:50%; font:600 clamp(11px,3vw,13px) Georgia,serif; box-shadow:inset 0 1px #ffffff55,0 3px 8px #0008; touch-action:manipulation; transition:background-color .16s,border-color .16s,color .16s,box-shadow .16s; }
+.room-dual .dual-clock-grid .dual-number-slot .pick-number.selected { animation:dual-orb-pop .3s ease-out; }
+.room-dual .dual-night .dual-clock-grid .pick-number.selected { color:#fff; border-color:#e6f7ff; background:radial-gradient(circle at 31% 25%,#bcf3ff,#348fff 50%,#0751c6); box-shadow:0 0 0 1px #d5efff,0 0 13px 3px #1485ff,inset 0 1px #fff9; }
+.room-dual .dual-dawn .dual-clock-grid .pick-number.selected { color:#39250c; border-color:#fff6d2; background:radial-gradient(circle at 31% 25%,#fff9d5,#ffdc79 55%,#e99b2e); box-shadow:0 0 0 1px #fff1c0,0 0 13px 3px #ffb339,inset 0 1px #fff; }
+@keyframes dual-orb-pop { 0% { transform:translateY(0) scale(1); } 42% { transform:translateY(-3px) scale(1.08); } 100% { transform:translateY(0) scale(1); } }
+@media (prefers-reduced-motion:reduce) { .room-dual .dual-clock-grid .dual-number-slot .pick-number.selected { animation:none; } }
 .dual-clock-grid .pick-number:focus-visible { outline:2px solid #fff; outline-offset:4px; }
 .dual-field>b { position:relative; z-index:2; margin-top:13px; padding:7px 5px; border:1px solid #ffe2a050; border-radius:20px; color:#f2e9cf; background:#071326c9; }
 .dual-ticket-detail { position:relative; width:min(100%,470px); max-height:90vh; overflow:auto; padding:22px 16px; border:1px solid #f4cb7970; border-radius:21px; color:#f8f1e2; background:#081326; box-shadow:0 25px 80px #000b; }

@@ -159,6 +159,21 @@ function TicketDetail({ ticket, lottery, onClose }: { ticket: Ticket; lottery?: 
   </motion.article></div>;
 }
 
+function DualClock({ phase, selected, onToggle }: { phase: "night" | "dawn"; selected: number[]; onToggle: (value: number, phase: "night" | "dawn") => void }) {
+  const label = phase.toUpperCase();
+  return <section className={`dual-field dual-${phase}`}>
+    <header><span>{label}</span><small>{phase === "night" ? "00:30" : "07:30"} · 2 из 12</small></header>
+    <div className="dual-clock-grid">{Array.from({ length: 12 }, (_, index) => index + 1).map((value) => {
+      const angle = value * Math.PI / 6;
+      const active = selected.includes(value);
+      return <span className="dual-number-slot" key={value} style={{ left: `${50 + 38 * Math.sin(angle)}%`, top: `${50 - 38 * Math.cos(angle)}%` }}>
+        <button aria-label={`${label} ${value}`} aria-pressed={active} className={active ? "pick-number selected" : "pick-number"} onClick={() => onToggle(value, phase)} type="button"><span>{value}</span></button>
+      </span>;
+    })}</div>
+    <b>{selected.length} / 2 выбрано</b>
+  </section>;
+}
+
 function NumberPicker({ lottery, balance, now, purchasing, initialNumbers = [], favorites, cartRemaining, onBuy, onBuyMany, onAdd, onSaveFavorite, onDeleteFavorite }: { lottery: Lottery; balance: number; now: number; purchasing: boolean; initialNumbers?: number[]; favorites: Favorite[]; cartRemaining: number; onBuy: (numbers: number[], drawCount: 1 | 5) => Promise<boolean>; onBuyMany: (numbers: number[][], drawCount: 1 | 5) => Promise<boolean>; onAdd: (numbers: number[], drawCount: 1 | 5) => void; onSaveFavorite: (numbers: number[]) => void; onDeleteFavorite: (id: string) => void }) {
   const [selected, setSelected] = useState<number[]>(initialNumbers);
   const [drawCount, setDrawCount] = useState<1 | 5>(1);
@@ -220,7 +235,6 @@ function NumberPicker({ lottery, balance, now, purchasing, initialNumbers = [], 
     ? [[1, 11], [12, 22], [23, 33]] as const
     : [[1, lottery.max_number]] as const;
   const pickerMood: Record<string, string> = {
-    dual: "Один билет проходит два последовательных раунда: NIGHT и DAWN.",
     september: "Три главы одного сентябрьского вечера",
     pll: "Загадайте момент. Время найдёт своих.",
     pss: "Casper Ball: пять чисел и один специальный шар",
@@ -230,10 +244,10 @@ function NumberPicker({ lottery, balance, now, purchasing, initialNumbers = [], 
   };
 
   return <div className={`picker-shell lottery-${lottery.code}`}>
-    <div className="selection-heading"><span>{dual ? "CASPER DUAL · ВАШ БИЛЕТ" : `${formatDrawLabel(lottery.code, lottery.draw_number ?? 0)} · ВАША КОМБИНАЦИЯ`}</span><h1>{dual ? "Один билет. Два раунда." : lottery.code === "pll" ? "Загадайте момент." : lottery.code === "pss" ? "Пять чисел. Один Casper Ball." : grand ? "Пять чисел. Две звезды." : `Выберите ${lottery.numbers_to_pick} ${lottery.numbers_to_pick < 5 ? "числа" : "чисел"}`}</h1><p>{pickerMood[lottery.code] ?? "Ваша комбинация на ближайший тираж"}</p></div>
-    {dual && <p className="dual-brief">{dualSalesClosed ? "Продажи закрыты. Ожидаем следующий раунд." : <>2 числа NIGHT <span>✦</span> 2 числа DAWN <span>✦</span> одна выплата после второго раунда</>}</p>}
+    {!dual && <div className="selection-heading"><span>{formatDrawLabel(lottery.code, lottery.draw_number ?? 0)} · ВАША КОМБИНАЦИЯ</span><h1>{lottery.code === "pll" ? "Загадайте момент." : lottery.code === "pss" ? "Пять чисел. Один Casper Ball." : grand ? "Пять чисел. Две звезды." : `Выберите ${lottery.numbers_to_pick} ${lottery.numbers_to_pick < 5 ? "числа" : "чисел"}`}</h1><p>{pickerMood[lottery.code] ?? "Ваша комбинация на ближайший тираж"}</p></div>}
+    {dual && <p className="dual-brief">{dualSalesClosed ? "Продажи закрыты. Ожидаем следующий раунд." : "Выберите 2 числа NIGHT и 2 числа DAWN"}</p>}
     <section className="instant-ticket-row"><div><strong>Быстрая покупка</strong><small>Случайные билеты · 1, 5 или 25 за одно действие</small></div><div>{(dual ? [1, 5, 25] : [1, 5, 10, 25]).map((count) => <button aria-label={`Купить ${count} случайных ${plural(count, "билет", "билета", "билетов")}`} disabled={purchasing || dualSalesClosed || count > quickLimit} key={count} onClick={() => void onBuyMany(Array.from({ length: count }, () => lotteryCombination(lottery)), drawCount)} type="button">{count === 1 ? "Купить" : "×" + count}</button>)}</div></section>
-    {dual ? <div className="dual-fields" aria-label="Выбор чисел Casper Dual"><section className="dual-field dual-night"><header><span>NIGHT</span><small>00:30 · выберите 2 из 12</small></header><div className="dual-clock-grid">{Array.from({ length: 12 }, (_, index) => index + 1).map((value) => <button aria-label={`NIGHT ${value}`} aria-pressed={dualNight.includes(value)} className={dualNight.includes(value) ? "pick-number selected" : "pick-number"} key={value} onClick={() => toggleDual(value, "night")} style={{ left: `${50 + 33 * Math.sin(value * Math.PI / 6)}%`, top: `${50 - 33 * Math.cos(value * Math.PI / 6)}%` }} type="button"><span>{value}</span></button>)}</div><b>{dualNight.length} / 2 выбрано</b></section><section className="dual-field dual-dawn"><header><span>DAWN</span><small>07:30 · выберите 2 из 12</small></header><div className="dual-clock-grid">{Array.from({ length: 12 }, (_, index) => index + 1).map((value) => <button aria-label={`DAWN ${value}`} aria-pressed={dualDawn.includes(value)} className={dualDawn.includes(value) ? "pick-number selected" : "pick-number"} key={value} onClick={() => toggleDual(value, "dawn")} style={{ left: `${50 + 33 * Math.sin(value * Math.PI / 6)}%`, top: `${50 - 33 * Math.cos(value * Math.PI / 6)}%` }} type="button"><span>{value}</span></button>)}</div><b>{dualDawn.length} / 2 выбрано</b></section></div> : grand ? <div className="grand-fields">
+    {dual ? <div className="dual-fields" aria-label="Выбор чисел Casper Dual"><DualClock phase="night" selected={dualNight} onToggle={toggleDual} /><DualClock phase="dawn" selected={dualDawn} onToggle={toggleDual} /></div> : grand ? <div className="grand-fields">
       <section className="picker-board grand-main-field"><div className="picker-board-label"><span>Поле №1 · Основные числа</span><small>1–{lottery.primary_max_number ?? 35} · выберите ровно {grandMainCount}</small></div><div className="number-grid"><div className="number-group">{Array.from({ length: lottery.primary_max_number ?? 35 }, (_, index) => index + 1).map((value) => <motion.button aria-pressed={selected.includes(value)} className={selected.includes(value) ? "pick-number selected" : "pick-number"} key={value} onClick={() => toggle(value)} type="button" whileTap={{ scale: .86 }}><span>{value}</span><i aria-hidden="true" /></motion.button>)}</div></div></section>
       <section className="picker-board grand-special-field"><div className="picker-board-label"><span>Поле №2 · {lottery.code === "pss" ? "Casper Ball" : "Специальные числа"}</span><small>1–{lottery.secondary_max_number ?? 5} · выберите ровно {grandSpecialCount}</small></div><div className="number-grid"><div className="number-group">{Array.from({ length: lottery.secondary_max_number ?? 5 }, (_, index) => index + 1).map((displayValue) => { const value = displayValue + grandOffset; return <motion.button aria-pressed={selected.includes(value)} className={selected.includes(value) ? "pick-number selected" : "pick-number"} key={value} onClick={() => toggle(value)} type="button" whileTap={{ scale: .84 }}><span>{displayValue}</span><i aria-hidden="true">★</i></motion.button>; })}</div></div></section>
     </div> : <div className="picker-board"><div className="picker-board-label"><span>{lottery.code === "grob" ? "Поле захоронений" : "Поле комбинации"}</span><small>{lottery.code === "september" ? "Три части · 33 числа" : `${lottery.max_number} чисел · выберите ${lottery.numbers_to_pick}`}</small></div><div className="number-grid" aria-label="Выбор чисел">{numberGroups.map(([from, to], groupIndex) => <div className="number-group" key={from}>{lottery.code === "september" && <span className="number-group-label">{groupIndex === 0 ? "Начало" : groupIndex === 1 ? "Середина" : "После"}</span>}{Array.from({ length: to - from + 1 }, (_, index) => from + index).map((value) => <motion.button aria-pressed={selected.includes(value)} className={selected.includes(value) ? "pick-number selected" : "pick-number"} key={value} onClick={() => toggle(value)} type="button" whileTap={{ scale: lottery.code === "grob" ? .82 : .88 }}><span>{value}</span><i aria-hidden="true" /></motion.button>)}</div>)}</div></div>}

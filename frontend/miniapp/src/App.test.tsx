@@ -639,7 +639,7 @@ it("keeps Casper Dual as one 2+2 ticket with no favorites or five-draw repeat", 
       primary_numbers_to_pick: 2, primary_max_number: 12,
       secondary_numbers_to_pick: 2, secondary_max_number: 12,
       secondary_storage_offset: 12, ticket_price: 20_000,
-      jackpot: 5_000_000, scheduled_at: scheduled,
+      jackpot: 5_000_000, draw_number: 501, scheduled_at: scheduled,
       sales_close_at: new Date(Date.parse(scheduled) - 120_000).toISOString(),
       player_ticket_count: 0,
     }],
@@ -648,7 +648,14 @@ it("keeps Casper Dual as one 2+2 ticket with no favorites or five-draw repeat", 
   render(<App initData="test" />);
   fireEvent.click(await screen.findByRole("button", { name: "Лотереи" }));
   fireEvent.click(screen.getByRole("button", { name: "Открыть Casper Dual" }));
+  expect(screen.getByText("БЛИЖАЙШИЙ ТИРАЖ №501")).toBeInTheDocument();
+  expect(screen.getByText(/5.000.000 CAS/)).toBeInTheDocument();
+  expect(screen.queryByText("Один билет. Два раунда.")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "NIGHT 3" }).parentElement).toHaveClass("dual-number-slot");
+  const nightPosition = screen.getByRole("button", { name: "NIGHT 3" }).parentElement?.getAttribute("style");
   fireEvent.click(screen.getByRole("button", { name: "NIGHT 3" }));
+  expect(screen.getByRole("button", { name: "NIGHT 3" }).parentElement).toHaveAttribute("style", nightPosition);
+  expect(screen.getByRole("button", { name: "NIGHT 3" })).not.toHaveAttribute("style");
   fireEvent.click(screen.getByRole("button", { name: "NIGHT 10" }));
   fireEvent.click(screen.getByRole("button", { name: "NIGHT 11" }));
   fireEvent.click(screen.getByRole("button", { name: "DAWN 5" }));
