@@ -104,17 +104,21 @@ export function GrandNumberSet({
   values,
   winning,
   animate = false,
+  offset = 35,
+  specialLabel = "Спецчисла",
 }: {
   values: number[];
   winning?: number[] | null;
   animate?: boolean;
+  offset?: number;
+  specialLabel?: string;
 }) {
-  const parts = splitGrandNumbers(values);
-  const winningParts = winning ? splitGrandNumbers(winning) : null;
+  const parts = splitGrandNumbers(values, offset);
+  const winningParts = winning ? splitGrandNumbers(winning, offset) : null;
   return <div className="grand-number-set" aria-label={`Основные числа: ${parts.main.join(", ")}; специальные числа: ${parts.special.join(", ")}`}>
     <div><small>Основное поле</small><NumberSet animate={animate} values={parts.main} winning={winningParts?.main} /></div>
     <span aria-hidden="true">+</span>
-    <div className="grand-special"><small>Спецчисла</small><NumberSet animate={animate} values={parts.special} winning={winningParts?.special} /></div>
+    <div className="grand-special"><small>{specialLabel}</small><NumberSet animate={animate} values={parts.special} winning={winningParts?.special} /></div>
   </div>;
 }
 

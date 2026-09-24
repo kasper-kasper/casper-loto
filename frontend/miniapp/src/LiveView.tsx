@@ -24,6 +24,7 @@ function drawKey(draw: LiveDraw): string {
 }
 
 function lotteryFormat(draw: LiveDraw): string {
+  if (draw.lottery_code === "pss") return "ЕЖЕДНЕВНАЯ · 5 ИЗ 36 + CASPER BALL 1 ИЗ 8";
   if (draw.lottery_code === "khan") return "ЕЖЕДНЕВНАЯ · 6 ИЗ 36";
   if (draw.lottery_code === "september") return "DAILY · 3 ИЗ 33";
   if (draw.lottery_code === "grob") return "DAILY · 3 ИЗ 16";
@@ -93,8 +94,9 @@ export function LiveView({ feed, now, loading, onPlay, onTickets }: LiveViewProp
   const startsIn = Math.max(0, new Date(draw.scheduled_at).getTime() - now);
   const finalMinute = !isReplay && state.phase === "waiting" && startsIn <= 60_000;
   const finalMinuteProgress = finalMinute ? Math.max(0, Math.min(100, ((60_000 - startsIn) / 60_000) * 100)) : 0;
-  const grand = isGrandLottery(draw.lottery_code) && (draw.winning_numbers?.length ?? 7) === 7;
-  const resultSize = draw.lottery_code === "september" || draw.lottery_code === "grob" ? 3 : draw.lottery_code === "khan" ? 6 : draw.lottery_kind === "WEEKLY" ? 7 : 4;
+  const grand = isGrandLottery(draw.lottery_code);
+  const grandOffset = draw.secondary_storage_offset ?? (draw.lottery_code === "pss" ? 36 : 35);
+  const resultSize = draw.winning_numbers?.length ?? (draw.lottery_code === "september" || draw.lottery_code === "grob" ? 3 : draw.lottery_code === "khan" ? 6 : draw.lottery_kind === "WEEKLY" ? 7 : 4);
   const khanShownNumbers = state.currentNumber === null ? state.revealedNumbers : [...state.revealedNumbers, state.currentNumber];
 
   return <div className="live-experience">
@@ -120,15 +122,15 @@ export function LiveView({ feed, now, loading, onPlay, onTickets }: LiveViewProp
 
       {state.phase === "revealing" && (draw.lottery_code === "khan" ? <><KhanLototron revealedNumbers={khanShownNumbers} currentNumber={state.currentNumber} mixing={false} />{draw.highlighted_tickets[0] && <KhanBestTicket ticket={draw.highlighted_tickets[0]} revealedNumbers={khanShownNumbers} />}</> : <div className="live-reveal" aria-live="polite">
         <span>{isReplay ? "В записи выпало число" : "Выпадает число"}</span>
-        <motion.strong animate={{ opacity: 1, scale: 1, y: 0 }} initial={{ opacity: 0, scale: .76, y: 12 }} key={state.currentNumber} transition={{ type: "spring", stiffness: 280, damping: 22 }}>{grand && (state.currentNumber ?? 0) > 35 ? (state.currentNumber ?? 0) - 35 : state.currentNumber}</motion.strong>
-        <div className={`live-sequence ${grand ? "grand-live-sequence" : ""}`}>{draw.winning_numbers?.map((number, index) => <i className={`${grand && number > 35 ? "special" : ""} ${index < state.revealedNumbers.length ? `shown ${index === state.revealedNumbers.length - 1 ? "recent" : ""}` : ""}`} key={`${number}-${index}`}>{index < state.revealedNumbers.length ? (grand && number > 35 ? number - 35 : number) : "·"}</i>)}</div>
+        <motion.strong animate={{ opacity: 1, scale: 1, y: 0 }} initial={{ opacity: 0, scale: .76, y: 12 }} key={state.currentNumber} transition={{ type: "spring", stiffness: 280, damping: 22 }}>{grand && (state.currentNumber ?? 0) > grandOffset ? (state.currentNumber ?? 0) - grandOffset : state.currentNumber}</motion.strong>
+        <div className={`live-sequence ${grand ? "grand-live-sequence" : ""}`}>{draw.winning_numbers?.map((number, index) => <i className={`${grand && number > grandOffset ? "special" : ""} ${index < state.revealedNumbers.length ? `shown ${index === state.revealedNumbers.length - 1 ? "recent" : ""}` : ""}`} key={`${number}-${index}`}>{index < state.revealedNumbers.length ? (grand && number > grandOffset ? number - grandOffset : number) : "·"}</i>)}</div>
       </div>)}
 
       {state.phase === "result" && <motion.div animate={{ opacity: 1, y: 0 }} className={`live-result ${winner ? "winner" : "neutral"}`} initial={{ opacity: 0, y: 10 }}>
         <span>{isReplay ? "Результат записи" : "Итог тиража"}</span>
-        {grand ? <GrandNumberSet values={state.revealedNumbers} /> : <div className="live-final-numbers">{state.revealedNumbers.map((number) => <i key={number}>{number}</i>)}</div>}
+        {grand ? <GrandNumberSet values={state.revealedNumbers} offset={grandOffset} specialLabel={draw.lottery_code === "pss" ? "Casper Ball" : undefined} /> : <div className="live-final-numbers">{state.revealedNumbers.map((number) => <i key={number}>{number}</i>)}</div>}
         {draw.player_ticket_count === 0 ? <div className="personal-result"><strong>Вы не участвовали в этом тираже</strong><p>Новый билет можно выбрать для ближайшего розыгрыша.</p></div> : winner ? <div className="personal-result win"><span>Ваш выигрыш</span><strong>+{formatCas(draw.player_total_prize)}</strong><p>Выигрышных билетов: {draw.player_winning_ticket_count}</p></div> : <div className="personal-result"><strong>В этот раз без выигрыша</strong><p>{draw.player_best_matches ? `Лучший результат — ${matchLabel(draw.lottery_code, draw.player_best_matches, grand)}.` : "Совпадений нет."} Следующий шанс уже близко.</p></div>}
-        {draw.highlighted_tickets.map((ticket) => <article className="live-ticket" key={ticket.public_number}><div><span>{formatTicketLabel(draw.lottery_code, ticket.public_number)}</span><strong>{ticket.prize_amount > 0 ? `+${formatCas(ticket.prize_amount)}` : "Без выигрыша"}</strong></div>{grand ? <GrandNumberSet values={ticket.numbers} winning={draw.winning_numbers} animate={ticket.prize_amount > 0} /> : <NumberSet values={ticket.numbers} winning={draw.winning_numbers} animate={ticket.prize_amount > 0} />}</article>)}
+        {draw.highlighted_tickets.map((ticket) => <article className="live-ticket" key={ticket.public_number}><div><span>{formatTicketLabel(draw.lottery_code, ticket.public_number)}</span><strong>{ticket.prize_amount > 0 ? `+${formatCas(ticket.prize_amount)}` : "Без выигрыша"}</strong></div>{grand ? <GrandNumberSet values={ticket.numbers} offset={grandOffset} specialLabel={draw.lottery_code === "pss" ? "Casper Ball" : undefined} winning={draw.winning_numbers} animate={ticket.prize_amount > 0} /> : <NumberSet values={ticket.numbers} winning={draw.winning_numbers} animate={ticket.prize_amount > 0} />}</article>)}
       </motion.div>}
 
       {!isReplay && state.nextDraw && <div className="live-next"><span>Следующий тираж</span><strong>{state.nextDraw.lottery_name}</strong><small>{formatMoscow(state.nextDraw.scheduled_at)} МСК · {countdown(state.nextDraw.scheduled_at, now)}</small></div>}
@@ -137,7 +139,7 @@ export function LiveView({ feed, now, loading, onPlay, onTickets }: LiveViewProp
 
     {!isReplay && feed && <section className="replay-library">
       <div className="section-heading"><div><span className="eyebrow">Цифровой архив</span><h2>Последние розыгрыши</h2></div><span className="section-count">По 2 каждой лотереи</span></div>
-      <div className="replay-list">{feed.recent_completed.map((item) => { const parts = splitGrandNumbers(item.winning_numbers ?? []); return <button className={`replay-row lottery-${item.lottery_code}`} key={drawKey(item)} onClick={() => startReplay(item)} type="button"><span className="replay-symbol"><Icon name="replay" /></span><span><strong>{item.lottery_name}</strong><small>{formatMoscow(item.scheduled_at)} МСК · {formatDrawLabel(item.lottery_code, item.draw_number)}</small></span><span className="replay-numbers">{isGrandLottery(item.lottery_code) && (item.winning_numbers?.length ?? 0) === 7 ? `${parts.main.join(" · ")} + ${parts.special.join(" · ")}` : item.winning_numbers?.join(" · ")}</span><b>Смотреть</b></button>; })}</div>
+      <div className="replay-list">{feed.recent_completed.map((item) => { const parts = splitGrandNumbers(item.winning_numbers ?? [], item.secondary_storage_offset ?? (item.lottery_code === "pss" ? 36 : 35)); return <button className={`replay-row lottery-${item.lottery_code}`} key={drawKey(item)} onClick={() => startReplay(item)} type="button"><span className="replay-symbol"><Icon name="replay" /></span><span><strong>{item.lottery_name}</strong><small>{formatMoscow(item.scheduled_at)} МСК · {formatDrawLabel(item.lottery_code, item.draw_number)}</small></span><span className="replay-numbers">{isGrandLottery(item.lottery_code) ? `${parts.main.join(" · ")} + ${parts.special.join(" · ")}` : item.winning_numbers?.join(" · ")}</span><b>Смотреть</b></button>; })}</div>
     </section>}
   </div>;
 }

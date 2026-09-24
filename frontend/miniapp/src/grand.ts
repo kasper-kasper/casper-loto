@@ -6,7 +6,7 @@ export const GRAND_STORAGE_OFFSET = 35;
 
 export function isGrandLottery(lotteryOrCode: Lottery | string): boolean {
   return typeof lotteryOrCode === "string"
-    ? lotteryOrCode === GRAND_LOTTERY_CODE
+    ? lotteryOrCode === GRAND_LOTTERY_CODE || lotteryOrCode === "pss"
     : (lotteryOrCode.secondary_numbers_to_pick ?? 0) > 0;
 }
 
@@ -28,7 +28,8 @@ export function lotteryCombination(lottery: Lottery): number[] {
 
 export function lotteryFormat(lottery: Lottery): string {
   if (isGrandLottery(lottery)) {
-    return `${lottery.primary_numbers_to_pick ?? 5} ИЗ ${lottery.primary_max_number ?? 35} + ${lottery.secondary_numbers_to_pick ?? 2} ИЗ ${lottery.secondary_max_number ?? 5}`;
+    const specialLabel = lottery.code === "pss" ? "CASPER BALL " : "";
+    return `${lottery.primary_numbers_to_pick ?? 5} ИЗ ${lottery.primary_max_number ?? 35} + ${specialLabel}${lottery.secondary_numbers_to_pick ?? 2} ИЗ ${lottery.secondary_max_number ?? 5}`;
   }
   return `${lottery.numbers_to_pick} ИЗ ${lottery.max_number}`;
 }
