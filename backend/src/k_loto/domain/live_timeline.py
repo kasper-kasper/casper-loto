@@ -10,7 +10,7 @@ REVEAL_INTERVAL = timedelta(seconds=2)
 FAST_REVEAL_LEAD = timedelta(milliseconds=500)
 FAST_REVEAL_INTERVAL = timedelta(seconds=1)
 KHAN_REVEAL_LEAD = timedelta(seconds=4)
-KHAN_REVEAL_INTERVAL = timedelta(milliseconds=3200)
+KHAN_REVEAL_INTERVAL = timedelta(milliseconds=4700)
 CUTOFF_SOON = timedelta(minutes=5)
 
 

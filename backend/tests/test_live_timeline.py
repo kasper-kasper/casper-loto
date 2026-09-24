@@ -42,8 +42,8 @@ def test_khan_timeline_runs_a_twenty_three_second_drum_show() -> None:
     timeline = khan_presentation_timeline(starts_at, starts_at, 6)
 
     assert timeline.reveal_at[0] == starts_at + timedelta(seconds=4)
-    assert timeline.reveal_at[-1] == starts_at + timedelta(seconds=20)
-    assert timeline.ends_at == starts_at + timedelta(seconds=23, milliseconds=200)
+    assert timeline.reveal_at[-1] == starts_at + timedelta(seconds=27, milliseconds=500)
+    assert timeline.ends_at == starts_at + timedelta(seconds=32, milliseconds=200)
 
 
 def test_completed_draw_reveal_starts_when_result_is_ready() -> None:
