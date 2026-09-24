@@ -10,6 +10,7 @@
 .lottery-weekly,.room-weekly { --game-accent:#f4d99c; --game-rgb:216,175,98; --game-base:#201a30; }
 .lottery-grob,.room-grob { --game-accent:#c5b4a9; --game-rgb:154,121,117; --game-base:#211b23; }
 .lottery-bingo { --game-accent:#f3d597; --game-rgb:143,174,108; --game-base:#183429; }
+.lottery-dual,.room-dual { --game-accent:#ffd66f; --game-rgb:255,190,70; --game-base:#081326; --lottery-accent:#ffd66f; --lottery-glow:#1d78ff; }
 
 .catalog-game { background:var(--game-base); border-color:rgba(var(--game-rgb),.35); box-shadow:0 12px 26px #0004; transition:transform .22s,border-color .22s; }
 .catalog-game:active { transform:scale(.975); }
@@ -106,6 +107,100 @@
 .visual-pll.raster-visual>.scene-foreground,.visual-september.raster-visual>.scene-foreground { display:none; }
 .visual-pll .scene-weather { display:none; }
 .room-september .room-masthead-copy h1 { text-transform:uppercase; font-size:clamp(34px,9.6vw,46px); }
+
+/* Casper Dual: one lightweight 2.5D treatment shared by catalog, room and picker. */
+.catalog-game.lottery-dual { background:linear-gradient(135deg,#08152c,#24142a 52%,#0e1b2c); border-color:rgba(255,208,111,.55); box-shadow:0 14px 28px #0005, inset 0 1px #fff2; }
+.lottery-dual .catalog-art { background:#081326; }
+.lottery-dual .catalog-art>.lottery-visual { opacity:.9; }
+.lottery-dual .catalog-art:before { content:""; position:absolute; z-index:1; inset:0; background:linear-gradient(90deg,rgba(4,16,43,.1),rgba(255,165,70,.12)),linear-gradient(0deg,#081326,transparent 72%); pointer-events:none; }
+.lottery-dual .catalog-game-body>strong,.lottery-dual .catalog-game footer i { color:#ffd66f; }
+.lottery-dual .catalog-game-body>small,.lottery-dual .catalog-game time { color:#aabbd7; }
+.room-dual .room-masthead { min-height:290px; border-color:rgba(255,204,102,.45); background:#081326; }
+.room-dual .room-masthead>.lottery-visual { height:250px; }
+.room-dual .room-masthead:after { background:linear-gradient(0deg,#081326 5%,transparent 96%); }
+.room-dual .room-masthead-copy { padding-top:155px; }
+.room-dual .room-masthead-copy h1 { color:#fff5dc; text-shadow:0 0 24px rgba(255,190,70,.22); }
+.room-dual .room-prize { border-color:rgba(255,204,102,.35); background:linear-gradient(120deg,rgba(255,190,70,.13),rgba(5,17,38,.82)); }
+.room-dual .room-prize>strong { color:#ffd66f; }
+.room-dual .picker-shell { --picker-accent:#ffd66f; }
+.dual-brief { margin:0 0 12px; color:#d9e5f8; font-size:11px; line-height:1.45; text-align:center; }
+.dual-brief span { color:#ffd66f; padding:0 4px; }
+.room-dual .selection-heading h1 { font-size:clamp(27px,8vw,36px); }
+.dual-fields { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.dual-field { position:relative; overflow:hidden; padding:13px 10px 11px; border:1px solid rgba(255,255,255,.16); border-radius:18px; background:#0a1730; box-shadow:0 12px 22px #0003, inset 0 1px #fff1; }
+.dual-field:after { content:""; position:absolute; inset:auto -25% -44% 15%; height:80px; border-radius:50%; filter:blur(20px); opacity:.5; pointer-events:none; }
+.dual-night { border-color:rgba(84,151,255,.42); background:linear-gradient(145deg,#071b40,#0a1229); }
+.dual-night:after { background:#1666ff; }
+.dual-dawn { border-color:rgba(255,193,85,.42); background:linear-gradient(145deg,#382314,#1c1522); }
+.dual-dawn:after { background:#ff9e3b; }
+.dual-field>* { position:relative; z-index:1; }
+.dual-field header { display:grid; gap:3px; margin-bottom:11px; }
+.dual-field header span { font:600 20px/1 Georgia,serif; letter-spacing:.04em; }
+.dual-night header span { color:#a8d2ff; }.dual-dawn header span { color:#ffe09a; }
+.dual-field header small { color:#9baaca; font-size:8px; line-height:1.35; }
+.dual-clock-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:5px; }
+.dual-clock-grid .pick-number { min-height:35px; padding:0; border:1px solid rgba(142,174,225,.28); border-radius:50%; color:#e4edff; background:rgba(5,15,34,.7); font-size:12px; }
+.dual-dawn .pick-number { border-color:rgba(255,209,117,.3); color:#fff0c6; background:rgba(48,27,18,.66); }
+.dual-night .pick-number.selected { color:#06142d; background:linear-gradient(145deg,#dceeff,#4290ff); box-shadow:0 0 16px #428fff88; }
+.dual-dawn .pick-number.selected { color:#241508; background:linear-gradient(145deg,#fff2b2,#e39a35); box-shadow:0 0 16px #e39a3588; }
+.dual-field>b { display:block; margin-top:10px; color:#a9b8d4; font-size:9px; font-weight:600; text-align:center; }
+.room-dual .selected-combination { border-color:rgba(255,204,102,.3); background:linear-gradient(120deg,#0a1730,#181525); }
+.dual-selected { display:flex; gap:6px; margin-top:9px; }
+.dual-selected i { flex:1; padding:8px 7px; border:1px solid currentColor; border-radius:10px; font-size:10px; font-style:normal; text-align:center; }
+.dual-selected .night-chip { color:#76b6ff; background:#1e6bff14; }.dual-selected .dawn-chip { color:#ffd36d; background:#ffb63214; }
+.room-dual .instant-ticket-row { border-color:rgba(255,204,102,.26); background:linear-gradient(110deg,#101d35,#1b1827); }
+.room-dual .instant-ticket-row button { border-color:rgba(255,204,102,.45); color:#ffe19a; background:#ffd66f12; }
+.room-dual .picker-note:before { content:"Покупка закрывается за 2 минуты до начала ближайшего раунда. "; color:#ffd66f; }
+.visual-dual.raster-visual > img { object-position:center 48%; }
+.visual-dual.raster-visual > .scene-foreground { display:none; }
+@media (max-width:390px) { .dual-fields { gap:6px; }.dual-field { padding-inline:7px; }.dual-clock-grid { gap:4px; }.dual-clock-grid .pick-number { min-height:32px; font-size:11px; } }
+
+.room-dual .picker-shell { display:flex; flex-direction:column; }
+.room-dual .selection-heading { order:1; padding-bottom:9px; text-align:center; }
+.room-dual .dual-brief { order:2; }
+.room-dual .dual-fields { order:3; }
+.room-dual .selected-combination { order:4; }
+.room-dual .random-button { order:5; margin-top:10px; }
+.room-dual .instant-ticket-row { order:6; margin-top:12px; }
+.room-dual .picker-actions { order:7; }
+.room-dual .picker-note { order:8; }
+.lottery-dual .catalog-art .dual-catalog-logo { z-index:2; width:38px; height:38px; top:8px; right:8px; filter:drop-shadow(0 3px 8px #000a); }
+.room-dual .room-masthead-copy { position:relative; z-index:2; text-align:center; }
+.room-dual .dual-hero-logo { display:block; width:42px; height:42px; margin:0 auto 5px; object-fit:contain; filter:drop-shadow(0 0 12px #ffdd8470); }
+.room-dual .room-masthead-copy h1 { margin:5px 0; font-size:clamp(36px,10vw,53px); }
+.room-dual .room-prize { position:relative; z-index:2; text-align:center; }
+.room-dual .room-prize>strong { margin:4px 0 8px; }
+.room-dual .room-prize>small { text-align:left; }
+.visual-dual.raster-visual .scene-depth { background:linear-gradient(0deg,#081326 1%,#08132699 30%,transparent 80%),linear-gradient(90deg,#07142b55,transparent 45%,#25172122); }
+.visual-dual .dual-scene-glow { position:absolute; z-index:1; inset:0; background:radial-gradient(circle at 50% 62%,#ffcc6938,transparent 25%),radial-gradient(circle at 28% 12%,#3980ed22,transparent 40%); pointer-events:none; }
+.dual-field { min-width:0; padding:12px 7px 11px; isolation:isolate; background-image:linear-gradient(180deg,rgba(4,13,31,.38),rgba(4,12,29,.94)),url('./assets/lotteries/casper-dual-scene.webp'); background-size:100% 100%,200% 100%; }
+.dual-night { background-position:center,left center; }
+.dual-dawn { background-position:center,right center; }
+.dual-field:before { content:""; position:absolute; inset:0; z-index:0; border-radius:inherit; box-shadow:inset 0 1px #ffffff44,inset 0 -20px 35px #0007; pointer-events:none; }
+.dual-field header { text-align:center; margin-bottom:10px; }
+.dual-field header span { font-size:clamp(17px,5vw,25px); text-shadow:0 3px 14px #000; }
+.dual-clock-grid { position:relative; display:block; width:100%; max-width:210px; aspect-ratio:1; margin:auto; border:2px solid rgba(255,223,157,.75); border-radius:50%; background:radial-gradient(circle,#163761dd 0 9%,#071938ed 11% 50%,#061020f2 70%); box-shadow:0 0 0 4px #101827,0 0 0 5px #ffde9d45,0 11px 24px #0009,inset 0 0 20px #162950; }
+.dual-night .dual-clock-grid { border-color:#a5d5ff; box-shadow:0 0 0 4px #0c1e41,0 0 0 5px #7abaff70,0 0 17px #267bff65,0 12px 24px #0009,inset 0 0 22px #173f83; }
+.dual-dawn .dual-clock-grid { background:radial-gradient(circle,#ffe4a0 0 10%,#d8903877 12%,#5b341dde 45%,#241416f2 76%); box-shadow:0 0 0 4px #2b1a1a,0 0 0 5px #ffcf7b80,0 0 17px #ff9f3c66,0 12px 24px #0009,inset 0 0 22px #e48b38; }
+.dual-clock-grid:before { content:""; position:absolute; inset:9%; border-radius:50%; background:repeating-conic-gradient(from 0deg,#ffffff36 0deg 1deg,transparent 1deg 30deg); mask-image:radial-gradient(circle,transparent 0 57%,#000 59% 64%,transparent 66%); pointer-events:none; }
+.dual-clock-grid:after { content:"☾"; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); color:#c3e1ff; font:28px Georgia,serif; text-shadow:0 0 12px #74b4ff; pointer-events:none; }
+.dual-dawn .dual-clock-grid:after { content:"✺"; color:#fff0b1; text-shadow:0 0 14px #ffc15d; }
+.dual-clock-grid .pick-number { position:absolute; z-index:2; width:clamp(23px,7vw,35px); height:clamp(23px,7vw,35px); min-height:0; aspect-ratio:1; transform:translate(-50%,-50%); border-radius:50%; font:600 clamp(10px,3vw,14px) Georgia,serif; box-shadow:inset 0 1px #ffffff44,0 3px 8px #0006; touch-action:manipulation; }
+.dual-clock-grid .pick-number.selected { transform:translate(-50%,-50%); }
+.dual-field>b { position:relative; z-index:2; margin-top:13px; padding:7px 5px; border:1px solid #ffe2a050; border-radius:20px; color:#f2e9cf; background:#071326c9; }
+.dual-ticket-detail { position:relative; width:min(100%,470px); max-height:90vh; overflow:auto; padding:22px 16px; border:1px solid #f4cb7970; border-radius:21px; color:#f8f1e2; background:#081326; box-shadow:0 25px 80px #000b; }
+.dual-ticket-scene { position:absolute; inset:0 0 auto; height:240px; background:linear-gradient(0deg,#081326,transparent 82%),url('./assets/lotteries/casper-dual-scene.webp') center 30%/cover; opacity:.72; pointer-events:none; }
+.dual-ticket-detail>header,.dual-ticket-rounds,.dual-ticket-detail>footer { position:relative; z-index:1; }
+.dual-ticket-detail>header { padding:55px 4px 28px; text-align:center; text-shadow:0 2px 15px #000; }
+.dual-ticket-detail>header span { color:#ffe19a; font-size:9px; letter-spacing:.13em; }.dual-ticket-detail h2 { margin:8px 0 3px; font:30px Georgia,serif; }.dual-ticket-detail>header p { margin:0; color:#d5e0f3; font-size:11px; }
+.dual-ticket-rounds { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+.dual-ticket-round { min-width:0; padding:13px 10px; border:1px solid #81b8f45c; border-radius:14px; background:linear-gradient(145deg,#0a1e41,#071429); }
+.dual-ticket-round.dawn { border-color:#f3c47871; background:linear-gradient(145deg,#3a251e,#191622); }
+.dual-ticket-round header { display:flex; gap:8px; align-items:center; }.dual-ticket-round header>span { font-size:23px; color:#9ed0ff; }.dual-ticket-round.dawn header>span { color:#ffd381; }
+.dual-ticket-round header strong,.dual-ticket-round header small { display:block; }.dual-ticket-round header strong { font:19px Georgia,serif; }.dual-ticket-round header small { color:#aabbd4; font-size:9px; }
+.dual-ticket-numbers { display:flex; gap:7px; margin:17px 0 10px; }.dual-ticket-numbers i { display:grid; width:33px; height:33px; place-items:center; border:1px solid #9ecfff88; border-radius:50%; color:#e4f2ff; font:17px Georgia,serif; }.dual-ticket-round.dawn .dual-ticket-numbers i { border-color:#ffd99299; color:#ffeab8; }.dual-ticket-numbers i.matched { background:#ffd77f; color:#1a160e; box-shadow:0 0 14px #ffd77f70; }
+.dual-ticket-round p { margin:0; color:#cad5e7; font-size:10px; line-height:1.45; }
+.dual-ticket-detail>footer { display:grid; gap:6px; margin-top:11px; padding:15px; border:1px solid #ffd38166; border-radius:14px; background:#0b182ded; }.dual-ticket-detail>footer span { color:#a9bbd6; font-size:10px; }.dual-ticket-detail>footer strong { color:#ffe096; font:21px Georgia,serif; }.dual-ticket-detail>footer small { color:#94a5c1; font-size:9px; }
 
 /* Keep the September board above decorative layers and fully tappable in Telegram WebView. */
 .room-september .picker-board,

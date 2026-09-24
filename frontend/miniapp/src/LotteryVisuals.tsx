@@ -7,6 +7,7 @@ import pllScene from "./assets/lotteries/pll-portal.jpg";
 import pssScene from "./assets/lotteries/pss-nature-scene.webp";
 import kasperGrandScene from "./assets/lotteries/kasper-grand-scene.webp";
 import grobScene from "./assets/lotteries/grob-scene.webp";
+import dualScene from "./assets/lotteries/casper-dual-scene.webp";
 
 type VisualContext = "hero" | "picker" | "live";
 
@@ -61,11 +62,13 @@ export function LotteryVisual({ code, context = "hero", animated = true }: Lotte
   const [captureScene, sceneActive] = useSceneMotion(animated);
   const transition = { duration: sceneActive ? 1.1 : 0, ease: "easeOut" as const };
   const prefix = `${code}-${context}`;
-  const rasterScenes: Record<string, string> = { september: septemberScene, pll: pllScene, pss: pssScene, khan: khanScene, weekly: kasperGrandScene, grob: grobScene };
+  const rasterScenes: Record<string, string> = { dual: dualScene, september: septemberScene, pll: pllScene, pss: pssScene, khan: khanScene, weekly: kasperGrandScene, grob: grobScene };
+
+  if (code === "dual") return <div ref={captureScene} aria-hidden="true" className={`lottery-visual visual-dual visual-${context} raster-visual`}><img alt="" className="scene-backdrop" decoding="async" src={dualScene} /><i className="scene-depth" /><i className="dual-scene-glow" /></div>;
 
   if (rasterScenes[code]) return <div ref={captureScene} aria-hidden="true" className={`lottery-visual visual-${code} visual-${context} raster-visual ${sceneActive ? "" : "motion-paused"}`}>
-    <motion.img alt="" animate={sceneActive ? { scale: [1.02, 1.065], x: [-3, 3], y: [0, -2] } : undefined} className="scene-backdrop" decoding="async" src={rasterScenes[code]} transition={{ duration: 14, ease: "easeInOut", repeat: Infinity, repeatType: "mirror" }} />
-    <motion.img alt="" animate={sceneActive ? { scale: [1.08, 1.14], x: [3, -5], y: [1, -3] } : undefined} className="scene-foreground" decoding="async" src={rasterScenes[code]} transition={{ duration: 10, ease: "easeInOut", repeat: Infinity, repeatType: "mirror" }} />
+    <motion.img alt="" animate={sceneActive && code !== "dual" ? { scale: [1.02, 1.065], x: [-3, 3], y: [0, -2] } : undefined} className="scene-backdrop" decoding="async" src={rasterScenes[code]} transition={{ duration: 14, ease: "easeInOut", repeat: Infinity, repeatType: "mirror" }} />
+    {code !== "dual" && <motion.img alt="" animate={sceneActive ? { scale: [1.08, 1.14], x: [3, -5], y: [1, -3] } : undefined} className="scene-foreground" decoding="async" src={rasterScenes[code]} transition={{ duration: 10, ease: "easeInOut", repeat: Infinity, repeatType: "mirror" }} />}
     <motion.span animate={sceneActive ? { opacity: [.22, .48, .22], x: [0, 24, 0] } : undefined} className="scene-light" transition={{ duration: 7.5, ease: "easeInOut", repeat: Infinity }} />
     <i className="scene-depth" />
     <motion.i animate={sceneActive ? { opacity: [.12, .32, .12], x: [-28, 24] } : undefined} className="scene-mist" transition={{ duration: 9, ease: "easeInOut", repeat: Infinity, repeatType: "mirror" }} />

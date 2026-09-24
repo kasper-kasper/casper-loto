@@ -625,3 +625,39 @@ it("keeps Fast tickets accessible through a separate server filter", async () =>
   fireEvent.change(screen.getByLabelText("Фильтр по лотерее"), { target: { value: "scope:standard" } });
   await waitFor(() => expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "active", "scope:standard", false));
 });
+
+it("keeps Casper Dual as one 2+2 ticket with no favorites or five-draw repeat", async () => {
+  const scheduled = new Date(Date.now() + 60 * 60_000).toISOString();
+  const dualDashboard: Dashboard = {
+    ...dashboard,
+    server_time: new Date().toISOString(),
+    balance: 1_000_000,
+    lotteries: [{
+      ...dashboard.lotteries[0],
+      code: "dual", name: "Casper Dual", kind: "DAILY",
+      ruleset_code: "casper_dual_2_12_2_12", numbers_to_pick: 4, max_number: 24,
+      primary_numbers_to_pick: 2, primary_max_number: 12,
+      secondary_numbers_to_pick: 2, secondary_max_number: 12,
+      secondary_storage_offset: 12, ticket_price: 20_000,
+      jackpot: 5_000_000, scheduled_at: scheduled,
+      sales_close_at: new Date(Date.parse(scheduled) - 120_000).toISOString(),
+      player_ticket_count: 0,
+    }],
+  };
+  vi.mocked(miniAppApi.dashboard).mockResolvedValue(dualDashboard);
+  render(<App initData="test" />);
+  fireEvent.click(await screen.findByRole("button", { name: "Лотереи" }));
+  fireEvent.click(screen.getByRole("button", { name: "Открыть Casper Dual" }));
+  fireEvent.click(screen.getByRole("button", { name: "NIGHT 3" }));
+  fireEvent.click(screen.getByRole("button", { name: "NIGHT 10" }));
+  fireEvent.click(screen.getByRole("button", { name: "DAWN 5" }));
+  fireEvent.click(screen.getByRole("button", { name: "DAWN 11" }));
+  expect(screen.getByRole("button", { name: "Купить билет" })).toBeEnabled();
+  expect(screen.queryByText("Избранные комбинации")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "5 тиражей" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Купить 25 случайных билетов" })).toBeEnabled();
+  fireEvent.click(screen.getByRole("button", { name: "Купить билет" }));
+  await waitFor(() => expect(miniAppApi.purchase).toHaveBeenCalledWith(
+    "test", "dual", [[3, 10, 17, 23]], expect.any(String), 1,
+  ));
+});

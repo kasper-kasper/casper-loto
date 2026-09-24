@@ -43,6 +43,13 @@ export interface Ticket {
   draw_ticket_count?: number;
   bingo_result?: { moves: number[]; amounts: number[] } | null;
   instant_symbols?: number[] | null;
+  second_draw_number?: number | null;
+  second_scheduled_at?: string | null;
+  first_phase?: "NIGHT" | "DAWN" | null;
+  first_winning_numbers?: number[] | null;
+  second_winning_numbers?: number[] | null;
+  dual_night_matches?: number | null;
+  dual_dawn_matches?: number | null;
 }
 
 export interface Dashboard {

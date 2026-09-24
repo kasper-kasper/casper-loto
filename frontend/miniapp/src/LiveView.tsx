@@ -23,6 +23,10 @@ function drawKey(draw: LiveDraw): string {
 }
 
 function lotteryFormat(draw: LiveDraw): string {
+  if (draw.lottery_code === "dual") {
+    const slot = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Moscow", hour: "2-digit", minute: "2-digit" }).format(new Date(draw.scheduled_at));
+    return `РАУНД ${slot === "00:30" ? "NIGHT" : "DAWN"} · 2 ИЗ 12`;
+  }
   if (draw.lottery_code === "pss") return "ЕЖЕДНЕВНАЯ · 5 ИЗ 36 + CASPER BALL 1 ИЗ 8";
   if (draw.lottery_code === "khan") return "ЕЖЕДНЕВНАЯ · 6 ИЗ 36";
   if (draw.lottery_code === "september") return "DAILY · 3 ИЗ 33";
@@ -86,8 +90,9 @@ export function LiveView({ feed, now, loading, onPlay, onTickets }: LiveViewProp
   const finalMinute = !isReplay && state.phase === "waiting" && startsIn <= 60_000;
   const finalMinuteProgress = finalMinute ? Math.max(0, Math.min(100, ((60_000 - startsIn) / 60_000) * 100)) : 0;
   const grand = isGrandLottery(draw.lottery_code);
+  const dual = draw.lottery_code === "dual";
   const grandOffset = draw.secondary_storage_offset ?? (draw.lottery_code === "pss" ? 36 : 35);
-  const resultSize = draw.winning_numbers?.length ?? (draw.lottery_code === "september" || draw.lottery_code === "grob" ? 3 : draw.lottery_code === "khan" ? 6 : draw.lottery_kind === "WEEKLY" ? 7 : 4);
+  const resultSize = draw.winning_numbers?.length ?? (dual ? 2 : draw.lottery_code === "september" || draw.lottery_code === "grob" ? 3 : draw.lottery_code === "khan" ? 6 : draw.lottery_kind === "WEEKLY" ? 7 : 4);
   const khanShownNumbers = state.currentNumber === null ? state.revealedNumbers : [...state.revealedNumbers, state.currentNumber];
 
   return <div className="live-experience">
@@ -118,10 +123,10 @@ export function LiveView({ feed, now, loading, onPlay, onTickets }: LiveViewProp
       </div>)}
 
       {state.phase === "result" && <motion.div animate={{ opacity: 1, y: 0 }} className={`live-result ${winner ? "winner" : "neutral"}`} initial={{ opacity: 0, y: 10 }}>
-        <span>{isReplay ? "Результат записи" : "Итог тиража"}</span>
+        <span>{isReplay ? "Результат записи" : dual ? "Результат раунда" : "Итог тиража"}</span>
         {grand ? <GrandNumberSet values={state.revealedNumbers} offset={grandOffset} specialLabel={draw.lottery_code === "pss" ? "Casper Ball" : undefined} /> : <div className="live-final-numbers">{state.revealedNumbers.map((number) => <i key={number}>{number}</i>)}</div>}
-        {draw.player_ticket_count === 0 ? <div className="personal-result"><strong>Вы не участвовали в этом тираже</strong><p>Новый билет можно выбрать для ближайшего розыгрыша.</p></div> : winner ? <div className="personal-result win"><span>Ваш выигрыш</span><strong>+{formatCas(draw.player_total_prize)}</strong><p>Выигрышных билетов: {draw.player_winning_ticket_count}</p></div> : <div className="personal-result"><strong>В этот раз без выигрыша</strong><p>{draw.player_best_matches ? `Лучший результат — ${matchLabel(draw.lottery_code, draw.player_best_matches, grand)}.` : "Совпадений нет."} Следующий шанс уже близко.</p></div>}
-        {draw.highlighted_tickets.map((ticket) => <article className="live-ticket" key={ticket.public_number}><div><span>{formatTicketLabel(draw.lottery_code, ticket.public_number)}</span><strong>{ticket.prize_amount > 0 ? `+${formatCas(ticket.prize_amount)}` : "Без выигрыша"}</strong></div>{grand ? <GrandNumberSet values={ticket.numbers} offset={grandOffset} specialLabel={draw.lottery_code === "pss" ? "Casper Ball" : undefined} winning={draw.winning_numbers} animate={ticket.prize_amount > 0} /> : <NumberSet values={ticket.numbers} winning={draw.winning_numbers} animate={ticket.prize_amount > 0} />}</article>)}
+        {draw.player_ticket_count === 0 ? <div className="personal-result"><strong>Вы не участвовали в этом {dual ? "раунде" : "тираже"}</strong><p>Новый билет можно выбрать для ближайшего розыгрыша.</p></div> : winner ? <div className="personal-result win"><span>Ваш выигрыш</span><strong>+{formatCas(draw.player_total_prize)}</strong><p>Выигрышных билетов: {draw.player_winning_ticket_count}</p></div> : dual ? <div className="personal-result"><strong>Результат раунда сохранён</strong><p>Проверьте свой билет: после первого раунда он остаётся активным, итог и выплата появятся после второго.</p></div> : <div className="personal-result"><strong>В этот раз без выигрыша</strong><p>{draw.player_best_matches ? `Лучший результат — ${matchLabel(draw.lottery_code, draw.player_best_matches, grand)}.` : "Совпадений нет."} Следующий шанс уже близко.</p></div>}
+        {!dual && draw.highlighted_tickets.map((ticket) => <article className="live-ticket" key={ticket.public_number}><div><span>{formatTicketLabel(draw.lottery_code, ticket.public_number)}</span><strong>{ticket.prize_amount > 0 ? `+${formatCas(ticket.prize_amount)}` : "Без выигрыша"}</strong></div>{grand ? <GrandNumberSet values={ticket.numbers} offset={grandOffset} specialLabel={draw.lottery_code === "pss" ? "Casper Ball" : undefined} winning={draw.winning_numbers} animate={ticket.prize_amount > 0} /> : <NumberSet values={ticket.numbers} winning={draw.winning_numbers} animate={ticket.prize_amount > 0} />}</article>)}
       </motion.div>}
 
       {!isReplay && state.nextDraw && <div className="live-next"><span>Следующий тираж</span><strong>{state.nextDraw.lottery_name}</strong><small>{formatMoscow(state.nextDraw.scheduled_at)} МСК · {countdown(state.nextDraw.scheduled_at, now)}</small></div>}

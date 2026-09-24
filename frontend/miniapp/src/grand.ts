@@ -18,6 +18,9 @@ export function splitGrandNumbers(values: number[], offset = GRAND_STORAGE_OFFSE
 }
 
 export function lotteryCombination(lottery: Lottery): number[] {
+  if (lottery.code === "dual") {
+    return [...randomCombination(12, 2), ...randomCombination(12, 2).map((value) => value + 12)];
+  }
   if (!isGrandLottery(lottery)) return randomCombination(lottery.max_number, lottery.numbers_to_pick);
   const offset = lottery.secondary_storage_offset ?? GRAND_STORAGE_OFFSET;
   const main = randomCombination(lottery.primary_max_number ?? 35, lottery.primary_numbers_to_pick ?? 5);

@@ -4,10 +4,26 @@ import { broadcastPreviewConfig } from "./broadcastPreview";
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status, headers: { "Content-Type": "application/json" } });
 const nowIso = () => new Date().toISOString();
 const future = (minutes: number) => new Date(Date.now() + minutes * 60_000).toISOString();
+const nextDualPreviewDraw = () => {
+  const draw = new Date();
+  draw.setUTCHours(4, 30, 0, 0); // DAWN 07:30 Europe/Moscow
+  while (draw.getTime() - 120_000 <= Date.now()) {
+    if (draw.getUTCHours() === 4) draw.setUTCHours(21, 30, 0, 0);
+    else { draw.setUTCDate(draw.getUTCDate() + 1); draw.setUTCHours(4, 30, 0, 0); }
+  }
+  return draw.toISOString();
+};
+const followingDualPreviewDraw = (scheduledAt: string) => {
+  const draw = new Date(scheduledAt);
+  if (draw.getUTCHours() === 4) draw.setUTCHours(21, 30, 0, 0);
+  else { draw.setUTCDate(draw.getUTCDate() + 1); draw.setUTCHours(4, 30, 0, 0); }
+  return draw.toISOString();
+};
 const broadcastPreview = broadcastPreviewConfig();
 const previewStartsAt = Date.now() + 5_000;
 
 const lotterySeed = [
+  { code: "dual", name: "Casper Dual", kind: "DAILY" as const, ruleset_code: "casper_dual_2_12_2_12", numbers_to_pick: 4, max_number: 24, primary_numbers_to_pick: 2, primary_max_number: 12, secondary_numbers_to_pick: 2, secondary_max_number: 12, secondary_storage_offset: 12, ticket_price: 20_000, jackpot: 5_000_000, draw_number: 501, scheduled_at: nextDualPreviewDraw() },
   { code: "bingo", name: "Kasper Bingo", kind: "DAILY" as const, numbers_to_pick: 12, max_number: 60, ticket_price: 50_000, jackpot: 10_000_250_000, draw_number: 1, scheduled_at: future(180) },
   { code: "shadow", name: "CODE", kind: "DAILY" as const, ruleset_code: "code_5_digits", numbers_to_pick: 5, max_number: 9, ticket_price: 888, jackpot: 888_888, draw_number: 38, scheduled_at: future(7) },
   { code: "flash", name: "FLASH", kind: "DAILY" as const, ruleset_code: "fast_5_20_jackpot_only", numbers_to_pick: 5, max_number: 20, ticket_price: 888, jackpot: 901_320, draw_number: 42, scheduled_at: future(17) },
@@ -41,7 +57,7 @@ const dashboard = (): Dashboard => ({
 
 const account = (): Account => ({ display_name: "Дизайн-превью", balance, ticket_count: purchasedTickets.length + 42, active_ticket_count: purchasedTickets.length, winning_ticket_count: 7, total_spent: 14_760_000, total_won: 19_333_333, best_win: 12_000_000, unread_notification_count: 1, notification_preferences: { telegram_enabled: true, draw_results_enabled: true, inactivity_reminders_enabled: true } });
 
-const previewNumbers: Record<string, number[]> = { pll: [2, 6, 11, 14], pss: [1, 5, 9, 15], khan: [4, 12, 19, 23, 31, 36], weekly: [3, 9, 18, 27, 34, 37, 40], september: [3, 9, 28], grob: [2, 8, 16] };
+const previewNumbers: Record<string, number[]> = { dual: [3, 10, 17, 23], pll: [2, 6, 11, 14], pss: [1, 5, 9, 15], khan: [4, 12, 19, 23, 31, 36], weekly: [3, 9, 18, 27, 34, 37, 40], september: [3, 9, 28], grob: [2, 8, 16] };
 const previewLosingTickets: Record<string, number[]> = { pll: [1, 3, 5, 7], pss: [2, 4, 6, 8], khan: [1, 2, 3, 5, 6, 7], weekly: [1, 2, 4, 8, 12, 36, 38], september: [1, 2, 4], grob: [1, 3, 5] };
 
 const liveDraw = (): LiveDraw => {
@@ -126,9 +142,9 @@ export function installDesignPreview(): void {
       const body = JSON.parse(String(init.body)) as { combinations: number[][]; draw_count: number };
       const totalCost = lottery.ticket_price * body.combinations.length * body.draw_count;
       balance -= totalCost;
-      const created = body.combinations.map((numbers, index): Ticket => ({ id: crypto.randomUUID(), public_number: purchasedTickets.length + index + 1, lottery_code: lottery.code, lottery_name: lottery.name, draw_number: lottery.draw_number, scheduled_at: lottery.scheduled_at, numbers: lottery.code === "pulse" ? [...numbers, 1_001 + Math.floor(Math.random() * 199)] : numbers, purchase_price: lottery.ticket_price, source: "MANUAL", status: "PURCHASED", matches: null, prize_amount: 0, winning_numbers: null }));
+      const created = body.combinations.map((numbers, index): Ticket => ({ id: crypto.randomUUID(), public_number: purchasedTickets.length + index + 1, lottery_code: lottery.code, lottery_name: lottery.name, draw_number: lottery.draw_number, scheduled_at: lottery.scheduled_at, numbers: lottery.code === "pulse" ? [...numbers, 1_001 + Math.floor(Math.random() * 199)] : numbers, purchase_price: lottery.ticket_price, source: "MANUAL", status: "PURCHASED", matches: null, prize_amount: 0, winning_numbers: null, ...(lottery.code === "dual" ? { second_draw_number: lottery.draw_number + 1, second_scheduled_at: followingDualPreviewDraw(lottery.scheduled_at), first_phase: new Date(lottery.scheduled_at).getUTCHours() === 4 ? "DAWN" as const : "NIGHT" as const, first_winning_numbers: null, second_winning_numbers: null, dual_night_matches: null, dual_dawn_matches: null } : {}) }));
       purchasedTickets = [...created, ...purchasedTickets];
-      return json({ operation_id: crypto.randomUUID(), draw_id: "preview-draw", draw_ids: ["preview-draw"], draw_count: body.draw_count, ticket_ids: created.map((ticket) => ticket.id), total_cost: totalCost, balance_after: balance, already_processed: false });
+      return json({ operation_id: crypto.randomUUID(), draw_id: "preview-draw", draw_ids: lottery.code === "dual" ? ["preview-draw", "preview-second-draw"] : ["preview-draw"], draw_count: body.draw_count, ticket_ids: created.map((ticket) => ticket.id), total_cost: totalCost, balance_after: balance, already_processed: false });
     }
     return json({ detail: "Design preview route is not implemented" }, 404);
   };

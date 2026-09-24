@@ -63,7 +63,7 @@ describe("personalised live result", () => {
     expect(document.querySelectorAll(".live-final-numbers i")).toHaveLength(3);
   });
 
-  it("runs the 6 of 36 drum and keeps the current best ticket beside it", () => {
+  it("shows the lightweight 6 of 36 result and current best ticket", () => {
     const revealAt = [4_000, 7_200, 10_400, 13_600, 16_800, 20_000].map((offset) => new Date(startsAt + offset).toISOString());
     const draw: LiveDraw = {
       ...baseDraw,
@@ -85,9 +85,7 @@ describe("personalised live result", () => {
     expect(screen.getByText("ВАШ ЛУЧШИЙ БИЛЕТ СЕЙЧАС")).toBeInTheDocument();
     expect(document.querySelectorAll(".khan-best-ticket .number.won")).toHaveLength(2);
     expect(document.querySelectorAll(".khan-ball-rack i.filled")).toHaveLength(2);
-    expect(document.querySelector(".khan-output > strong")).toHaveClass("band-yellow");
-    for (const band of ["band-yellow", "band-blue", "band-red", "band-green"]) {
-      expect(document.querySelector(`.khan-drum .${band}`)).not.toBeNull();
-    }
+    expect(document.querySelector(".khan-current-ball")).toHaveClass("band-yellow");
+    expect(document.querySelector(".khan-drum")).toBeNull();
   });
 });

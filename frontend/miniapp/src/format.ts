@@ -15,7 +15,7 @@ export function formatDraw(value: number): string {
 }
 
 export function formatDrawLabel(lotteryCode: string, value: number): string {
-  return lotteryCode === "grob" ? `RIP ${formatDraw(value)}` : `Тираж #${formatDraw(value)}`;
+  return lotteryCode === "grob" ? `RIP ${formatDraw(value)}` : lotteryCode === "dual" ? `Раунд #${formatDraw(value)}` : `Тираж #${formatDraw(value)}`;
 }
 
 export function formatTicketLabel(lotteryCode: string, value: number): string {

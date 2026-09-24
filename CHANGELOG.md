@@ -1511,3 +1511,7 @@ All notable changes follow Keep a Changelog and Semantic Versioning principles.
 ## [1.43.0] - 2026-09-23
 
 - Web: consolidated GROБ into one coherent artwork-led scene and removed the experimental overlay that duplicated the sarcophagus visual.
+# Unreleased
+
+- Mini App: Casper Dual — новая лотерея с одним билетом на два последовательных тиража NIGHT/DAWN. Два поля по 2 из 12, цена 20 000 CAS, выплаты 10 000 / 100 000 / 5 000 000 CAS и закрытие продаж за 2 минуты.
+- Для Casper Dual добавлены мини-карточка, лёгкая 2.5D-сцена из предоставленного изображения, фирменный логотип, ×1/×5/×25 и билет с промежуточным результатом. Избранных чисел нет; веб-канал пока исключён.
