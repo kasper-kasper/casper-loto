@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties } from "react";
 import { motion } from "motion/react";
 
 import { GrandNumberSet, Icon, Money, NumberSet, PrimaryButton } from "./components";
@@ -31,11 +30,6 @@ function lotteryFormat(draw: LiveDraw): string {
   return draw.lottery_kind === "WEEKLY" ? "ЕЖЕНЕДЕЛЬНАЯ · 5 ИЗ 35 + 2 ИЗ 5" : "DAILY · 4 ИЗ 15";
 }
 
-const drumBalls = [
-  [4, 18, 27], [13, 36, 18], [22, 57, 26], [31, 73, 43], [8, 63, 66], [17, 42, 72],
-  [26, 22, 61], [35, 47, 45], [10, 79, 23], [19, 29, 42], [28, 55, 57], [36, 76, 68],
-];
-
 function khanBallBand(number: number): string {
   if (number < 10) return "band-yellow";
   if (number < 20) return "band-blue";
@@ -44,14 +38,11 @@ function khanBallBand(number: number): string {
 }
 
 function KhanLototron({ revealedNumbers, currentNumber, mixing }: { revealedNumbers: number[]; currentNumber: number | null; mixing: boolean }) {
-  return <div className={`khan-lototron ${mixing ? "is-mixing" : "is-drawing"}`} aria-live="polite">
-    <header><span><i />{mixing ? "ЛОТОТРОН ЗАПУЩЕН" : `ШАР ${revealedNumbers.length} ИЗ 6`}</span><strong>{mixing ? "Перемешиваем шары" : currentNumber === null ? "Механизм готов" : "Шар зафиксирован"}</strong></header>
-    <div className="khan-machine" aria-hidden="true">
-      <div className="khan-drum"><i className="khan-drum-ring" /><i className="khan-glass-glare" />{drumBalls.map(([number, left, top], index) => <b className={`khan-ball ${khanBallBand(number)}`} key={number} style={{ "--ball-left": `${left}%`, "--ball-top": `${top}%`, "--ball-delay": `${index * -0.17}s` } as CSSProperties}>{number}</b>)}<span className="khan-rotor"><i /><i /><i /></span></div>
-      <div className={`khan-chute ${currentNumber !== null ? "releasing" : ""}`}><i /><b /></div>
-      <div className={`khan-output ${currentNumber !== null ? "has-ball" : ""}`}>{currentNumber !== null ? <motion.strong className={khanBallBand(currentNumber)} animate={{ opacity: 1, scale: 1, y: 0, rotate: 0 }} initial={{ opacity: 0, scale: .45, y: -28, rotate: -35 }} key={currentNumber} transition={{ type: "spring", stiffness: 240, damping: 17 }}>{currentNumber}</motion.strong> : <span />}</div>
-      <div className="khan-base"><span>KASPER</span><i /><b>6 / 36</b></div>
-    </div>
+  const shown = currentNumber ?? revealedNumbers.at(-1) ?? null;
+  return <div className="khan-draw-console" aria-live="polite">
+    <header><span><i />{mixing ? "ПОДГОТОВКА ТИРАЖА" : `ШАР ${revealedNumbers.length} ИЗ 6`}</span><strong>{mixing ? "Синхронизируем результат" : shown === null ? "Механизм готов" : "Число зафиксировано"}</strong></header>
+    <div className="khan-current-wrap"><div className={`khan-current-ball ${shown !== null ? "has-number" : ""} ${shown !== null ? khanBallBand(shown) : ""}`} key={shown ?? "empty"}>{shown ?? "—"}</div><span>{mixing ? "Эфир начнётся через несколько секунд" : "Результат тиража обновляется автоматически"}</span></div>
+    <div className="khan-progress"><i style={{ width: `${(revealedNumbers.length / 6) * 100}%` }} /></div>
     <div className="khan-ball-rack">{Array.from({ length: 6 }, (_, index) => { const number = revealedNumbers[index]; return <i className={number ? `filled ${khanBallBand(number)}` : ""} key={index}>{number ?? "·"}</i>; })}</div>
   </div>;
 }
@@ -103,7 +94,7 @@ export function LiveView({ feed, now, loading, onPlay, onTickets }: LiveViewProp
     <section className={`live-stage lottery-${draw.lottery_code} phase-${state.phase} ${finalMinute ? "final-minute" : ""} ${isReplay ? "is-replay" : "is-live"}`}>
       <div className="live-grid" aria-hidden="true" />
       <div className="live-ambient" aria-hidden="true" />
-      <div className="live-lottery-scene"><LotteryVisual code={draw.lottery_code} context="live" animated={!isReplay} /></div>
+      <div className="live-lottery-scene"><LotteryVisual code={draw.lottery_code} context="live" animated={!isReplay && draw.lottery_code !== "khan"} /></div>
       {draw.lottery_code === "september" && <div className="live-september-mark" aria-hidden="true"><small>{copy.september.liveMood}</small><strong>03</strong><span>сентября</span></div>}
       <header className="live-heading">
         <span className="live-label"><i /> {isReplay ? "ПОВТОР ТИРАЖА" : state.phase === "waiting" ? "СКОРО В ЭФИРЕ" : state.phase === "result" ? "ТИРАЖ ЗАВЕРШЁН" : "ПРЯМОЙ ЭФИР"}</span>

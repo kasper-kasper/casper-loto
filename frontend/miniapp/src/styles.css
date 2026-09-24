@@ -2084,6 +2084,43 @@ html { overflow-x: clip; scrollbar-gutter: stable; }
 .app-header .balance .money-value { overflow: visible; white-space: nowrap; }
 .app-header .balance .money-value { display: inline-flex; width: max-content; }
 
+/* 6/36 refresh: keep the room compact and the main interaction above the fold. */
+.room-khan .room-masthead { min-height: 92px; margin: 0 0 10px; padding: 14px 16px; border: 1px solid rgba(109,178,255,.2); border-radius: 18px; background: linear-gradient(135deg,rgba(13,43,84,.95),rgba(7,20,43,.96)); }
+.room-khan .room-masthead > .lottery-visual { display: none; }
+.room-khan .room-masthead-copy { min-width: 0; }
+.room-khan .room-masthead-copy > span, .room-khan .room-masthead-copy > h1, .room-khan .room-masthead-copy > p { display: none; }
+.room-khan .room-prize { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 12px; }
+.room-khan .room-prize span { color: #88bfff; font-size: 9px; letter-spacing: .16em; }
+.room-khan .room-prize strong { color: #f8d887; font-size: clamp(24px,7vw,34px); white-space: nowrap; }
+.room-khan .room-prize small { display: grid; gap: 3px; color: #9bb1d0; font-size: 9px; text-align: right; }
+.room-khan .room-prize small b { color: #e5eefc; font-size: 11px; font-variant-numeric: tabular-nums; }
+.picker-favorites-top { display: grid; gap: 8px; padding: 11px 12px; border: 1px solid rgba(117,181,246,.22); border-radius: 15px; background: linear-gradient(135deg,rgba(24,67,119,.48),rgba(7,22,49,.66)); }
+.picker-favorites-top > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.picker-favorites-top > header span { color: #bcdcff; font-size: 8px; font-weight: 850; letter-spacing: .14em; }
+.picker-favorites-top > header small { color: #7798be; font-size: 8px; }
+.picker-favorites-top > div { display: grid; gap: 6px; }
+.picker-favorite-item { display: flex; min-width: 0; gap: 6px; }
+.picker-favorite-item > button:first-child { display: flex; min-width: 0; flex: 1; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; padding: 6px 9px; border: 1px solid rgba(138,193,246,.22); border-radius: 9px; color: #e4f1ff; background: rgba(5,20,45,.6); font-size: 11px; text-align: left; }
+.picker-favorite-item > button:first-child i { color: #79bdff; font-style: normal; }
+.picker-favorite-item > button:last-child { width: 36px; border: 1px solid rgba(138,193,246,.16); border-radius: 9px; color: #7895b7; background: rgba(5,20,45,.45); font-size: 17px; }
+
+/* Static draw console replaces the GPU-heavy mechanical drum for 6/36. */
+.live-stage.lottery-khan.phase-starting, .live-stage.lottery-khan.phase-revealing { border-color: rgba(101,174,255,.3); background: radial-gradient(circle at 50% 15%,rgba(46,130,229,.18),transparent 32%),linear-gradient(165deg,#071a36,#050d1f 68%,#0c1727) !important; }
+.khan-draw-console { display: grid; gap: 12px; min-height: 260px; align-content: center; }
+.khan-draw-console > header { display: flex; align-items: end; justify-content: space-between; gap: 12px; }
+.khan-draw-console > header span { display: flex; align-items: center; gap: 6px; color: #79baff; font-size: 7px; font-weight: 850; letter-spacing: .18em; }
+.khan-draw-console > header span i { width: 6px; height: 6px; border-radius: 50%; background: #66e7a4; box-shadow: 0 0 9px #66e7a4; }
+.khan-draw-console > header strong { color: #dcecff; font-size: 10px; font-weight: 650; }
+.khan-current-wrap { display: grid; justify-items: center; gap: 9px; }
+.khan-current-ball { display: grid; width: 122px; height: 122px; place-items: center; border: 1px solid rgba(138,193,246,.42); border-radius: 50%; color: #6e8fb6; background: radial-gradient(circle at 34% 26%,rgba(255,255,255,.18),transparent 22%),linear-gradient(145deg,#153e70,#071b39); box-shadow: inset 0 0 0 7px rgba(111,182,255,.06),0 16px 30px rgba(0,8,23,.38); font-size: 48px; font-weight: 850; }
+.khan-current-ball.has-number { color: var(--ball-ink); background: radial-gradient(circle at 32% 23%,#fff 0 8%,var(--ball-hi) 18%,var(--ball-mid) 62%,var(--ball-deep)); box-shadow: inset -7px -9px 12px rgba(0,0,0,.2),0 0 26px rgba(102,177,247,.24); }
+.khan-current-wrap > span { color: #7791b4; font-size: 9px; text-align: center; }
+.khan-progress { height: 3px; overflow: hidden; border-radius: 4px; background: rgba(116,173,230,.13); }
+.khan-progress i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#6db9ff,#efd076); transition: width .25s ease; }
+.khan-draw-console .khan-ball-rack { padding: 7px; }
+
+@media (prefers-reduced-motion: reduce) { .khan-progress i { transition: none; } }
+
 /* Give the primary menu a little more structure without making it heavier. */
 .bottom-nav { min-height: 74px; padding-inline: 9px; gap: 4px; border-radius: 23px; background: linear-gradient(110deg, rgba(8,19,46,.97), rgba(13,24,54,.97) 60%, rgba(30,14,38,.96)); }
 .bottom-nav button { min-height: 57px; padding-inline: 3px; border-radius: 15px; }

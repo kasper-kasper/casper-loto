@@ -42,7 +42,15 @@ These rules apply to every human or AI change in this repository.
     Group related minor copy changes into one PATCH release; reserve CHANGELOG
     entries for visible product changes and DEVLOG entries for substantial work.
 
-15. There is no visual technology restriction. UI work may use React, CSS,
+15. After any requested product change that passes the smallest relevant checks,
+    publish it immediately to the configured production VPS and verify production
+    health. Do not leave completed user-requested changes only in the worktree.
+    For frontend-only work, run the affected frontend typecheck/lint/build,
+    deploy `gateway`, and perform the configured health check. Skip publication
+    only when the owner explicitly requests local-only work or deployment is
+    unsafe/blocked; report that blocker clearly.
+
+16. There is no visual technology restriction. UI work may use React, CSS,
     SVG, Canvas, WebGL, Phaser, Three.js, generated raster assets and custom
     animation when that improves the product. Keep heavy engines isolated to
     the experience that needs them, preserve keyboard/accessibility fallbacks

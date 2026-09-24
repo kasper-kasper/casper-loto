@@ -200,6 +200,7 @@ function NumberPicker({ lottery, balance, purchasing, initialNumbers = [], favor
   return <div className={`picker-shell lottery-${lottery.code}`}>
     <div className="selection-heading"><span>{formatDrawLabel(lottery.code, lottery.draw_number ?? 0)} · ВАША КОМБИНАЦИЯ</span><h1>{lottery.code === "pll" ? "Загадайте момент." : lottery.code === "pss" ? "Пять чисел. Один Casper Ball." : grand ? "Пять чисел. Две звезды." : `Выберите ${lottery.numbers_to_pick} ${lottery.numbers_to_pick < 5 ? "числа" : "чисел"}`}</h1><p>{pickerMood[lottery.code] ?? "Ваша комбинация на ближайший тираж"}</p></div>
     <div className="picker-summary"><div><span>К оплате за комбинацию</span><strong>{formatCas((lottery.ticket_price ?? 0) * drawCount)}</strong></div><div className="selection-meter"><span>Выбрано</span><strong>{grand ? `${mainSelected.length}+${specialSelected.length}` : selected.length}<i>/ {grand ? `${grandMainCount}+${grandSpecialCount}` : lottery.numbers_to_pick}</i></strong></div></div>
+    {favorites.length > 0 && <section className="picker-favorites-top"><header><span>ИЗБРАННЫЕ КОМБИНАЦИИ</span><small>{favorites.length} сохранено</small></header><div>{favorites.slice(0, 3).map((favorite) => <div className="picker-favorite-item" key={favorite.id}><button onClick={() => setSelected(favorite.numbers)} type="button">{grand ? <GrandNumberSet values={favorite.numbers} offset={grandOffset} specialLabel={lottery.code === "pss" ? "Casper Ball" : undefined} /> : favorite.numbers.join(" · ")}<i aria-hidden="true">↗</i></button><button aria-label="Удалить из избранного" onClick={() => onDeleteFavorite(favorite.id)} type="button">×</button></div>)}</div></section>}
     <section className="instant-ticket-row"><div><strong>Быстрая покупка</strong><small>Случайная комбинация · без подтверждения и корзины</small></div><div>{[1, 5, 10, 25].map((count) => <button aria-label={`Купить ${count} случайных ${plural(count, "билет", "билета", "билетов")}`} disabled={purchasing || count > quickLimit} key={count} onClick={() => void onBuyMany(Array.from({ length: count }, () => lotteryCombination(lottery)), drawCount)} type="button">{count === 1 ? "Купить" : "×" + count}</button>)}</div></section>
     {grand ? <div className="grand-fields">
       <section className="picker-board grand-main-field"><div className="picker-board-label"><span>Поле №1 · Основные числа</span><small>1–{lottery.primary_max_number ?? 35} · выберите ровно {grandMainCount}</small></div><div className="number-grid"><div className="number-group">{Array.from({ length: lottery.primary_max_number ?? 35 }, (_, index) => index + 1).map((value) => <motion.button aria-pressed={selected.includes(value)} className={selected.includes(value) ? "pick-number selected" : "pick-number"} key={value} onClick={() => toggle(value)} type="button" whileTap={{ scale: .86 }}><span>{value}</span><i aria-hidden="true" /></motion.button>)}</div></div></section>
@@ -209,7 +210,6 @@ function NumberPicker({ lottery, balance, purchasing, initialNumbers = [], favor
     <button className="secondary-button random-button" onClick={randomize} type="button"><Icon name="spark" />{copy.actions.randomNumbers}</button>
     <section className="multi-draw-choice"><div><strong>Повторить комбинацию</strong><small>Без автопродления и скрытых списаний</small></div><div><button className={drawCount === 1 ? "selected" : ""} onClick={() => setDrawCount(1)} type="button">1 тираж</button><button className={drawCount === 5 ? "selected" : ""} onClick={() => setDrawCount(5)} type="button">5 тиражей</button></div>{drawCount === 5 && <p>Эти числа участвуют в текущем и следующих 4 тиражах. Полная сумма оплачивается сейчас.</p>}</section>
     {ready && <button className={`favorite-action ${saved ? "saved" : ""}`} disabled={saved} onClick={() => onSaveFavorite(selected)} type="button">{saved ? "★ Комбинация сохранена" : "☆ Сохранить комбинацию"}</button>}
-    {favorites.length > 0 && <div className="favorite-list"><span>Избранные</span>{favorites.map((favorite) => <div key={favorite.id}><button onClick={() => setSelected(favorite.numbers)} type="button">{grand ? <GrandNumberSet values={favorite.numbers} offset={grandOffset} specialLabel={lottery.code === "pss" ? "Casper Ball" : undefined} /> : favorite.numbers.join(" · ")}</button><button aria-label="Удалить из избранного" onClick={() => onDeleteFavorite(favorite.id)} type="button">×</button></div>)}</div>}
     <div className="picker-actions"><button aria-label="Быстрый случайный выбор" className="picker-random-action" disabled={purchasing} onClick={randomize} type="button"><Icon name="spark" /><span>Заполнить случайно</span></button><button aria-label="В корзину" className="secondary-button" disabled={!ready || purchasing || cartRemaining < 1} onClick={addSelected} type="button">Добавить билет</button><PrimaryButton disabled={!ready} loading={purchasing} onClick={() => void buy()}>{purchasing ? "Оформляем…" : drawCount === 5 ? copy.actions.buyFiveDraws : copy.actions.buyTicket}</PrimaryButton></div>
     <p className="picker-note">После покупки билет сразу появится в разделе «Моё».</p>
   </div>;
@@ -518,6 +518,15 @@ export default function App({ initData, localDev = false }: AppProps) {
     setRoomLive(initialLive);
     if (lotteryCode === "bingo") { setBingoOpen(true); return; }
     setError(null);
+    // Show the already loaded lottery immediately. Fresh draw data and
+    // favorites can arrive after the room is visible without blocking the tap.
+    const cachedLottery = dashboard?.lotteries.find((item) => item.code === lotteryCode);
+    if (cachedLottery) {
+      setPickerInitialNumbers(initialNumbers.length === cachedLottery.numbers_to_pick ? initialNumbers : []);
+      setFavorites([]);
+      setPickerLottery(cachedLottery);
+      void miniAppApi.favorites(initData, cachedLottery.code).then(setFavorites).catch(() => undefined);
+    }
     try {
       const fresh = await refreshDashboard();
       const lottery = fresh?.lotteries.find((item) => item.code === lotteryCode);
@@ -527,8 +536,9 @@ export default function App({ initData, localDev = false }: AppProps) {
         return;
       }
       setPickerInitialNumbers(initialNumbers.length === lottery.numbers_to_pick ? initialNumbers : []);
-      setFavorites(isFastLottery(lottery.code) ? [] : await miniAppApi.favorites(initData, lottery.code));
+      if (isFastLottery(lottery.code)) setFavorites([]);
       setPickerLottery(lottery);
+      if (!isFastLottery(lottery.code)) void miniAppApi.favorites(initData, lottery.code).then(setFavorites).catch(() => undefined);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Не удалось обновить состояние продаж.");
     }
