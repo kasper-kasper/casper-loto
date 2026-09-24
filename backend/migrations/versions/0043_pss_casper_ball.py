@@ -228,7 +228,7 @@ def upgrade() -> None:
             """
             UPDATE draws
             SET configuration_snapshot = jsonb_build_object(
-                'ruleset_code', :ruleset,
+                'ruleset_code', CAST(:ruleset AS text),
                 'ticket_price', CAST(:ticket_price AS bigint),
                 'numbers_to_pick', 6, 'max_number', 44,
                 'base_jackpot', CAST(:base_jackpot AS bigint)
