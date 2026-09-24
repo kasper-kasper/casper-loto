@@ -27,7 +27,7 @@ def upgrade() -> None:
     connection.execute(sa.text("""
         UPDATE draws
         SET configuration_snapshot=jsonb_build_object(
-            'ruleset_code', 'casper_ball_5_36_1_8', 'ticket_price', :ticket_price,
+            'ruleset_code', 'casper_ball_5_36_1_8', 'ticket_price', CAST(:ticket_price AS bigint),
             'numbers_to_pick', 6, 'max_number', 44, 'base_jackpot', 50000000
         ), updated_at=now()
         WHERE lottery_id=:lottery_id AND status='SCHEDULED'
