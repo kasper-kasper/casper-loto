@@ -154,6 +154,17 @@ def test_new_daily_slots(slots: list[str], after: datetime, expected: datetime) 
     assert scheduled.astimezone(MOSCOW) == expected
 
 
+def test_bingo_uses_morning_and_evening_moscow_slots() -> None:
+    schedule = {"slots": ["10:30", "22:00"], "future_draw_count": 2}
+
+    assert next_draw_at(
+        LotteryKind.DAILY, local(2026, 9, 2, 9, 0), schedule
+    ).astimezone(MOSCOW) == local(2026, 9, 2, 10, 30)
+    assert next_draw_at(
+        LotteryKind.DAILY, local(2026, 9, 2, 10, 30), schedule
+    ).astimezone(MOSCOW) == local(2026, 9, 2, 22, 0)
+
+
 def test_schedule_rejects_naive_server_time() -> None:
     with pytest.raises(ValueError):
         next_weekly_draw(datetime(2026, 8, 14, 12, 0))

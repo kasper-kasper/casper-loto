@@ -17,7 +17,7 @@ class LotteryDefinition:
 
 LOTTERY_DEFINITIONS = (
     LotteryDefinition("dual", "Casper Dual", LotteryKind.DAILY, "00:30 / 07:30"),
-    LotteryDefinition("bingo", "Kasper Bingo", LotteryKind.DAILY, "22:00"),
+    LotteryDefinition("bingo", "Kasper Bingo", LotteryKind.DAILY, "10:30 / 22:00"),
     LotteryDefinition("weekly", "Kasper Grand", LotteryKind.WEEKLY, "20:00"),
     LotteryDefinition("pll", "ПЛЛ-лото", LotteryKind.DAILY, "02:22 / 13:45"),
     LotteryDefinition("pss", "Casper Ball", LotteryKind.DAILY, "12:00 / 20:30"),
