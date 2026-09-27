@@ -209,10 +209,19 @@ it("renders server-authoritative balance and lottery states", async () => {
 
   expect(await screen.findByLabelText("5 000 CAS")).toHaveTextContent("5 000C");
   expect(screen.getByLabelText("Casper Loto")).toBeInTheDocument();
-  expect(container.querySelector(".brand-logo-horizontal")).toHaveAttribute("src", expect.stringContaining("logo-horizontal.png"));
+  expect(container.querySelector(".brand-logo-horizontal")).toHaveAttribute("src", "/brand/logo-horizontal-432-v1.png");
   expect(within(container.querySelector(".bottom-nav") as HTMLElement).getAllByRole("button").map(b => b.textContent)).toEqual(["Сегодня", "Лотереи", "Kasper Fast", "Моё"]);
   fireEvent.click(screen.getByRole("button", { name: "Лотереи" }));
   expect(screen.getByRole("button", { name: "Открыть Weekly 5/20" })).toBeEnabled();
+});
+
+it("shows the dashboard while the account request is still pending", async () => {
+  vi.mocked(miniAppApi.account).mockImplementation(() => new Promise(() => undefined));
+  const { container } = render(<App initData="signed" />);
+  expect(container.querySelector(".skeleton-shell .brand-logo-horizontal")).toHaveAttribute("src", "/brand/logo-horizontal-432-v1.png");
+  expect(await screen.findByRole("heading", { name: "Сегодня может повезти." })).toBeInTheDocument();
+  expect(screen.getByLabelText("Casper Loto")).toBeInTheDocument();
+  expect(miniAppApi.account).toHaveBeenCalledOnce();
 });
 
 it("turns the home into a daily poster while keeping Fast separate", async () => {

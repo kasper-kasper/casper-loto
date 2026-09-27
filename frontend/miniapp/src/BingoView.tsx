@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, miniAppApi } from "./api";
-import logoSymbol from "../../shared/assets/brand/logo-symbol.png";
+import { logoSymbol } from "./brand";
 import { Money } from "./components";
 import { countdown, formatCas, formatMoscow } from "./format";
 import type { Lottery, PurchaseResult, Ticket } from "./types";

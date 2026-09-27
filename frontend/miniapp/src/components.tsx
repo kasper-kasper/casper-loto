@@ -3,6 +3,7 @@ import type { CSSProperties, ReactNode } from "react";
 
 import { formatCompactAmount } from "./format";
 import { splitGrandNumbers } from "./grand";
+import { logoHorizontal, logoSymbol } from "./brand";
 import { splitPulseNumbers } from "./fast";
 
 export type IconName = "catalog" | "home" | "ticket" | "profile" | "cart" | "live" | "fast" | "replay" | "arrow" | "spark" | "repeat" | "close";
@@ -158,7 +159,7 @@ export function EmptyState({
 
 export function Skeleton() {
   return <main className="app-shell skeleton-shell" aria-label="Загружаем Casper Loto">
-    <div className="skeleton header-skeleton" />
+    <header className="app-header"><div aria-label="Casper Loto" className="brand-lockup"><picture><source media="(max-width: 520px)" srcSet={logoSymbol} /><img alt="" className="brand-logo-horizontal" width="138" height="46" fetchPriority="high" src={logoHorizontal} /></picture></div><div className="skeleton header-balance-skeleton" /></header>
     <div className="skeleton hero-skeleton" />
     <div className="skeleton draw-skeleton" />
     <div className="skeleton title-skeleton" />
