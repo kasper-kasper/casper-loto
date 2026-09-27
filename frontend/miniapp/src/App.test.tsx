@@ -212,7 +212,7 @@ it("renders server-authoritative balance and lottery states", async () => {
   expect(container.querySelector(".brand-logo-horizontal")).toHaveAttribute("src", "/brand/logo-horizontal-432-v1.png");
   expect(within(container.querySelector(".bottom-nav") as HTMLElement).getAllByRole("button").map(b => b.textContent)).toEqual(["Сегодня", "Лотереи", "Kasper Fast", "Моё"]);
   fireEvent.click(screen.getByRole("button", { name: "Лотереи" }));
-  expect(screen.getByRole("button", { name: "Открыть Weekly 5/20" })).toBeEnabled();
+  expect(await screen.findByRole("button", { name: "Открыть Weekly 5/20" })).toBeEnabled();
 });
 
 it("shows the dashboard while the account request is still pending", async () => {

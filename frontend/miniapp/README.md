@@ -25,3 +25,10 @@ The first screen uses small derivatives of the approved brand artwork in
 in sync: the HTML preload, pre-React shell and React header should request
 the same image. If the artwork changes, export a new sized derivative and
 bump its filename version instead of replacing the approved master PNG.
+
+Production caches fingerprinted `/assets/` files and versioned `/brand/`
+images as immutable. Keep new brand revisions under a new filename. HTML and
+authenticated API data always revalidate; never cache balances or sales states
+in the browser. The Performance panel in Telegram WebView developer tools can
+inspect `miniapp:shell-ready`, `miniapp:runtime-ready`,
+`miniapp:dashboard-ready`, and `miniapp:home-painted` marks.

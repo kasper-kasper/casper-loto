@@ -1,11 +1,10 @@
-import { LotteryCatalog, LotteryRoom, Today } from "./Discovery";
-import type { Highlights } from "./Discovery";
-import { BingoTicketDetail, BingoView } from "./BingoView";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { motion } from "motion/react";
 
 import { ApiError, miniAppApi } from "./api";
+import { Today } from "./Today";
+import type { Highlights } from "./Today";
 import { logoHorizontal, logoSymbol } from "./brand";
 import { CART_MAX_TICKETS, configuredCartTtl, loadCart, saveCart } from "./cart";
 import {
@@ -21,14 +20,20 @@ import {
 } from "./components";
 import { countdown, formatCas, formatDrawLabel, formatMoscow, formatTicketLabel } from "./format";
 import { MINIAPP_TEXTS as copy } from "./content";
-import { FastPicker, FastView } from "./FastView";
-import { KasperLiveView } from "./KasperLiveView";
 import { isFastLottery } from "./fast";
 import { newestLiveFeed } from "./live";
 import { broadcastPreviewConfig } from "./broadcastPreview";
 import { isGrandLottery, lotteryCombination, matchLabel } from "./grand";
 import { errorHaptic, requestTelegramWriteAccess, selectionHaptic, successHaptic } from "./telegram";
 import type { Account, CartTicket, Dashboard, Favorite, LiveFeed, Lottery, NotificationPreferences, PurchaseResult, Ticket, UserNotification } from "./types";
+
+const LotteryCatalog = lazy(() => import("./Discovery").then(({ LotteryCatalog }) => ({ default: LotteryCatalog })));
+const LotteryRoom = lazy(() => import("./Discovery").then(({ LotteryRoom }) => ({ default: LotteryRoom })));
+const BingoView = lazy(() => import("./BingoView").then(({ BingoView }) => ({ default: BingoView })));
+const BingoTicketDetail = lazy(() => import("./BingoView").then(({ BingoTicketDetail }) => ({ default: BingoTicketDetail })));
+const FastView = lazy(() => import("./FastView").then(({ FastView }) => ({ default: FastView })));
+const FastPicker = lazy(() => import("./FastView").then(({ FastPicker }) => ({ default: FastPicker })));
+const KasperLiveView = lazy(() => import("./KasperLiveView").then(({ KasperLiveView }) => ({ default: KasperLiveView })));
 
 type View = "catalog" | "home" | "live" | "fast" | "account" | "cart";
 type TicketView = "active" | "history";
@@ -381,6 +386,7 @@ export default function App({ initData, localDev = false }: AppProps) {
     if (!authenticated) return null;
     const requestedAt = performance.now();
     const value = await miniAppApi.dashboard(initData);
+    if (!performance.getEntriesByName("miniapp:dashboard-ready").length) performance.mark("miniapp:dashboard-ready");
     const receivedAt = performance.now();
     if (!clockAnchor.current || clockNeedsSync.current) {
       const server = Date.parse(value.server_time) + (receivedAt - requestedAt) / 2;
@@ -476,6 +482,18 @@ export default function App({ initData, localDev = false }: AppProps) {
       return refreshDashboard();
     }).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Не удалось загрузить Casper Loto.")).finally(() => setLoading(false));
   }, [authenticated, initData, localDev, refreshAccount, refreshDashboard]);
+  useEffect(() => {
+    if (loading || !dashboard || view !== "home" || performance.getEntriesByName("miniapp:home-painted").length) return;
+    let secondFrame = 0;
+    const firstFrame = requestAnimationFrame(() => {
+      secondFrame = requestAnimationFrame(() => {
+        performance.mark("miniapp:home-painted");
+        performance.measure("miniapp:navigation-to-home", { start: 0, end: "miniapp:home-painted" });
+        document.documentElement.dataset.miniappHomeMs = String(Math.round(performance.now()));
+      });
+    });
+    return () => { cancelAnimationFrame(firstFrame); cancelAnimationFrame(secondFrame); };
+  }, [dashboard, loading, view]);
   useEffect(() => {
     if (!authenticated) return;
     const timer = window.setInterval(() => {
@@ -741,18 +759,19 @@ export default function App({ initData, localDev = false }: AppProps) {
   if (loading) return <Skeleton />;
   if (!dashboard) return <main className="centered-message"><div className="offline-mark">!</div><h1>Нет связи с Casper Loto</h1><p>{error}</p></main>;
   const bingoLottery = dashboard.lotteries.find(item => item.code === "bingo");
-  if (kasperLiveOpen) return <KasperLiveView initData={initData} balance={dashboard.balance} onClose={() => setKasperLiveOpen(false)} onSettled={(result) => {
+  if (kasperLiveOpen) return <Suspense fallback={<Skeleton />}><KasperLiveView initData={initData} balance={dashboard.balance} onClose={() => setKasperLiveOpen(false)} onSettled={(result) => {
     const winning = result.tickets.filter((ticket) => ticket.prize_amount > 0);
     setDashboard((current) => current ? { ...current, balance: result.balance_after, total_ticket_count: current.total_ticket_count + result.tickets.length, total_winning_ticket_count: current.total_winning_ticket_count + winning.length } : current);
     setAccount((current) => current ? { ...current, balance: result.balance_after, ticket_count: current.ticket_count + result.tickets.length, winning_ticket_count: current.winning_ticket_count + winning.length, total_spent: current.total_spent + result.total_cost, total_won: current.total_won + result.total_prize, best_win: Math.max(current.best_win, ...result.tickets.map((ticket) => ticket.prize_amount)) } : current);
-  }} />;
-  if (bingoOpen && bingoLottery) return <BingoView initialTab={roomLive ? "live" : "choose"} lottery={bingoLottery} initData={initData} now={serverNow} balance={dashboard.balance} onClose={() => setBingoOpen(false)} onPurchased={(result) => { applyPurchaseSnapshot("bingo", result, result.ticket_ids.length); void Promise.allSettled([refreshDashboard(), refreshAccount()]); }} />;
-  if (pickerLottery) return <main className="app-shell picker-page">{isFastLottery(pickerLottery.code) ? <FastPicker key={pickerLottery.code} error={error} lottery={pickerLottery} purchasing={purchasing} success={purchaseSuccess} onBuy={(numbers) => purchaseDirect(pickerLottery.code, [numbers], 1)} onClose={() => { setPickerLottery(null); setView("fast"); }} /> : <LotteryRoom balance={dashboard.balance} initialLive={roomLive} key={pickerLottery.code} lottery={pickerLottery} initData={initData} now={serverNow} onClose={() => { setRoomLive(false); setPickerLottery(null); }} onLiveModeChange={setRoomLive} onTickets={() => { setRoomLive(false); setPickerLottery(null); setTicketLotteryFilter(pickerLottery.code); setTicketsLoading(true); setAccountView("tickets"); setView("account"); }}><NumberPicker lottery={pickerLottery} balance={dashboard.balance} now={serverNow} purchasing={purchasing} initialNumbers={pickerInitialNumbers} favorites={favorites} cartRemaining={CART_MAX_TICKETS - cart.length} onAdd={(numbers, drawCount) => addManyToCart(pickerLottery, [numbers], drawCount)} onBuy={(numbers, drawCount) => purchaseDirect(pickerLottery.code, [numbers], drawCount)} onBuyMany={(combinations, drawCount) => purchaseDirect(pickerLottery.code, combinations, drawCount)} onSaveFavorite={(numbers) => void saveFavorite(numbers)} onDeleteFavorite={(id) => void deleteFavorite(id)} /></LotteryRoom>}</main>;
+  }} /></Suspense>;
+  if (bingoOpen && bingoLottery) return <Suspense fallback={<Skeleton />}><BingoView initialTab={roomLive ? "live" : "choose"} lottery={bingoLottery} initData={initData} now={serverNow} balance={dashboard.balance} onClose={() => setBingoOpen(false)} onPurchased={(result) => { applyPurchaseSnapshot("bingo", result, result.ticket_ids.length); void Promise.allSettled([refreshDashboard(), refreshAccount()]); }} /></Suspense>;
+  if (pickerLottery) return <main className="app-shell picker-page"><Suspense fallback={<Skeleton />}>{isFastLottery(pickerLottery.code) ? <FastPicker key={pickerLottery.code} error={error} lottery={pickerLottery} purchasing={purchasing} success={purchaseSuccess} onBuy={(numbers) => purchaseDirect(pickerLottery.code, [numbers], 1)} onClose={() => { setPickerLottery(null); setView("fast"); }} /> : <LotteryRoom balance={dashboard.balance} initialLive={roomLive} key={pickerLottery.code} lottery={pickerLottery} initData={initData} now={serverNow} onClose={() => { setRoomLive(false); setPickerLottery(null); }} onLiveModeChange={setRoomLive} onTickets={() => { setRoomLive(false); setPickerLottery(null); setTicketLotteryFilter(pickerLottery.code); setTicketsLoading(true); setAccountView("tickets"); setView("account"); }}><NumberPicker lottery={pickerLottery} balance={dashboard.balance} now={serverNow} purchasing={purchasing} initialNumbers={pickerInitialNumbers} favorites={favorites} cartRemaining={CART_MAX_TICKETS - cart.length} onAdd={(numbers, drawCount) => addManyToCart(pickerLottery, [numbers], drawCount)} onBuy={(numbers, drawCount) => purchaseDirect(pickerLottery.code, [numbers], drawCount)} onBuyMany={(combinations, drawCount) => purchaseDirect(pickerLottery.code, combinations, drawCount)} onSaveFavorite={(numbers) => void saveFavorite(numbers)} onDeleteFavorite={(id) => void deleteFavorite(id)} /></LotteryRoom>}</Suspense></main>;
 
   return <main className={`app-shell ${view === "fast" ? "fast-shell" : ""}`}>
     <header className="app-header"><div aria-label="Casper Loto" className="brand-lockup"><picture><source media="(max-width: 520px)" srcSet={logoSymbol} /><img alt="" className="brand-logo-horizontal" width="138" height="46" fetchPriority="high" src={logoHorizontal} /></picture></div><div className="header-actions">{localDev && import.meta.env.VITE_DESIGN_PREVIEW !== "true" && <button className="dev-badge" onClick={() => void refillDevBalance()} type="button">+ TEST CAS</button>}{cart.length > 0 && <button aria-label={`Корзина: ${cart.length} ${plural(cart.length, "комбинация", "комбинации", "комбинаций")}`} className="header-cart" onClick={() => setView("cart")} type="button"><Icon name="cart" /><small>{cart.length}</small></button>}<Balance value={dashboard.balance} /></div></header>
     {updateAvailable && <aside className="update-banner"><span><strong>Доступно обновление</strong><small>Корзина сохранена на этом устройстве.</small></span><button onClick={() => { const url = new URL(window.location.href); url.searchParams.set("app_update", String(Date.now())); window.location.replace(url.toString()); }} type="button">Обновить</button></aside>}
     {(error || notice) && <button className={`toast ${error ? "error" : "success"}`} onClick={() => { setError(null); setNotice(null); }} type="button"><span>{error ? "!" : "✓"}</span><span className="toast-message">{error ?? notice}</span><Icon name="close" /></button>}
+    <Suspense fallback={<div className="skeleton view-loading-skeleton" aria-label="Загружаем экран" />} >
     {selectedTicket && (selectedTicket.lottery_code === "bingo" ? <BingoTicketDetail ticket={selectedTicket} onClose={() => setSelectedTicket(null)} /> : <TicketDetail lottery={dashboard.lotteries.find((item) => item.code === selectedTicket.lottery_code)} onClose={() => setSelectedTicket(null)} ticket={selectedTicket} />)}
 
     {view === "home" && <section className="view-content home-view" key="home"><Today lotteries={standardLotteries} now={serverNow} highlights={highlights} totalTicketCount={dashboard.total_ticket_count} totalWinningTicketCount={dashboard.total_winning_ticket_count} monthlyTotalPayout={dashboard.monthly_total_payout} onOpen={(code, live) => void openLottery(code, [], live)} onCatalog={() => setView("catalog")} onTickets={() => { setTicketsLoading(true); setAccountView("tickets"); setTicketLotteryFilter("scope:standard"); setView("account"); }} /></section>}
@@ -773,6 +792,7 @@ export default function App({ initData, localDev = false }: AppProps) {
       <CartView cart={cart} groups={cartGroups} receipt={cartReceipt} purchasing={purchasing} success={purchaseSuccess} progress={purchaseProgress} canAdd={cart.length < CART_MAX_TICKETS} onClear={() => { setCart([]); setCartReceipt(null); }} onRemove={(id) => setCart((current) => current.filter((item) => item.id !== id))} onAdd={() => { setCartReceipt(null); setView("catalog"); }} onBuy={() => void purchaseCart()} onTickets={() => { setCartReceipt(null); setTicketsLoading(true); setTicketView("active"); setTicketLotteryFilter(""); setAccountView("tickets"); setView("account"); }} onHome={() => { setCartReceipt(null); setView("home"); }} />
     </section>}
 
+    </Suspense>
     <BottomNavigation view={view} unreadNotifications={account?.unread_notification_count ?? 0} onChange={(target) => { if (target === "account") void refreshAccount(); setView(target); }} />
   </main>;
 }

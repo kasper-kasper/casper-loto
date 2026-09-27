@@ -11,6 +11,7 @@ import "./account.css";
 import { initializeTelegram, isLocalDevMode } from "./telegram";
 
 async function start(): Promise<void> {
+  performance.mark("miniapp:runtime-ready");
   installMotionBudget();
   const broadcastPreview = broadcastPreviewConfig();
   if (broadcastPreview) document.documentElement.dataset.broadcastPreview = "true";

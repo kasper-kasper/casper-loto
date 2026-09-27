@@ -15,6 +15,12 @@
 
 # Development log
 
+## Mini App: static cache and screen chunks — 2026-09-28
+
+- Caddy отдаёт `/assets/*` и версионированные `/brand/*` с годовым immutable-кешем. HTML остаётся `no-cache`, API по-прежнему `no-store`: баланс, статусы продаж и результаты не берутся из кеша браузера.
+- Today отделён от Discovery; Discovery, FastView, BingoView и KasperLiveView загружаются лениво с видимым placeholder при первом переходе. Стартовый JS в production build уменьшился с 154,36 до 137,97 КБ gzip.
+- Добавлены browser performance marks для HTML-оболочки, исполнения клиента, получения dashboard и первого отображения главного экрана. Проверены только переходы и загрузка экранов; покупки не выполнялись.
+
 ## Mini App: first-load and rendering budget — 2026-09-25
 
 - Убран одновременный запрос двух вариантов логотипа в шапке через responsive `picture`.

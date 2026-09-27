@@ -1,4 +1,4 @@
-import type { Highlights } from "./Discovery";
+import type { Highlights } from "./Today";
 import type { BingoFeed, BingoInventory } from "./BingoView";
 import type { Account, Dashboard, Favorite, InstantPurchaseResult, InstantTicket, LiveFeed, NotificationPreferences, PurchaseResult, TicketPage, UserNotification } from "./types";
 
