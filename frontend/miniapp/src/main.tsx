@@ -7,6 +7,7 @@ import { BroadcastPreviewBanner } from "./BroadcastPreviewBanner";
 import { installMotionBudget } from "./performance";
 import "./styles.css";
 import "./lottery-themes.css";
+import "./account.css";
 import { initializeTelegram, isLocalDevMode } from "./telegram";
 
 async function start(): Promise<void> {

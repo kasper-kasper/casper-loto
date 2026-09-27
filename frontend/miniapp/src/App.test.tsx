@@ -153,6 +153,7 @@ const account: Account = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.stubGlobal("scrollTo", vi.fn());
   vi.mocked(miniAppApi.highlights).mockResolvedValue({ last_jackpot: null });
   vi.mocked(miniAppApi.devSession).mockResolvedValue({ mode: "local-development" });
   vi.mocked(miniAppApi.devRefill).mockResolvedValue({ balance: 105_000 });
@@ -677,4 +678,25 @@ it("keeps Casper Dual as one 2+2 ticket with no favorites or five-draw repeat", 
   await waitFor(() => expect(miniAppApi.purchase).toHaveBeenCalledWith(
     "test", "dual", [[3, 10, 17, 23]], expect.any(String), 1,
   ));
+});
+
+
+it("account hub sends the empty state to the catalog", async () => {
+  vi.mocked(miniAppApi.dashboard).mockResolvedValue({ ...dashboard, lotteries: dashboard.lotteries.map(lottery => ({ ...lottery, player_ticket_count: 0 })) });
+  render(<App initData="test" />);
+  fireEvent.click(await screen.findByRole("button", { name: "Моё" }));
+  fireEvent.click(await screen.findByRole("button", { name: /Выбрать игру/ }));
+  expect(await screen.findByLabelText("Витрина лотерей")).toBeInTheDocument();
+  expect(window.scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: "instant" });
+  expect(miniAppApi.purchase).not.toHaveBeenCalled();
+});
+
+it("account hub clears a stale Fast filter when opening all active tickets", async () => {
+  render(<App initData="test" />);
+  fireEvent.click(await screen.findByRole("button", { name: "Kasper Fast" }));
+  fireEvent.click(screen.getByRole("button", { name: /Билеты Kasper Fast/ }));
+  await waitFor(() => expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "active", "scope:fast", false));
+  fireEvent.click(screen.getByRole("button", { name: "Обзор" }));
+  fireEvent.click(await screen.findByRole("button", { name: /Активные билеты/ }));
+  await waitFor(() => expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "active", "", false));
 });

@@ -18,9 +18,10 @@
 .catalog-art>.lottery-visual { opacity:1; }
 .catalog-art:after,.largest-prize .catalog-art:after { background:linear-gradient(0deg,var(--game-base),transparent 70%); }
 .catalog-art>span { color:var(--game-accent); font-size:8px; }
+.catalog-art > img { width:64px; height:64px; top:20px; left:50%; right:auto; transform:translateX(-50%); }
 .catalog-game-body { padding:10px 13px 0; }
-.catalog-game h2 { color:#faf2e8; font-family:Georgia,serif; font-size:23px; min-height:54px; letter-spacing:-.7px; }
-.catalog-game.lottery-pll h2 { font-size:37px; letter-spacing:1px; }
+.catalog-game h2 { color:#faf2e8; font-family:Georgia,serif; font-size:clamp(18px,5vw,23px); min-height:54px; letter-spacing:-.4px; overflow-wrap:anywhere; }
+.catalog-game.lottery-pll h2 { font-size:clamp(18px,5vw,23px); letter-spacing:1px; }
 .catalog-game-body>strong,.largest-prize .catalog-game-body>strong { color:var(--game-accent); }
 .catalog-game-body>small,.catalog-game time { color:#a4acbe; }
 .catalog-game footer span { color:#d0d2dc; }
@@ -29,9 +30,10 @@
 .today-event { background:var(--game-base); border-color:rgba(var(--game-rgb),.38); padding-top:150px; }
 .today-event-art { opacity:1; }
 .today-event-art:after { background:linear-gradient(0deg,var(--game-base) 14%,transparent 95%); }
-.today-event-art>.lottery-visual { height:310px; }
+.today-event-art>.lottery-visual { height:220px; transform:none; }
+.today-event-art > img { width:96px; height:96px; object-fit:contain; top:24px; right:24px; }
 .today-event h2 { color:#fff3e5; margin:15px 0 23px; text-shadow:0 3px 25px #000; }
-.today-event.lottery-pll h2 { font-size:72px; color:#e7dbff; }
+.today-event.lottery-pll h2 { font-size:36px; color:#e7dbff; }
 .today-eyebrow,.today-event>strong { color:var(--game-accent,#d3bc87); }
 .today-event>button { color:#111623; background:linear-gradient(120deg,#ffedb2,#dca944); }
 .today-event-time { border-color:rgba(var(--game-rgb),.24); }
@@ -170,7 +172,7 @@
 .room-dual .instant-ticket-row { order:5; margin-top:12px; }
 .room-dual .picker-actions { order:6; }
 .room-dual .picker-note { order:7; }
-.lottery-dual .catalog-art .dual-catalog-logo { z-index:2; width:38px; height:38px; top:8px; right:8px; filter:drop-shadow(0 3px 8px #000a); }
+.lottery-dual .catalog-art .dual-catalog-logo { z-index:2; width:64px; height:64px; top:20px; left:50%; right:auto; filter:drop-shadow(0 3px 8px #000a); }
 .room-dual .room-masthead-copy { position:relative; z-index:2; display:grid; grid-template-columns:34px 1fr; column-gap:9px; align-items:center; text-align:left; }
 .room-dual .dual-hero-logo { grid-row:1 / 4; display:block; width:34px; height:34px; object-fit:contain; filter:drop-shadow(0 0 9px #ffdd8470); }
 .room-dual .room-masthead-copy h1 { margin:1px 0 2px; font-size:clamp(29px,8vw,38px); }

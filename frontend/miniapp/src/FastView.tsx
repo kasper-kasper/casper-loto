@@ -71,7 +71,7 @@ function FastCard({ lottery, now, primary, balance, purchasing, onOpen, onQuickB
     <header><span><i /> БЫСТРАЯ ЛОТЕРЕЯ</span><small>{formatDrawLabel(lottery.code, lottery.draw_number ?? 0)}</small></header>
     <div className="fast-card-main"><div><h2>{lottery.name}</h2><p>{fastTagline(code)}</p><span>Следующий раунд через</span><strong>{countdown(lottery.scheduled_at, now)}</strong></div><SignalPreview code={code} maxNumber={lottery.max_number} pickCount={lottery.numbers_to_pick} /></div>
     <div className="fast-card-jackpot"><span>ТЕКУЩИЙ ДЖЕКПОТ</span><strong><Money value={lottery.jackpot} /></strong></div>
-    <div className="fast-card-bottom"><div><span>Стоимость</span><strong><Money value={lottery.ticket_price ?? 0} /></strong></div><button disabled={!lottery.purchase_available} onClick={onOpen} type="button"><Icon name="fast" />{lottery.purchase_available ? fastAction(code) : "Продажи закрыты"}<small>{lottery.scheduled_at ? formatMoscowTime(lottery.scheduled_at) : "—"}</small></button></div>
+    <div className="fast-card-bottom"><div><span>Стоимость</span><strong><Money value={lottery.ticket_price ?? 0} /></strong></div><button disabled={purchasing || !lottery.purchase_available} onClick={onOpen} type="button"><Icon name="fast" />{lottery.purchase_available ? fastAction(code) : "Продажи закрыты"}<small>{lottery.scheduled_at ? formatMoscowTime(lottery.scheduled_at) : "—"}</small></button></div>
     <div className="fast-card-quick"><span>КУПИТЬ СЛУЧАЙНЫЕ</span>{[1, 5, 10].map((quantity) => <button aria-label={`Купить ${quantity} случайных билетов ${lottery.name}`} disabled={purchasing || !lottery.purchase_available || quantity > quickLimit} key={quantity} onClick={() => onQuickBuy(Array.from({ length: quantity }, () => randomFastTicket(lottery)))} type="button">{quantity}</button>)}</div>
   </motion.article>;
 }
@@ -130,7 +130,7 @@ export function FastView({ lotteries, feed, now, balance = Number.MAX_SAFE_INTEG
   </section>;
 }
 
-export function FastPicker({ lottery, purchasing, success, onClose, onBuy }: { lottery: Lottery; purchasing: boolean; success: boolean; onClose: () => void; onBuy: (numbers: number[]) => Promise<boolean> }) {
+export function FastPicker({ lottery, purchasing, success, error, onClose, onBuy }: { error?: string | null; lottery: Lottery; purchasing: boolean; success: boolean; onClose: () => void; onBuy: (numbers: number[]) => Promise<boolean> }) {
   const [selected, setSelected] = useState<number[]>([]);
   const code = presentationCode(lottery);
   const pulse = code === "pulse";
@@ -145,6 +145,7 @@ export function FastPicker({ lottery, purchasing, success, onClose, onBuy }: { l
   const primarySelected = codeMode ? selected : selected.filter((value) => value <= primaryMax);
   const secondarySelected = selected.filter((value) => value > secondaryOffset);
   const toggle = (value: number, limit = primaryPick) => {
+    if (purchasing) return;
     selectionHaptic();
     setSelected((current) => {
       if (codeMode) return current.length < codePick ? [...current, value] : current;
@@ -154,11 +155,13 @@ export function FastPicker({ lottery, purchasing, success, onClose, onBuy }: { l
     });
   };
   const randomize = () => {
+    if (purchasing) return;
     selectionHaptic();
     setSelected(codeMode ? secureCode(codePick) : pulse ? [...randomCombination(primaryMax, primaryPick), ...randomCombination(secondaryMax, secondaryPick).map((value) => value + secondaryOffset)] : randomCombination(lottery.max_number, lottery.numbers_to_pick));
   };
   const buy = async () => {
-    if (await onBuy(selected)) setSelected([]);
+    if (purchasing || !complete || !lottery.purchase_available) return;
+    if (await onBuy([...selected])) setSelected([]);
   };
   const complete = codeMode ? selected.length === codePick : pulse ? primarySelected.length === primaryPick && secondarySelected.length === secondaryPick : selected.length === lottery.numbers_to_pick;
   const primaryValues = codeMode ? [...Array.from({ length: 9 }, (_, index) => index + 1), 0] : Array.from({ length: primaryMax }, (_, index) => index + 1);
@@ -169,10 +172,11 @@ export function FastPicker({ lottery, purchasing, success, onClose, onBuy }: { l
     {pulse && <PulseTrace className="pulse-picker-beat" />}
     <button className="fast-picker-close" onClick={onClose} type="button" aria-label="Закрыть"><Icon name="arrow" /></button>
     <header><span>{lottery.name} · {formatDrawLabel(lottery.code, lottery.draw_number ?? 0)}</span><h1>{pulse ? "Соберите пульс" : code === "flash" ? "Соберите сигнал" : codeMode ? "Введите код" : "Выберите 3 тени"}</h1><p>{pulse ? `${primaryPick} основных числа + ${secondaryPick} Pulse-числа · шифр назначит сервер` : codeMode ? `${codePick} цифр · порядок важен · повторы разрешены` : `Отметьте ${lottery.numbers_to_pick} позиции из ${lottery.max_number}`}</p></header>
-    <section className={`fast-grid-panel ${codeMode ? "code-keypad-panel" : ""}`}><div><strong>{pulse ? `ОСНОВНОЙ РИТМ · ${primaryPick} ИЗ ${primaryMax}` : code === "flash" ? "ПОЛЕ ИМПУЛЬСОВ" : codeMode ? "ЦИФРОВАЯ КЛАВИАТУРА" : "ПОЛЕ ТЕНЕЙ"}</strong><span>{codeMode ? "Введено" : "Выбрано"} <b>{primarySelected.length}</b> / {primaryPick}</span></div><div className={`fast-grid ${pulse ? "pulse-main-grid" : ""} ${codeMode ? "code-keypad" : ""}`}>{primaryValues.map((value) => <motion.button aria-label={`${codeMode ? "Цифра" : "Позиция"} ${value}`} aria-pressed={!codeMode && selected.includes(value)} className={!codeMode && selected.includes(value) ? "selected" : ""} key={value} onClick={() => toggle(value)} type="button" whileTap={{ scale: .86 }}><i /><small>{String(value).padStart(2, "0")}</small></motion.button>)}{codeMode && <button className="code-backspace" disabled={!selected.length} onClick={() => setSelected((current) => current.slice(0, -1))} type="button">⌫</button>}</div></section>
-    {pulse && <section className="pulse-special-panel"><div><strong>PULSE-ПОЛЕ · {secondaryPick} ИЗ {secondaryMax}</strong><span>Выбрано <b>{secondarySelected.length}</b> / {secondaryPick}</span></div><div>{secondaryValues.map((value) => <motion.button aria-label={`Pulse-число ${value - secondaryOffset}`} aria-pressed={selected.includes(value)} className={selected.includes(value) ? "selected" : ""} key={value} onClick={() => toggle(value, secondaryPick)} type="button" whileTap={{ scale: .84 }}>{value - secondaryOffset}</motion.button>)}</div></section>}
-    <section className="fast-selection"><div><span>{pulse ? "Ваш ритм" : code === "flash" ? "Ваш сигнал" : codeMode ? "Ваш код" : "Ваши тени"}</span><div>{pulse ? <>{Array.from({ length: primaryPick }, (_, index) => <i className={primarySelected[index] ? "filled" : ""} key={`primary-${index}`}>{primarySelected[index] ? String(primarySelected[index]).padStart(2, "0") : "—"}</i>)}<b>+</b>{Array.from({ length: secondaryPick }, (_, index) => <i className={`pulse-chip ${secondarySelected[index] ? "filled" : ""}`} key={`secondary-${index}`}>{secondarySelected[index] ? `P${secondarySelected[index] - secondaryOffset}` : "—"}</i>)}</> : Array.from({ length: codeMode ? codePick : lottery.numbers_to_pick }, (_, index) => <i className={selected[index] !== undefined ? "filled" : ""} key={index}>{selected[index] !== undefined ? String(selected[index]).padStart(codeMode ? 1 : 2, "0") : "—"}</i>)}</div></div><button onClick={randomize} type="button"><Icon name="spark" />{codeMode ? "Случайный код" : "Случайный выбор"}</button></section>
-    <div className="fast-purchase"><div><span>Стоимость</span><strong>{formatCas(lottery.ticket_price ?? 0)}</strong></div><PrimaryButton disabled={!complete} loading={purchasing} success={success} onClick={() => void buy()}><Icon name="fast" />{success ? "Билет куплен" : pulse ? "Запустить пульс" : code === "flash" ? "Активировать" : codeMode ? "Подтвердить код" : "Купить сигнал"}</PrimaryButton></div>
+    <section className={`fast-grid-panel ${codeMode ? "code-keypad-panel" : ""}`}><div><strong>{pulse ? `ОСНОВНОЙ РИТМ · ${primaryPick} ИЗ ${primaryMax}` : code === "flash" ? "ПОЛЕ ИМПУЛЬСОВ" : codeMode ? "ЦИФРОВАЯ КЛАВИАТУРА" : "ПОЛЕ ТЕНЕЙ"}</strong><span>{codeMode ? "Введено" : "Выбрано"} <b>{primarySelected.length}</b> / {primaryPick}</span></div><div className={`fast-grid ${pulse ? "pulse-main-grid" : ""} ${codeMode ? "code-keypad" : ""}`}>{primaryValues.map((value) => <motion.button aria-label={`${codeMode ? "Цифра" : "Позиция"} ${value}`} aria-pressed={!codeMode && selected.includes(value)} className={!codeMode && selected.includes(value) ? "selected" : ""} key={value} disabled={purchasing} onClick={() => toggle(value)} type="button" whileTap={{ scale: .86 }}><i /><small>{String(value).padStart(2, "0")}</small></motion.button>)}{codeMode && <button className="code-backspace" disabled={purchasing || !selected.length} onClick={() => setSelected((current) => current.slice(0, -1))} type="button">⌫</button>}</div></section>
+    {pulse && <section className="pulse-special-panel"><div><strong>PULSE-ПОЛЕ · {secondaryPick} ИЗ {secondaryMax}</strong><span>Выбрано <b>{secondarySelected.length}</b> / {secondaryPick}</span></div><div>{secondaryValues.map((value) => <motion.button aria-label={`Pulse-число ${value - secondaryOffset}`} aria-pressed={selected.includes(value)} className={selected.includes(value) ? "selected" : ""} key={value} disabled={purchasing} onClick={() => toggle(value, secondaryPick)} type="button" whileTap={{ scale: .84 }}>{value - secondaryOffset}</motion.button>)}</div></section>}
+    <section className="fast-selection"><div><span>{pulse ? "Ваш ритм" : code === "flash" ? "Ваш сигнал" : codeMode ? "Ваш код" : "Ваши тени"}</span><div>{pulse ? <>{Array.from({ length: primaryPick }, (_, index) => <i className={primarySelected[index] ? "filled" : ""} key={`primary-${index}`}>{primarySelected[index] ? String(primarySelected[index]).padStart(2, "0") : "—"}</i>)}<b>+</b>{Array.from({ length: secondaryPick }, (_, index) => <i className={`pulse-chip ${secondarySelected[index] ? "filled" : ""}`} key={`secondary-${index}`}>{secondarySelected[index] ? `P${secondarySelected[index] - secondaryOffset}` : "—"}</i>)}</> : Array.from({ length: codeMode ? codePick : lottery.numbers_to_pick }, (_, index) => <i className={selected[index] !== undefined ? "filled" : ""} key={index}>{selected[index] !== undefined ? String(selected[index]).padStart(codeMode ? 1 : 2, "0") : "—"}</i>)}</div></div><button disabled={purchasing} onClick={randomize} type="button"><Icon name="spark" />{codeMode ? "Случайный код" : "Случайный выбор"}</button></section>
+    {error && <p className="fast-picker-error" role="alert">{error}</p>}
+    <div className="fast-purchase"><div><span>Стоимость</span><strong>{formatCas(lottery.ticket_price ?? 0)}</strong></div><PrimaryButton disabled={!complete || !lottery.purchase_available} loading={purchasing} success={success} onClick={() => void buy()}><Icon name="fast" />{success ? "Билет куплен" : pulse ? "Запустить пульс" : code === "flash" ? "Активировать" : codeMode ? "Подтвердить код" : "Купить сигнал"}</PrimaryButton></div>
     <p className="fast-picker-note">Билет участвует в ближайшем раунде · без эфира в Telegram</p>
   </div>;
 }
