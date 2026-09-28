@@ -1,5 +1,13 @@
 ## Mini App: unified draw-game ticket screens — 2026-09-28
 
+## Mini App: personal dashboard and dimensional navigation — 2026-09-28
+
+- Extracted the personal overview into a lazy AccountHub chunk. Replaced repeated account tabs and header balance with a compact account heading, single balance card, active-ticket action, history/catalog shortcuts and expandable statistics/settings. Existing server values, ticket filters, notification preferences and purchase flows are preserved.
+- Added a 29,220-byte transparent WebP illustration through built-in image generation, and lightweight layered SVG icons. The artwork loads only with the account screen; dimensions reserve its space. No 3D runtime or animation engine was added.
+- Replaced old bottom navigation markup with an isolated porcelain dock, accessible selected-page state, unread dot, keyboard focus, reduced-motion support and 64px-tall targets. Reselecting My returns to its overview and scrolls to the top. Fast gameplay and lottery rooms are unchanged.
+- Verification: focused account/navigation/history UI checks, miniapp lint and TypeScript/production build; browser smoke at 320×640 and 390×844 with preview data. No purchase tests or transactions. Actual Telegram device verification was unavailable; browser viewport smoke does not replace that check.
+- Release 1.49.0 affects miniapp/gateway only; local/VPS rollback archives and production health/version/HTML/asset verification required.
+
 - Replaced regular room mastheads with a shared compact GameHeader. Isolated TicketComposer styling replaces accumulated picker theme overrides: no oversized instructions, grave-shaped controls, duplicate random actions or cart-add step. Direct purchase callbacks, server formats, field offsets and repeat semantics are retained. Existing saved carts remain accessible.
 - Light ticket surfaces share spacing, typography and interaction states, with separate game accents/artwork. Grand and Casper Ball preserve independent fields; Dual keeps 2+2 with no repeats/favorites. New regular selection code is lazy-loaded. Fast and draw execution are unchanged.
 - Bingo now places its pool tickets directly below the compact header/quick actions. Optional sets/search are collapsed below tickets; detail inspection, selected-ticket removal, mine/live views and retry handling remain available. Checkout stays visible. Updated the local Casper Ball preview to the existing server 5/36 + 1/8 format.

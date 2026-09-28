@@ -210,9 +210,9 @@ it("renders server-authoritative balance and lottery states", async () => {
   expect(await screen.findByLabelText("5 000 CAS")).toHaveTextContent("5 000C");
   expect(screen.getByLabelText("Casper Loto")).toBeInTheDocument();
   expect(container.querySelector(".brand-logo-horizontal")).toHaveAttribute("src", "/brand/logo-horizontal-432-v1.png");
-  expect(within(container.querySelector(".bottom-nav") as HTMLElement).getAllByRole("button").map(b => b.textContent)).toEqual(["Сегодня", "Лотереи", "Kasper Fast", "Моё"]);
+  expect(within(container.querySelector(".mobile-dock") as HTMLElement).getAllByRole("button").map(b => b.textContent)).toEqual(["Сегодня", "Лотереи", "Kasper Fast", "Моё"]);
   fireEvent.click(screen.getByRole("button", { name: "Лотереи" }));
-  expect(await screen.findByRole("button", { name: "Открыть Weekly 5/20" })).toBeEnabled();
+  expect(await screen.findByRole("button", { name: "Открыть Weekly 5/20" }, { timeout: 5000 })).toBeEnabled();
 });
 
 it("shows the dashboard while the account request is still pending", async () => {
@@ -263,7 +263,7 @@ it("shows unread notifications as a red dot without exposing the count", async (
   const { container } = render(<App initData="signed" />);
 
   expect(await screen.findByRole("button", { name: "Моё: есть непрочитанные уведомления" })).toBeInTheDocument();
-  expect(container.querySelector(".bottom-nav .notification-dot")?.textContent).toBe("");
+  expect(container.querySelector(".mobile-dock .dock-notification")?.textContent).toBe("");
 });
 
 it("renders the GROB identity and its three-of-sixteen picker", async () => {
@@ -474,10 +474,12 @@ it("shows one simple notification control and no auto-play panel", async () => {
   render(<App initData="signed" />);
   fireEvent.click(await screen.findByRole("button", { name: "Моё" }));
 
+  fireEvent.click(await screen.findByText("Настройки уведомлений"));
   expect(await screen.findByRole("button", { name: "Включить уведомления" })).toBeInTheDocument();
   expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
   expect(screen.queryByText("Автоучастие")).not.toBeInTheDocument();
-  expect(screen.getByText(MINIAPP_TEXTS.account.subtitle)).toBeInTheDocument();
+  expect(screen.queryByText(MINIAPP_TEXTS.account.subtitle)).not.toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Моё" })).toBeInTheDocument();
 });
 
 it("renders losing history as neutral and winning history as rewarded", async () => {
@@ -498,7 +500,7 @@ it("renders losing history as neutral and winning history as rewarded", async ()
   vi.mocked(miniAppApi.tickets).mockResolvedValue({ tickets: history, total: history.length, has_more: false });
   render(<App initData="signed" />);
   fireEvent.click(await screen.findByRole("button", { name: "Моё" }));
-  fireEvent.click(await screen.findByRole("button", { name: "Билеты" }));
+  fireEvent.click(await screen.findByRole("button", { name: /Активные билеты/ }));
   fireEvent.click(await screen.findByRole("button", { name: "История" }));
 
   expect(await screen.findByText("Без выигрыша")).toBeInTheDocument();
@@ -695,4 +697,18 @@ it("account hub clears a stale Fast filter when opening all active tickets", asy
   fireEvent.click(screen.getByRole("button", { name: "Обзор" }));
   fireEvent.click(await screen.findByRole("button", { name: /Активные билеты/ }));
   await waitFor(() => expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "active", "", false));
+});
+
+it("returns to the personal overview when reselecting My in the dock", async () => {
+  render(<App initData="test" />);
+  const dock = await screen.findByRole("navigation", { name: "Основная навигация" });
+  fireEvent.click(within(dock).getByRole("button", { name: "Моё" }));
+  expect(within(dock).getByRole("button", { name: "Моё" })).toHaveAttribute("aria-current", "page");
+  fireEvent.click(await screen.findByRole("button", { name: /История участия/ }));
+  expect(await screen.findByRole("heading", { name: "Мои билеты" })).toBeInTheDocument();
+  fireEvent.click(within(dock).getByRole("button", { name: "Моё" }));
+  expect(await screen.findByRole("heading", { name: "Моё" })).toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "Мои билеты" })).not.toBeInTheDocument();
+  expect(window.scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: "instant" });
+  expect(miniAppApi.purchase).not.toHaveBeenCalled();
 });

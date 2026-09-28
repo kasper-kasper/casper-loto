@@ -1,0 +1,9 @@
+# Personal dashboard illustration
+
+Mode: built-in image_gen. Created 2026-09-28.
+
+Asset: `frontend/miniapp/src/assets/account/account-tickets-v1.webp` (512 × 414, RGBA, 29,220 bytes). Generated source retained in Codex generated images; shipped derivative resized with Pillow and encoded as WebP quality 86. Alpha preserved. Decorative, empty alt text; never represents a purchased ticket or actual balance.
+
+## Generation prompt
+
+Use case: stylized-concept. Asset type: a single transparent 3D illustration for the personal dashboard of the Casper Loto mobile mini-app, not a screenshot or full interface. Primary request: a finely crafted sculptural stack of three lottery ticket cards with one small round brushed champagne-metal token resting against them. Three-quarter isometric view, calm sophisticated product-render aesthetic, physically believable thickness, bevels, soft studio reflections and contact shadows. Tickets are warm ivory ceramic-paper with rounded corners, subtle edge notches and a simple orderly grid of inset circular dots, no printed numbers. One rear card in midnight blue translucent smoked glass. Token has a simple deeply recessed circular center, no letters or currency symbol. Composition: compact isolated object centered with generous transparent margin, all parts in frame, appealing silhouette that remains legible at 150 pixels wide. Lighting: soft broad warm key light, cool rim light, realistic ambient occlusion, restrained highlights. Palette: ivory, midnight navy, warm champagne gold, aligned with an existing dark navy and gold mobile interface. Truly transparent background with alpha. No text, no logo, no watermark, no extra floating objects, no confetti, no explosive glow, no casino table, no money pile, no screen mockup. Output a polished premium 3D UI illustration.

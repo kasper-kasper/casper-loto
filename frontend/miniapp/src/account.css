@@ -1,34 +1,16 @@
-/* Personal area: balance, participation, then optional detail. */
-.account-overview { gap: 16px; }
-.account-glance { padding: 20px; border-color: #d8bd7333; border-radius: 20px; background: radial-gradient(ellipse at 100% 0,#d6bd7420,transparent 60%),#111e31; box-shadow: none; }
-.account-name span,.account-name small { font-size: 11px; color: #a4afc0; }
-.account-name h2 { font-size: 18px; white-space: normal; overflow-wrap: anywhere; }
-.account-monogram { width: 44px; height: 44px; }
-.account-monogram > span { width: 36px; height: 36px; font-size: 17px; }
-.account-wallet { margin: 24px 0 20px; }
-.account-wallet > span { color: #a8b5c9; font-size: 12px; }
-.account-wallet > strong { display: block; margin-top: 6px; color: #f2d38b; font-size: clamp(28px,8vw,36px); letter-spacing: -.04em; }
-.account-summary { display: flex; flex-wrap: wrap; gap: 12px 22px; padding-top: 15px; border-top: 1px solid #ffffff12; color: #a8b5c9; font-size: 11px; }
-.account-summary b { margin-left: 5px; color: #edf0f5; font-size: 14px; }
-.account-next-draw,.account-next-draw.empty { flex-direction: column; align-items: stretch; padding: 18px; background: #101d31; border-color: #ffffff16; }
-.account-next-draw span { font-size: 10px; }
-.account-next-draw strong { font-size: 18px; white-space: normal; }
-.account-next-draw small { font-size: 12px; line-height: 1.6; white-space: normal; }
-.account-next-draw button { min-height: 44px; font-size: 12px; }
-.account-quick-actions { grid-template-columns: 1fr; gap: 0; overflow: hidden; border: 1px solid #ffffff16; border-radius: 16px; }
-.account-quick-actions button { flex-direction: row; align-items: center; min-height: 70px; padding: 14px 18px; gap: 14px; border: 0; border-bottom: 1px solid #ffffff10; border-radius: 0; background: #101b2e; }
-.account-quick-actions button:last-child { border-bottom: 0; }
-.account-quick-actions button::after { content: "→"; margin-left: auto; color: #8f9db3; }
-.account-quick-actions strong { font-size: 13px; white-space: normal; }
-.account-quick-actions small { font-size: 11px; color: #9caac0; white-space: normal; }
-.account-details { border: 1px solid #ffffff16; border-radius: 16px; background: #0d192c; }
-.account-details > summary { min-height: 64px; padding: 18px; cursor: pointer; color: #e1e7f1; font-size: 13px; }
-.account-details > summary > span { display: block; margin: 5px 0 0 15px; color: #8e9cb2; font-size: 11px; }
-.account-details > summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 16px; }
-.account-details .account-ledger,.account-details .account-favorites { border: 0; background: transparent; }
-.account-details .account-ledger > div,.account-details .account-favorites > div { flex-wrap: wrap; padding-block: 10px; }
-.account-details .account-favorites p { flex-wrap: wrap; }
-.account-details .account-ledger > div strong { font-size: 12px; }
-.account-tabs { margin-bottom: 0; }
-.account-tabs button { min-height: 52px; }
-.fast-picker-error { position: relative; z-index: 2; padding: 14px; border: 1px solid #ff859866; border-radius: 12px; color: #ffd0d8; background: #351924; font-size: 13px; line-height: 1.5; }
+/* Personal area subpages share the dashboard's navy and porcelain surfaces. */
+.personal-section-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; padding:7px 0 14px; }
+.personal-section-heading h1 { order:3; flex-basis:100%; margin:7px 0 0; color:#f5f0e7; font-size:29px; font-weight:550; letter-spacing:-.04em; }
+.personal-section-heading button { min-height:44px; padding:9px 13px; border:1px solid #ffffff26; border-radius:12px; color:#c9d4e5; background:#17273e; font-size:11px; cursor:pointer; }
+.personal-section-heading button:first-child { background:transparent; padding-left:0; border-color:transparent; font-size:13px; }
+.personal-section .segmented-control { padding:5px; border:1px solid #ffffff24; border-radius:15px; background:#0d192c; }
+.personal-section .segmented-control > i { display:none; }
+.personal-section .segmented-control button { min-height:43px; border-radius:10px; color:#a5b5cc; }
+.personal-section .segmented-control button.selected { background:linear-gradient(135deg,#fff6e4,#e5e6e2); color:#24344e; box-shadow:0 2px 0 #8493ab; }
+.personal-section .ticket-filters { gap:9px; padding:4px 0 10px; }
+.personal-section .ticket-filters select { min-height:44px; border:1px solid #ffffff24; border-radius:11px; background:#17253c; color:#d6dfed; }
+.personal-section .ticket-filters button { min-height:44px; border-radius:11px; }
+.personal-section .ticket-filters > span { color:#a8b6cb; }
+.personal-section .ticket-draw-group { border-radius:17px; }
+.personal-section button:focus-visible,.personal-section select:focus-visible { outline:2px solid #e7cf9e; outline-offset:3px; }
+.fast-picker-error { position:relative; z-index:2; padding:14px; border:1px solid #ff859866; border-radius:12px; color:#ffd0d8; background:#351924; font-size:13px; line-height:1.5; }
