@@ -48,3 +48,16 @@
 .collection-card:focus-visible,.collection-filters button:focus-visible,.collection-instant:focus-visible { outline: 2px solid #f1dcad; outline-offset: 4px; }
 @media (hover:hover) { .collection-card:hover .collection-open { background: #ece1ca; color: #17202a; border-color: #ece1ca; } }
 @media (max-width:359px) { .collection-card-content { padding: 15px; } .collection-card-meta { font-size: 8px; } .collection-open { min-width: 87px; gap: 8px; padding: 0 9px; } .collection-september .collection-identity h2 { font-size: 26px; } .collection-instant { gap: 10px; padding: 14px 11px; } }
+/* A dedicated classic identity: brass drawing drum, cream typography, navy felt. */
+.collection-khan { --collection-accent:#efd4a1; border-color:#ddc28c42; background:radial-gradient(ellipse at 90% 35%,#7463443b,transparent 58%),linear-gradient(125deg,#24354d,#101d30 75%); box-shadow:inset 0 1px #f1ddad17,0 8px 20px #0002; }
+.collection-khan::before { background:linear-gradient(0deg,#0c1827e6,transparent 57%),linear-gradient(90deg,#1020352b,transparent 65%); }
+.collection-khan .collection-scene { inset:30px 5px auto auto; width:53%; height:196px; object-fit:contain; object-position:center; z-index:-1; }
+.collection-khan .collection-card-content { min-height:286px; }
+.collection-khan .collection-identity { max-width:66%; margin-top:17px; margin-bottom:30px; }
+.collection-khan .collection-identity h2 { color:#f7e8cc; font:400 42px/1.05 Georgia,serif; letter-spacing:-.055em; text-shadow:0 2px 12px #071324; }
+.collection-khan .collection-identity p { max-width:140px; color:#b9c0cb; font-size:9px; }
+.collection-khan .collection-prize { position:relative; width:max-content; max-width:100%; }
+.collection-khan .collection-prize > strong { font-size:31px; }
+.collection-khan .collection-open { border-color:#d2b57955; color:#efd8aa; border-radius:22px; background:linear-gradient(135deg,#dec08621,#dec08608); }
+.collection-khan .collection-card-footer { border-top:1px dashed #dec08645; }
+@media(max-width:359px) { .collection-khan .collection-identity h2 { font-size:35px; } .collection-khan .collection-scene { right:3px; width:53%; top:33px; height:183px; } .collection-khan .collection-prize > strong { font-size:27px; } }

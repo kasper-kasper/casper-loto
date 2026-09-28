@@ -1,0 +1,88 @@
+/* 6/36 only: a printed coupon, ink stamps and a tray of enamel balls. */
+.classic-room { --play-accent:#e5cca0; --play-ink:#243b54; color:#efe9dd; }
+.classic-header { margin-bottom:7px; }
+.classic-topbar { display:flex; align-items:center; gap:10px; min-height:41px; }
+.classic-topbar > button { display:grid; place-items:center; width:36px; height:36px; flex-shrink:0; border:1px solid #b7c9e62b; border-radius:50%; color:#d9e2ed; background:linear-gradient(145deg,#23354d,#101e31); font-size:20px; }
+.classic-topbar > div { flex:1; min-width:0; }
+.classic-topbar h1 { margin:0; font:400 25px/1 Georgia,serif; letter-spacing:-.035em; color:#f0e3ca; }
+.classic-topbar small { display:block; margin-top:4px; color:#92a3ba; font-size:8px; }
+.classic-balance { color:#b8c5d6; font-size:10px; }
+.classic-balance .currency-mark { font-size:8px; }
+.classic-draw { display:flex; align-items:center; justify-content:space-between; gap:8px; position:relative; min-height:70px; margin-top:7px; padding:6px 14px; border:1px solid #d0b78130; border-radius:15px; background:radial-gradient(ellipse at 60% 0,#6e685e2a,transparent 70%),linear-gradient(135deg,#1d2d43,#111c2e); box-shadow:inset 0 1px #efddba12; }
+.classic-draw > div:first-child { position:relative; z-index:1; min-width:0; }
+.classic-draw small { display:block; margin-bottom:5px; color:#aab8cb; font-size:8px; }
+.classic-draw strong { font-size:24px; font-weight:500; letter-spacing:-.045em; color:#edd3a4; white-space:nowrap; }
+.classic-draw .currency-mark { font-size:10px; }
+.classic-machine { position:absolute; width:94px; height:83px; top:-7px; left:48%; pointer-events:none; }
+.classic-machine img { display:block; width:100%; height:100%; object-fit:contain; }
+.classic-draw-clock { position:relative; z-index:1; text-align:right; }
+.classic-draw-clock time { color:#e2e8f1; font-size:13px; font-variant-numeric:tabular-nums; }
+.classic-context { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:32px; }
+.classic-context > time { color:#9dacc0; font-size:8px; }
+.classic-context > div { display:flex; gap:12px; }
+.classic-context button { min-height:32px; border:0; padding:0; background:none; color:#d2c5a9; font-size:9px; }
+.classic-coupon { position:relative; isolation:isolate; border-radius:13px; color:#303c48; background:#e6d7b9; box-shadow:0 3px 0 #948773,0 6px 0 #0e1828,0 13px 26px #0005; }
+.classic-paper { position:relative; overflow:hidden; padding:13px 16px 12px; border:1px solid #ffefcf; border-bottom:0; border-radius:13px 13px 0 0; background:repeating-linear-gradient(12deg,#bba07606 0 1px,transparent 1px 4px),radial-gradient(ellipse at 18% 0,#fffef7,transparent 82%),#eee5d1; }
+.classic-paper::before { content:""; position:absolute; inset:5px; border:1px solid #927b4c1d; border-bottom:0; border-radius:8px 8px 0 0; pointer-events:none; }
+.classic-paper-heading { position:relative; display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }
+.classic-paper-heading > div > span { color:#8b775b; font-size:7px; letter-spacing:.13em; }
+.classic-paper-heading h2 { margin:4px 0 0; font:400 25px/1 Georgia,serif; letter-spacing:-.045em; color:#354155; }
+.classic-paper-heading > button { display:flex; align-items:center; gap:5px; min-height:36px; padding:6px 9px; border:1px solid #76623f45; border-radius:18px; background:linear-gradient(135deg,#fffef66e,#ceb78322); color:#5e5544; font-size:10px; box-shadow:inset 0 1px #fff9e7; }
+.classic-paper-heading .icon { width:13px; height:13px; }
+.classic-field-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0 7px; border-top:1px solid #7f71552b; color:#776e5e; font-size:9px; }
+.classic-field-heading > span:last-child { color:#394a5d; font-weight:650; font-variant-numeric:tabular-nums; }
+.classic-coupon .classic-number-grid { grid-template-columns:repeat(6,minmax(0,1fr)); gap:3px 5px; }
+.classic-number { position:relative; display:grid; place-items:center; min-width:0; min-height:41px; padding:1px; border:0; border-radius:50%; background:transparent; color:#4b4d4b; font:400 18px/1 Georgia,serif; font-variant-numeric:tabular-nums; -webkit-tap-highlight-color:transparent; }
+.classic-number::before { position:absolute; content:""; width:31px; height:31px; border:1px solid #87785950; border-radius:50%; background:#ffffff08; box-shadow:inset 0 0 0 2px #eee5d1; transition:background .12s,box-shadow .12s,transform .12s; }
+.classic-number > span { position:relative; }
+.classic-number[aria-pressed=true] { color:#fbefcf; }
+.classic-number[aria-pressed=true]::before { width:33px; height:33px; border:1px solid #213b52; background:radial-gradient(ellipse at 20% 0,#496078,#233a50); box-shadow:inset 0 0 0 2px #e7d5b1,inset 0 0 0 3px #354a5b,0 1px 3px #15283d30; transform:rotate(-8deg); }
+.classic-number:nth-child(3n)[aria-pressed=true]::before { transform:rotate(7deg); }
+.classic-number:active::before { transform:scale(.94); }
+.classic-coupon button:focus-visible { outline:2px solid #274e78; outline-offset:1px; }
+.classic-ticket-stub { position:relative; padding:11px 16px 10px; border-top:1px dashed #8c76558c; border-radius:0 0 13px 13px; background:repeating-linear-gradient(12deg,#bba07608 0 1px,transparent 1px 4px),linear-gradient(120deg,#ede1c8,#dcc9a5); box-shadow:inset 0 1px #fff8e157; }
+.classic-ticket-stub::before,.classic-ticket-stub::after { position:absolute; content:""; top:-7px; width:12px; height:12px; border-radius:50%; background:#080f20; box-shadow:inset 0 -1px #bda682; }
+.classic-ticket-stub::before { left:-6px; }
+.classic-ticket-stub::after { right:-6px; }
+.classic-stub-label { display:flex; justify-content:space-between; align-items:center; gap:8px; color:#776344; font-size:7px; letter-spacing:.08em; }
+.classic-stub-label > span:last-child { color:#5a624d; font-size:8px; letter-spacing:0; }
+.classic-ball-tray { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:5px; margin-top:8px; }
+.classic-ball,.classic-ball-empty { display:grid; place-items:center; justify-self:center; width:35px; height:35px; border-radius:50%; font-variant-numeric:tabular-nums; }
+.classic-ball { position:relative; padding:0; border:1px solid #a4926d; background:radial-gradient(circle at 31% 21%,#fffefa 0%,#f8eed5 32%,#e1c894 62%,#9b805b 94%); box-shadow:inset -2px -3px 4px #79562a50,inset 1px 2px 2px #fff9e5,2px 4px 5px #6b56384d; color:#344154; }
+.classic-ball > span { display:grid; place-items:center; width:22px; height:22px; border:1px solid #bba27586; border-radius:50%; background:#fff8e03b; font:600 14px/1 Georgia,serif; box-shadow:inset 0 1px 2px #98783d23; }
+.classic-ball-empty { border:1px solid #a18b6038; background:radial-gradient(ellipse at 50% 80%,#f8ecd666,#b69b702e); box-shadow:inset 1px 2px 4px #7561401b,0 1px #fff8e050; color:#a18c64; font-size:19px; }
+.classic-ticket-stub > footer { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; color:#827050; font-size:8px; }
+.classic-paper-seal { color:#8f7650; font-family:Georgia,serif; font-size:9px; letter-spacing:.09em; }
+.classic-room .play-quick { margin:12px 0 3px; border-color:#cdb8892c; background:linear-gradient(135deg,#243448,#142136); border-radius:14px; }
+.classic-room .play-quick button { border-radius:20px; border-color:#cdb8893d; background:linear-gradient(140deg,#8499b01a,#c1a5780b); color:#eddbba; box-shadow:inset 0 1px #ffffff0d; }
+.classic-room .ticket-options > summary { padding-block:10px; font-size:10px; }
+.classic-room .play-checkout { border-top-color:#b6c8e82b; background:#122034eb; }
+.classic-room .play-checkout > button:not(:disabled) { border:1px solid #f7e3b4; background:linear-gradient(135deg,#f1dfb9,#c6a976); box-shadow:inset 0 1px #fff7e1,0 3px 0 #796949; color:#26374b; border-radius:13px; }
+@media(max-width:359px) { .classic-draw { padding-inline:11px; min-height:63px; } .classic-draw strong { font-size:21px; } .classic-machine { width:76px; height:73px; left:46%; } .classic-draw-clock time { font-size:11px; } .classic-paper { padding:12px 12px 9px; } .classic-coupon .classic-number-grid { gap:2px 3px; } .classic-number { min-height:37px; font-size:17px; } .classic-number::before { width:29px; height:29px; } .classic-number[aria-pressed=true]::before { width:31px; height:31px; } .classic-paper-heading h2 { font-size:23px; } .classic-ticket-stub { padding:9px 12px; } .classic-ball-tray { gap:3px; } .classic-ball,.classic-ball-empty { width:31px; height:31px; } .classic-ball > span { width:21px; height:21px; font-size:13px; } .classic-context > div { gap:9px; } .classic-context > time { font-size:7px; } .classic-room .play-quick { margin-top:10px; } }
+@media(prefers-reduced-motion:reduce) { .classic-number::before { transition:none; } }
+.classic-paper-heading > div > span { display:block; line-height:1.2; }
+/* Short Telegram webviews keep the full field, combination and quick choices above checkout. */
+@media(max-height:720px) {
+  .classic-room { margin-top:-6px; }
+  .classic-header { margin-bottom:5px; }
+  .classic-draw { min-height:52px; margin-top:5px; }
+  .classic-machine { height:65px; width:76px; top:-7px; }
+  .classic-context,.classic-context button { min-height:28px; }
+  .classic-paper { padding-block:9px; }
+  .classic-paper-heading { margin-bottom:6px; }
+  .classic-paper-heading h2 { margin-top:2px; font-size:22px; }
+  .classic-paper-heading > button { min-height:32px; }
+  .classic-field-heading { padding-top:5px; padding-bottom:3px; }
+  .classic-coupon .classic-number-grid { gap:2px 4px; }
+  .classic-number { min-height:35px; }
+  .classic-number::before { width:28px; height:28px; }
+  .classic-number[aria-pressed=true]::before { width:30px; height:30px; }
+  .classic-ticket-stub { padding-block:8px; }
+  .classic-stub-label { line-height:1.2; }
+  .classic-ball-tray { margin-top:6px; }
+  .classic-ball,.classic-ball-empty { width:29px; height:29px; }
+  .classic-ball > span { width:20px; height:20px; font-size:12px; }
+  .classic-ticket-stub > footer { display:none; }
+  .classic-room .play-quick { margin-top:9px; padding:7px 10px; }
+  .classic-room .play-quick button { min-height:36px; }
+}

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { miniAppApi } from "./api";
 import { GameHeader } from "./GameHeader";
+import { ClassicHeader } from "./ClassicHeader";
 import { LiveView } from "./LiveView";
 import type { LiveFeed, Lottery } from "./types";
 import "./discovery.css";
@@ -27,12 +28,14 @@ export function LotteryRoom({ lottery, initData, now, children, onClose, onTicke
     void poll();
     return () => { active = false; clearTimeout(timer); };
   }, [initData, lottery.code, tab]);
-  return <div className={`play-room game-${lottery.code}`}>
-    <GameHeader lottery={lottery} balance={balance} now={now} onClose={onClose}>
+  const classicTicket = lottery.code === "khan" && tab === "tickets";
+  const Header = classicTicket ? ClassicHeader : GameHeader;
+  return <div className={`play-room game-${lottery.code}${classicTicket ? " classic-room" : ""}`}>
+    <Header lottery={lottery} balance={balance} now={now} onClose={onClose}>
       {tab === "live" && <button type="button" onClick={() => setTab("tickets")}>К билетам</button>}
       <button type="button" onClick={onTickets}>Мои билеты</button>
       {tab === "tickets" && <button type="button" aria-label="Эфир и результаты" onClick={() => setTab("live")}>Эфир ↗</button>}
-    </GameHeader>
+    </Header>
     {error && <p className="play-message is-error" role="alert">{error}</p>}{tab === "tickets" ? children : <LiveView feed={feed} now={now} loading={!feed} onPlay={() => setTab("tickets")} onTickets={onTickets} />}
   </div>;
 }

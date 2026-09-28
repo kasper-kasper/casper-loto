@@ -3,7 +3,7 @@ import { Money } from "./components";
 import { formatCas, formatMoscow } from "./format";
 import type { Lottery } from "./types";
 import grand from "./assets/lotteries/kasper-grand-scene.webp";
-import classic from "./assets/lotteries/khan-scene.webp";
+import classic from "./assets/lotteries/classic-drum-v1.webp";
 import september from "./assets/lotteries/september-embankment.jpg";
 import portal from "./assets/lotteries/pll-portal.jpg";
 import nature from "./assets/lotteries/pss-nature-scene.webp";
@@ -14,7 +14,7 @@ import "./lottery-catalog.css";
 
 const identities: Record<string, { image: string; caption: string }> = {
   weekly: { image: grand, caption: "Событие недели" },
-  khan: { image: classic, caption: "Классика большой игры" },
+  khan: { image: classic, caption: "Ваши числа. Большая классика." },
   september: { image: september, caption: "У каждого числа своя история" },
   pll: { image: portal, caption: "Время неизбежно" },
   pss: { image: nature, caption: "Там, где начинается тишина" },

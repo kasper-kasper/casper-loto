@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { CSSProperties } from "react";
 import { Icon, Money } from "./components";
+import { ClassicTicket } from "./ClassicTicket";
 import { isGrandLottery, lotteryCombination } from "./grand";
 import { selectionHaptic } from "./telegram";
 import type { Favorite, Lottery } from "./types";
@@ -68,14 +69,14 @@ export function TicketComposer({ lottery, balance, now, purchasing, initialNumbe
   </section>;
 
   return <div className="ticket-composer">
-    <div className="ticket-surface">
+    {lottery.code === "khan" ? <ClassicTicket lottery={lottery} selected={selected} purchasing={purchasing} drawCount={drawCount} onToggle={toggle} onRandomize={randomize} /> : <div className="ticket-surface">
       <header className="ticket-surface-heading"><div><span>ВАША КОМБИНАЦИЯ</span><h2>Ваш билет</h2></div><button type="button" aria-label="Случайные числа" className="ticket-shuffle" disabled={purchasing} onClick={randomize}><Icon name="spark" />Случайно</button></header>
       {dual ? <div className="ticket-dual-fields">{field("NIGHT · 00:30", 12, 2, dualNight, 0, "night")}{field("DAWN · 07:30", 12, 2, dualDawn, 12, "dawn")}</div> : grand ? <>
         {field("Основные числа", lottery.primary_max_number ?? 35, grandMainCount, mainSelected)}
         {field(lottery.code === "pss" ? "Casper Ball" : "Звёзды", lottery.secondary_max_number ?? 5, grandSpecialCount, specialSelected.map(value => value - grandOffset), grandOffset)}
       </> : field("Числа", lottery.max_number, lottery.numbers_to_pick, selected)}
       <div className="ticket-surface-footer"><span>{dual ? "Два раунда · один билет" : drawCount === 5 ? "Одна комбинация · 5 тиражей" : "Одна комбинация · 1 тираж"}</span><span>{ready ? "Готов к покупке" : `${selected.length} / ${lottery.numbers_to_pick}`}</span></div>
-    </div>
+    </div>}
     <section className="play-quick" aria-label="Быстрая покупка"><div><strong>Быстрая покупка</strong><small>Случайные билеты</small></div><div>{[1, 5, 25].map(count => <button key={count} type="button" aria-label={`Купить ${count} ${count === 1 ? "случайный билет" : "случайных билетов"}`} disabled={purchasing || closed || count > quickLimit} onClick={() => void onBuyMany(Array.from({ length: count }, () => lotteryCombination(lottery)), drawCount)}>×{count}</button>)}</div></section>
     {!dual && <details className="ticket-options"><summary>Повторы и избранное <span>＋</span></summary><div className="ticket-options-body">
       <div className="ticket-repeat"><span>Участие в тиражах</span><div><button type="button" disabled={purchasing} aria-pressed={drawCount === 1} onClick={() => setDrawCount(1)}>1 тираж</button><button type="button" disabled={purchasing} aria-pressed={drawCount === 5} onClick={() => setDrawCount(5)}>5 тиражей</button></div></div>

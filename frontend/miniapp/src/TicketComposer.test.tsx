@@ -58,3 +58,27 @@ describe("ticket selection presentation", () => {
     expect(screen.getByRole("button", { name: "Купить 5 случайных билетов" })).toBeDisabled();
   });
 });
+
+it("mirrors classic paper marks in removable ball slots without buying", () => {
+  const { onBuy, onBuyMany } = setup();
+  for (const value of [36, 1, 18]) fireEvent.click(screen.getByRole("button", { name: String(value) }));
+  const tray = screen.getByLabelText("Выбранная комбинация");
+  expect(within(tray).getAllByRole("button").map(button => button.textContent)).toEqual(["1", "18", "36"]);
+  fireEvent.click(within(tray).getByRole("button", { name: "Убрать число 18" }));
+  expect(screen.getByRole("button", { name: "18" })).toHaveAttribute("aria-pressed", "false");
+  expect(screen.getByRole("status")).toHaveTextContent("2 из 6");
+  fireEvent.click(screen.getByRole("button", { name: "Случайные числа" }));
+  expect(within(tray).getAllByRole("button")).toHaveLength(6);
+  expect(within(screen.getByLabelText("Числа")).getAllByRole("button", { pressed: true })).toHaveLength(6);
+  expect(screen.getByRole("button", { name: "Купить билет" })).toBeEnabled();
+  expect(onBuy).not.toHaveBeenCalled();
+  expect(onBuyMany).not.toHaveBeenCalled();
+});
+
+it("locks selected classic balls while a request is in progress", () => {
+  const onBuy = vi.fn();
+  render(<TicketComposer lottery={base} balance={10000000} now={0} purchasing initialNumbers={[1, 5, 12, 19, 24, 36]} favorites={[]} onBuy={onBuy} onBuyMany={vi.fn()} onSaveFavorite={vi.fn()} onDeleteFavorite={vi.fn()} />);
+  expect(screen.getByRole("button", { name: "Убрать число 12" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "12" })).toBeDisabled();
+  expect(onBuy).not.toHaveBeenCalled();
+});

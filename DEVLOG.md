@@ -1,5 +1,13 @@
 ## Mini App: unified draw-game ticket screens — 2026-09-28
 
+## Mini App: classic 6/36 ticket and catalog identity — 2026-09-28
+
+- Added ClassicTicket as a presentation-only branch of TicketComposer for khan. Existing selection, limits, randomization, favorites, repeat count and buy handlers remain in the shared composer. Printed circular marks feed a six-ball selection tray; accessible ball buttons remove a selection through the same toggle. In-flight requests lock both marks and balls.
+- Added ClassicHeader only for khan ticket mode. Live mode still uses the unchanged GameHeader and LiveView. The compact brass-drum composition and navy/ivory catalog design are scoped to 6/36; Fast and other lottery rooms are untouched.
+- Paper, perforation, ink and enamel-ball depth are CSS effects on real accessible controls. Drum is a generated transparent WebP, not a runtime 3D scene. Source/prompt documented in docs/design/classic-drum-asset.md; no engine or animation loop added.
+- Verification: 12 focused selection/catalog/App checks passed without invoking purchase handlers, plus frontend lint and TypeScript/build. Browser smoke with preview data at 390×844 and 320×640: selection/removal, full field, quick choices above checkout, no horizontal overflow. Actual Telegram device unavailable. No ticket purchase tests or transactions performed.
+- Release 1.51.0 affects miniapp/gateway only; retain local/VPS rollback backups and verify production health, version, HTML and new assets.
+
 ## Mini App: dark home and compact glass navigation — 2026-09-28
 
 - Rebuilt Today with a compact server-driven next-draw card, permanent ticket/catalog shortcuts, personal upcoming draw, dated Moscow schedule, optional latest jackpot and collapsed platform statistics. Live/result navigation and the separation of regular games from Fast are preserved. Removed the scrolling statistics strip and poster layout. Shared discovery styles remain eager because the Fast footer depends on them.
