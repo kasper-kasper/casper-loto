@@ -294,11 +294,11 @@ it("renders the GROB identity and its three-of-sixteen picker", async () => {
   expect(await screen.findByRole("heading", { name: "ГРОБ" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Открыть лотерею" }));
 
-  await waitFor(() => expect(container.querySelector(".number-grid")).not.toBeNull());
-  const grid = container.querySelector(".number-grid");
+  await waitFor(() => expect(container.querySelector(".ticket-number-grid")).not.toBeNull());
+  const grid = container.querySelector(".ticket-number-grid");
   expect(grid).not.toBeNull();
   expect(within(grid as HTMLElement).getAllByRole("button")).toHaveLength(16);
-  expect(screen.getByText("Поле захоронений")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Ваш билет" })).toBeInTheDocument();
 });
 
 it("renders the classic 6 of 36 identity and complete number field", async () => {
@@ -320,9 +320,10 @@ it("renders the classic 6 of 36 identity and complete number field", async () =>
 
   expect(await screen.findByRole("heading", { name: "6 из 36" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Моя лотерея" }));
-  await waitFor(() => expect(container.querySelector(".number-grid")).not.toBeNull());
-  expect(within(container.querySelector(".number-grid") as HTMLElement).getAllByRole("button")).toHaveLength(36);
-  expect(screen.getByText("Выберите 6 чисел")).toBeInTheDocument();
+  await waitFor(() => expect(container.querySelector(".ticket-number-grid")).not.toBeNull());
+  expect(within(container.querySelector(".ticket-number-grid") as HTMLElement).getAllByRole("button")).toHaveLength(36);
+  expect(screen.queryByText("Выберите 6 чисел")).not.toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Ваш билет" })).toBeInTheDocument();
 });
 
 it("refreshes a stale sales state before opening the number picker", async () => {
@@ -348,17 +349,10 @@ it("opens the selected lottery live room", async () => {
   expect(miniAppApi.live).toHaveBeenCalledWith("signed", "standard", "weekly");
 });
 
-it("selects five numbers, adds a ticket and buys the cart atomically", async () => {
+it("allows a previously saved cart to be completed atomically", async () => {
+  sessionStorage.setItem("k-loto:cart:v2", JSON.stringify({ expiresAt: Number.MAX_SAFE_INTEGER, tickets: [{ id: "saved-ticket", lotteryCode: "weekly", lotteryName: "Weekly 5/20", price: 100, numbers: [1, 2, 3, 4, 5], drawCount: 1 }] }));
   render(<App initData="signed" />);
-  await openWeeklyFromStorefront();
-
-  await waitFor(() => expect(document.querySelector(".number-grid")).not.toBeNull());
-  const grid = document.querySelector(".number-grid");
-  expect(grid).not.toBeNull();
-  for (const number of [1, 2, 3, 4, 5]) {
-    fireEvent.click(within(grid as HTMLElement).getByRole("button", { name: String(number) }));
-  }
-  fireEvent.click(screen.getByRole("button", { name: "В корзину" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Корзина: 1 комбинация" }));
 
   expect(screen.getByText("1 комбинация")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Добавить комбинацию" }));
@@ -382,21 +376,20 @@ it("selects five numbers, adds a ticket and buys the cart atomically", async () 
   expect(screen.getByRole("button", { name: "Мои билеты" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "На главную" }));
   expect(await screen.findByRole("heading", { name: "Сегодня может повезти." })).toBeInTheDocument();
-  expect(document.querySelector(".number-grid")).toBeNull();
+  expect(document.querySelector(".ticket-number-grid")).toBeNull();
 }, 10_000);
 
 it("keeps a confirmed purchase successful when the following refresh fails", async () => {
   render(<App initData="signed" />);
   await openWeeklyFromStorefront();
-  await waitFor(() => expect(document.querySelector(".number-grid")).not.toBeNull());
-  fireEvent.click(screen.getByRole("button", { name: "Быстрый случайный выбор" }));
+  await waitFor(() => expect(document.querySelector(".ticket-number-grid")).not.toBeNull());
+  fireEvent.click(screen.getByRole("button", { name: "Случайные числа" }));
   expect(screen.getByRole("button", { name: "Купить билет" })).toBeEnabled();
   vi.mocked(miniAppApi.dashboard).mockRejectedValue(new Error("refresh unavailable"));
   vi.mocked(miniAppApi.account).mockRejectedValue(new Error("refresh unavailable"));
   fireEvent.click(screen.getByRole("button", { name: "Купить билет" }));
 
-  expect(await screen.findByText("4 900 CAS")).toBeInTheDocument();
-  expect(screen.getByText("Ваших билетов: 3")).toBeInTheDocument();
+  expect(await screen.findByLabelText("4 900 CAS")).toBeInTheDocument();
   expect(screen.queryByText("Покупка не выполнена.")).not.toBeInTheDocument();
   await waitFor(() => expect(screen.getByRole("button", { name: "Купить билет" })).toBeDisabled());
 });
@@ -420,8 +413,8 @@ it("keeps Kasper Grand main and special number fields independent", async () => 
   render(<App initData="signed" />);
 
   fireEvent.click(await screen.findByRole("button", { name: "Моя лотерея" }));
-  const main = (await screen.findByText("Поле №1 · Основные числа")).closest("section") as HTMLElement;
-  const special = screen.getByText("Поле №2 · Специальные числа").closest("section") as HTMLElement;
+  const main = (await screen.findByText("Основные числа")).closest("section") as HTMLElement;
+  const special = screen.getByText("Звёзды").closest("section") as HTMLElement;
   for (const number of [1, 2, 3, 4, 5]) fireEvent.click(within(main).getByRole("button", { name: String(number) }));
   for (const number of [1, 2]) fireEvent.click(within(special).getByRole("button", { name: String(number) }));
   fireEvent.click(screen.getByRole("button", { name: "Купить билет" }));
@@ -432,7 +425,7 @@ it("keeps Kasper Grand main and special number fields independent", async () => 
   ));
   expect(screen.getByRole("heading", { name: "Kasper Grand" })).toBeInTheDocument();
   await waitFor(() => {
-    const refreshedMain = screen.getByText("Поле №1 · Основные числа").closest("section") as HTMLElement;
+    const refreshedMain = screen.getByText("Основные числа").closest("section") as HTMLElement;
     expect(within(refreshedMain).queryAllByRole("button", { pressed: true })).toHaveLength(0);
   });
   await waitFor(() => expect(screen.getByRole("button", { name: "Купить билет" })).toBeDisabled());
@@ -452,8 +445,9 @@ it("buys a random batch from a long lottery without opening the cart", async () 
 it("offers an explicit prepaid five-draw purchase without enabling it by default", async () => {
   render(<App initData="signed" />);
   await openWeeklyFromStorefront();
-  fireEvent.click(await screen.findByRole("button", { name: "5 тиражей" }));
-  const grid = document.querySelector(".number-grid") as HTMLElement;
+  fireEvent.click(await screen.findByText("Повторы и избранное"));
+  fireEvent.click(screen.getByRole("button", { name: "5 тиражей" }));
+  const grid = document.querySelector(".ticket-number-grid") as HTMLElement;
   for (const number of [1, 2, 3, 4, 5]) fireEvent.click(within(grid).getByRole("button", { name: String(number) }));
   fireEvent.click(screen.getByRole("button", { name: "Купить на 5 тиражей" }));
 
@@ -553,8 +547,8 @@ it.each([
   const { container } = render(<App initData="signed" />);
 
   fireEvent.click(await screen.findByRole("button", { name: /Открыть лотерею|Моя лотерея/ }));
-  await waitFor(() => expect(container.querySelector(".number-grid")).not.toBeNull());
-  const grid = container.querySelector(".number-grid") as HTMLElement;
+  await waitFor(() => expect(container.querySelector(".ticket-number-grid")).not.toBeNull());
+  const grid = container.querySelector(".ticket-number-grid") as HTMLElement;
   const numbers = within(grid).getAllByRole("button");
   expect(numbers).toHaveLength(max);
   for (let index = 0; index < pick; index += 1) fireEvent.click(numbers[index]);
@@ -658,14 +652,10 @@ it("keeps Casper Dual as one 2+2 ticket with no favorites or five-draw repeat", 
   render(<App initData="test" />);
   fireEvent.click(await screen.findByRole("button", { name: "Лотереи" }));
   fireEvent.click(screen.getByRole("button", { name: "Открыть Casper Dual" }));
-  expect(screen.getByText("БЛИЖАЙШИЙ ТИРАЖ №501")).toBeInTheDocument();
-  expect(screen.getByText(/5.000.000 CAS/)).toBeInTheDocument();
+  expect(screen.getByText("Раунд #0501")).toBeInTheDocument();
+  expect(screen.getByLabelText("5 000 000 CAS")).toBeInTheDocument();
   expect(screen.queryByText("Один билет. Два раунда.")).not.toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "NIGHT 3" }).parentElement).toHaveClass("dual-number-slot");
-  const nightPosition = screen.getByRole("button", { name: "NIGHT 3" }).parentElement?.getAttribute("style");
   fireEvent.click(screen.getByRole("button", { name: "NIGHT 3" }));
-  expect(screen.getByRole("button", { name: "NIGHT 3" }).parentElement).toHaveAttribute("style", nightPosition);
-  expect(screen.getByRole("button", { name: "NIGHT 3" })).not.toHaveAttribute("style");
   fireEvent.click(screen.getByRole("button", { name: "NIGHT 10" }));
   fireEvent.click(screen.getByRole("button", { name: "NIGHT 11" }));
   fireEvent.click(screen.getByRole("button", { name: "DAWN 5" }));
@@ -675,10 +665,7 @@ it("keeps Casper Dual as one 2+2 ticket with no favorites or five-draw repeat", 
   expect(screen.getByRole("button", { name: "DAWN 12" })).toHaveAttribute("aria-pressed", "false");
   expect(screen.getByRole("button", { name: "NIGHT 3" })).toHaveAttribute("aria-pressed", "true");
   expect(screen.getByRole("button", { name: "DAWN 5" })).toHaveAttribute("aria-pressed", "true");
-  const selectedDual = screen.getByLabelText("Ваши числа Casper Dual");
-  expect(within(selectedDual).getByText("3 · 10")).toBeInTheDocument();
-  expect(within(selectedDual).getByText("5 · 11")).toBeInTheDocument();
-  expect(selectedDual.querySelector("i")).toBeNull();
+  expect(screen.getAllByText("2 из 2")).toHaveLength(2);
   expect(screen.getByRole("button", { name: "Купить билет" })).toBeEnabled();
   expect(screen.queryByText("Избранные комбинации")).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "5 тиражей" })).not.toBeInTheDocument();

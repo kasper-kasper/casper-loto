@@ -1,0 +1,91 @@
+/* One ticket language for draw games. Deliberately independent of Fast and legacy picker themes. */
+.app-shell.draw-play-page { padding-bottom:0; background:#080f20; }
+.play-room { --play-accent:#b8d7ff; --play-ink:#203b60; --play-soft:#e6edf5; color:#f4f0e9; padding-bottom:calc(84px + env(safe-area-inset-bottom)); }
+.play-room.game-weekly { --play-accent:#ebce90; --play-ink:#5b4324; --play-soft:#f1eadc; }
+.play-room.game-september { --play-accent:#eabc96; --play-ink:#814331; --play-soft:#f4e7dc; }
+.play-room.game-pll { --play-accent:#cbb6f4; --play-ink:#554073; --play-soft:#ece8f4; }
+.play-room.game-pss { --play-accent:#aad8c7; --play-ink:#23564f; --play-soft:#e5efeb; }
+.play-room.game-grob { --play-accent:#ceb5d2; --play-ink:#50384f; --play-soft:#eae3eb; }
+.play-room.game-dual { --play-accent:#ecc785; --play-ink:#394a64; --play-soft:#e9edf3; }
+.play-room.game-bingo { --play-accent:#dcc99a; --play-ink:#33544a; --play-soft:#e7eee9; }
+.play-room button { font-family:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.play-room button:disabled { cursor:default; opacity:.42; }
+.play-room button:focus-visible,.play-room summary:focus-visible { outline:3px solid var(--play-accent); outline-offset:3px; }
+.play-header { margin-bottom:10px; }
+.play-topbar { display:flex; align-items:center; gap:10px; min-height:43px; margin-bottom:12px; }
+.play-back { flex-shrink:0; width:36px; height:36px; border:1px solid #ffffff24; border-radius:50%; background:#ffffff06; color:#e8edf4; font-size:20px; }
+.play-topbar > div { min-width:0; }
+.play-topbar h1 { margin:0; font-size:22px; font-weight:650; line-height:1.12; letter-spacing:-.035em; overflow-wrap:anywhere; }
+.game-weekly .play-topbar h1,.game-september .play-topbar h1 { font-family:Georgia,serif; font-weight:400; }
+.game-grob .play-topbar h1 { letter-spacing:.12em; }
+.play-topbar small { display:block; margin-top:4px; color:#97a4b7; font-size:9px; }
+.play-balance { margin-left:auto; flex-shrink:0; color:#d2d9e3; font-size:11px; }
+.play-balance .currency-mark { font-size:8px; }
+.play-prize-band { position:relative; isolation:isolate; display:flex; justify-content:space-between; align-items:center; gap:12px; min-height:81px; overflow:hidden; padding:14px 17px; border:1px solid #ffffff20; border-radius:13px; background:#101b2a; }
+.play-prize-band > img { position:absolute; z-index:-2; inset:0; width:100%; height:100%; object-fit:cover; object-position:65% 50%; opacity:.78; }
+.play-prize-band::after { position:absolute; z-index:-1; inset:0; content:""; background:linear-gradient(90deg,#07101ddd,#07101d45 60%,#07101dc4); }
+.play-prize-band small { display:block; margin-bottom:4px; color:#d5d8df; font-size:9px; }
+.play-prize-band strong { font-size:27px; font-weight:550; line-height:1; color:var(--play-accent); letter-spacing:-.04em; }
+.play-prize-band .currency-mark { font-size:10px; }
+.play-countdown { text-align:right; }
+.play-countdown time { font-size:15px; font-weight:550; font-variant-numeric:tabular-nums; }
+.play-context { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:37px; }
+.play-context > time { color:#9aa9ba; font-size:9px; line-height:1.4; }
+.play-links { display:flex; flex-shrink:0; align-items:center; gap:10px; }
+.play-links button { min-height:36px; border:0; background:none; color:#ded9ca; padding:3px 0; font-size:10px; }
+.ticket-surface { overflow:hidden; padding:16px; border:1px solid #fff7e9; border-radius:17px; background:linear-gradient(140deg,#fbf8f1,var(--play-soft)); color:#263440; box-shadow:0 12px 28px #0003,inset 0 1px #fff; }
+.ticket-surface-heading { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:14px; }
+.ticket-surface-heading > div > span { display:block; color:#6e7881; font-size:8px; letter-spacing:.13em; }
+.ticket-surface-heading h2 { margin:4px 0 0; font-size:23px; font-weight:600; line-height:1.1; letter-spacing:-.04em; }
+.ticket-shuffle { display:flex; align-items:center; gap:5px; min-height:38px; padding:0 9px; border:1px solid #26344026; border-radius:8px; background:#ffffff80; color:var(--play-ink); font-size:10px; font-weight:600; }
+.ticket-shuffle .icon { width:15px; height:15px; }
+.ticket-field + .ticket-field { margin-top:13px; }
+.ticket-field-label { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:9px; font-size:11px; font-weight:600; }
+.ticket-field-label small { color:#687583; font-size:10px; font-weight:500; font-variant-numeric:tabular-nums; }
+.ticket-number-grid { display:grid; grid-template-columns:repeat(var(--columns),minmax(0,1fr)); gap:6px; }
+.ticket-number { position:relative; min-width:0; min-height:42px; padding:0; border:1px solid #7c8b992e; border-radius:9px; background:#ffffffa1; color:#354655; font-size:16px; font-weight:550; font-variant-numeric:tabular-nums; box-shadow:0 2px 2px #23364508; transition:background .12s,color .12s; }
+.ticket-number[aria-pressed=true] { border-color:var(--play-ink); color:#fffaf1; background:var(--play-ink); box-shadow:0 3px 7px #22313c20,inset 0 1px #ffffff24; }
+.ticket-number[aria-pressed=true]::after { content:""; position:absolute; right:5px; top:5px; width:3px; height:3px; border-radius:50%; background:#fffaf1b3; }
+.ticket-number:focus-visible,.ticket-shuffle:focus-visible { outline-color:var(--play-ink) !important; }
+.ticket-special { border-top:1px solid #44586b26; padding-top:12px; }
+.ticket-special .ticket-number { border-radius:50%; max-width:50px; aspect-ratio:1; }
+.game-weekly .ticket-field:not(.ticket-special) .ticket-number-grid { grid-template-columns:repeat(7,minmax(0,1fr)); }
+.game-pss .ticket-surface-heading { margin-bottom:10px; }
+.game-pss .ticket-number { min-height:38px; }
+.game-pss .ticket-special .ticket-number { min-height:34px; }
+.ticket-dual-fields .ticket-number-grid { grid-template-columns:repeat(6,minmax(0,1fr)); }
+.ticket-dual-fields .ticket-special { --play-ink:#8a5633; }
+.ticket-surface-footer { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:14px; padding-top:10px; border-top:1px dashed #44586b38; color:#65727c; font-size:9px; }
+.ticket-surface-footer > span:last-child { color:var(--play-ink); font-weight:600; }
+.play-quick { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:12px 0; padding:12px 13px; border:1px solid #ffffff1c; border-radius:12px; background:#ffffff04; }
+.play-quick strong { display:block; color:#e4e8ef; font-size:11px; font-weight:550; }
+.play-quick small { display:block; color:#94a3b7; font-size:9px; margin-top:4px; }
+.play-quick > div:last-child { display:flex; gap:6px; }
+.play-quick button { min-width:42px; min-height:40px; padding:0 8px; border:1px solid #ffffff2b; border-radius:8px; background:#ffffff08; color:var(--play-accent); font-size:13px; font-weight:650; }
+.ticket-options { margin:0; color:#abb6c6; font-size:11px; }
+.ticket-options > summary { display:flex; align-items:center; justify-content:space-between; padding:12px 2px; list-style:none; cursor:pointer; }
+.ticket-options > summary::-webkit-details-marker { display:none; }
+.ticket-options > summary > span { font-size:18px; color:var(--play-accent); }
+.ticket-options-body { padding:13px; border:1px solid #ffffff1a; border-radius:12px; background:#0e192b; }
+.ticket-repeat { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.ticket-repeat > div { display:flex; gap:5px; }
+.ticket-options button { min-height:38px; padding:8px; border:1px solid #ffffff26; border-radius:7px; background:#ffffff05; color:#d6dfeb; font-size:11px; }
+.ticket-repeat button[aria-pressed=true] { color:#182332; background:var(--play-accent); }
+.ticket-options p { font-size:11px; line-height:1.5; }
+.ticket-save { width:100%; margin-top:12px; }
+.ticket-favorites { display:grid; gap:5px; margin-top:9px; }
+.ticket-favorites > div { display:flex; gap:6px; }
+.ticket-favorites > div > button:first-child { flex:1; }
+.play-checkout { position:fixed; z-index:28; display:flex; align-items:center; gap:14px; justify-content:space-between; bottom:0; left:50%; width:min(100%,540px); padding:12px 20px calc(12px + env(safe-area-inset-bottom)); transform:translateX(-50%); border-top:1px solid #ffffff20; background:#0b1527f5; box-shadow:0 -8px 30px #050b171f; backdrop-filter:blur(16px); }
+.play-checkout > div { min-width:0; }
+.play-checkout small { display:block; color:#a0adbe; font-size:9px; }
+.play-checkout strong { display:block; margin-top:4px; color:#f0e9db; font-size:17px; font-weight:600; white-space:nowrap; }
+.play-checkout .currency-mark { font-size:10px; }
+.play-checkout > button { display:flex; align-items:center; justify-content:center; gap:20px; min-height:47px; min-width:150px; padding:0 17px; border:0; border-radius:10px; background:var(--play-accent); color:#162235; font-size:13px; font-weight:650; }
+.play-checkout > button > span { font-size:20px; font-weight:400; }
+.play-checkout > button:disabled { opacity:1; background:#283447; color:#8290a3; }
+.play-message { margin:8px 0 12px; padding:11px 13px; border:1px solid #ffffff20; border-radius:10px; color:#c5d8c9; background:#162832; font-size:12px; line-height:1.4; }
+.play-message.is-error { color:#ffc2b9; background:#341e29; }
+@media(max-width:359px) { .play-topbar h1 { font-size:19px; } .play-balance { font-size:9px; } .play-prize-band { padding:13px; } .play-prize-band strong { font-size:24px; } .play-countdown time { font-size:13px; } .ticket-surface { padding:12px; } .ticket-number-grid { gap:5px; } .ticket-number { min-height:38px; font-size:14px; border-radius:7px; } .play-quick { padding:10px; gap:7px; } .play-quick button { min-width:36px; min-height:38px; padding:0 6px; } .play-quick strong { font-size:10px; } .play-quick small { font-size:8px; } .play-checkout { padding-left:14px; padding-right:14px; gap:8px; } .play-checkout > button { min-width:135px; padding:0 12px; gap:10px; } .play-checkout strong { font-size:15px; } }
+@media(prefers-reduced-motion:reduce) { .ticket-number { transition:none; } }
+@media(max-width:359px) { .game-weekly .ticket-field:not(.ticket-special) .ticket-number-grid { grid-template-columns:repeat(6,minmax(0,1fr)); } .game-pss .ticket-special .ticket-number-grid { grid-template-columns:repeat(4,minmax(0,1fr)); } }

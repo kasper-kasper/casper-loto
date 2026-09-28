@@ -20,21 +20,21 @@ beforeEach(() => {
 test("selecting the 50th ticket blocks another selection and purchases its pool ID", async () => {
   vi.mocked(miniAppApi.bingoPurchase).mockResolvedValue({ operation_id: "op", draw_id: "draw", draw_ids: ["draw"], draw_count: 1, ticket_ids: ["ticket"], total_cost: 50000, balance_after: 50000, already_processed: false });
   render(<BingoView lottery={lottery} initData="auth" now={0} balance={100000} onClose={vi.fn()} onPurchased={vi.fn().mockResolvedValue(undefined)} />);
-  const choices = await screen.findAllByRole("button", { name: "+ Выбрать билет" });
+  const choices = await screen.findAllByRole("button", { name: "Выбрать вариант билета" });
   fireEvent.click(choices[0]);
   expect(choices[1]).toBeDisabled();
-  fireEvent.click(screen.getByRole("button", { name: "Купить билеты ↗" }));
+  fireEvent.click(screen.getByRole("button", { name: "Купить билеты" }));
   await waitFor(() => expect(miniAppApi.bingoPurchase).toHaveBeenCalledWith("auth", "draw", { ticketIds: ["pool-1"] }, expect.any(String)));
   expect(await screen.findByText("Куплено: 1 · 50 000 CAS")).toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "Как играет удача?" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Kasper Bingo" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Мои билеты →" })).toBeInTheDocument();
 });
 
 test("uncertain purchase retry reuses the same operation key", async () => {
   vi.mocked(miniAppApi.bingoPurchase).mockRejectedValue(new Error("Connection lost"));
   render(<BingoView lottery={lottery} initData="auth" now={0} balance={100000} onClose={vi.fn()} onPurchased={vi.fn()} />);
-  fireEvent.click((await screen.findAllByRole("button", { name: "+ Выбрать билет" }))[0]);
-  fireEvent.click(screen.getByRole("button", { name: "Купить билеты ↗" }));
+  fireEvent.click((await screen.findAllByRole("button", { name: "Выбрать вариант билета" }))[0]);
+  fireEvent.click(screen.getByRole("button", { name: "Купить билеты" }));
   fireEvent.click(await screen.findByRole("button", { name: "Проверить покупку" }));
   await waitFor(() => expect(miniAppApi.bingoPurchase).toHaveBeenCalledTimes(2));
   expect(vi.mocked(miniAppApi.bingoPurchase).mock.calls[0]).toEqual(vi.mocked(miniAppApi.bingoPurchase).mock.calls[1]);
@@ -63,12 +63,14 @@ test("tapping a paper ticket selects it while inspect opens its detail", async (
 test("quick buy all uses the remaining player allowance", async () => {
   vi.mocked(miniAppApi.bingoPurchase).mockResolvedValue({ operation_id: "op", draw_id: "draw", draw_ids: ["draw"], draw_count: 1, ticket_ids: ["ticket"], total_cost: 50000, balance_after: 50000, already_processed: false });
   render(<BingoView lottery={lottery} initData="auth" now={0} balance={100000} onClose={vi.fn()} onPurchased={vi.fn().mockResolvedValue(undefined)} />);
+  fireEvent.click(screen.getByText("Подбор по числам и наборы"));
   fireEvent.click(await screen.findByRole("button", { name: "Купить все доступные · 1" }));
   await waitFor(() => expect(miniAppApi.bingoPurchase).toHaveBeenCalledWith("auth", "draw", { quantity: 1, requiredNumbers: [] }, expect.any(String)));
 });
 
 test("three favorite numbers filter the available pool", async () => {
   render(<BingoView lottery={lottery} initData="auth" now={0} balance={100000} onClose={vi.fn()} onPurchased={vi.fn()} />);
+  fireEvent.click(screen.getByText("Подбор по числам и наборы"));
   for (const [index, value] of [2, 9, 16].entries()) fireEvent.change(screen.getByLabelText(`Любимое число ${index + 1}`), { target: { value: String(value) } });
   fireEvent.click(screen.getByRole("button", { name: "Найти билеты" }));
   await waitFor(() => expect(miniAppApi.bingoInventory).toHaveBeenCalledWith("auth", 0, [2, 9, 16]));
@@ -77,7 +79,8 @@ test("three favorite numbers filter the available pool", async () => {
 
 test("favorite search supports one or two numbers", async () => {
   render(<BingoView lottery={lottery} initData="auth" now={0} balance={100000} onClose={vi.fn()} onPurchased={vi.fn()} />);
-  await screen.findAllByRole("button", { name: "+ Выбрать билет" });
+  fireEvent.click(screen.getByText("Подбор по числам и наборы"));
+  await screen.findAllByRole("button", { name: "Выбрать вариант билета" });
   const search = screen.getByRole("button", { name: "Найти билеты" });
   expect(search).toBeDisabled();
   fireEvent.change(screen.getByLabelText("Любимое число 1"), { target: { value: "2" } });
@@ -91,7 +94,8 @@ test("favorite search supports one or two numbers", async () => {
 
 test("favorite search errors stay inside the search card", async () => {
   render(<BingoView lottery={lottery} initData="auth" now={0} balance={100000} onClose={vi.fn()} onPurchased={vi.fn()} />);
-  await screen.findAllByRole("button", { name: "+ Выбрать билет" });
+  fireEvent.click(screen.getByText("Подбор по числам и наборы"));
+  await screen.findAllByRole("button", { name: "Выбрать вариант билета" });
   vi.mocked(miniAppApi.bingoInventory).mockRejectedValueOnce(new Error("Поиск временно недоступен"));
   for (const [index, value] of [2, 9, 16].entries()) fireEvent.change(screen.getByLabelText(`Любимое число ${index + 1}`), { target: { value: String(value) } });
   fireEvent.click(screen.getByRole("button", { name: "Найти билеты" }));
@@ -101,7 +105,8 @@ test("favorite search errors stay inside the search card", async () => {
 
 test("shows favorite-number mistakes inside the search card", async () => {
   render(<BingoView lottery={lottery} initData="auth" now={0} balance={100000} onClose={vi.fn()} onPurchased={vi.fn()} />);
-  await screen.findAllByRole("button", { name: "+ Выбрать билет" });
+  fireEvent.click(screen.getByText("Подбор по числам и наборы"));
+  await screen.findAllByRole("button", { name: "Выбрать вариант билета" });
   for (const [index, value] of [2, 2, 3].entries()) fireEvent.change(screen.getByLabelText(`Любимое число ${index + 1}`), { target: { value: String(value) } });
   fireEvent.click(screen.getByRole("button", { name: "Найти билеты" }));
   expect(screen.getByRole("alert")).toHaveTextContent("Введите до трёх разных чисел от 1 до 60.");
@@ -112,6 +117,7 @@ test("Kasper set requests ten tickets with its four numbers", async () => {
   const roomyLottery = { ...lottery, player_ticket_count: 0 };
   vi.mocked(miniAppApi.bingoPurchase).mockResolvedValue({ operation_id: "op", draw_id: "draw", draw_ids: ["draw"], draw_count: 1, ticket_ids: Array.from({ length: 10 }, (_, index) => `ticket-${index}`), total_cost: 500000, balance_after: 500000, already_processed: false });
   render(<BingoView lottery={roomyLottery} initData="auth" now={0} balance={1000000} onClose={vi.fn()} onPurchased={vi.fn().mockResolvedValue(undefined)} />);
+  fireEvent.click(screen.getByText("Подбор по числам и наборы"));
   fireEvent.click(await screen.findByRole("button", { name: /НАБОР КАСПЕРА/ }));
   await waitFor(() => expect(miniAppApi.bingoPurchase).toHaveBeenCalledWith("auth", "draw", { quantity: 10, requiredNumbers: [28, 16, 2, 9] }, expect.any(String)));
 });

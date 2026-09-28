@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { miniAppApi } from "./api";
-import { logoHorizontal, logoSymbolArt } from "./brand";
-import { countdown, formatCas, formatMoscow } from "./format";
-import { LotteryVisual } from "./LotteryVisuals";
+import { GameHeader } from "./GameHeader";
 import { LiveView } from "./LiveView";
 import type { LiveFeed, Lottery } from "./types";
 import "./discovery.css";
@@ -29,11 +27,12 @@ export function LotteryRoom({ lottery, initData, now, children, onClose, onTicke
     void poll();
     return () => { active = false; clearTimeout(timer); };
   }, [initData, lottery.code, tab]);
-  const mood: Record<string, string> = { pll: "ВРЕМЯ НЕИЗБЕЖНО", september: "У КАЖДОГО ЧИСЛА СВОЯ ИСТОРИЯ", pss: "ТАМ, ГДЕ НАЧИНАЕТСЯ ТИШИНА", khan: "КЛАССИКА БОЛЬШОЙ ИГРЫ", weekly: "СОБЫТИЕ НЕДЕЛИ", grob: "ТИШИНА. ТИРАЖ НАЧИНАЕТСЯ." };
-  return <div className={`lottery-room room-${lottery.code}`}>
-    <header className="room-topbar"><button type="button" onClick={onClose} aria-label="Вернуться к лотереям">←</button><img src={logoHorizontal} alt="Casper Loto" />{balance !== undefined && <span>{formatCas(balance)}</span>}</header>
-    <section className="room-masthead">{lottery.code !== "dual" && <LotteryVisual code={lottery.code} context="hero" />}<div className="room-masthead-copy">{lottery.code === "dual" && <img className="dual-hero-logo" src={logoSymbolArt} alt="Casper Loto" />}<span>{lottery.code === "dual" ? lottery.draw_number ? `БЛИЖАЙШИЙ ТИРАЖ №${lottery.draw_number}` : "БЛИЖАЙШИЙ ТИРАЖ" : mood[lottery.code]}</span><h1>{lottery.name}</h1><p>{lottery.code === "dual" ? "NIGHT 00:30 · DAWN 07:30 · МСК" : lottery.scheduled_at ? `${formatMoscow(lottery.scheduled_at)} МСК` : "Следующий тираж готовится"}</p></div><div className="room-prize"><span>{lottery.code === "dual" ? "ДЖЕКПОТ CASPER DUAL" : "ДЖЕКПОТ"}</span><strong>{lottery.code === "dual" ? `${new Intl.NumberFormat("ru-RU").format(lottery.jackpot)} CAS` : formatCas(lottery.jackpot)}</strong>{lottery.code === "dual" ? <small><span>Ваших билетов: {lottery.player_ticket_count}</span><span>До тиража <b>{countdown(lottery.scheduled_at, now)}</b></span></small> : <small>{lottery.player_ticket_count > 0 ? `Ваших билетов: ${lottery.player_ticket_count}` : "Ваш следующий шанс"}<b>{countdown(lottery.scheduled_at, now)}</b></small>}</div></section>
-    <nav aria-label="Разделы лотереи"><button type="button" aria-pressed={tab === "tickets"} onClick={() => setTab("tickets")}>Выбрать числа</button><button type="button" aria-pressed={tab === "live"} onClick={() => setTab("live")}>Эфир и результаты <span aria-hidden="true">↗</span></button></nav>
-    {error && <p role="alert">{error}</p>}{tab === "tickets" ? children : <LiveView feed={feed} now={now} loading={!feed} onPlay={() => setTab("tickets")} onTickets={onTickets} />}
+  return <div className={`play-room game-${lottery.code}`}>
+    <GameHeader lottery={lottery} balance={balance} now={now} onClose={onClose}>
+      {tab === "live" && <button type="button" onClick={() => setTab("tickets")}>К билетам</button>}
+      <button type="button" onClick={onTickets}>Мои билеты</button>
+      {tab === "tickets" && <button type="button" aria-label="Эфир и результаты" onClick={() => setTab("live")}>Эфир ↗</button>}
+    </GameHeader>
+    {error && <p className="play-message is-error" role="alert">{error}</p>}{tab === "tickets" ? children : <LiveView feed={feed} now={now} loading={!feed} onPlay={() => setTab("tickets")} onTickets={onTickets} />}
   </div>;
 }

@@ -1,0 +1,33 @@
+.bingo-page.play-bingo { background:#080f20; padding-bottom:calc(94px + env(safe-area-inset-bottom)); }
+.play-bingo .play-quick { margin-top:0; }
+.play-bingo .bingo-selection-meta { margin:0 0 9px; font-size:10px; }
+.play-bingo .bingo-selection-meta button { min-height:38px; color:var(--play-accent); font-size:11px; }
+.play-bingo .bingo-ticket-list { gap:12px; }
+.play-bingo .bingo-choice { padding:0; border:1px solid #ffffff35; border-radius:12px; background:#eaf0e9; overflow:hidden; }
+.play-bingo .bingo-choice.chosen { border-color:var(--play-accent); box-shadow:0 0 0 2px var(--play-accent); background:#f7f2e7; }
+.play-bingo .bingo-choice-label { display:flex; justify-content:space-between; align-items:center; padding:10px 10px 4px; color:#3b554e; font-size:10px; font-weight:600; }
+.play-bingo .bingo-choice-label > span { display:grid; place-items:center; width:21px; height:21px; border:1px solid #6e867b66; border-radius:50%; font-size:14px; }
+.play-bingo .chosen .bingo-choice-label > span { background:#33544a; border-color:#33544a; color:#fff; }
+.play-bingo .bingo-paper.is-compact { padding:6px 10px 8px; border:0; border-radius:0; box-shadow:none; background:transparent; color:#283e39; }
+.play-bingo .bingo-paper.is-compact::before,.play-bingo .bingo-paper.is-compact::after { content:none; }
+.play-bingo .is-compact > header { display:none; }
+.play-bingo .is-compact .bingo-grid { margin:0; padding:0; border:0; background:transparent; }
+.play-bingo .is-compact .bingo-grid > div { gap:4px; border:0; margin-bottom:4px; }
+.play-bingo .is-compact .bingo-grid > div > span { aspect-ratio:auto; min-height:29px; border:1px solid #445e5120; border-radius:5px; background:#ffffffa6; }
+.play-bingo .is-compact .bingo-grid b { font-size:15px; font-weight:550; letter-spacing:-.03em; }
+.play-bingo .is-compact > footer { display:none; }
+.play-bingo .bingo-inspect { margin:0; width:100%; min-height:33px; padding:5px; border:0; background:#d6e0d840; color:#4e665f; font-size:9px; }
+.play-bingo .bingo-select-button { display:none; }
+.play-bingo .bingo-more-options { margin-top:12px; }
+.play-bingo .bingo-buy-studio { gap:12px; margin:0 0 12px; }
+.play-bingo .bingo-favorite-search { border-color:#ffffff20; background:#0f1d2b; }
+.play-bingo .bingo-kasper-set { border-color:#dcc99a40; background:#18272b; }
+.play-bingo .bingo-kasper-set strong { font-family:inherit; font-size:18px; }
+.play-bingo .bingo-buy-all { min-height:42px; }
+.play-bingo .bingo-rules { margin-top:14px; border-color:#ffffff20; background:none; }
+.play-bingo .bingo-rules > summary { min-height:38px; color:#b4bdca; font-size:11px; }
+.play-bingo .bingo-selected-chips { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0; }
+.play-bingo .bingo-section-title { margin:12px 0 18px; }
+.play-bingo .bingo-section-title h2 { font-family:inherit; font-size:25px; line-height:1.2; font-weight:600; }
+.play-bingo > .bingo-message:not(.is-error) { bottom:calc(87px + env(safe-area-inset-bottom)); }
+@media(max-width:359px) { .play-bingo .bingo-ticket-list { gap:9px; } .play-bingo .bingo-paper.is-compact { padding:5px 7px 7px; } .play-bingo .is-compact .bingo-grid > div { gap:3px; } .play-bingo .is-compact .bingo-grid b { font-size:13px; } .play-bingo .bingo-choice-label { padding:8px 8px 4px; } }

@@ -23,10 +23,11 @@ import { MINIAPP_TEXTS as copy } from "./content";
 import { isFastLottery } from "./fast";
 import { newestLiveFeed } from "./live";
 import { broadcastPreviewConfig } from "./broadcastPreview";
-import { isGrandLottery, lotteryCombination, matchLabel } from "./grand";
+import { isGrandLottery, matchLabel } from "./grand";
 import { errorHaptic, requestTelegramWriteAccess, selectionHaptic, successHaptic } from "./telegram";
 import type { Account, CartTicket, Dashboard, Favorite, LiveFeed, Lottery, NotificationPreferences, PurchaseResult, Ticket, UserNotification } from "./types";
 
+const NumberPicker = lazy(() => import("./TicketComposer").then(({ TicketComposer }) => ({ default: TicketComposer })));
 const LotteryCatalog = lazy(() => import("./Discovery").then(({ LotteryCatalog }) => ({ default: LotteryCatalog })));
 const LotteryRoom = lazy(() => import("./Discovery").then(({ LotteryRoom }) => ({ default: LotteryRoom })));
 const BingoView = lazy(() => import("./BingoView").then(({ BingoView }) => ({ default: BingoView })));
@@ -163,108 +164,6 @@ function TicketDetail({ ticket, lottery, onClose }: { ticket: Ticket; lottery?: 
   </motion.article></div>;
 }
 
-function DualClock({ phase, selected, onToggle }: { phase: "night" | "dawn"; selected: number[]; onToggle: (value: number, phase: "night" | "dawn") => void }) {
-  const label = phase.toUpperCase();
-  return <section className={`dual-field dual-${phase}`}>
-    <header><span>{label}</span><small>{phase === "night" ? "00:30" : "07:30"} · 2 из 12</small></header>
-    <div className="dual-clock-grid">{Array.from({ length: 12 }, (_, index) => index + 1).map((value) => {
-      const angle = value * Math.PI / 6;
-      const active = selected.includes(value);
-      return <span className="dual-number-slot" key={value} style={{ left: `${50 + 38 * Math.sin(angle)}%`, top: `${50 - 38 * Math.cos(angle)}%` }}>
-        <button aria-label={`${label} ${value}`} aria-pressed={active} className={active ? "pick-number selected" : "pick-number"} onClick={() => onToggle(value, phase)} type="button"><span>{value}</span></button>
-      </span>;
-    })}</div>
-    <b>{selected.length} / 2 выбрано</b>
-  </section>;
-}
-
-function NumberPicker({ lottery, balance, now, purchasing, initialNumbers = [], favorites, cartRemaining, onBuy, onBuyMany, onAdd, onSaveFavorite, onDeleteFavorite }: { lottery: Lottery; balance: number; now: number; purchasing: boolean; initialNumbers?: number[]; favorites: Favorite[]; cartRemaining: number; onBuy: (numbers: number[], drawCount: 1 | 5) => Promise<boolean>; onBuyMany: (numbers: number[][], drawCount: 1 | 5) => Promise<boolean>; onAdd: (numbers: number[], drawCount: 1 | 5) => void; onSaveFavorite: (numbers: number[]) => void; onDeleteFavorite: (id: string) => void }) {
-  const [selected, setSelected] = useState<number[]>(initialNumbers);
-  const [drawCount, setDrawCount] = useState<1 | 5>(1);
-  const dual = lottery.code === "dual";
-  const dualSalesClosed = dual && (!lottery.purchase_available || (lottery.sales_close_at !== null && Date.parse(lottery.sales_close_at) <= now));
-  const grand = isGrandLottery(lottery);
-  const grandOffset = lottery.secondary_storage_offset ?? 35;
-  const grandMainCount = lottery.primary_numbers_to_pick ?? 5;
-  const grandSpecialCount = lottery.secondary_numbers_to_pick ?? 2;
-  const mainSelected = selected.filter((value) => value <= grandOffset);
-  const specialSelected = selected.filter((value) => value > grandOffset);
-  const dualNight = dual ? selected.filter((value) => value <= 12) : [];
-  const dualDawn = dual ? selected.filter((value) => value > 12).map((value) => value - 12) : [];
-  const ready = dual ? dualNight.length === 2 && dualDawn.length === 2 : grand
-    ? mainSelected.length === grandMainCount && specialSelected.length === grandSpecialCount
-    : selected.length === lottery.numbers_to_pick;
-  const ticketCost = lottery.ticket_price ?? 0;
-  const quickLimit = Math.min(
-    lottery.max_tickets_per_purchase,
-    Math.max(0, lottery.max_tickets_per_user_per_draw - lottery.player_ticket_count),
-    ticketCost > 0 ? Math.floor(balance / (ticketCost * drawCount)) : 0,
-  );
-  const saved = favorites.some((favorite) => favorite.numbers.length === selected.length && favorite.numbers.every((value, index) => value === selected[index]));
-  const toggle = (value: number) => {
-    setSelected((current) => {
-      const inSpecialField = grand && value > grandOffset;
-      const fieldCount = grand
-        ? current.filter((item) => inSpecialField ? item > grandOffset : item <= grandOffset).length
-        : current.length;
-      const fieldLimit = inSpecialField ? grandSpecialCount : grand ? grandMainCount : lottery.numbers_to_pick;
-      if (!current.includes(value) && fieldCount >= fieldLimit) return current;
-      selectionHaptic();
-      return current.includes(value) ? current.filter((item) => item !== value) : [...current, value].sort((left, right) => left - right);
-    });
-  };
-  const toggleDual = (value: number, phase: "night" | "dawn") => {
-    const stored = phase === "night" ? value : value + 12;
-    setSelected((current) => {
-      const field = current.filter((item) => phase === "night" ? item <= 12 : item > 12);
-      if (!current.includes(stored) && field.length >= 2) return current;
-      selectionHaptic();
-      return current.includes(stored) ? current.filter((item) => item !== stored) : [...current, stored].sort((left, right) => left - right);
-    });
-  };
-  const randomize = () => {
-    selectionHaptic();
-    setSelected(lotteryCombination(lottery));
-  };
-  const addSelected = () => {
-    if (!ready || purchasing || dualSalesClosed) return;
-    onAdd(selected, drawCount);
-    setSelected([]);
-  };
-  const buy = async () => {
-    if (dualSalesClosed) return;
-    if (await onBuy(selected, drawCount)) setSelected([]);
-  };
-  const numberGroups = lottery.code === "september"
-    ? [[1, 11], [12, 22], [23, 33]] as const
-    : [[1, lottery.max_number]] as const;
-  const pickerMood: Record<string, string> = {
-    september: "Три главы одного сентябрьского вечера",
-    pll: "Загадайте момент. Время найдёт своих.",
-    pss: "Casper Ball: пять чисел и один специальный шар",
-    khan: "Классический тираж: шесть чисел из тридцати шести",
-    weekly: "Два независимых поля. Один грандиозный шанс.",
-    grob: "Три числа. Одна аккуратно оформленная могила.",
-  };
-
-  return <div className={`picker-shell lottery-${lottery.code}`}>
-    {!dual && <div className="selection-heading"><span>{formatDrawLabel(lottery.code, lottery.draw_number ?? 0)} · ВАША КОМБИНАЦИЯ</span><h1>{lottery.code === "pll" ? "Загадайте момент." : lottery.code === "pss" ? "Пять чисел. Один Casper Ball." : grand ? "Пять чисел. Две звезды." : `Выберите ${lottery.numbers_to_pick} ${lottery.numbers_to_pick < 5 ? "числа" : "чисел"}`}</h1><p>{pickerMood[lottery.code] ?? "Ваша комбинация на ближайший тираж"}</p></div>}
-    {dual && <p className="dual-brief">{dualSalesClosed ? "Продажи закрыты. Ожидаем следующий раунд." : "Выберите 2 числа NIGHT и 2 числа DAWN"}</p>}
-    <section className="instant-ticket-row"><div><strong>Быстрая покупка</strong><small>Случайные билеты · 1, 5 или 25 за одно действие</small></div><div>{(dual ? [1, 5, 25] : [1, 5, 10, 25]).map((count) => <button aria-label={`Купить ${count} случайных ${plural(count, "билет", "билета", "билетов")}`} disabled={purchasing || dualSalesClosed || count > quickLimit} key={count} onClick={() => void onBuyMany(Array.from({ length: count }, () => lotteryCombination(lottery)), drawCount)} type="button">{count === 1 ? "Купить" : "×" + count}</button>)}</div></section>
-    {dual ? <div className="dual-fields" aria-label="Выбор чисел Casper Dual"><DualClock phase="night" selected={dualNight} onToggle={toggleDual} /><DualClock phase="dawn" selected={dualDawn} onToggle={toggleDual} /></div> : grand ? <div className="grand-fields">
-      <section className="picker-board grand-main-field"><div className="picker-board-label"><span>Поле №1 · Основные числа</span><small>1–{lottery.primary_max_number ?? 35} · выберите ровно {grandMainCount}</small></div><div className="number-grid"><div className="number-group">{Array.from({ length: lottery.primary_max_number ?? 35 }, (_, index) => index + 1).map((value) => <motion.button aria-pressed={selected.includes(value)} className={selected.includes(value) ? "pick-number selected" : "pick-number"} key={value} onClick={() => toggle(value)} type="button" whileTap={{ scale: .86 }}><span>{value}</span><i aria-hidden="true" /></motion.button>)}</div></div></section>
-      <section className="picker-board grand-special-field"><div className="picker-board-label"><span>Поле №2 · {lottery.code === "pss" ? "Casper Ball" : "Специальные числа"}</span><small>1–{lottery.secondary_max_number ?? 5} · выберите ровно {grandSpecialCount}</small></div><div className="number-grid"><div className="number-group">{Array.from({ length: lottery.secondary_max_number ?? 5 }, (_, index) => index + 1).map((displayValue) => { const value = displayValue + grandOffset; return <motion.button aria-pressed={selected.includes(value)} className={selected.includes(value) ? "pick-number selected" : "pick-number"} key={value} onClick={() => toggle(value)} type="button" whileTap={{ scale: .84 }}><span>{displayValue}</span><i aria-hidden="true">★</i></motion.button>; })}</div></div></section>
-    </div> : <div className="picker-board"><div className="picker-board-label"><span>{lottery.code === "grob" ? "Поле захоронений" : "Поле комбинации"}</span><small>{lottery.code === "september" ? "Три части · 33 числа" : `${lottery.max_number} чисел · выберите ${lottery.numbers_to_pick}`}</small></div><div className="number-grid" aria-label="Выбор чисел">{numberGroups.map(([from, to], groupIndex) => <div className="number-group" key={from}>{lottery.code === "september" && <span className="number-group-label">{groupIndex === 0 ? "Начало" : groupIndex === 1 ? "Середина" : "После"}</span>}{Array.from({ length: to - from + 1 }, (_, index) => from + index).map((value) => <motion.button aria-pressed={selected.includes(value)} className={selected.includes(value) ? "pick-number selected" : "pick-number"} key={value} onClick={() => toggle(value)} type="button" whileTap={{ scale: lottery.code === "grob" ? .82 : .88 }}><span>{value}</span><i aria-hidden="true" /></motion.button>)}</div>)}</div></div>}
-    {!dual && favorites.length > 0 && <section className="picker-favorites-top"><header><span>ИЗБРАННЫЕ КОМБИНАЦИИ</span><small>{favorites.length} сохранено</small></header><div>{favorites.slice(0, 3).map((favorite) => <div className="picker-favorite-item" key={favorite.id}><button onClick={() => setSelected(favorite.numbers)} type="button">{grand ? <GrandNumberSet values={favorite.numbers} offset={grandOffset} specialLabel={lottery.code === "pss" ? "Casper Ball" : undefined} /> : favorite.numbers.join(" · ")}<i aria-hidden="true">↗</i></button><button aria-label="Удалить из избранного" onClick={() => onDeleteFavorite(favorite.id)} type="button">×</button></div>)}</div></section>}
-    <div className="selected-combination"><span>{dual ? "Ваш билет Casper Dual" : lottery.code === "grob" ? "Ваша могила" : "Ваш билет"}</span>{dual ? <div aria-label="Ваши числа Casper Dual" className="dual-selected"><span className="night-chip"><small>NIGHT</small><strong>{dualNight.join(" · ") || "—"}</strong></span><span className="dawn-chip"><small>DAWN</small><strong>{dualDawn.join(" · ") || "—"}</strong></span></div> : grand ? <GrandNumberSet values={selected} offset={grandOffset} specialLabel={lottery.code === "pss" ? "Casper Ball" : undefined} /> : <div>{Array.from({ length: lottery.numbers_to_pick }, (_, index) => <i className={selected[index] ? "filled" : ""} key={index}>{selected[index] ?? "—"}</i>)}</div>}</div>
-    <button className="secondary-button random-button" onClick={randomize} type="button"><Icon name="spark" />{copy.actions.randomNumbers}</button>
-    {!dual && <section className="multi-draw-choice"><div><strong>Повторить комбинацию</strong><small>Без автопродления и скрытых списаний</small></div><div><button className={drawCount === 1 ? "selected" : ""} onClick={() => setDrawCount(1)} type="button">1 тираж</button><button className={drawCount === 5 ? "selected" : ""} onClick={() => setDrawCount(5)} type="button">5 тиражей</button></div>{drawCount === 5 && <p>Эти числа участвуют в текущем и следующих 4 тиражах. Полная сумма оплачивается сейчас.</p>}</section>}
-    {ready && !dual && <button className={`favorite-action ${saved ? "saved" : ""}`} disabled={saved} onClick={() => onSaveFavorite(selected)} type="button">{saved ? "★ Комбинация сохранена" : "☆ Сохранить комбинацию"}</button>}
-    <div className="picker-actions"><button aria-label="Быстрый случайный выбор" className="picker-random-action" disabled={purchasing} onClick={randomize} type="button"><Icon name="spark" /><span>Заполнить случайно</span></button><button aria-label="В корзину" className="secondary-button" disabled={!ready || purchasing || dualSalesClosed || cartRemaining < 1} onClick={addSelected} type="button">Добавить билет</button><PrimaryButton disabled={!ready || dualSalesClosed} loading={purchasing} onClick={() => void buy()}>{purchasing ? "Оформляем…" : drawCount === 5 ? copy.actions.buyFiveDraws : copy.actions.buyTicket}</PrimaryButton></div>
-    <p className="picker-note">После покупки билет сразу появится в разделе «Моё».</p>
-  </div>;
-}
-
 function BottomNavigation({ view, unreadNotifications, onChange }: { view: View; unreadNotifications: number; onChange: (view: View) => void }) {
   const items: { id: View; label: string; icon: "home" | "catalog" | "fast" | "profile"; count: number }[] = [
     { id: "home", label: "Сегодня", icon: "home", count: 0 },
@@ -355,7 +254,7 @@ export default function App({ initData, localDev = false }: AppProps) {
   const clockNeedsSync = useRef(true);
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
-  }, [view, accountView]);
+  }, [view, accountView, pickerLottery?.code, bingoOpen, kasperLiveOpen]);
   const nearestDrawIn = Math.min(
     ...(dashboard?.lotteries
       .map((lottery) => lottery.scheduled_at ? Date.parse(lottery.scheduled_at) - now : Number.POSITIVE_INFINITY)
@@ -617,22 +516,6 @@ export default function App({ initData, localDev = false }: AppProps) {
     }
   };
 
-  const addManyToCart = (lottery: Lottery, combinations: number[][], drawCount: 1 | 5) => {
-    const available = CART_MAX_TICKETS - cart.length;
-    const accepted = combinations.slice(0, available);
-    if (!accepted.length) {
-      errorHaptic();
-      setError(`В корзине может быть не более ${CART_MAX_TICKETS} билетов.`);
-      return;
-    }
-    setCartReceipt(null);
-    setCart((current) => [...current, ...accepted.map((numbers) => ({ id: crypto.randomUUID(), lotteryCode: lottery.code, lotteryName: lottery.name, price: lottery.ticket_price ?? 0, numbers: [...numbers], drawCount }))]);
-    successHaptic();
-    setNotice(accepted.length === 1 ? "Комбинация добавлена в корзину" : `${accepted.length} комбинаций добавлено в корзину`);
-    setPickerLottery(null);
-    setView("cart");
-  };
-
   const requestPurchase = async (lotteryCode: string, combinations: number[][], drawCount: 1 | 5) => {
     const idempotencyKey = crypto.randomUUID();
     try {
@@ -765,7 +648,7 @@ export default function App({ initData, localDev = false }: AppProps) {
     setAccount((current) => current ? { ...current, balance: result.balance_after, ticket_count: current.ticket_count + result.tickets.length, winning_ticket_count: current.winning_ticket_count + winning.length, total_spent: current.total_spent + result.total_cost, total_won: current.total_won + result.total_prize, best_win: Math.max(current.best_win, ...result.tickets.map((ticket) => ticket.prize_amount)) } : current);
   }} /></Suspense>;
   if (bingoOpen && bingoLottery) return <Suspense fallback={<Skeleton />}><BingoView initialTab={roomLive ? "live" : "choose"} lottery={bingoLottery} initData={initData} now={serverNow} balance={dashboard.balance} onClose={() => setBingoOpen(false)} onPurchased={(result) => { applyPurchaseSnapshot("bingo", result, result.ticket_ids.length); void Promise.allSettled([refreshDashboard(), refreshAccount()]); }} /></Suspense>;
-  if (pickerLottery) return <main className="app-shell picker-page"><Suspense fallback={<Skeleton />}>{isFastLottery(pickerLottery.code) ? <FastPicker key={pickerLottery.code} error={error} lottery={pickerLottery} purchasing={purchasing} success={purchaseSuccess} onBuy={(numbers) => purchaseDirect(pickerLottery.code, [numbers], 1)} onClose={() => { setPickerLottery(null); setView("fast"); }} /> : <LotteryRoom balance={dashboard.balance} initialLive={roomLive} key={pickerLottery.code} lottery={pickerLottery} initData={initData} now={serverNow} onClose={() => { setRoomLive(false); setPickerLottery(null); }} onLiveModeChange={setRoomLive} onTickets={() => { setRoomLive(false); setPickerLottery(null); setTicketLotteryFilter(pickerLottery.code); setTicketsLoading(true); setAccountView("tickets"); setView("account"); }}><NumberPicker lottery={pickerLottery} balance={dashboard.balance} now={serverNow} purchasing={purchasing} initialNumbers={pickerInitialNumbers} favorites={favorites} cartRemaining={CART_MAX_TICKETS - cart.length} onAdd={(numbers, drawCount) => addManyToCart(pickerLottery, [numbers], drawCount)} onBuy={(numbers, drawCount) => purchaseDirect(pickerLottery.code, [numbers], drawCount)} onBuyMany={(combinations, drawCount) => purchaseDirect(pickerLottery.code, combinations, drawCount)} onSaveFavorite={(numbers) => void saveFavorite(numbers)} onDeleteFavorite={(id) => void deleteFavorite(id)} /></LotteryRoom>}</Suspense></main>;
+  if (pickerLottery) return <main className={`app-shell picker-page ${isFastLottery(pickerLottery.code) ? "" : "draw-play-page"}`}><Suspense fallback={<Skeleton />}>{isFastLottery(pickerLottery.code) ? <FastPicker key={pickerLottery.code} error={error} lottery={pickerLottery} purchasing={purchasing} success={purchaseSuccess} onBuy={(numbers) => purchaseDirect(pickerLottery.code, [numbers], 1)} onClose={() => { setPickerLottery(null); setView("fast"); }} /> : <LotteryRoom balance={dashboard.balance} initialLive={roomLive} key={pickerLottery.code} lottery={pickerLottery} initData={initData} now={serverNow} onClose={() => { setRoomLive(false); setPickerLottery(null); }} onLiveModeChange={setRoomLive} onTickets={() => { setRoomLive(false); setPickerLottery(null); setTicketLotteryFilter(pickerLottery.code); setTicketsLoading(true); setAccountView("tickets"); setView("account"); }}><>{error && <p className="play-message is-error" role="alert">{error}</p>}{notice && <p className="play-message" role="status">{notice}</p>}<NumberPicker lottery={pickerLottery} balance={dashboard.balance} now={serverNow} purchasing={purchasing} initialNumbers={pickerInitialNumbers} favorites={favorites} onBuy={(numbers, drawCount) => purchaseDirect(pickerLottery.code, [numbers], drawCount)} onBuyMany={(combinations, drawCount) => purchaseDirect(pickerLottery.code, combinations, drawCount)} onSaveFavorite={(numbers) => void saveFavorite(numbers)} onDeleteFavorite={(id) => void deleteFavorite(id)} /></></LotteryRoom>}</Suspense></main>;
 
   return <main className={`app-shell ${view === "fast" ? "fast-shell" : ""}`}>
     <header className="app-header"><div aria-label="Casper Loto" className="brand-lockup"><picture><source media="(max-width: 520px)" srcSet={logoSymbol} /><img alt="" className="brand-logo-horizontal" width="138" height="46" fetchPriority="high" src={logoHorizontal} /></picture></div><div className="header-actions">{localDev && import.meta.env.VITE_DESIGN_PREVIEW !== "true" && <button className="dev-badge" onClick={() => void refillDevBalance()} type="button">+ TEST CAS</button>}{cart.length > 0 && <button aria-label={`Корзина: ${cart.length} ${plural(cart.length, "комбинация", "комбинации", "комбинаций")}`} className="header-cart" onClick={() => setView("cart")} type="button"><Icon name="cart" /><small>{cart.length}</small></button>}<Balance value={dashboard.balance} /></div></header>

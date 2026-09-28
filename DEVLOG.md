@@ -1,3 +1,11 @@
+## Mini App: unified draw-game ticket screens — 2026-09-28
+
+- Replaced regular room mastheads with a shared compact GameHeader. Isolated TicketComposer styling replaces accumulated picker theme overrides: no oversized instructions, grave-shaped controls, duplicate random actions or cart-add step. Direct purchase callbacks, server formats, field offsets and repeat semantics are retained. Existing saved carts remain accessible.
+- Light ticket surfaces share spacing, typography and interaction states, with separate game accents/artwork. Grand and Casper Ball preserve independent fields; Dual keeps 2+2 with no repeats/favorites. New regular selection code is lazy-loaded. Fast and draw execution are unchanged.
+- Bingo now places its pool tickets directly below the compact header/quick actions. Optional sets/search are collapsed below tickets; detail inspection, selected-ticket removal, mine/live views and retry handling remain available. Checkout stays visible. Updated the local Casper Ball preview to the existing server 5/36 + 1/8 format.
+- Added room-entry scroll reset and regular-room feedback rendering. UI verification covers number limits and field independence, in-flight control locking, Bingo selection/details/search, room navigation and mobile layouts. Purchase tests and transactions are deliberately excluded. Frontend lint, typecheck and production build are required for this release.
+- Release 1.48.0: only miniapp/gateway, with rollback archives and production version/HTML/health/asset verification.
+
 ## Mini App: illustrated lottery catalog — 2026-09-28
 
 - Replaced the cramped two-column thumbnails with full-width scene compositions, consistent price/schedule placement and a single open affordance. Existing lightweight scene assets are reused, with eager loading only for the first visible card and lazy loading below. Bingo uses the existing club scene instead of an oversized brand mark.

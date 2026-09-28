@@ -31,7 +31,7 @@ const lotterySeed = [
   { code: "grob", name: "ГРОБ", kind: "DAILY" as const, numbers_to_pick: 3, max_number: 16, ticket_price: 6_666, jackpot: 6_666_666, draw_number: 1, scheduled_at: future(36) },
   { code: "september", name: "3 СЕНТЯБРЯ", kind: "DAILY" as const, numbers_to_pick: 3, max_number: 33, ticket_price: 333, jackpot: 33_333_333, draw_number: 1, scheduled_at: future(83) },
   { code: "pll", name: "ПЛЛ-Лото", kind: "DAILY" as const, numbers_to_pick: 4, max_number: 15, ticket_price: 24_000, jackpot: 18_640_000, draw_number: 418, scheduled_at: future(145) },
-  { code: "pss", name: "ПСС-Лото", kind: "DAILY" as const, numbers_to_pick: 4, max_number: 15, ticket_price: 24_000, jackpot: 24_000_000, draw_number: 219, scheduled_at: future(230) },
+  { code: "pss", name: "Casper Ball", kind: "DAILY" as const, numbers_to_pick: 6, max_number: 44, primary_numbers_to_pick: 5, primary_max_number: 36, secondary_numbers_to_pick: 1, secondary_max_number: 8, secondary_storage_offset: 36, ticket_price: 24_000, jackpot: 24_000_000, draw_number: 219, scheduled_at: future(230) },
   { code: "khan", name: "6 из 36", kind: "DAILY" as const, numbers_to_pick: 6, max_number: 36, ticket_price: 48_000, jackpot: 33_456_000, draw_number: 174, scheduled_at: future(310) },
   { code: "weekly", name: "Kasper Grand", kind: "WEEKLY" as const, numbers_to_pick: 7, max_number: 40, primary_numbers_to_pick: 5, primary_max_number: 35, secondary_numbers_to_pick: 2, secondary_max_number: 5, secondary_storage_offset: 35, ticket_price: 50_000, jackpot: 5_000_182_500, draw_number: 4, scheduled_at: future(1_420) },
 ];
