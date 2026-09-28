@@ -14,11 +14,11 @@ import "./play-room.css";
 
 const artwork: Record<string, string> = { weekly: grand, khan: classic, september, pll: portal, pss: nature, grob, dual, bingo };
 
-export function GameHeader({ lottery, balance, now, onClose, children }: { lottery: Lottery; balance?: number; now: number; onClose: () => void; children?: ReactNode }) {
+export function GameHeader({ lottery, balance, now, onClose, children, artworkOverride }: { lottery: Lottery; balance?: number; now: number; onClose: () => void; children?: ReactNode; artworkOverride?: string }) {
   return <header className="play-header">
     <div className="play-topbar"><button className="play-back" type="button" onClick={onClose} aria-label="Вернуться к лотереям">←</button><div><h1>{lottery.name}</h1><small>{formatDrawLabel(lottery.code, lottery.draw_number ?? 0)}</small></div>{balance !== undefined && <span className="play-balance" aria-label="Баланс"><Money value={balance} compact /></span>}</div>
     <div className="play-prize-band">
-      {artwork[lottery.code] && <img src={artwork[lottery.code]} alt="" decoding="async" />}
+      {(artworkOverride ?? artwork[lottery.code]) && <img src={artworkOverride ?? artwork[lottery.code]} alt="" decoding="async" />}
       <div><small>Джекпот</small><strong><Money value={lottery.jackpot} compact /></strong></div>
       <div className="play-countdown"><small>До тиража</small><time>{countdown(lottery.scheduled_at, now)}</time></div>
     </div>

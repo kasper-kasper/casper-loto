@@ -3,6 +3,9 @@ import { ApiError, miniAppApi } from "./api";
 import { logoSymbol } from "./brand";
 import { Money } from "./components";
 import { GameHeader } from "./GameHeader";
+import { BingoEdition } from "./BingoEdition";
+import { BingoTicketDeck } from "./BingoTicketDeck";
+import editionArt from "./assets/lotteries/bingo-edition-v1.webp";
 import "./bingo-play.css";
 import { countdown, formatCas, formatMoscow } from "./format";
 import type { Lottery, PurchaseResult, Ticket } from "./types";
@@ -42,7 +45,7 @@ function Paper({ ticket, draw, date, price, revealed = [], current, result, comp
 }
 
 export function BingoTicketDetail({ ticket, onClose }: { ticket: Ticket; onClose: () => void }) {
-  return <PaperDialog onClose={onClose}><Paper ticket={ticket} draw={ticket.draw_number} date={ticket.scheduled_at} price={ticket.purchase_price} revealed={ticket.winning_numbers ?? []} result={ticket.bingo_result} /></PaperDialog>;
+  return <PaperDialog onClose={onClose}><BingoEdition ticket={ticket} draw={ticket.draw_number} date={ticket.scheduled_at} price={ticket.purchase_price} revealed={ticket.winning_numbers ?? []} result={ticket.bingo_result} /></PaperDialog>;
 }
 
 function PaperDialog({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
@@ -159,8 +162,8 @@ export function BingoView({ lottery, initData, now, balance, onClose, onPurchase
     }
     setFavoriteError(""); setError(""); setSelected([]); setOffset(0); setLoading(true); setFavoriteNumbers(values);
   };
-  return <main className="app-shell bingo-page play-room play-bingo game-bingo">
-    <GameHeader lottery={lottery} balance={balance} now={now} onClose={onClose}>
+  return <main className={`app-shell bingo-page play-room play-bingo game-bingo${tab !== "live" ? " bingo-salon" : ""}`}>
+    <GameHeader lottery={lottery} balance={balance} now={now} onClose={onClose} artworkOverride={tab !== "live" ? editionArt : undefined}>
       {tab !== "choose" && <button type="button" onClick={() => setTab("choose")}>К билетам</button>}
       {tab !== "mine" && <button type="button" onClick={() => setTab("mine")}>Мои билеты</button>}
       {tab !== "live" && <button type="button" onClick={() => setTab("live")}>Эфир ↗</button>}
@@ -170,7 +173,7 @@ export function BingoView({ lottery, initData, now, balance, onClose, onPurchase
     {tab === "choose" && <section className="bingo-selection">
       <section className="play-quick" aria-label="Быстрая покупка"><div><strong>Быстрая покупка</strong><small>Случайные билеты</small></div><div>{[1, 5, 25].map(quantity => <button key={quantity} type="button" aria-label={`Купить ${quantity} ${quantity === 1 ? "случайный билет" : "случайных билетов"}`} disabled={busy || loading || quantity > quickAll} onClick={() => quickBuy(quantity)}>×{quantity}</button>)}</div></section>
       <div className="bingo-selection-meta"><span>{favoriteNumbers.length ? `Билеты с числами ${favoriteNumbers.join(" · ")}` : `Можно купить ещё ${available}`}</span><button type="button" disabled={loading || busy} onClick={() => { setLoading(true); setOffset(inventory?.has_more ? offset + 6 : 0); setRevision(v => v + 1); setError(""); }}>Другие билеты ↻</button></div>
-      {loading ? <div className="bingo-loading">Подбираем билеты…</div> : inventory?.tickets.length ? <div className="bingo-ticket-list">{inventory.tickets.map((ticket, index) => <div className={`bingo-choice ${selected.some(t => t.id === ticket.id) ? "chosen" : ""}`} key={ticket.id}><button className="bingo-ticket-preview" type="button" disabled={busy || retry || (!selected.some(t => t.id === ticket.id) && selected.length >= available)} onClick={() => toggle(ticket)} aria-pressed={selected.some(t => t.id === ticket.id)} aria-label="Выбрать вариант билета"><span className="bingo-choice-label">Билет {offset + index + 1}<span aria-hidden="true">{selected.some(t => t.id === ticket.id) ? "✓" : "+"}</span></span><Paper ticket={ticket} draw={inventory.draw_number} date={inventory.scheduled_at} price={price} compact /></button><button className="bingo-inspect" type="button" onClick={() => setOpened(ticket)}>Рассмотреть ↗</button></div>)}</div> : <div className="bingo-empty">Подходящих свободных билетов нет.</div>}
+      {loading ? <div className="bingo-loading">Подбираем билеты…</div> : inventory?.tickets.length ? <BingoTicketDeck key={`${inventory.draw_id}:${offset}:${revision}:${favoriteNumbers.join(",")}`} inventory={inventory} selected={selected} offset={offset} price={price} busy={busy} retry={retry} available={available} onToggle={toggle} onInspect={setOpened} /> : <div className="bingo-empty">Подходящих свободных билетов нет.</div>}
       <details className="ticket-options bingo-more-options"><summary>Подбор по числам и наборы <span>＋</span></summary><div className="bingo-buy-studio">
         <button className="bingo-kasper-set" type="button" disabled={busy || available < 10 || affordable < 10 || !inventory?.kasper_set_available} onClick={() => quickBuy(10, [28, 16, 2, 9])}>
           <span>✦ НАБОР КАСПЕРА</span><strong>10 случайных билетов</strong><small>В каждом: 2 · 9 · 16 · 28</small><b>{inventory?.kasper_set_available ? formatCas(price * 10) : "Уже выбран"}</b>
@@ -199,6 +202,6 @@ export function BingoView({ lottery, initData, now, balance, onClose, onPurchase
       </> : <div className="bingo-empty">Эфир начнётся по расписанию.</div>}
     </section>}
     {tab !== "live" && <details className="bingo-rules"><summary>Коротко о правилах <span>+</span></summary><p>Строка до 18-го хода — 100 000 CAS. Две строки до 34-го — 500 000 CAS. Все подходящие билеты делят приз.</p><p>Полный билет до 28-го хода делит джекпот. Участвуют только купленные билеты.</p></details>}
-    {opened && <PaperDialog onClose={() => setOpened(null)}><Paper ticket={opened} draw={mine.find(t => t.id === opened.id)?.draw_number ?? inventory?.draw_number ?? lottery.draw_number ?? 0} date={mine.find(t => t.id === opened.id)?.scheduled_at ?? inventory?.scheduled_at ?? lottery.scheduled_at ?? new Date().toISOString()} price={opened.price ?? price} /></PaperDialog>}
+    {opened && <PaperDialog onClose={() => setOpened(null)}><BingoEdition ticket={opened} draw={mine.find(t => t.id === opened.id)?.draw_number ?? inventory?.draw_number ?? lottery.draw_number ?? 0} date={mine.find(t => t.id === opened.id)?.scheduled_at ?? inventory?.scheduled_at ?? lottery.scheduled_at ?? new Date().toISOString()} price={opened.price ?? price} /></PaperDialog>}
   </main>;
 }

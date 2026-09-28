@@ -1,3 +1,11 @@
+## Mini App: Casper Bingo emerald ticket edition — 2026-09-28
+
+- Added presentation-only BingoEdition: emerald cardstock, foil frame, medallion, ivory inset and the original server-provided 3×4 row order. Purchased serials, draw/date/price, hits and results retain their existing data. Selection and detail use the new design; live Paper is unchanged.
+- Added a native horizontal scroll-snap deck with visible next/previous controls and multi-selection retained across browsing. Selection/disabled rules, inventory loading, favorites, purchase handlers and API contracts are unchanged. Compact-height styling keeps the ticket and deck controls above fixed checkout at 320×640.
+- Generated a transparent 490×512 WebP ticket composition (47,876 bytes) for Bingo catalog/header only. Real ticket numbers remain DOM text; all interactive depth uses CSS, with no 3D engine or continuous animation. Prompt and provenance: docs/design/bingo-edition-asset.md.
+- Verification: 10 focused Bingo display/selection/filter/dialog and catalog tests passed; 4 purchase-related tests skipped. Miniapp lint and TypeScript/production build; browser preview smoke at 390×844 and 320×640, next/previous, multiple selections, detail and focus restoration. Actual Telegram device unavailable. No purchase tests or transactions performed.
+- Release 1.52.0 affects miniapp/gateway only. Local/VPS rollback backups and production health, version, exact HTML and changed assets are required for publication.
+
 ## Mini App: unified draw-game ticket screens — 2026-09-28
 
 ## Mini App: classic 6/36 ticket and catalog identity — 2026-09-28

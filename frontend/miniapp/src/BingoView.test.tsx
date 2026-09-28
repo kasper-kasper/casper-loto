@@ -121,3 +121,32 @@ test("Kasper set requests ten tickets with its four numbers", async () => {
   fireEvent.click(await screen.findByRole("button", { name: /НАБОР КАСПЕРА/ }));
   await waitFor(() => expect(miniAppApi.bingoPurchase).toHaveBeenCalledWith("auth", "draw", { quantity: 10, requiredNumbers: [28, 16, 2, 9] }, expect.any(String)));
 });
+
+test("the ticket deck keeps multiple selections and the original row order without purchasing", async () => {
+  render(<BingoView lottery={{ ...lottery, player_ticket_count: 0 }} initData="auth" now={0} balance={1000000} onClose={vi.fn()} onPurchased={vi.fn()} />);
+  const choices = await screen.findAllByRole("button", { name: "Выбрать вариант билета" });
+  const firstRows = choices[0].querySelectorAll(".edition-grid > div");
+  expect(Array.from(firstRows).map(row => Array.from(row.querySelectorAll("b")).map(n => Number(n.textContent)))).toEqual([numbers.slice(0, 4), numbers.slice(4, 8), numbers.slice(8, 12)]);
+  fireEvent.click(choices[0]);
+  fireEvent.click(choices[1]);
+  expect(choices[0]).toHaveAttribute("aria-pressed", "true");
+  expect(choices[1]).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByText("Выбрано билетов: 2")).toBeInTheDocument();
+  fireEvent.click(choices[0]);
+  expect(choices[0]).toHaveAttribute("aria-pressed", "false");
+  expect(choices[1]).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByText("Выбрано билетов: 1")).toBeInTheDocument();
+  expect(miniAppApi.bingoPurchase).not.toHaveBeenCalled();
+});
+
+test("ticket inspection closes with Escape and restores focus to the originating card", async () => {
+  render(<BingoView lottery={lottery} initData="auth" now={0} balance={100000} onClose={vi.fn()} onPurchased={vi.fn()} />);
+  const inspect = (await screen.findAllByRole("button", { name: /Рассмотреть/ }))[0];
+  inspect.focus();
+  fireEvent.click(inspect);
+  expect(screen.getByRole("dialog").querySelector(".bingo-edition")).toBeInTheDocument();
+  fireEvent.keyDown(document, { key: "Escape" });
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(inspect).toHaveFocus();
+  expect(miniAppApi.bingoPurchase).not.toHaveBeenCalled();
+});

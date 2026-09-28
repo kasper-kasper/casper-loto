@@ -9,7 +9,7 @@ import portal from "./assets/lotteries/pll-portal.jpg";
 import nature from "./assets/lotteries/pss-nature-scene.webp";
 import grob from "./assets/lotteries/grob-scene.webp";
 import dual from "./assets/lotteries/casper-dual-scene.webp";
-import bingo from "./assets/lotteries/weekly-scene.webp";
+import bingo from "./assets/lotteries/bingo-edition-v1.webp";
 import "./lottery-catalog.css";
 
 const identities: Record<string, { image: string; caption: string }> = {
@@ -20,7 +20,7 @@ const identities: Record<string, { image: string; caption: string }> = {
   pss: { image: nature, caption: "Там, где начинается тишина" },
   grob: { image: grob, caption: "Тишина. Тираж начинается." },
   dual: { image: dual, caption: "NIGHT / DAWN" },
-  bingo: { image: bingo, caption: "Традиция большой игры" },
+  bingo: { image: bingo, caption: "Ваш билет в вечернюю игру" },
 };
 
 export function LotteryCatalog({ lotteries, onOpen }: { lotteries: Lottery[]; onOpen: (code: string) => void }) {

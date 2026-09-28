@@ -61,3 +61,15 @@
 .collection-khan .collection-open { border-color:#d2b57955; color:#efd8aa; border-radius:22px; background:linear-gradient(135deg,#dec08621,#dec08608); }
 .collection-khan .collection-card-footer { border-top:1px dashed #dec08645; }
 @media(max-width:359px) { .collection-khan .collection-identity h2 { font-size:35px; } .collection-khan .collection-scene { right:3px; width:53%; top:33px; height:183px; } .collection-khan .collection-prize > strong { font-size:27px; } }
+.collection-bingo { --collection-accent:#ecd39e; border-color:#b1c8a443; background:radial-gradient(ellipse at 90% 25%,#3e69555e,transparent 62%),linear-gradient(125deg,#203b46,#10292f); box-shadow:inset 0 1px #f0d9a421,0 9px 22px #0003; }
+.collection-bingo::before { background:linear-gradient(0deg,#0c222aeb,transparent 65%); }
+.collection-bingo .collection-scene { inset:38px 9px auto auto; width:49%; height:201px; object-fit:contain; object-position:center; z-index:-1; }
+.collection-bingo .collection-card-content { min-height:304px; }
+.collection-bingo .collection-identity { width:59%; margin-top:17px; margin-bottom:25px; }
+.collection-bingo .collection-identity h2 { color:#f8e6c2; font:400 37px/1 Georgia,serif; letter-spacing:-.035em; }
+.collection-bingo .collection-identity p { max-width:128px; color:#b2c6be; font-size:9px; }
+.collection-bingo .collection-prize { position:relative; width:max-content; }
+.collection-bingo .collection-prize > strong { font-size:31px; }
+.collection-bingo .collection-open { border-radius:22px; border-color:#d0ba8066; background:linear-gradient(135deg,#cebd8822,#cebd8808); color:#f0dab0; }
+.collection-bingo .collection-card-footer { border-color:#ddcba340; }
+@media(max-width:359px) { .collection-bingo .collection-identity h2 { font-size:31px; } .collection-bingo .collection-scene { width:46%; right:7px; top:48px; height:190px; } .collection-bingo .collection-prize > strong { font-size:28px; } }
