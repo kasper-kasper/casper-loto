@@ -20,18 +20,18 @@
 .hub-wallet > footer strong { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; font-weight:550; }
 .hub-wallet > footer small { display:block; margin-top:3px; color:#9eafc6; font-size:8px; }
 .hub-wallet-brand { flex-shrink:0; color:#abb8cc; font-size:8px; letter-spacing:.16em; }
-.hub-tickets { display:block; width:100%; padding:17px 16px; border:1px solid #fff8e8; border-radius:18px; background:linear-gradient(135deg,#fffaf0,#e7e9e7); color:#23334b; text-align:left; box-shadow:inset 0 1px #fff,0 4px 0 #a3adbc,0 9px 20px #0002; cursor:pointer; }
+.hub-tickets { display:block; width:100%; padding:17px 16px; border:1px solid #bfd7ff38; border-radius:18px; background:linear-gradient(135deg,#2b435f,#16283f); color:#eef1f7; text-align:left; box-shadow:inset 0 1px #e0efff20,0 3px 0 #0b1728,0 9px 20px #0002; cursor:pointer; }
 .hub-ticket-main { display:flex; align-items:center; gap:12px; }
 .hub-ticket-object { display:block; width:47px; height:47px; flex-shrink:0; }
 .hub-ticket-copy { display:block; min-width:0; flex:1; }
 .hub-ticket-copy > strong { display:block; font-size:14px; font-weight:650; letter-spacing:-.02em; }
-.hub-ticket-copy > small { display:block; margin-top:5px; font-size:9px; line-height:1.4; color:#6d7989; }
+.hub-ticket-copy > small { display:block; margin-top:5px; font-size:9px; line-height:1.4; color:#afc0d7; }
 .hub-ticket-count { display:flex; align-items:center; gap:9px; font-size:29px; font-weight:500; letter-spacing:-.05em; }
-.hub-ticket-count > span { align-self:flex-start; font-size:17px; font-weight:400; color:#697688; }
-.hub-next { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:14px; padding-top:11px; border-top:1px solid #586b8529; }
-.hub-next small { display:block; color:#758193; font-size:8px; }
-.hub-next strong { display:block; color:#3d4c60; font-size:11px; font-weight:600; margin-top:3px; }
-.hub-next time { max-width:48%; color:#65748a; font-size:9px; text-align:right; line-height:1.4; }
+.hub-ticket-count > span { align-self:flex-start; font-size:17px; font-weight:400; color:#b7c8e0; }
+.hub-next { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:14px; padding-top:11px; border-top:1px solid #c2d9f524; }
+.hub-next small { display:block; color:#9bb0cb; font-size:8px; }
+.hub-next strong { display:block; color:#e0e8f4; font-size:11px; font-weight:600; margin-top:3px; }
+.hub-next time { max-width:48%; color:#aabed7; font-size:9px; text-align:right; line-height:1.4; }
 .hub-shortcuts { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:4px; }
 .hub-shortcuts > button { position:relative; display:flex; flex-direction:column; align-items:flex-start; min-width:0; min-height:130px; padding:16px; border:1px solid #ffffff25; border-radius:17px; color:#ebedf3; background:linear-gradient(135deg,#20314b,#101d33); box-shadow:inset 0 1px #ffffff0c,0 4px 0 #0b1528; text-align:left; cursor:pointer; }
 .hub-shortcuts .dimensional-icon { width:37px; height:37px; margin-bottom:12px; }

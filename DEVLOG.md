@@ -1,5 +1,13 @@
 ## Mini App: unified draw-game ticket screens — 2026-09-28
 
+## Mini App: dark home and compact glass navigation — 2026-09-28
+
+- Rebuilt Today with a compact server-driven next-draw card, permanent ticket/catalog shortcuts, personal upcoming draw, dated Moscow schedule, optional latest jackpot and collapsed platform statistics. Live/result navigation and the separation of regular games from Fast are preserved. Removed the scrolling statistics strip and poster layout. Shared discovery styles remain eager because the Fast footer depends on them.
+- Added a generated 512×362 transparent orbit illustration (23,422 bytes), reusing the approved ticket asset for personal navigation. Built-in image generation; prompt stored in docs/design/home-orbit-asset.md. No WebGL engine or continuous animation. Server data and countdown render independently of image decoding.
+- Reduced the dock from a 78px porcelain panel to a 54px dark glass capsule, at most 300px wide, retaining 44px touch targets, readable text labels, focus states and unread indication. Opaque fallback when backdrop blur is unavailable or reduced transparency requested. Changed the account ticket card and ticket tabs to navy.
+- Verification: focused home/empty/participation/live/result/date and account/navigation tests; miniapp lint, typecheck/build; browser smoke at 320×640 and 390×844. No purchase tests or transactions. Actual Telegram device checks unavailable; browser viewport checks are recorded separately.
+- Release 1.50.0: miniapp/gateway only, with local/VPS rollback backups and production version, HTML, asset and health verification.
+
 ## Mini App: personal dashboard and dimensional navigation — 2026-09-28
 
 - Extracted the personal overview into a lazy AccountHub chunk. Replaced repeated account tabs and header balance with a compact account heading, single balance card, active-ticket action, history/catalog shortcuts and expandable statistics/settings. Existing server values, ticket filters, notification preferences and purchase flows are preserved.

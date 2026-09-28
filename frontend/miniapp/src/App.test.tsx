@@ -219,12 +219,12 @@ it("shows the dashboard while the account request is still pending", async () =>
   vi.mocked(miniAppApi.account).mockImplementation(() => new Promise(() => undefined));
   const { container } = render(<App initData="signed" />);
   expect(container.querySelector(".skeleton-shell .brand-logo-horizontal")).toHaveAttribute("src", "/brand/logo-horizontal-432-v1.png");
-  expect(await screen.findByRole("heading", { name: "Сегодня может повезти." })).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "Сегодня" })).toBeInTheDocument();
   expect(screen.getByLabelText("Casper Loto")).toBeInTheDocument();
   expect(miniAppApi.account).toHaveBeenCalledOnce();
 });
 
-it("turns the home into a daily poster while keeping Fast separate", async () => {
+it("shows the personal home dashboard while keeping Fast separate", async () => {
   const template = dashboard.lotteries[0];
   const showcaseDashboard: Dashboard = {
     ...dashboard,
@@ -243,11 +243,12 @@ it("turns the home into a daily poster while keeping Fast separate", async () =>
   render(<App initData="signed" />);
 
   await screen.findByRole("button", { name: "Лотереи" });
-  expect(screen.getByText("АФИША ДНЯ")).toBeInTheDocument();
-  expect(screen.getByText("ВЫ В ИГРЕ")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Дальше по расписанию" })).toBeInTheDocument();
+  expect(screen.getByText("Ближайший с вашим билетом")).toBeInTheDocument();
   expect(screen.getByText("12 билетов ждут тиража")).toBeInTheDocument();
-  expect(screen.getAllByText("18 432")).toHaveLength(2);
-  expect(screen.getAllByText("1 208")).toHaveLength(2);
+  fireEvent.click(screen.getByText("Статистика Kasper"));
+  expect(screen.getAllByText("18 432")).toHaveLength(1);
+  expect(screen.getAllByText("1 208")).toHaveLength(1);
   expect(screen.queryByLabelText("Витрина лотерей")).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Лотереи" }));
   const storefront = await screen.findByLabelText("Витрина лотерей");
@@ -375,7 +376,7 @@ it("allows a previously saved cart to be completed atomically", async () => {
   expect(screen.getByRole("button", { name: "Купить ещё" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Мои билеты" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "На главную" }));
-  expect(await screen.findByRole("heading", { name: "Сегодня может повезти." })).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "Сегодня" })).toBeInTheDocument();
   expect(document.querySelector(".ticket-number-grid")).toBeNull();
 }, 10_000);
 
@@ -710,5 +711,17 @@ it("returns to the personal overview when reselecting My in the dock", async () 
   expect(await screen.findByRole("heading", { name: "Моё" })).toBeInTheDocument();
   expect(screen.queryByRole("heading", { name: "Мои билеты" })).not.toBeInTheDocument();
   expect(window.scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: "instant" });
+  expect(miniAppApi.purchase).not.toHaveBeenCalled();
+});
+
+it("opens active regular tickets from home after previously viewing winning history", async () => {
+  render(<App initData="test" />);
+  fireEvent.click(await screen.findByRole("button", { name: "Моё" }));
+  fireEvent.click(await screen.findByRole("button", { name: /История участия/ }));
+  fireEvent.click(await screen.findByRole("button", { name: "Только выигрыши" }));
+  await waitFor(() => expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "history", "", true));
+  fireEvent.click(screen.getByRole("button", { name: "Сегодня" }));
+  fireEvent.click(await screen.findByRole("button", { name: /Мои билеты/ }));
+  await waitFor(() => expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "active", "scope:standard", false));
   expect(miniAppApi.purchase).not.toHaveBeenCalled();
 });
