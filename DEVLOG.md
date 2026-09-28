@@ -1,3 +1,10 @@
+## Mini App: illustrated lottery catalog — 2026-09-28
+
+- Replaced the cramped two-column thumbnails with full-width scene compositions, consistent price/schedule placement and a single open affordance. Existing lightweight scene assets are reused, with eager loading only for the first visible card and lazy loading below. Bingo uses the existing club scene instead of an oversized brand mark.
+- Catalog styles/component are isolated from Today, lottery rooms and Fast. Server names, jackpots, ticket prices and daily/weekly filters are preserved; instant LIVE has a compact entry after draw games.
+- Verification: focused catalog filtering/navigation and App entry checks; frontend lint, TypeScript and production build; mobile browser visual smoke at 320/390 px. No purchase tests or transactions.
+- Release 1.47.10: miniapp-only gateway deployment with local/VPS rollback backups and public version/HTML/health verification.
+
 ## Mini App: первый экран до загрузки React — 2026-09-28
 
 - Существующие утверждённые PNG уменьшены для реальных размеров показа внутри miniapp: знак шапки 18,5 КБ вместо 935 КБ, отдельный знак сцены 55 КБ, горизонтальный логотип 38 КБ вместо 627 КБ, favicon 6 КБ вместо 1,38 МБ. Мастер-файлы в shared не изменены. Версии производных файлов закреплены в URL.
