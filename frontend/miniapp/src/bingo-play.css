@@ -1,4 +1,4 @@
-.bingo-page.play-bingo { background:#080f20; padding-bottom:calc(94px + env(safe-area-inset-bottom)); }
+.bingo-page.play-bingo { background:#080f20; padding-bottom:calc(94px + var(--app-safe-bottom)); }
 .play-bingo .play-quick { margin-top:0; }
 .play-bingo .bingo-selection-meta { margin:0 0 9px; font-size:10px; }
 .play-bingo .bingo-selection-meta button { min-height:38px; color:var(--play-accent); font-size:11px; }
@@ -29,5 +29,5 @@
 .play-bingo .bingo-selected-chips { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0; }
 .play-bingo .bingo-section-title { margin:12px 0 18px; }
 .play-bingo .bingo-section-title h2 { font-family:inherit; font-size:25px; line-height:1.2; font-weight:600; }
-.play-bingo > .bingo-message:not(.is-error) { bottom:calc(87px + env(safe-area-inset-bottom)); }
+.play-bingo > .bingo-message:not(.is-error) { bottom:calc(87px + var(--app-safe-bottom)); }
 @media(max-width:359px) { .play-bingo .bingo-ticket-list { gap:9px; } .play-bingo .bingo-paper.is-compact { padding:5px 7px 7px; } .play-bingo .is-compact .bingo-grid > div { gap:3px; } .play-bingo .is-compact .bingo-grid b { font-size:13px; } .play-bingo .bingo-choice-label { padding:8px 8px 4px; } }

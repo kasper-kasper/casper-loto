@@ -20,5 +20,5 @@ export function FastArtifact({ kind, className = "" }: { kind: string; className
     update();
     return () => { observer?.disconnect(); document.removeEventListener("visibilitychange", update); };
   }, []);
-  return <div ref={root} className={`fast-artifact artifact-${kind} ${className}`} aria-hidden="true"><i className="artifact-aura" /><i className="artifact-orbit" /><img src={kind === "pulse" ? pulse : kind === "flash" ? flash : code} alt="" width="480" height="480" decoding="async" /><i className="artifact-reflection" /></div>;
+  return <div ref={root} className={`fast-artifact artifact-${kind} ${className}`} aria-hidden="true"><i className="artifact-aura" /><img src={kind === "pulse" ? pulse : kind === "flash" ? flash : code} alt="" width="480" height="480" decoding="async" /><i className="artifact-reflection" /></div>;
 }

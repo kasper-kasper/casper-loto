@@ -1,3 +1,10 @@
+## Mini App: Fast spacing, signal repair and Telegram fullscreen — 2026-10-04
+
+- Removed the Fast eyebrow and reduced header/section gaps. Restored FLASH's 20-cell signal as a bounded 5-column animated grid; the former flex row retained square cells and overflowed its panel. Removed the decorative orbit around device illustrations, retaining Pulse's illustrated pedestal. Added distinct blue, ruby and emerald card/picker surfaces without new image payloads or changes to selection, live timing or purchases.
+- Request fullscreen through Telegram SDK 8.0+ on actual Mini App launches, with older/unsupported platform fallback. Shared safe-area variables combine native device and Telegram content insets; shell, navigation and fixed ticket controls consume them. Telegram still owns its close/menu controls. No authentication or business rules changed.
+- Verification: 11 focused fullscreen initialization, layout and Fast selection tests passed; no purchase tests or transactions. Frontend lint and TypeScript/production build passed. Browser smoke at 390×844 and 320×640 confirmed no horizontal overflow and all FLASH cells inside the panel. A temporary fixture verified combined top inset 76px and bottom inset 24px; removed after use. Actual Telegram device unavailable.
+- Release 1.54.0: miniapp/gateway only, with local/VPS rollback backups and production health, version, exact HTML and changed asset verification.
+
 ## Mini App: dimensional Fast devices and tactile selection — 2026-10-04
 
 - Replaced Fast's flat background scenes with three transparent device illustrations, graphite/chrome card surfaces and optical-glass accents. Preserved animated Pulse trace, signal indicators, code indicators, card ordering and reveal transitions. The eager Fast shell now shares its background with the header; no separate dark stripe while the lazy screen loads.

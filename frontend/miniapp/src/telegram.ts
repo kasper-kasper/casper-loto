@@ -1,6 +1,10 @@
 interface TelegramWebApp {
   initData: string;
   colorScheme?: "light" | "dark";
+  isFullscreen?: boolean;
+  isVersionAtLeast?(version: string): boolean;
+  requestFullscreen?(): void;
+  setHeaderColor?(color: string): void;
   ready(): void;
   expand(): void;
   requestWriteAccess?(callback?: (allowed: boolean) => void): void;
@@ -44,6 +48,15 @@ export function initializeTelegram(): string {
   if (!webApp) return "";
   webApp.ready();
   webApp.expand();
+  // Older clients keep their expanded sheet; auth data is independent of presentation.
+  if (webApp.initData && webApp.isVersionAtLeast?.("8.0")) {
+    try {
+      webApp.setHeaderColor?.("#050d27");
+      if (!webApp.isFullscreen) webApp.requestFullscreen?.();
+    } catch {
+      // Unsupported desktop/platform combinations still open the ordinary Mini App.
+    }
+  }
   document.documentElement.dataset.telegramTheme = webApp.colorScheme ?? "dark";
   return webApp.initData;
 }

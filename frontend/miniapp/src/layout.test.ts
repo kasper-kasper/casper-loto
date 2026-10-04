@@ -15,10 +15,10 @@ describe("mobile layout contract", () => {
   });
 
   it("keeps content and navigation inside iPhone safe areas", () => {
-    expect(styles).toContain("env(safe-area-inset-top)");
-    expect(styles).toContain("env(safe-area-inset-bottom)");
-    expect(styles).toMatch(/padding: max\(16px, env\(safe-area-inset-top\)\)/);
-    expect(styles).toMatch(/calc\(100px \+ env\(safe-area-inset-bottom\)\)/);
+    expect(styles).toContain("env(safe-area-inset-top,0px)");
+    expect(styles).toContain("env(safe-area-inset-bottom,0px)");
+    expect(styles).toContain("padding: max(16px, var(--app-safe-top))");
+    expect(styles).toContain("calc(100px + var(--app-safe-bottom))");
   });
 
   it("honours reduced-motion preferences", () => {

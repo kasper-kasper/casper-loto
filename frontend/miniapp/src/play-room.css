@@ -1,6 +1,6 @@
 /* One ticket language for draw games. Deliberately independent of Fast and legacy picker themes. */
 .app-shell.draw-play-page { padding-bottom:0; background:#080f20; }
-.play-room { --play-accent:#b8d7ff; --play-ink:#203b60; --play-soft:#e6edf5; color:#f4f0e9; padding-bottom:calc(84px + env(safe-area-inset-bottom)); }
+.play-room { --play-accent:#b8d7ff; --play-ink:#203b60; --play-soft:#e6edf5; color:#f4f0e9; padding-bottom:calc(84px + var(--app-safe-bottom)); }
 .play-room.game-weekly { --play-accent:#ebce90; --play-ink:#5b4324; --play-soft:#f1eadc; }
 .play-room.game-september { --play-accent:#eabc96; --play-ink:#814331; --play-soft:#f4e7dc; }
 .play-room.game-pll { --play-accent:#cbb6f4; --play-ink:#554073; --play-soft:#ece8f4; }
@@ -76,7 +76,7 @@
 .ticket-favorites { display:grid; gap:5px; margin-top:9px; }
 .ticket-favorites > div { display:flex; gap:6px; }
 .ticket-favorites > div > button:first-child { flex:1; }
-.play-checkout { position:fixed; z-index:28; display:flex; align-items:center; gap:14px; justify-content:space-between; bottom:0; left:50%; width:min(100%,540px); padding:12px 20px calc(12px + env(safe-area-inset-bottom)); transform:translateX(-50%); border-top:1px solid #ffffff20; background:#0b1527f5; box-shadow:0 -8px 30px #050b171f; backdrop-filter:blur(16px); }
+.play-checkout { position:fixed; z-index:28; display:flex; align-items:center; gap:14px; justify-content:space-between; bottom:0; left:50%; width:min(100%,540px); padding:12px 20px calc(12px + var(--app-safe-bottom)); transform:translateX(-50%); border-top:1px solid #ffffff20; background:#0b1527f5; box-shadow:0 -8px 30px #050b171f; backdrop-filter:blur(16px); }
 .play-checkout > div { min-width:0; }
 .play-checkout small { display:block; color:#a0adbe; font-size:9px; }
 .play-checkout strong { display:block; margin-top:4px; color:#f0e9db; font-size:17px; font-weight:600; white-space:nowrap; }
