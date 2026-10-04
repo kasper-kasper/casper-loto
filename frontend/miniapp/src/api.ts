@@ -1,3 +1,4 @@
+import { brandViewData } from "../../shared/brandNames";
 import type { Highlights } from "./Today";
 import type { BingoFeed, BingoInventory } from "./BingoView";
 import type { Account, Dashboard, Favorite, InstantPurchaseResult, InstantTicket, LiveFeed, NotificationPreferences, PurchaseResult, TicketPage, UserNotification } from "./types";
@@ -35,7 +36,7 @@ async function request<T>(path: string, initData: string, init?: RequestInit): P
     throw new ApiError(translated[response.status] ?? payload.detail ?? "Не удалось выполнить запрос.", response.status);
   }
   if (response.status === 204) return undefined as T;
-  return JSON.parse(JSON.stringify(await response.json()).replaceAll("ПЛЛ-лото", "2:22").replaceAll("ПЛЛ-Лото", "2:22")) as T;
+  return brandViewData(await response.json()) as T;
 }
 
 export const miniAppApi = {
@@ -94,7 +95,7 @@ export const miniAppApi = {
       buffer = events.pop() ?? "";
       for (const event of events) {
         const data = event.split("\n").find((line) => line.startsWith("data: "));
-        if (data) onSnapshot(JSON.parse(data.slice(6).replaceAll("ПЛЛ-лото", "2:22")) as LiveFeed);
+        if (data) onSnapshot(brandViewData(JSON.parse(data.slice(6))) as LiveFeed);
       }
     }
   },

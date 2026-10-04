@@ -1,7 +1,7 @@
 {
   "name": "@k-loto/admin",
   "private": true,
-  "version": "1.47.5",
+  "version": "1.54.1",
   "type": "module",
   "scripts": {
     "dev": "vite",

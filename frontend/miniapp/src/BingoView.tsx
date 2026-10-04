@@ -24,7 +24,7 @@ function BingoMark() { return <span className="bingo-mark" aria-hidden="true"><i
 export function BingoInvitation({ lottery, now, onOpen }: { lottery: Lottery; now: number; onOpen: () => void }) {
   return <button className="bingo-invitation" type="button" onClick={onOpen}>
     <span className="bingo-invite-top"><span>КАЖДЫЙ ВЕЧЕР · 22:00 МСК</span><span>ДЖЕКПОТ ВЕЧЕРА</span></span>
-    <span className="bingo-invite-main"><span><strong>Kasper <em>Bingo</em></strong><small>Ваш вечерний ритуал</small></span><BingoMark /></span>
+    <span className="bingo-invite-main"><span><strong>Casper <em>Bingo</em></strong><small>Ваш вечерний ритуал</small></span><BingoMark /></span>
     <span className="bingo-invite-bottom"><span><small>ДЖЕКПОТ</small><b><Money value={lottery.jackpot} compact /></b></span><span className="bingo-arrow">↗</span></span>
     <span className="bingo-invite-date">{lottery.scheduled_at ? `${formatMoscow(lottery.scheduled_at)} МСК · ${countdown(lottery.scheduled_at, now)}` : "Открыть билеты и эфир"}</span>
   </button>;
@@ -34,7 +34,7 @@ function Paper({ ticket, draw, date, price, revealed = [], current, result, comp
   const hits = new Set(revealed);
   const missingRows = [0, 1, 2].map(row => ticket.numbers.slice(row * 4, row * 4 + 4).filter(n => !hits.has(n)).length).sort((a, b) => a - b);
   return <article className={`bingo-paper ${compact ? "is-compact" : ""}`}>
-    <header><BingoMark /><span>KASPER<strong>BINGO</strong></span><small>ТИРАЖ<b>№{String(draw).padStart(4, "0")}</b></small></header>
+    <header><BingoMark /><span>CASPER<strong>BINGO</strong></span><small>ТИРАЖ<b>№{String(draw).padStart(4, "0")}</b></small></header>
     {!compact && <div className="bingo-paper-date">{formatMoscow(date)} МСК <span>12 чисел · 3 строки</span></div>}
     <div className="bingo-grid">{[0, 1, 2].map(row => <div className={ticket.numbers.slice(row * 4, row * 4 + 4).every(n => hits.has(n)) ? "closed-row" : ""} key={row}>{ticket.numbers.slice(row * 4, row * 4 + 4).map(n => <span key={n} className={`${hits.has(n) ? "hit" : ""} ${current === n ? "current" : ""}`} aria-label={`${n}${hits.has(n) ? ", совпало" : ""}${current === n ? ", текущее число" : ""}`}><b>{String(n).padStart(2, "0")}</b>{hits.has(n) && <i aria-hidden="true">✓</i>}</span>)}</div>)}</div>
     <footer><span><small>{ticket.public_number ? "СЕРИЙНЫЙ НОМЕР" : "ДО ПОКУПКИ"}</small><b>{ticket.public_number ? serial(ticket.public_number) : "ВАРИАНТ БИЛЕТА"}</b></span><span><small>СТОИМОСТЬ</small><b>{formatCas(price)}</b></span></footer>
@@ -59,7 +59,7 @@ function PaperDialog({ children, onClose }: { children: React.ReactNode; onClose
     document.body.style.overflow = "hidden";
     return () => { document.removeEventListener("keydown", key); document.body.style.overflow = overflow; prior?.focus(); };
   }, [onClose]);
-  return <div className="bingo-dialog-backdrop" role="presentation" onClick={onClose}><section className="bingo-dialog" role="dialog" aria-modal="true" aria-label="Билет Kasper Bingo" onClick={e => e.stopPropagation()}><button ref={ref} type="button" className="bingo-dialog-close" onClick={onClose} aria-label="Закрыть билет">×</button>{children}</section></div>;
+  return <div className="bingo-dialog-backdrop" role="presentation" onClick={onClose}><section className="bingo-dialog" role="dialog" aria-modal="true" aria-label="Билет Casper Bingo" onClick={e => e.stopPropagation()}><button ref={ref} type="button" className="bingo-dialog-close" onClick={onClose} aria-label="Закрыть билет">×</button>{children}</section></div>;
 }
 
 export function BingoView({ lottery, initData, now, balance, onClose, onPurchased, initialTab = "choose" }: { initialTab?: "choose" | "live"; lottery: Lottery; initData: string; now: number; balance: number; onClose: () => void; onPurchased: (result: PurchaseResult) => void }) {

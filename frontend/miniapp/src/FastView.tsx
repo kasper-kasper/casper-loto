@@ -119,7 +119,7 @@ export function FastView({ lotteries, feed, now, balance = Number.MAX_SAFE_INTEG
     return new Date(left.scheduled_at ?? 0).getTime() - new Date(right.scheduled_at ?? 0).getTime();
   });
   return <section className="fast-view">
-    <header className="fast-heading"><div><h1>Kasper Fast</h1></div><p>Новый раунд каждые 3 минуты.<br />Каждая игра возвращается через 9.</p></header>
+    <header className="fast-heading"><div><h1>Casper Fast</h1></div><p>Новый раунд каждые 3 минуты.<br />Каждая игра возвращается через 9.</p></header>
     {ordered.map((lottery, index) => <motion.div key={lottery.code} layout transition={{ layout: { duration: .42, ease: [0.2, 0.75, 0.25, 1] } }}><AnimatePresence mode="wait">{liveCode === lottery.code && feed ? <FastLiveCard feed={feed} key={`live-${lottery.code}`} now={now} /> : <FastCard lottery={lottery} now={now} primary={index === 0} balance={balance} purchasing={purchasing} onOpen={() => onOpen(lottery.code)} onQuickBuy={(combinations) => onQuickBuy(lottery.code, combinations)} key={`card-${lottery.code}`} />}</AnimatePresence>{index === 0 && ordered.length > 1 && <div className="fast-divider"><span><b>{lottery.scheduled_at ? formatMoscowTime(lottery.scheduled_at) : "—"}</b>{lottery.name}</span><i><Icon name="fast" /></i><span><b>{ordered[1].scheduled_at ? formatMoscowTime(ordered[1].scheduled_at) : "—"}</b>{ordered[1].name}</span></div>}</motion.div>)}
     {!ordered.length && <div className="fast-unavailable"><Icon name="fast" /><strong>Расписание готовится</strong><p>Экран обновится автоматически.</p></div>}
   </section>;

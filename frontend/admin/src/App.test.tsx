@@ -161,7 +161,7 @@ it("groups administration into thirteen owner-oriented sections", async () => {
   await screen.findByText("Всего сорвано джекпотов");
 
   const nav = within(screen.getByRole("navigation"));
-  for (const label of ["Сегодня", "Fast", "Kasper LIVE", "Лотереи", "Расписание", "Тиражи", "Джекпоты", "Архив", "Игроки", "Аналитика", "Интересные факты", "Тест эфира", "Журналы"]) {
+  for (const label of ["Сегодня", "Fast", "Casper LIVE", "Лотереи", "Расписание", "Тиражи", "Джекпоты", "Архив", "Игроки", "Аналитика", "Интересные факты", "Тест эфира", "Журналы"]) {
     expect(nav.getByRole("button", { name: new RegExp(label) })).toBeInTheDocument();
   }
   fireEvent.click(nav.getByRole("button", { name: /Журналы/ }));
@@ -170,9 +170,9 @@ it("groups administration into thirteen owner-oriented sections", async () => {
   expect(screen.getByRole("tab", { name: "Аудит действий" })).toBeInTheDocument();
 });
 
-it("shows only the four agreed Kasper LIVE aggregates", async () => {
+it("shows only the four agreed Casper LIVE aggregates", async () => {
   render(<App />);
-  fireEvent.click(await screen.findByRole("button", { name: /Kasper LIVE/ }));
+  fireEvent.click(await screen.findByRole("button", { name: /Casper LIVE/ }));
 
   expect(await screen.findByText("КОЛИЧЕСТВО БИЛЕТОВ")).toBeInTheDocument();
   expect(screen.getByText("ВЫИГРЫШИ")).toBeInTheDocument();
@@ -387,12 +387,12 @@ it.each([null, 200])("uses the recorded jackpot event in draw details, amount=%s
 });
 
 it("does not present Bingo ball frequency as ordinary number statistics", async () => {
-  vi.mocked(adminApi.lotteries).mockResolvedValue([{ ...lottery, id: "bingo-lottery", code: "bingo", name: "Kasper Bingo", kind: "DAILY" }, lottery]);
+  vi.mocked(adminApi.lotteries).mockResolvedValue([{ ...lottery, id: "bingo-lottery", code: "bingo", name: "Casper Bingo", kind: "DAILY" }, lottery]);
   render(<App />);
   fireEvent.click(await screen.findByRole("button", { name: /Аналитика/ }));
   fireEvent.click(await screen.findByRole("tab", { name: "Числа" }));
   const selector = await screen.findByLabelText("Лотерея");
-  expect(within(selector).queryByRole("option", { name: "Kasper Bingo" })).not.toBeInTheDocument();
+  expect(within(selector).queryByRole("option", { name: "Casper Bingo" })).not.toBeInTheDocument();
   expect(screen.getByText(/Bingo здесь не показывается/)).toBeInTheDocument();
 });
 
@@ -408,9 +408,9 @@ it("lets the owner choose the auto-play ticket count and shows its state", async
 });
 
 it("summarizes Bingo by stages and keeps the full ball protocol collapsed", async () => {
-  const bingoLottery: Lottery = { ...lottery, id: "bingo-lottery", code: "bingo", name: "Kasper Bingo", kind: "DAILY" };
+  const bingoLottery: Lottery = { ...lottery, id: "bingo-lottery", code: "bingo", name: "Casper Bingo", kind: "DAILY" };
   const bingoDraw = {
-    id: "bingo-draw", lottery_id: bingoLottery.id, lottery_code: "bingo", lottery_name: "Kasper Bingo", public_number: 18, status: "COMPLETED", scheduled_at: "2026-09-14T19:00:00Z", sales_close_at: "2026-09-14T18:58:00Z", executed_at: "2026-09-14T19:03:00Z", winning_numbers: Array.from({ length: 58 }, (_, index) => index + 1), ticket_count: 2, total_sales: 100_000, total_payout: 600_000, jackpot_opening: 10_000_000, jackpot_closing: 10_100_000, distribution_opening: 0, distribution_closing: 0, reserve_used: 0, kasper_fund_used: 600_000, correlation_id: "bingo-correlation", jackpot_amount: null,
+    id: "bingo-draw", lottery_id: bingoLottery.id, lottery_code: "bingo", lottery_name: "Casper Bingo", public_number: 18, status: "COMPLETED", scheduled_at: "2026-09-14T19:00:00Z", sales_close_at: "2026-09-14T18:58:00Z", executed_at: "2026-09-14T19:03:00Z", winning_numbers: Array.from({ length: 58 }, (_, index) => index + 1), ticket_count: 2, total_sales: 100_000, total_payout: 600_000, jackpot_opening: 10_000_000, jackpot_closing: 10_100_000, distribution_opening: 0, distribution_closing: 0, reserve_used: 0, kasper_fund_used: 600_000, correlation_id: "bingo-correlation", jackpot_amount: null,
   };
   vi.mocked(adminApi.lotteries).mockResolvedValue([lottery, bingoLottery]);
   vi.mocked(adminApi.draws).mockResolvedValue([bingoDraw]);
@@ -420,7 +420,7 @@ it("summarizes Bingo by stages and keeps the full ball protocol collapsed", asyn
   ] });
   render(<App />);
   fireEvent.click(await screen.findByRole("button", { name: /Тиражи/ }));
-  fireEvent.click((await screen.findAllByText("Kasper Bingo")).at(-1)!);
+  fireEvent.click((await screen.findAllByText("Casper Bingo")).at(-1)!);
   const dialog = await screen.findByRole("dialog");
   expect(within(dialog).getByText("58 ходов")).toBeInTheDocument();
   expect(within(dialog).getByText("Не выпали: 59 · 60")).toBeInTheDocument();

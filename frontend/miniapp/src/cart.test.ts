@@ -1,6 +1,13 @@
 import { CART_MAX_TICKETS, loadCart, saveCart } from "./cart";
 
 describe("cart persistence", () => {
+  it("displays a legacy brand label without changing saved ticket data", () => {
+    const ticket = { id: "legacy", lotteryCode: "weekly", lotteryName: "Kasper Grand", price: 50_000, numbers: [1, 2, 3, 4, 5, 36, 37], drawCount: 5 as const };
+    saveCart([ticket], null, 1_000);
+    expect(loadCart(null, 2_000)).toEqual([{ ...ticket, lotteryName: "Casper Grand" }]);
+    expect(sessionStorage.getItem("k-loto:cart:v2")).toContain("Kasper Grand");
+  });
+
   it("restores tickets before the configured expiration", () => {
     const tickets = [{ id: "one", lotteryCode: "weekly", lotteryName: "ЛСД-лото", price: 100, numbers: [1, 2, 3, 4, 5], drawCount: 1 as const }];
     saveCart(tickets, 300, 1_000);

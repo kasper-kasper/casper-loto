@@ -1,7 +1,8 @@
+import { brandViewData } from "../../shared/brandNames";
 import type { Account, BingoInventory, Dashboard, LiveFeed, PurchaseResponse, TicketPage, WebSession } from "./types";
 let csrf="";
 export class ApiError extends Error { constructor(message:string, public status:number){super(message);} }
-async function request<T>(path:string, init?:RequestInit):Promise<T>{const headers=new Headers(init?.headers);headers.set("Content-Type","application/json");if(csrf&&init?.method&&init.method!=="GET")headers.set("X-Web-CSRF",csrf);const response=await fetch(`/api/v1/web${path}`,{...init,credentials:"include",cache:"no-store",headers});if(!response.ok){const body=await response.json().catch(()=>({})) as {detail?:string};throw new ApiError(body.detail??"Запрос не выполнен.",response.status);}if(response.status===204)return undefined as T;return response.json() as Promise<T>}
+async function request<T>(path:string, init?:RequestInit):Promise<T>{const headers=new Headers(init?.headers);headers.set("Content-Type","application/json");if(csrf&&init?.method&&init.method!=="GET")headers.set("X-Web-CSRF",csrf);const response=await fetch(`/api/v1/web${path}`,{...init,credentials:"include",cache:"no-store",headers});if(!response.ok){const body=await response.json().catch(()=>({})) as {detail?:string};throw new ApiError(body.detail??"Запрос не выполнен.",response.status);}if(response.status===204)return undefined as T;return brandViewData(await response.json()) as T}
 const remember=(value:WebSession)=>{csrf=value.csrf_token;return value};
 export const webApi={
  telegram:(code:string)=>request<WebSession>("/auth/telegram",{method:"POST",body:JSON.stringify({code})}).then(remember),

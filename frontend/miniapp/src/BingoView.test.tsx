@@ -6,7 +6,7 @@ import type { Lottery, Ticket } from "./types";
 
 vi.mock("./api", () => ({ ApiError: class extends Error {}, miniAppApi: { bingoInventory: vi.fn(), bingoLive: vi.fn(), bingoPurchase: vi.fn(), tickets: vi.fn() } }));
 
-const lottery: Lottery = { code: "bingo", name: "Kasper Bingo", kind: "DAILY", numbers_to_pick: 12, max_number: 60, ticket_price: 50000, jackpot: 10000000000, draw_number: 1, scheduled_at: "2026-09-06T19:00:00Z", sales_close_at: "2026-09-06T18:58:00Z", sales_open: true, purchase_available: true, player_ticket_count: 49, sales_status: "OPEN", max_tickets_per_purchase: 50, max_tickets_per_user_per_draw: 50 };
+const lottery: Lottery = { code: "bingo", name: "Casper Bingo", kind: "DAILY", numbers_to_pick: 12, max_number: 60, ticket_price: 50000, jackpot: 10000000000, draw_number: 1, scheduled_at: "2026-09-06T19:00:00Z", sales_close_at: "2026-09-06T18:58:00Z", sales_open: true, purchase_available: true, player_ticket_count: 49, sales_status: "OPEN", max_tickets_per_purchase: 50, max_tickets_per_user_per_draw: 50 };
 const numbers = [1, 8, 21, 59, 2, 15, 29, 60, 3, 17, 42, 51];
 const inventory = { draw_id: "draw", draw_number: 1, scheduled_at: lottery.scheduled_at!, price: 50000, has_more: false, kasper_set_available: true, tickets: [1, 2].map(i => ({ id: `pool-${i}`, pool_position: i, numbers })) };
 
@@ -26,7 +26,7 @@ test("selecting the 50th ticket blocks another selection and purchases its pool 
   fireEvent.click(screen.getByRole("button", { name: "Купить билеты" }));
   await waitFor(() => expect(miniAppApi.bingoPurchase).toHaveBeenCalledWith("auth", "draw", { ticketIds: ["pool-1"] }, expect.any(String)));
   expect(await screen.findByText("Куплено: 1 · 50 000 CAS")).toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "Kasper Bingo" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Casper Bingo" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Мои билеты →" })).toBeInTheDocument();
 });
 
@@ -41,7 +41,7 @@ test("uncertain purchase retry reuses the same operation key", async () => {
 });
 
 test("the detailed ticket preserves three rows and marks only revealed numbers", () => {
-  const ticket: Ticket = { id: "ticket", public_number: 1, lottery_code: "bingo", lottery_name: "Kasper Bingo", draw_number: 1, scheduled_at: lottery.scheduled_at!, numbers, purchase_price: 50000, source: "MANUAL", status: "SETTLED", matches: 10, prize_amount: 100000, winning_numbers: numbers.filter(n => n < 59), bingo_result: { moves: [30, 61, 61], amounts: [100000, 0, 0] } };
+  const ticket: Ticket = { id: "ticket", public_number: 1, lottery_code: "bingo", lottery_name: "Casper Bingo", draw_number: 1, scheduled_at: lottery.scheduled_at!, numbers, purchase_price: 50000, source: "MANUAL", status: "SETTLED", matches: 10, prize_amount: 100000, winning_numbers: numbers.filter(n => n < 59), bingo_result: { moves: [30, 61, 61], amounts: [100000, 0, 0] } };
   const { container } = render(<BingoTicketDetail ticket={ticket} onClose={vi.fn()} />);
   expect(container.querySelectorAll(".bingo-grid > div")).toHaveLength(3);
   expect(container.querySelectorAll(".bingo-grid .hit")).toHaveLength(10);
@@ -113,7 +113,7 @@ test("shows favorite-number mistakes inside the search card", async () => {
   expect(miniAppApi.bingoInventory).toHaveBeenCalledTimes(1);
 });
 
-test("Kasper set requests ten tickets with its four numbers", async () => {
+test("Casper set requests ten tickets with its four numbers", async () => {
   const roomyLottery = { ...lottery, player_ticket_count: 0 };
   vi.mocked(miniAppApi.bingoPurchase).mockResolvedValue({ operation_id: "op", draw_id: "draw", draw_ids: ["draw"], draw_count: 1, ticket_ids: Array.from({ length: 10 }, (_, index) => `ticket-${index}`), total_cost: 500000, balance_after: 500000, already_processed: false });
   render(<BingoView lottery={roomyLottery} initData="auth" now={0} balance={1000000} onClose={vi.fn()} onPurchased={vi.fn().mockResolvedValue(undefined)} />);

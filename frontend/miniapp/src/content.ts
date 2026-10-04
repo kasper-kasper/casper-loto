@@ -38,7 +38,7 @@
 export const MINIAPP_TEXTS = {
   // ================================ ШАПКА ==================================
   header: {
-    // Дизайнерская «К» уже показана слева, здесь хранится продолжение слова.
+    // Legacy-ключ: текущая шапка использует утверждённый logo-symbol Casper.
     brandContinuation: "аспер",
   },
 
@@ -95,7 +95,7 @@ export const MINIAPP_TEXTS = {
   navigation: {
     home: "Главная",
     live: "Эфир",
-    fast: "Kasper Fast",
+    fast: "Casper Fast",
     account: "Моё",
     cart: "Корзина",
   },

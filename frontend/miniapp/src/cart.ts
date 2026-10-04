@@ -1,3 +1,4 @@
+import { displayBrandName } from "../../shared/brandNames";
 import type { CartTicket } from "./types";
 
 const STORAGE_KEY = "k-loto:cart:v2";
@@ -25,6 +26,7 @@ export function loadCart(ttlSeconds: number | null, now = Date.now()): CartTicke
     }
     return value.tickets.slice(0, CART_MAX_TICKETS).map((ticket) => ({
       ...ticket,
+      lotteryName: typeof ticket.lotteryName === "string" ? displayBrandName(ticket.lotteryName) : ticket.lotteryName,
       drawCount: ticket.drawCount === 5 ? 5 : 1,
     }));
   } catch {

@@ -12,7 +12,7 @@ const wait = (milliseconds: number) => new Promise((resolve) => window.setTimeou
 
 function Ticket({ ticket }: { ticket: InstantTicket }) {
   return <article className={ticket.prize_amount > 0 ? "kasper-live-ticket winner" : "kasper-live-ticket"}>
-    <header><span>KASPER LIVE</span><b>№ {ticket.public_number.toLocaleString("ru-RU")}</b></header>
+    <header><span>CASPER LIVE</span><b>№ {ticket.public_number.toLocaleString("ru-RU")}</b></header>
     <div className="kasper-live-symbols">{ticket.symbols.map((value, index) => <i key={`${value}:${index}`}>{symbols[value - 1] ?? "●"}</i>)}</div>
     <footer><span>{ticket.prize_amount > 0 ? "ОДИНАКОВЫЕ СИМВОЛЫ · ВЫИГРЫШ" : "РАЗНЫЕ СИМВОЛЫ · БЕЗ ВЫИГРЫША"}</span><strong><Money value={ticket.prize_amount} /></strong></footer>
   </article>;
@@ -53,9 +53,9 @@ export function KasperLiveView({ initData, balance, onClose, onSettled }: { init
     }
   };
 
-  const phaseLabel = phase === "creating" ? "Создаём билет" : phase === "numbering" ? "Присваиваем номер" : "Kasper генерирует комбинацию";
+  const phaseLabel = phase === "creating" ? "Создаём билет" : phase === "numbering" ? "Присваиваем номер" : "Casper генерирует комбинацию";
   return <main className="kasper-live-page">
-    <header className="kasper-live-header"><button disabled={busy} onClick={onClose} type="button" aria-label="Закрыть">←</button><div><small>НОВОСТЬ В ПРЯМОМ ЭФИРЕ</small><strong>Kasper LIVE</strong></div><span><Money value={balance} compact /></span></header>
+    <header className="kasper-live-header"><button disabled={busy} onClick={onClose} type="button" aria-label="Закрыть">←</button><div><small>НОВОСТЬ В ПРЯМОМ ЭФИРЕ</small><strong>Casper LIVE</strong></div><span><Money value={balance} compact /></span></header>
     <section className="kasper-live-hero"><span>LIVE</span><h1>Результат.<br />Здесь и сейчас.</h1><p>Билет создаётся и рассчитывается сразу. Никаких тиражей и ожидания.</p><small className="kasper-live-rule">Три одинаковых символа — выигрыш. Разные символы — без выигрыша.</small></section>
 
     {busy && <section className="kasper-live-processing" aria-live="polite"><i /><strong>{phaseLabel}</strong><span>Выпуск в эфир готовится…</span></section>}

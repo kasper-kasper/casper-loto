@@ -37,7 +37,7 @@ it.each(["live", "result"])("opens the server-highlighted %s event in the live/r
 it("keeps empty schedules usable and includes Moscow dates for future events", () => {
   const { rerender } = render(<Today {...props} lotteries={[]} />);
   expect(screen.getByRole("heading", { name: "Новые тиражи скоро" })).toBeInTheDocument();
-  rerender(<Today {...props} lotteries={[{ ...lottery, code: "weekly", name: "Kasper Grand", scheduled_at: "2026-09-30T17:00:00Z" }, lottery]} />);
+  rerender(<Today {...props} lotteries={[{ ...lottery, code: "weekly", name: "Casper Grand", scheduled_at: "2026-09-30T17:00:00Z" }, lottery]} />);
   const event = screen.getByRole("region", { name: "Ближайший тираж" });
   expect(within(event).getByRole("heading", { name: "6 из 36" })).toBeInTheDocument();
   expect(screen.getByText("30 сент., 20:00")).toBeInTheDocument();

@@ -24,16 +24,16 @@ const previewStartsAt = Date.now() + 5_000;
 
 const lotterySeed = [
   { code: "dual", name: "Casper Dual", kind: "DAILY" as const, ruleset_code: "casper_dual_2_12_2_12", numbers_to_pick: 4, max_number: 24, primary_numbers_to_pick: 2, primary_max_number: 12, secondary_numbers_to_pick: 2, secondary_max_number: 12, secondary_storage_offset: 12, ticket_price: 20_000, jackpot: 5_000_000, draw_number: 501, scheduled_at: nextDualPreviewDraw() },
-  { code: "bingo", name: "Kasper Bingo", kind: "DAILY" as const, numbers_to_pick: 12, max_number: 60, ticket_price: 50_000, jackpot: 10_000_250_000, draw_number: 1, scheduled_at: future(180) },
+  { code: "bingo", name: "Casper Bingo", kind: "DAILY" as const, numbers_to_pick: 12, max_number: 60, ticket_price: 50_000, jackpot: 10_000_250_000, draw_number: 1, scheduled_at: future(180) },
   { code: "shadow", name: "CODE", kind: "DAILY" as const, ruleset_code: "code_5_digits", numbers_to_pick: 5, max_number: 9, ticket_price: 888, jackpot: 888_888, draw_number: 38, scheduled_at: future(7) },
   { code: "flash", name: "FLASH", kind: "DAILY" as const, ruleset_code: "fast_5_20_jackpot_only", numbers_to_pick: 5, max_number: 20, ticket_price: 888, jackpot: 901_320, draw_number: 42, scheduled_at: future(17) },
   { code: "pulse", name: "PULSE", kind: "DAILY" as const, ruleset_code: "pulse_2_12_2_6_cipher_199", numbers_to_pick: 5, max_number: 18, primary_numbers_to_pick: 2, primary_max_number: 12, secondary_numbers_to_pick: 2, secondary_max_number: 6, secondary_storage_offset: 12, ticket_price: 1_234, jackpot: 1_234_567, draw_number: 1, scheduled_at: future(10) },
   { code: "grob", name: "ГРОБ", kind: "DAILY" as const, numbers_to_pick: 3, max_number: 16, ticket_price: 6_666, jackpot: 6_666_666, draw_number: 1, scheduled_at: future(36) },
   { code: "september", name: "3 СЕНТЯБРЯ", kind: "DAILY" as const, numbers_to_pick: 3, max_number: 33, ticket_price: 333, jackpot: 33_333_333, draw_number: 1, scheduled_at: future(83) },
-  { code: "pll", name: "ПЛЛ-Лото", kind: "DAILY" as const, numbers_to_pick: 4, max_number: 15, ticket_price: 24_000, jackpot: 18_640_000, draw_number: 418, scheduled_at: future(145) },
+  { code: "pll", name: "2:22", kind: "DAILY" as const, numbers_to_pick: 4, max_number: 15, ticket_price: 24_000, jackpot: 18_640_000, draw_number: 418, scheduled_at: future(145) },
   { code: "pss", name: "Casper Ball", kind: "DAILY" as const, numbers_to_pick: 6, max_number: 44, primary_numbers_to_pick: 5, primary_max_number: 36, secondary_numbers_to_pick: 1, secondary_max_number: 8, secondary_storage_offset: 36, ticket_price: 24_000, jackpot: 24_000_000, draw_number: 219, scheduled_at: future(230) },
   { code: "khan", name: "6 из 36", kind: "DAILY" as const, numbers_to_pick: 6, max_number: 36, ticket_price: 48_000, jackpot: 33_456_000, draw_number: 174, scheduled_at: future(310) },
-  { code: "weekly", name: "Kasper Grand", kind: "WEEKLY" as const, numbers_to_pick: 7, max_number: 40, primary_numbers_to_pick: 5, primary_max_number: 35, secondary_numbers_to_pick: 2, secondary_max_number: 5, secondary_storage_offset: 35, ticket_price: 50_000, jackpot: 5_000_182_500, draw_number: 4, scheduled_at: future(1_420) },
+  { code: "weekly", name: "Casper Grand", kind: "WEEKLY" as const, numbers_to_pick: 7, max_number: 40, primary_numbers_to_pick: 5, primary_max_number: 35, secondary_numbers_to_pick: 2, secondary_max_number: 5, secondary_storage_offset: 35, ticket_price: 50_000, jackpot: 5_000_182_500, draw_number: 4, scheduled_at: future(1_420) },
 ];
 
 let balance = 100_000_000_000;

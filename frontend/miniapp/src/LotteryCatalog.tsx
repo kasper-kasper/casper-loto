@@ -29,7 +29,7 @@ export function LotteryCatalog({ lotteries, onOpen }: { lotteries: Lottery[]; on
   const visible = [...lotteries].filter(lottery => filter === "all" || lottery.kind === filter).sort((a, b) => b.jackpot - a.jackpot);
 
   return <section className="lottery-collection">
-    <header className="collection-heading"><span>KASPER / КОЛЛЕКЦИЯ</span><h1>Лотереи<span>{lotteries.length.toString().padStart(2, "0")}</span></h1></header>
+    <header className="collection-heading"><span>CASPER / КОЛЛЕКЦИЯ</span><h1>Лотереи<span>{lotteries.length.toString().padStart(2, "0")}</span></h1></header>
     <nav className="collection-filters" aria-label="Каталог лотерей">
       {[["all", "Все"], ["DAILY", "Каждый день"], ["WEEKLY", "Раз в неделю"]].map(([id, label]) => <button key={id} type="button" aria-pressed={filter === id} onClick={() => setFilter(id)}>{label}</button>)}
     </nav>
@@ -48,6 +48,6 @@ export function LotteryCatalog({ lotteries, onOpen }: { lotteries: Lottery[]; on
       })}
       {visible.length === 0 && <p className="collection-empty">В этой категории пока нет лотерей.</p>}
     </div>
-    {filter === "all" && <button className="collection-instant" type="button" onClick={() => onOpen("kasper-live")} aria-label="Открыть Kasper LIVE"><span className="collection-live-mark" aria-hidden="true">LIVE</span><span><strong>Kasper LIVE</strong><small>Мгновенный результат · билет <Money value={2_000} /></small></span><span aria-hidden="true">↗</span></button>}
+    {filter === "all" && <button className="collection-instant" type="button" onClick={() => onOpen("kasper-live")} aria-label="Открыть Casper LIVE"><span className="collection-live-mark" aria-hidden="true">LIVE</span><span><strong>Casper LIVE</strong><small>Мгновенный результат · билет <Money value={2_000} /></small></span><span aria-hidden="true">↗</span></button>}
   </section>;
 }

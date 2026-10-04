@@ -6,7 +6,7 @@ type Destination = "home" | "catalog" | "fast" | "account";
 const items = [
   { id: "home", label: "Сегодня", icon: "home" },
   { id: "catalog", label: "Лотереи", icon: "catalog" },
-  { id: "fast", label: "Kasper Fast", icon: "fast" },
+  { id: "fast", label: "Casper Fast", icon: "fast" },
   { id: "account", label: "Моё", icon: "profile" },
 ] as const;
 

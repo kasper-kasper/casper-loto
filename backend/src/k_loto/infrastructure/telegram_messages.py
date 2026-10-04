@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 
 from k_loto.application.notifications import ClaimedNotification
 from k_loto.domain.enums import NotificationType
+from k_loto.infrastructure.brand_names import display_brand_name
 
 MOSCOW = ZoneInfo("Europe/Moscow")
 TICKET_PREVIEW_LIMIT = 12
@@ -92,7 +93,8 @@ def format_purchase_message(payload: dict[str, Any]) -> str:
     )
     return (
         "🎟 Готово — билеты уже в игре!\n\n"
-        f"🎲 {payload['lottery_name']} · тираж №{int(payload['draw_number']):04d}\n"
+        f"🎲 {display_brand_name(str(payload['lottery_name']))} · "
+        f"тираж №{int(payload['draw_number']):04d}\n"
         f"{_scheduled_line(payload)}"
         f"🎁 Призовой фонд: {format_cas(prize_fund)} CAS\n\n"
         f"{ticket_lines}\n\n"
@@ -132,7 +134,8 @@ def format_result_message(payload: dict[str, Any]) -> str:
     )
     return (
         f"{heading}\n\n"
-        f"{payload['lottery_name']} · тираж №{int(payload['draw_number']):04d}\n"
+        f"{display_brand_name(str(payload['lottery_name']))} · "
+        f"тираж №{int(payload['draw_number']):04d}\n"
         f"🕒 {scheduled:%d.%m.%Y · %H:%M} МСК\n"
         f"✨ Выпало: {winning}\n\n"
         f"{ticket_section}\n\n"
@@ -145,7 +148,7 @@ def format_inactivity_reminder(payload: dict[str, Any]) -> str:
     scheduled = datetime.fromisoformat(str(payload["scheduled_at"])).astimezone(MOSCOW)
     return (
         "🎟 Можно снова испытать удачу\n\n"
-        f"Ближайший тираж — {payload['lottery_name']} "
+        f"Ближайший тираж — {display_brand_name(str(payload['lottery_name']))} "
         f"№{int(payload['draw_number']):04d}.\n"
         f"🕒 {scheduled:%d.%m.%Y · %H:%M} МСК\n\n"
         "Вы давно не выбирали числа. Откройте Casper Loto, если хотите участвовать."
@@ -157,7 +160,8 @@ def format_jackpot_win(payload: dict[str, Any]) -> str:
     return (
         "Ну ниче се! Ты сорвал кучу бабла, правда виртуальных, "
         "а быть может это знак?\n\n"
-        f"Тираж: {payload['lottery_name']} №{int(payload['draw_number']):04d}\n"
+        f"Тираж: {display_brand_name(str(payload['lottery_name']))} "
+        f"№{int(payload['draw_number']):04d}\n"
         f"Дата: {scheduled:%d.%m.%Y · %H:%M} МСК\n"
         f"Выигрыш: {format_cas(int(payload['win_amount']))} CAS"
     )

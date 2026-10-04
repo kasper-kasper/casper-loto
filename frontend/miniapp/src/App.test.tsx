@@ -210,7 +210,7 @@ it("renders server-authoritative balance and lottery states", async () => {
   expect(await screen.findByLabelText("5 000 CAS")).toHaveTextContent("5 000C");
   expect(screen.getByLabelText("Casper Loto")).toBeInTheDocument();
   expect(container.querySelector(".brand-logo-horizontal")).toHaveAttribute("src", "/brand/logo-horizontal-432-v1.png");
-  expect(within(container.querySelector(".mobile-dock") as HTMLElement).getAllByRole("button").map(b => b.textContent)).toEqual(["Сегодня", "Лотереи", "Kasper Fast", "Моё"]);
+  expect(within(container.querySelector(".mobile-dock") as HTMLElement).getAllByRole("button").map(b => b.textContent)).toEqual(["Сегодня", "Лотереи", "Casper Fast", "Моё"]);
   fireEvent.click(screen.getByRole("button", { name: "Лотереи" }));
   expect(await screen.findByRole("button", { name: "Открыть Weekly 5/20" }, { timeout: 5000 })).toBeEnabled();
 });
@@ -230,7 +230,7 @@ it("shows the personal home dashboard while keeping Fast separate", async () => 
     ...dashboard,
     lotteries: [
       template,
-      { ...template, code: "bingo", name: "Kasper Bingo", jackpot: 10_000_000_000, numbers_to_pick: 12, max_number: 60 },
+      { ...template, code: "bingo", name: "Casper Bingo", jackpot: 10_000_000_000, numbers_to_pick: 12, max_number: 60 },
       dashboard.lotteries[1],
       { ...template, code: "pss", name: "ПСС-Лото", scheduled_at: "2026-08-15T16:00:00Z" },
       { ...template, code: "khan", name: "ХАН-Лото", scheduled_at: "2026-08-15T17:00:00Z" },
@@ -246,14 +246,14 @@ it("shows the personal home dashboard while keeping Fast separate", async () => 
   expect(screen.getByRole("heading", { name: "Дальше по расписанию" })).toBeInTheDocument();
   expect(screen.getByText("Ближайший с вашим билетом")).toBeInTheDocument();
   expect(screen.getByText("12 билетов ждут тиража")).toBeInTheDocument();
-  fireEvent.click(screen.getByText("Статистика Kasper"));
+  fireEvent.click(screen.getByText("Статистика Casper"));
   expect(screen.getAllByText("18 432")).toHaveLength(1);
   expect(screen.getAllByText("1 208")).toHaveLength(1);
   expect(screen.queryByLabelText("Витрина лотерей")).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Лотереи" }));
   const storefront = await screen.findByLabelText("Витрина лотерей");
   expect(within(storefront).getAllByRole("heading").map((heading) => heading.textContent)).toEqual([
-    "Kasper Bingo", "Weekly 5/20", "ПСС-Лото", "ХАН-Лото", "ГРОБ", "3 сентября", "ПЛЛ-лото",
+    "Casper Bingo", "Weekly 5/20", "ПСС-Лото", "ХАН-Лото", "ГРОБ", "3 сентября", "ПЛЛ-лото",
   ]);
   expect(screen.queryByText("Каспер выплатил игрокам за месяц")).not.toBeInTheDocument();
   expect(screen.queryByText("Случайная комбинация")).not.toBeInTheDocument();
@@ -395,12 +395,12 @@ it("keeps a confirmed purchase successful when the following refresh fails", asy
   await waitFor(() => expect(screen.getByRole("button", { name: "Купить билет" })).toBeDisabled());
 });
 
-it("keeps Kasper Grand main and special number fields independent", async () => {
+it("keeps Casper Grand main and special number fields independent", async () => {
   const grandDashboard: Dashboard = {
     ...dashboard,
     lotteries: [{
       ...dashboard.lotteries[0],
-      name: "Kasper Grand",
+      name: "Casper Grand",
       numbers_to_pick: 7,
       max_number: 40,
       primary_numbers_to_pick: 5,
@@ -424,7 +424,7 @@ it("keeps Kasper Grand main and special number fields independent", async () => 
     "signed", "weekly", [[1, 2, 3, 4, 5, 36, 37]],
     "00000000-0000-4000-8000-000000000001", 1,
   ));
-  expect(screen.getByRole("heading", { name: "Kasper Grand" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Casper Grand" })).toBeInTheDocument();
   await waitFor(() => {
     const refreshedMain = screen.getByText("Основные числа").closest("section") as HTMLElement;
     expect(within(refreshedMain).queryAllByRole("button", { pressed: true })).toHaveLength(0);
@@ -461,9 +461,9 @@ it("offers an explicit prepaid five-draw purchase without enabling it by default
 it("opens the separate Fast section without replacing the nearest main draw", async () => {
   render(<App initData="signed" />);
   expect(await screen.findByText(/Ближайший тираж/i)).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Kasper Fast" }));
+  fireEvent.click(screen.getByRole("button", { name: "Casper Fast" }));
 
-  expect(await screen.findByRole("heading", { name: "Kasper Fast" })).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "Casper Fast" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "FLASH" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "SHADOW" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "PULSE" })).toBeInTheDocument();
@@ -585,7 +585,7 @@ it("keeps the Fast countdown steady when a stream snapshot has a different clock
   try {
     let container: HTMLElement;
     await act(async () => { const app = render(<App initData="test" />); container = app.container; unmount = app.unmount; });
-    fireEvent.click(screen.getByRole("button", { name: "Kasper Fast" }));
+    fireEvent.click(screen.getByRole("button", { name: "Casper Fast" }));
     await act(async () => { await vi.advanceTimersByTimeAsync(1_000); });
     const timer = () => container!.querySelector(".fast-shadow .fast-card-main strong")?.textContent;
     const before = timer();
@@ -626,8 +626,8 @@ it("does not replace history with a late active-ticket response", async () => {
 
 it("keeps Fast tickets accessible through a separate server filter", async () => {
   render(<App initData="test" />);
-  fireEvent.click(await screen.findByRole("button", { name: "Kasper Fast" }));
-  fireEvent.click(screen.getByRole("button", { name: /Билеты Kasper Fast/ }));
+  fireEvent.click(await screen.findByRole("button", { name: "Casper Fast" }));
+  fireEvent.click(screen.getByRole("button", { name: /Билеты Casper Fast/ }));
   await waitFor(() => expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "active", "scope:fast", false));
   fireEvent.change(screen.getByLabelText("Фильтр по лотерее"), { target: { value: "scope:standard" } });
   await waitFor(() => expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "active", "scope:standard", false));
@@ -692,8 +692,8 @@ it("account hub sends the empty state to the catalog", async () => {
 
 it("account hub clears a stale Fast filter when opening all active tickets", async () => {
   render(<App initData="test" />);
-  fireEvent.click(await screen.findByRole("button", { name: "Kasper Fast" }));
-  fireEvent.click(screen.getByRole("button", { name: /Билеты Kasper Fast/ }));
+  fireEvent.click(await screen.findByRole("button", { name: "Casper Fast" }));
+  fireEvent.click(screen.getByRole("button", { name: /Билеты Casper Fast/ }));
   await waitFor(() => expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "active", "scope:fast", false));
   fireEvent.click(screen.getByRole("button", { name: "Обзор" }));
   fireEvent.click(await screen.findByRole("button", { name: /Активные билеты/ }));

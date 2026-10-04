@@ -34,7 +34,7 @@ type SystemTab = "events" | "health" | "ledger" | "notifications" | "audit" | "d
 const navigation: { id: View; label: string; code: string }[] = [
   { id: "dashboard", label: "Сегодня", code: "01" },
   { id: "fast", label: "Fast", code: "02" },
-  { id: "kasper-live", label: "Kasper LIVE", code: "LIVE" },
+  { id: "kasper-live", label: "Casper LIVE", code: "LIVE" },
   { id: "lotteries", label: "Лотереи", code: "03" },
   { id: "schedule", label: "Расписание", code: "04" },
   { id: "draws", label: "Тиражи", code: "05" },
@@ -764,7 +764,7 @@ function InterestingFactsView({ facts, lotteries, onStatus }: { facts: Interesti
 
 function KasperLiveAdmin({ data }: { data: KasperLiveSummary }) {
   return <section className="kasper-live-admin">
-    <header><small>МГНОВЕННАЯ ЛОТЕРЕЯ</small><h2>Kasper LIVE</h2><p>Только общий итог. Данные игроков в этом разделе не показываются.</p></header>
+    <header><small>МГНОВЕННАЯ ЛОТЕРЕЯ</small><h2>Casper LIVE</h2><p>Только общий итог. Данные игроков в этом разделе не показываются.</p></header>
     <div className="kasper-live-admin-grid">
       <article><span>КОЛИЧЕСТВО БИЛЕТОВ</span><strong>{data.ticket_count.toLocaleString("ru-RU")}</strong></article>
       <article><span>ВЫИГРЫШИ</span><strong>{data.winning_tickets.toLocaleString("ru-RU")}</strong></article>
@@ -962,6 +962,6 @@ function StatisticsView({ lotteries, report, selectedLotteryId, windowSize, onLo
       <article><small>ЧАЩЕ ВСЕГО</small><strong>{hottest?.appearances ? numberLabel(hottest.number) : "—"}</strong><span>{hottest?.appearances ? `${hottest.appearances} выпадений` : "данные накапливаются"}</span></article>
       <article><small>РЕЖЕ ВСЕГО</small><strong>{coldest?.appearances || report.draw_count ? coldest ? numberLabel(coldest.number) : "—" : "—"}</strong><span>{coldest ? `${coldest.appearances} выпадений` : "данные накапливаются"}</span></article>
     </section>
-    <section className="panel statistics-panel"><header><div><h2>Выпавшие числа</h2><span>{report.draw_count ? `${date(report.first_draw_at)} — ${date(report.last_draw_at)}` : "ПОКА НЕТ ЗАВЕРШЁННЫХ ТИРАЖЕЙ В ПЕРИОДЕ"}</span></div><div className="statistics-controls"><select aria-label="Лотерея" value={selectedLotteryId} onChange={(e) => onLottery(e.target.value)}>{eligibleLotteries.map((lottery) => <option value={lottery.id} key={lottery.id}>{lottery.name}</option>)}</select><select aria-label="Количество тиражей" value={windowSize} onChange={(e) => onWindow(Number(e.target.value))}><option value={0}>Все</option><option value={10}>10 тиражей</option><option value={20}>20 тиражей</option><option value={50}>50 тиражей</option><option value={100}>100 тиражей</option></select></div></header><div className="stat-grid">{report.numbers.map((row) => <article key={row.number}><i>{numberLabel(row.number)}</i><strong>{row.appearances}</strong><small>выпадений</small><div style={{ "--value": `${row.draw_percentage}%` } as CSSProperties}><span /></div><em>{row.draw_percentage}% тиражей</em><b>{row.draws_since_last === null ? "ещё не выпадало" : row.draws_since_last === 0 ? "в последнем тираже" : `${row.draws_since_last} тир. назад`}</b></article>)}</div><p className="source-note">Для Kasper Grand символ ★ обозначает специальное поле. Bingo здесь не показывается: в нём важен порядок закрытия строк, а не частота почти всех 60 шаров. Частота чисел нужна только для наблюдения за историей и не повышает вероятность следующего результата.</p></section>
+    <section className="panel statistics-panel"><header><div><h2>Выпавшие числа</h2><span>{report.draw_count ? `${date(report.first_draw_at)} — ${date(report.last_draw_at)}` : "ПОКА НЕТ ЗАВЕРШЁННЫХ ТИРАЖЕЙ В ПЕРИОДЕ"}</span></div><div className="statistics-controls"><select aria-label="Лотерея" value={selectedLotteryId} onChange={(e) => onLottery(e.target.value)}>{eligibleLotteries.map((lottery) => <option value={lottery.id} key={lottery.id}>{lottery.name}</option>)}</select><select aria-label="Количество тиражей" value={windowSize} onChange={(e) => onWindow(Number(e.target.value))}><option value={0}>Все</option><option value={10}>10 тиражей</option><option value={20}>20 тиражей</option><option value={50}>50 тиражей</option><option value={100}>100 тиражей</option></select></div></header><div className="stat-grid">{report.numbers.map((row) => <article key={row.number}><i>{numberLabel(row.number)}</i><strong>{row.appearances}</strong><small>выпадений</small><div style={{ "--value": `${row.draw_percentage}%` } as CSSProperties}><span /></div><em>{row.draw_percentage}% тиражей</em><b>{row.draws_since_last === null ? "ещё не выпадало" : row.draws_since_last === 0 ? "в последнем тираже" : `${row.draws_since_last} тир. назад`}</b></article>)}</div><p className="source-note">Для Casper Grand символ ★ обозначает специальное поле. Bingo здесь не показывается: в нём важен порядок закрытия строк, а не частота почти всех 60 шаров. Частота чисел нужна только для наблюдения за историей и не повышает вероятность следующего результата.</p></section>
   </>;
 }
