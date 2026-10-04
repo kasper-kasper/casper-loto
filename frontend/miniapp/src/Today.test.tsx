@@ -10,7 +10,7 @@ const lottery: Lottery = {
   sales_open: true, purchase_available: true, player_ticket_count: 0, sales_status: "OPEN",
   max_tickets_per_purchase: 1000, max_tickets_per_user_per_draw: 5000,
 };
-const props = { lotteries: [lottery], now: Date.parse("2026-09-28T16:00:00Z"), highlights: null, totalTicketCount: 42, totalWinningTicketCount: 7, monthlyTotalPayout: 15000, onOpen: vi.fn(), onCatalog: vi.fn(), onTickets: vi.fn() };
+const props = { lotteries: [lottery], now: Date.parse("2026-09-28T16:00:00Z"), highlights: null, totalTicketCount: 42, totalWinningTicketCount: 7, monthlyTotalPayout: 15000, onOpen: vi.fn(), onCatalog: vi.fn(), onTickets: vi.fn(), onArchive: vi.fn() };
 
 it("keeps personal home tickets and catalog accessible with and without active tickets", () => {
   const onTickets = vi.fn(), onCatalog = vi.fn();
@@ -42,4 +42,11 @@ it("keeps empty schedules usable and includes Moscow dates for future events", (
   expect(within(event).getByRole("heading", { name: "6 из 36" })).toBeInTheDocument();
   expect(screen.getByText("30 сент., 20:00")).toBeInTheDocument();
   expect(within(event).getByText("01:00:00")).toBeInTheDocument();
+});
+
+it("opens the draw archive from the home sections", () => {
+  const onArchive = vi.fn();
+  render(<Today {...props} onArchive={onArchive} />);
+  fireEvent.click(screen.getByRole("button", { name: /Архив тиражей/ }));
+  expect(onArchive).toHaveBeenCalledOnce();
 });

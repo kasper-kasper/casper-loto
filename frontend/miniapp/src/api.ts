@@ -1,5 +1,6 @@
 import { brandViewData } from "../../shared/brandNames";
 import type { Highlights } from "./Today";
+import type { ArchivePage } from "./types";
 import type { BingoFeed, BingoInventory } from "./BingoView";
 import type { Account, Dashboard, Favorite, InstantPurchaseResult, InstantTicket, LiveFeed, NotificationPreferences, PurchaseResult, TicketPage, UserNotification } from "./types";
 
@@ -40,6 +41,11 @@ async function request<T>(path: string, initData: string, init?: RequestInit): P
 }
 
 export const miniAppApi = {
+  drawArchive: (initData: string, lotteryCode: string, jackpotsOnly: boolean, before: string | null = null, signal?: AbortSignal) => {
+    const query = new URLSearchParams({ lottery_code: lotteryCode, jackpots_only: String(jackpotsOnly) });
+    if (before) query.set("before", before);
+    return request<ArchivePage>(`/api/v1/miniapp/draw-archive?${query}`, initData, { signal });
+  },
   highlights: (initData: string, scope: "standard" | "fast" = "standard") => request<Highlights>(`/api/v1/miniapp/highlights?scope=${scope}`, initData),
   bingoInventory: (initData: string, offset = 0, numbers: number[] = []) => {
     const query = new URLSearchParams({ offset: String(offset) });

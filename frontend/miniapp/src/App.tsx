@@ -38,7 +38,9 @@ const FastView = lazy(() => import("./FastView").then(({ FastView }) => ({ defau
 const FastPicker = lazy(() => import("./FastView").then(({ FastPicker }) => ({ default: FastPicker })));
 const KasperLiveView = lazy(() => import("./KasperLiveView").then(({ KasperLiveView }) => ({ default: KasperLiveView })));
 
-type View = "catalog" | "home" | "live" | "fast" | "account" | "cart";
+const DrawArchive = lazy(() => import("./DrawArchive").then(({ DrawArchive }) => ({ default: DrawArchive })));
+
+type View = "archive" | "catalog" | "home" | "live" | "fast" | "account" | "cart";
 type TicketView = "active" | "history";
 type AccountView = "overview" | "tickets" | "notifications";
 interface CartReceipt { ticketCount: number; totalCost: number }
@@ -631,7 +633,8 @@ export default function App({ initData, localDev = false }: AppProps) {
     <Suspense fallback={<div className="skeleton view-loading-skeleton" aria-label="Загружаем экран" />} >
     {selectedTicket && (selectedTicket.lottery_code === "bingo" ? <BingoTicketDetail ticket={selectedTicket} onClose={() => setSelectedTicket(null)} /> : <TicketDetail lottery={dashboard.lotteries.find((item) => item.code === selectedTicket.lottery_code)} onClose={() => setSelectedTicket(null)} ticket={selectedTicket} />)}
 
-    {view === "home" && <section className="view-content home-view" key="home"><Today lotteries={standardLotteries} now={serverNow} highlights={highlights} totalTicketCount={dashboard.total_ticket_count} totalWinningTicketCount={dashboard.total_winning_ticket_count} monthlyTotalPayout={dashboard.monthly_total_payout} onOpen={(code, live) => void openLottery(code, [], live)} onCatalog={() => setView("catalog")} onTickets={() => { setTicketsLoading(true); setTicketView("active"); setTicketWinsOnly(false); setAccountView("tickets"); setTicketLotteryFilter("scope:standard"); setView("account"); }} /></section>}
+    {view === "archive" && <Suspense fallback={<Skeleton />}><DrawArchive initData={initData} onBack={() => setView("home")} /></Suspense>}
+    {view === "home" && <section className="view-content home-view" key="home"><Today onArchive={() => { setView("archive"); window.scrollTo({ top: 0, behavior: "instant" }); }} lotteries={standardLotteries} now={serverNow} highlights={highlights} totalTicketCount={dashboard.total_ticket_count} totalWinningTicketCount={dashboard.total_winning_ticket_count} monthlyTotalPayout={dashboard.monthly_total_payout} onOpen={(code, live) => void openLottery(code, [], live)} onCatalog={() => setView("catalog")} onTickets={() => { setTicketsLoading(true); setTicketView("active"); setTicketWinsOnly(false); setAccountView("tickets"); setTicketLotteryFilter("scope:standard"); setView("account"); }} /></section>}
     {view === "catalog" && <section className="view-content catalog-view" key="catalog"><LotteryCatalog lotteries={standardLotteries} onOpen={code => void openLottery(code)} /></section>}
     {view === "live" && <section className="view-content catalog-view"><LotteryCatalog lotteries={standardLotteries} onOpen={code => void openLottery(code)} /></section>}
 

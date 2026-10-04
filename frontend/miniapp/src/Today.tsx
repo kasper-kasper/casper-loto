@@ -15,7 +15,7 @@ function ticketsWaiting(count: number): string {
   return `${count} ${word} ${word === "билет" ? "ждёт" : "ждут"} тиража`;
 }
 
-export function Today({ lotteries, now, highlights, totalTicketCount, totalWinningTicketCount, monthlyTotalPayout, onOpen, onCatalog, onTickets }: { lotteries: Lottery[]; now: number; highlights: Highlights | null; totalTicketCount: number; totalWinningTicketCount: number; monthlyTotalPayout: number; onOpen: (code: string, live?: boolean) => void; onCatalog: () => void; onTickets: () => void }) {
+export function Today({ lotteries, now, highlights, totalTicketCount, totalWinningTicketCount, monthlyTotalPayout, onOpen, onCatalog, onTickets, onArchive }: { lotteries: Lottery[]; now: number; highlights: Highlights | null; totalTicketCount: number; totalWinningTicketCount: number; monthlyTotalPayout: number; onOpen: (code: string, live?: boolean) => void; onCatalog: () => void; onTickets: () => void; onArchive: () => void }) {
   const scheduled = [...lotteries].filter(lottery => lottery.scheduled_at).sort((left, right) => Date.parse(left.scheduled_at!) - Date.parse(right.scheduled_at!));
   const event = highlights?.next_event;
   const eventLottery = lotteries.find(lottery => lottery.code === event?.lottery_code);
@@ -47,6 +47,7 @@ export function Today({ lotteries, now, highlights, totalTicketCount, totalWinni
     <section className="home-schedule"><header><h2>Дальше по расписанию</h2><span>МСК</span></header>{agenda.length ? <div className="home-schedule-list">{agenda.map(lottery => <button key={lottery.code} onClick={() => onOpen(lottery.code)} type="button"><span className="home-schedule-icon"><DimensionalIcon name={lottery.code === "bingo" ? "ticket" : "history"} /></span><span className="home-schedule-copy"><strong>{lottery.name}</strong><time dateTime={lottery.scheduled_at!}>{formatMoscow(lottery.scheduled_at!)}</time></span><span className="home-schedule-prize"><small>Джекпот</small><Money value={lottery.jackpot} compact /></span><span className="home-schedule-arrow" aria-hidden="true">↗</span></button>)}</div> : <p>Следующие события скоро появятся.</p>}</section>
 
     {jackpot && <section className="home-latest-win"><DimensionalIcon name="profile" /><div><small>Последний джекпот · лотереи</small><strong><Money value={jackpot.jackpot_amount} compact /></strong><p>{jackpot.lottery_name} · № {jackpot.draw_number}</p><time dateTime={jackpot.occurred_at}>{formatMoscow(jackpot.occurred_at)} МСК</time></div><button type="button" aria-label={`Открыть ${jackpot.lottery_name}`} onClick={() => onOpen(jackpot.lottery_code)}>↗</button></section>}
+    <button className="home-archive-link" type="button" onClick={onArchive}><DimensionalIcon name="history" /><span><strong>Архив тиражей</strong><small>Результаты и сорванные джекпоты</small></span><b aria-hidden="true">↗</b></button>
     <details className="home-statistics"><summary>Статистика Casper<span aria-hidden="true">＋</span></summary><dl><div><dt>Билетов в истории</dt><dd>{totalTicketCount.toLocaleString("ru-RU")}</dd></div><div><dt>Выигрышных билетов</dt><dd>{totalWinningTicketCount.toLocaleString("ru-RU")}</dd></div><div><dt>Выплачено за месяц</dt><dd>{formatCas(monthlyTotalPayout)}</dd></div></dl></details>
   </div>;
 }

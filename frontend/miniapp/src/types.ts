@@ -1,4 +1,22 @@
 export type LotteryKind = "WEEKLY" | "DAILY";
+export interface ArchiveDraw {
+  id: string;
+  lottery_code: string;
+  lottery_name: string;
+  draw_number: number;
+  scheduled_at: string;
+  total_payout: number;
+  ticket_count: number | null;
+  winning_numbers: number[] | null;
+  primary_numbers_to_pick: number;
+  secondary_storage_offset: number;
+  jackpot_amount: number | null;
+}
+export interface ArchivePage {
+  items: ArchiveDraw[];
+  lotteries: { code: string; name: string }[];
+  next_cursor: string | null;
+}
 export type TicketStatus = "PURCHASED" | "SETTLED" | "REFUNDED";
 
 export interface Lottery {

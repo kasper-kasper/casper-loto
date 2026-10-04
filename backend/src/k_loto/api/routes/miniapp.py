@@ -21,6 +21,7 @@ from k_loto.api.dependencies import (
 )
 from k_loto.application.daily import DailyTicketPurchaseService
 from k_loto.application.dev_mode import DevBootstrapConfig, DevBootstrapService
+from k_loto.application.draw_archive import ArchivePage, DrawArchiveService
 from k_loto.application.favorites import FavoriteCombinationService
 from k_loto.application.instant import (
     InstantTicketPurchaseService,
@@ -64,6 +65,26 @@ from k_loto.infrastructure.local_dev_auth import (
 from k_loto.infrastructure.rate_limit import purchase_rate_limiter
 
 router = APIRouter(prefix="/api/v1/miniapp", tags=["miniapp"])
+
+
+@router.get("/draw-archive", response_model=ArchivePage)
+async def draw_archive(
+    user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    lottery_code: Annotated[str, Query(max_length=32)] = "",
+    jackpots_only: bool = False,
+    before: UUID | None = None,
+    limit: Annotated[int, Query(ge=1, le=50)] = 30,
+) -> ArchivePage:
+    try:
+        return await DrawArchiveService(session).page(
+            lottery_code=lottery_code,
+            jackpots_only=jackpots_only,
+            before=before,
+            limit=limit,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 class LotteryResponse(BaseModel):
