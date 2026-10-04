@@ -1,0 +1,16 @@
+[Unit]
+Description=Bounded Casper Loto storage maintenance
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/k-loto
+ExecStart=/usr/bin/python3 /opt/k-loto/scripts/server_maintenance.py --apply
+Nice=15
+IOSchedulingClass=idle
+TimeoutStartSec=10min
+UMask=0077
+NoNewPrivileges=true
+StandardOutput=journal
+StandardError=journal

@@ -1,0 +1,12 @@
+# Small-project profile (<50 players). See docs/SERVER_STORAGE.md before tuning.
+# Cache can temporarily exceed the reserve while entries are younger than 48h.
+cache_keep_mb = 512
+cache_min_age_hours = 48
+image_keep_versions = 3
+image_min_age_days = 7
+archive_keep_per_category = 3
+archive_min_age_days = 14
+upload_min_age_hours = 48
+publication_grace_minutes = 15
+disk_warning_percent = 80
+diagnostic_log_retention_days = 90

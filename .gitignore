@@ -34,4 +34,5 @@ Thumbs.db
 logs/
 .tools/
 backups/
+.maintenance/
 .playwright-mcp/

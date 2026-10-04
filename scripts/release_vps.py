@@ -15,6 +15,11 @@ from uuid import uuid4
 
 import paramiko
 
+if __package__:
+    from scripts.vps_operation_lock import remote_operations_lock
+else:
+    from vps_operation_lock import remote_operations_lock
+
 ROOT = Path(__file__).resolve().parents[1]
 ALL_SERVICES = ("api", "bot", "gateway")
 FRONTENDS = (
@@ -161,7 +166,7 @@ def main() -> None:
     plan += "backup -> upload -> build " + ", ".join(services)
     if any(item != "gateway" for item in services):
         plan += " -> migrate"
-    print(f"Release plan: {plan} -> health -> Docker cache maintenance")
+    print(f"Release plan: {plan} -> health (daily maintenance is separate)")
     if args.dry_run:
         return
 
@@ -182,93 +187,102 @@ def main() -> None:
             timeout=20,
         )
         try:
-            compose = (
-                "docker compose --env-file .env.production -f docker-compose.prod.yml"
-            )
-            run_remote(
-                client,
-                "Production database backup",
-                "cd /opt/k-loto && sh scripts/backup_production.sh",
-                timeout=300,
-            )
-            with client.open_sftp() as sftp:
-                sftp.put(str(archive), remote_archive)
-            run_remote(
-                client,
-                "Release upload",
-                "set -eu; rm -rf -- /opt/k-loto/frontend/admin/dist "
-                "/opt/k-loto/frontend/miniapp/dist /opt/k-loto/frontend/web/dist; "
-                f"tar -xzf {remote_archive} -C /opt/k-loto; "
-                f"rm -f {remote_archive}",
-                timeout=120,
-            )
-            backend_services = [item for item in services if item != "gateway"]
-            if backend_services:
-                run_remote(
-                    client,
-                    "Backend image build",
-                    f"cd /opt/k-loto && {compose} build --quiet "
-                    + " ".join(backend_services),
-                    timeout=1_800,
+            client.get_transport().set_keepalive(15)
+            with remote_operations_lock(client):
+                compose = (
+                    "docker compose --env-file .env.production "
+                    "-f docker-compose.prod.yml"
                 )
-            if includes_gateway:
                 run_remote(
                     client,
-                    "Gateway image assembly",
-                    "cd /opt/k-loto && docker build --quiet "
-                    "-f frontend/Dockerfile.prebuilt -t k-loto-gateway:latest .",
+                    "Production database backup",
+                    "cd /opt/k-loto && sh scripts/backup_production.sh",
                     timeout=300,
                 )
-            if backend_services:
+                with client.open_sftp() as sftp:
+                    sftp.put(str(archive), remote_archive)
                 run_remote(
                     client,
-                    "Database migration",
-                    f"cd /opt/k-loto && {compose} up -d db && "
-                    f"{compose} run --rm api alembic upgrade head",
-                    timeout=300,
+                    "Release upload",
+                    "set -eu; rm -rf -- /opt/k-loto/frontend/admin/dist "
+                    "/opt/k-loto/frontend/miniapp/dist /opt/k-loto/frontend/web/dist; "
+                    f"tar -xzf {remote_archive} -C /opt/k-loto; "
+                    f"rm -f {remote_archive}",
+                    timeout=120,
                 )
-            run_remote(
-                client,
-                "Service restart",
-                f"cd /opt/k-loto && {compose} up -d --no-build " + " ".join(services),
-                timeout=300,
-            )
-            if backend_services:
+                rollback_stamp = int(time.time())
+                for service in services:
+                    run_remote(
+                        client,
+                        f"Preserve {service} rollback image",
+                        "docker image tag "
+                        "$(docker inspect --format '{{.Image}}' "
+                        f"k-loto-{service}-1) "
+                        f"k-loto-{service}:before-release-{rollback_stamp}",
+                    )
+                backend_services = [item for item in services if item != "gateway"]
+                if backend_services:
+                    run_remote(
+                        client,
+                        "Backend image build",
+                        f"cd /opt/k-loto && {compose} build --quiet "
+                        + " ".join(backend_services),
+                        timeout=1_800,
+                    )
+                if includes_gateway:
+                    run_remote(
+                        client,
+                        "Gateway image assembly",
+                        "cd /opt/k-loto && docker build --quiet "
+                        "-f frontend/Dockerfile.prebuilt -t k-loto-gateway:latest .",
+                        timeout=300,
+                    )
+                if backend_services:
+                    run_remote(
+                        client,
+                        "Database migration",
+                        f"cd /opt/k-loto && {compose} up -d db && "
+                        f"{compose} run --rm api alembic upgrade head",
+                        timeout=300,
+                    )
                 run_remote(
                     client,
-                    "Migration and backup validation",
-                    f"cd /opt/k-loto && {compose} exec -T api alembic check && "
-                    f"{compose} exec -T db sh -c "
-                    "'latest=$(ls -1t /backups/k-loto-*.dump | head -n 1); "
-                    'test -n "$latest"; pg_restore --list "$latest" >/dev/null\'',
+                    "Preserve API and bot diagnostic logs",
+                    "cd /opt/k-loto && python3 -c "
+                    "'from scripts.server_maintenance import archive_diagnostic_logs; "
+                    "archive_diagnostic_logs()'",
                     timeout=300,
                 )
-            run_remote(
-                client,
-                "Production health",
-                "set -eu; cd /opt/k-loto; attempt=0; "
-                f"until {compose} exec -T api python -c "
-                '"import urllib.request; '
-                "urllib.request.urlopen('http://localhost:8000/health', timeout=3)"
-                + '" >/dev/null 2>&1; do '
-                "attempt=$((attempt + 1)); "
-                'test "$attempt" -lt 30 || exit 1; sleep 2; done; '
-                f"{compose} ps",
-                timeout=120,
-            )
-            run_remote(
-                client,
-                "Docker build-cache maintenance",
-                "docker builder prune --all --force --keep-storage 2GB >/dev/null",
-                timeout=300,
-            )
-            run_remote(
-                client,
-                "Old unused K-Loto image maintenance",
-                "docker image prune --all --force --filter 'until=48h' "
-                "--filter 'label=com.docker.compose.project=k-loto' >/dev/null",
-                timeout=300,
-            )
+                run_remote(
+                    client,
+                    "Service restart",
+                    f"cd /opt/k-loto && {compose} up -d --no-build "
+                    + " ".join(services),
+                    timeout=300,
+                )
+                if backend_services:
+                    run_remote(
+                        client,
+                        "Migration and backup validation",
+                        f"cd /opt/k-loto && {compose} exec -T api alembic check && "
+                        f"{compose} exec -T db sh -c "
+                        "'latest=$(ls -1t /backups/k-loto-*.dump | head -n 1); "
+                        'test -n "$latest"; pg_restore --list "$latest" >/dev/null\'',
+                        timeout=300,
+                    )
+                run_remote(
+                    client,
+                    "Production health",
+                    "set -eu; cd /opt/k-loto; attempt=0; "
+                    f"until {compose} exec -T api python -c "
+                    '"import urllib.request; '
+                    "urllib.request.urlopen('http://localhost:8000/health', timeout=3)"
+                    + '" >/dev/null 2>&1; do '
+                    "attempt=$((attempt + 1)); "
+                    'test "$attempt" -lt 30 || exit 1; sleep 2; done; '
+                    f"{compose} ps",
+                    timeout=120,
+                )
         finally:
             client.close()
 

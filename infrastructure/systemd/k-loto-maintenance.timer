@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Casper Loto storage maintenance
+
+[Timer]
+OnCalendar=*-*-* 05:00:00 Europe/Moscow
+RandomizedDelaySec=5min
+Persistent=true
+Unit=k-loto-maintenance.service
+
+[Install]
+WantedBy=timers.target

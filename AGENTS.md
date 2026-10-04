@@ -56,3 +56,12 @@ These rules apply to every human or AI change in this repository.
     the experience that needs them, preserve keyboard/accessibility fallbacks
     for important controls, and keep authoritative business state on the
     server.
+
+17. VPS publications must hold `/run/lock/k-loto-operations.lock` for their
+    entire backup/upload/build/restart/health sequence. Use
+    `scripts.vps_operation_lock.remote_operations_lock` for SSH releases.
+    Preserve API/bot diagnostic logs with `archive_diagnostic_logs()` under
+    that lock before recreating either service.
+    Storage cleanup belongs to `scripts/server_maintenance.py`; do not add
+    broad Docker pruning or volume deletion to release helpers. Compact
+    retention settings and when to increase them are in `docs/SERVER_STORAGE.md`.
