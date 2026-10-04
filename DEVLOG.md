@@ -1,3 +1,7 @@
+## Compact home archive entry — 2026-10-04
+
+- Fixed an unconstrained SVG growing the Home archive button. Matched the latest-jackpot surface, fixed the icon at 42 px, removed extra vertical margins and retained the Home section gap. CSS only; no archive logic or other interfaces changed. Minimal verification: Mini App typecheck/lint/build and focused mobile visual smoke; gateway-only publication with backups and health verification.
+
 ## Mini App draw archive — 2026-10-04
 
 - Added authenticated read-only archive service and Mini App endpoint, with completed-only standard scope, historical ruleset field metadata, recorded jackpot events and stable date/UUID cursor pagination (30 rows, maximum 50). No ticket scans, total counts, background polling, database writes or schema changes. Inactive lottery identities remain available for preserved history.

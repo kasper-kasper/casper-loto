@@ -76,6 +76,9 @@
 .home-hub button:focus-visible,.home-statistics summary:focus-visible { outline:2px solid #e8d3a3; outline-offset:3px; }
 @media(max-width:359px) { .home-hub { gap:13px; } .home-heading h1 { font-size:30px; } .home-feature { padding:16px; } .home-feature-copy { width:74%; } .home-feature-copy h2 { font-size:24px; } .home-feature-copy > strong { font-size:24px; } .home-feature-art { width:48%; right:-8px; top:34px; } .home-actions { gap:10px; } .home-actions > button { padding:14px 12px; } .home-action-copy strong { font-size:12px; } .home-action-copy small { font-size:9px; } .home-schedule-list > button { gap:8px; padding:12px 10px; } .home-schedule-icon { width:25px; height:25px; } .home-schedule-prize > .money-value { font-size:11px; } .home-schedule-arrow { display:none; } }
 
-.home-archive-link { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; padding: 19px; margin: 18px 0; background: linear-gradient(120deg, #192a48, #101c34); border: 1px solid #334769; border-radius: 20px; color: #edf2ff; }
-.home-archive-link > span { display: grid; gap: 6px; flex: 1; }
-.home-archive-link small { color: #a9bad9; font-size: 11px; }
+.home-archive-link { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 78px; text-align: left; padding: 16px 18px; margin: 0; background: linear-gradient(140deg, #253346, #111e31); border: 1px solid #b3c9e51f; border-radius: 18px; color: #edf2ff; cursor: pointer; }
+.home-archive-link > .dimensional-icon { width: 42px; height: 42px; flex: 0 0 42px; }
+.home-archive-link > span { display: grid; gap: 6px; flex: 1; min-width: 0; }
+.home-archive-link strong { font-size: 14px; font-weight: 550; }
+.home-archive-link small { color: #a8b9cf; font-size: 10px; }
+.home-archive-link > b { display: grid; place-items: center; flex: 0 0 32px; width: 32px; height: 32px; border: 1px solid #d5e5ff1c; border-radius: 50%; color: #c0cee2; background: #ffffff04; font-size: 16px; font-weight: 400; }
