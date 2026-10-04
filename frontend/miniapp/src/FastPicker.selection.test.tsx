@@ -39,3 +39,27 @@ it("shows errors and locks the current selection while a request is pending", ()
   expect(screen.getByRole("button", { name: "Pulse-число 6" })).toBeDisabled();
   expect(onBuy).not.toHaveBeenCalled();
 });
+
+it("keeps CODE digits ordered, allows repeats, and removes the last digit without buying", () => {
+  const onBuy = vi.fn();
+  const { container } = render(<FastPicker lottery={{ ...pulse, code: "shadow", name: "CODE", ruleset_code: "code_5_digits", numbers_to_pick: 5, max_number: 9 }} purchasing={false} success={false} onClose={vi.fn()} onBuy={onBuy} />);
+  for (const value of [0, 7, 0, 3, 8, 9]) fireEvent.click(screen.getByRole("button", { name: `Цифра ${value}` }));
+  expect(Array.from(container.querySelectorAll(".fast-selection i"), node => node.textContent)).toEqual(["0", "7", "0", "3", "8"]);
+  expect(screen.getByRole("button", { name: "Подтвердить код" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "Цифра 0" })).not.toHaveAttribute("aria-pressed");
+  fireEvent.click(screen.getByRole("button", { name: "Удалить последнюю цифру" }));
+  expect(screen.getByRole("button", { name: "Подтвердить код" })).toBeDisabled();
+  expect(Array.from(container.querySelectorAll(".fast-selection i"), node => node.textContent)).toEqual(["0", "7", "0", "3", "—"]);
+  expect(onBuy).not.toHaveBeenCalled();
+});
+
+it("keeps FLASH selection limited and lets a lit key release its position", () => {
+  const onBuy = vi.fn();
+  render(<FastPicker lottery={{ ...pulse, code: "flash", name: "FLASH", numbers_to_pick: 5, max_number: 20 }} purchasing={false} success={false} onClose={vi.fn()} onBuy={onBuy} />);
+  for (const value of [1, 5, 9, 14, 20, 3]) fireEvent.click(screen.getByRole("button", { name: `Позиция ${value}` }));
+  expect(screen.getByRole("button", { name: "Позиция 3" })).toHaveAttribute("aria-pressed", "false");
+  expect(screen.getByRole("button", { name: "Активировать" })).toBeEnabled();
+  fireEvent.click(screen.getByRole("button", { name: "Позиция 20" }));
+  expect(screen.getByRole("button", { name: "Активировать" })).toBeDisabled();
+  expect(onBuy).not.toHaveBeenCalled();
+});

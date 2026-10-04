@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 
-import flashScene from "./assets/lotteries/flash-scene.webp";
-import pulseScene from "./assets/lotteries/pulse-scene.webp";
-import shadowScene from "./assets/lotteries/shadow-scene.webp";
+import { FastArtifact } from "./FastArtifact";
+import "./fast-premium.css";
 import { Icon, Money, PrimaryButton } from "./components";
 import { countdown, formatCas, formatDrawLabel, formatMoscowTime } from "./format";
 import { fastLivePresentation } from "./live";
@@ -14,7 +13,6 @@ import type { LiveFeed, Lottery } from "./types";
 type FastCode = "flash" | "shadow" | "pulse" | "code";
 
 const presentationCode = (lottery: Pick<Lottery, "code" | "name" | "ruleset_code">): FastCode => lottery.ruleset_code?.startsWith("code_") || lottery.name === "CODE" ? "code" : lottery.code === "pulse" ? "pulse" : lottery.code === "shadow" ? "shadow" : "flash";
-const fastScene = (code: string) => code === "flash" ? flashScene : code === "pulse" ? pulseScene : shadowScene;
 const fastTagline = (code: FastCode) => code === "flash" ? "Соберите сигнал" : code === "pulse" ? "Поймайте ритм" : code === "code" ? "Взломайте комбинацию" : "Выберите тени";
 const fastAction = (code: FastCode) => code === "flash" ? "Собрать сигнал" : code === "pulse" ? "Поймать импульс" : code === "code" ? "Ввести код" : "Выбрать тени";
 
@@ -38,7 +36,7 @@ function PulseTrace({ className }: { className: string }) {
   return <div className={className} aria-hidden="true"><svg viewBox="0 0 120 48"><path d="M0 25H24L31 21L37 25L44 7L53 41L61 25H120" pathLength="120" /><circle cx="44" cy="7" r="2" /></svg></div>;
 }
 
-function SignalPreview({ code, maxNumber, pickCount }: { code: string; maxNumber: number; pickCount: number }) {
+function SignalTelemetry({ code, maxNumber, pickCount }: { code: string; maxNumber: number; pickCount: number }) {
   if (code === "pulse") return <PulseTrace className="fast-pulse-preview" />;
   if (code === "code") return <div className="code-preview" aria-hidden="true">{Array.from({ length: pickCount }, (_, index) => <span key={index}>•</span>)}<i /></div>;
   const active = code === "flash" ? [1, 7, 12] : [2, 8, 14];
@@ -65,11 +63,9 @@ function FastCard({ lottery, now, primary, balance, purchasing, onOpen, onQuickB
   const affordable = lottery.ticket_price ? Math.floor(balance / lottery.ticket_price) : 0;
   const quickLimit = Math.min(remaining, affordable, lottery.max_tickets_per_purchase);
   return <motion.article className={`fast-card fast-${code} ${primary ? "primary" : ""}`} initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: .34 }}>
-    {code !== "code" && <img src={fastScene(code)} alt="" />}
-    {code === "code" && <div className="code-card-scene" aria-hidden="true"><b>01001101</b><b>11010010</b><b>00110110</b><i /></div>}
     <div className="fast-card-sheen" aria-hidden="true" />
     <header><span><i /> БЫСТРАЯ ЛОТЕРЕЯ</span><small>{formatDrawLabel(lottery.code, lottery.draw_number ?? 0)}</small></header>
-    <div className="fast-card-main"><div><h2>{lottery.name}</h2><p>{fastTagline(code)}</p><span>Следующий раунд через</span><strong>{countdown(lottery.scheduled_at, now)}</strong></div><SignalPreview code={code} maxNumber={lottery.max_number} pickCount={lottery.numbers_to_pick} /></div>
+    <div className="fast-card-main"><div><h2>{lottery.name}</h2><p>{fastTagline(code)}</p><span>Следующий раунд через</span><strong>{countdown(lottery.scheduled_at, now)}</strong></div><div className="fast-display"><FastArtifact kind={code} /><div className="fast-telemetry"><SignalTelemetry code={code} maxNumber={lottery.max_number} pickCount={lottery.numbers_to_pick} /></div></div></div>
     <div className="fast-card-jackpot"><span>ТЕКУЩИЙ ДЖЕКПОТ</span><strong><Money value={lottery.jackpot} /></strong></div>
     <div className="fast-card-bottom"><div><span>Стоимость</span><strong><Money value={lottery.ticket_price ?? 0} /></strong></div><button disabled={purchasing || !lottery.purchase_available} onClick={onOpen} type="button"><Icon name="fast" />{lottery.purchase_available ? fastAction(code) : "Продажи закрыты"}<small>{lottery.scheduled_at ? formatMoscowTime(lottery.scheduled_at) : "—"}</small></button></div>
     <div className="fast-card-quick"><span>КУПИТЬ СЛУЧАЙНЫЕ</span>{[1, 5, 10].map((quantity) => <button aria-label={`Купить ${quantity} случайных билетов ${lottery.name}`} disabled={purchasing || !lottery.purchase_available || quantity > quickLimit} key={quantity} onClick={() => onQuickBuy(Array.from({ length: quantity }, () => randomFastTicket(lottery)))} type="button">{quantity}</button>)}</div>
@@ -99,8 +95,7 @@ function FastLiveCard({ feed, now }: { feed: LiveFeed; now: number }) {
   const slotCount = draw.winning_numbers?.length || draw.reveal_at.length || (code === "code" ? 5 : code === "pulse" ? 5 : 5);
   const pulseOffset = draw.secondary_storage_offset || 12;
   return <motion.article animate={{ opacity: 1, scale: 1 }} className={`fast-live-card fast-${code} phase-${state.phase}`} initial={false} transition={{ duration: .28 }}>
-    {code !== "code" && <img src={fastScene(code)} alt="" />}
-    {code === "code" && <div className="code-card-scene live" aria-hidden="true"><b>01101001</b><b>10110100</b><i /></div>}
+    <FastArtifact kind={code} className="fast-live-art" />
     <div className="fast-live-veil" aria-hidden="true" />
     {code === "pulse" && <PulseTrace className="pulse-live-ecg" />}
     <header><span><i /> {waiting ? "СКОРО В ЭФИРЕ" : result ? "РАУНД ЗАВЕРШЁН" : "ПРЯМОЙ ЭФИР"}</span><small>{formatDrawLabel(draw.lottery_code, draw.draw_number)}</small></header>
@@ -166,17 +161,15 @@ export function FastPicker({ lottery, purchasing, success, error, onClose, onBuy
   const complete = codeMode ? selected.length === codePick : pulse ? primarySelected.length === primaryPick && secondarySelected.length === secondaryPick : selected.length === lottery.numbers_to_pick;
   const primaryValues = codeMode ? [...Array.from({ length: 9 }, (_, index) => index + 1), 0] : Array.from({ length: primaryMax }, (_, index) => index + 1);
   return <div className={`fast-picker fast-${code}`}>
-    {code !== "code" && <img className="fast-picker-scene" src={fastScene(code)} alt="" />}
-    {codeMode && <div className="code-picker-scene" aria-hidden="true"><span>ACCESS</span><b>{"•".repeat(codePick)}</b><i /></div>}
-    <div className="fast-picker-overlay" aria-hidden="true" />
-    {pulse && <PulseTrace className="pulse-picker-beat" />}
+    <FastArtifact kind={code} className="fast-picker-art" />
     <button className="fast-picker-close" onClick={onClose} type="button" aria-label="Закрыть"><Icon name="arrow" /></button>
-    <header><span>{lottery.name} · {formatDrawLabel(lottery.code, lottery.draw_number ?? 0)}</span><h1>{pulse ? "Соберите пульс" : code === "flash" ? "Соберите сигнал" : codeMode ? "Введите код" : "Выберите 3 тени"}</h1><p>{pulse ? `${primaryPick} основных числа + ${secondaryPick} Pulse-числа · шифр назначит сервер` : codeMode ? `${codePick} цифр · порядок важен · повторы разрешены` : `Отметьте ${lottery.numbers_to_pick} позиции из ${lottery.max_number}`}</p></header>
-    <section className={`fast-grid-panel ${codeMode ? "code-keypad-panel" : ""}`}><div><strong>{pulse ? `ОСНОВНОЙ РИТМ · ${primaryPick} ИЗ ${primaryMax}` : code === "flash" ? "ПОЛЕ ИМПУЛЬСОВ" : codeMode ? "ЦИФРОВАЯ КЛАВИАТУРА" : "ПОЛЕ ТЕНЕЙ"}</strong><span>{codeMode ? "Введено" : "Выбрано"} <b>{primarySelected.length}</b> / {primaryPick}</span></div><div className={`fast-grid ${pulse ? "pulse-main-grid" : ""} ${codeMode ? "code-keypad" : ""}`}>{primaryValues.map((value) => <motion.button aria-label={`${codeMode ? "Цифра" : "Позиция"} ${value}`} aria-pressed={!codeMode && selected.includes(value)} className={!codeMode && selected.includes(value) ? "selected" : ""} key={value} disabled={purchasing} onClick={() => toggle(value)} type="button" whileTap={{ scale: .86 }}><i /><small>{String(value).padStart(2, "0")}</small></motion.button>)}{codeMode && <button className="code-backspace" disabled={purchasing || !selected.length} onClick={() => setSelected((current) => current.slice(0, -1))} type="button">⌫</button>}</div></section>
+    <span className="fast-picker-mode">CASPER <b>FAST</b><i /> БЫСТРЫЕ РАУНДЫ</span>
+    <header><span>{lottery.name} · {formatDrawLabel(lottery.code, lottery.draw_number ?? 0)}</span><h1>{pulse ? "Соберите пульс" : code === "flash" ? "Соберите сигнал" : codeMode ? "Введите код" : `Выберите ${lottery.numbers_to_pick} тени`}</h1><p>{pulse ? `${primaryPick} основных числа + ${secondaryPick} Pulse-числа · шифр назначит сервер` : codeMode ? `${codePick} цифр · порядок важен · повторы разрешены` : `Ваш выбор: ${lottery.numbers_to_pick} из ${lottery.max_number}`}</p></header>
+    <section className={`fast-grid-panel ${codeMode ? "code-keypad-panel" : ""}`}><div><strong>{pulse ? `ОСНОВНОЙ РИТМ · ${primaryPick} ИЗ ${primaryMax}` : code === "flash" ? "ПОЛЕ ИМПУЛЬСОВ" : codeMode ? "ЦИФРОВАЯ КЛАВИАТУРА" : "ПОЛЕ ТЕНЕЙ"}</strong><span>{codeMode ? "Введено" : "Выбрано"} <b>{primarySelected.length}</b> / {primaryPick}</span></div><div className={`fast-grid ${pulse ? "pulse-main-grid" : ""} ${codeMode ? "code-keypad" : ""}`}>{primaryValues.map((value) => <motion.button aria-label={`${codeMode ? "Цифра" : "Позиция"} ${value}`} aria-pressed={codeMode ? undefined : selected.includes(value)} className={!codeMode && selected.includes(value) ? "selected" : ""} key={value} disabled={purchasing} onClick={() => toggle(value)} type="button" whileTap={{ scale: .86 }}><i /><small>{codeMode ? value : String(value).padStart(2, "0")}</small></motion.button>)}{codeMode && <button className="code-backspace" aria-label="Удалить последнюю цифру" disabled={purchasing || !selected.length} onClick={() => setSelected((current) => current.slice(0, -1))} type="button">⌫</button>}</div></section>
     {pulse && <section className="pulse-special-panel"><div><strong>PULSE-ПОЛЕ · {secondaryPick} ИЗ {secondaryMax}</strong><span>Выбрано <b>{secondarySelected.length}</b> / {secondaryPick}</span></div><div>{secondaryValues.map((value) => <motion.button aria-label={`Pulse-число ${value - secondaryOffset}`} aria-pressed={selected.includes(value)} className={selected.includes(value) ? "selected" : ""} key={value} disabled={purchasing} onClick={() => toggle(value, secondaryPick)} type="button" whileTap={{ scale: .84 }}>{value - secondaryOffset}</motion.button>)}</div></section>}
     <section className="fast-selection"><div><span>{pulse ? "Ваш ритм" : code === "flash" ? "Ваш сигнал" : codeMode ? "Ваш код" : "Ваши тени"}</span><div>{pulse ? <>{Array.from({ length: primaryPick }, (_, index) => <i className={primarySelected[index] ? "filled" : ""} key={`primary-${index}`}>{primarySelected[index] ? String(primarySelected[index]).padStart(2, "0") : "—"}</i>)}<b>+</b>{Array.from({ length: secondaryPick }, (_, index) => <i className={`pulse-chip ${secondarySelected[index] ? "filled" : ""}`} key={`secondary-${index}`}>{secondarySelected[index] ? `P${secondarySelected[index] - secondaryOffset}` : "—"}</i>)}</> : Array.from({ length: codeMode ? codePick : lottery.numbers_to_pick }, (_, index) => <i className={selected[index] !== undefined ? "filled" : ""} key={index}>{selected[index] !== undefined ? String(selected[index]).padStart(codeMode ? 1 : 2, "0") : "—"}</i>)}</div></div><button disabled={purchasing} onClick={randomize} type="button"><Icon name="spark" />{codeMode ? "Случайный код" : "Случайный выбор"}</button></section>
     {error && <p className="fast-picker-error" role="alert">{error}</p>}
     <div className="fast-purchase"><div><span>Стоимость</span><strong>{formatCas(lottery.ticket_price ?? 0)}</strong></div><PrimaryButton disabled={!complete || !lottery.purchase_available} loading={purchasing} success={success} onClick={() => void buy()}><Icon name="fast" />{success ? "Билет куплен" : pulse ? "Запустить пульс" : code === "flash" ? "Активировать" : codeMode ? "Подтвердить код" : "Купить сигнал"}</PrimaryButton></div>
-    <p className="fast-picker-note">Билет участвует в ближайшем раунде · без эфира в Telegram</p>
+    <p className="fast-picker-note">Билет участвует в ближайшем раунде</p>
   </div>;
 }

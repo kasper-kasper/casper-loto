@@ -153,7 +153,7 @@ describe("CODE picker", () => {
         onClose={() => undefined}
       />,
     );
-    expect(Array.from(container.querySelectorAll(".code-keypad button:not(.code-backspace)"), (button) => button.textContent)).toEqual(["01", "02", "03", "04", "05", "06", "07", "08", "09", "00"]);
+    expect(Array.from(container.querySelectorAll(".code-keypad button:not(.code-backspace)"), (button) => button.textContent)).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]);
   });
 
   it("submits four ordered digits including zero and repeats", () => {

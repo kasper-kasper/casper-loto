@@ -1,3 +1,12 @@
+## Mini App: dimensional Fast devices and tactile selection — 2026-10-04
+
+- Replaced Fast's flat background scenes with three transparent device illustrations, graphite/chrome card surfaces and optical-glass accents. Preserved animated Pulse trace, signal indicators, code indicators, card ordering and reveal transitions. The eager Fast shell now shares its background with the header; no separate dark stripe while the lazy screen loads.
+- Added FastArtifact, a decorative image component with CSS float/double-beat motion. Explicit 480×480 dimensions, reduced-motion rules and visibility/offscreen pause; no engine, animation loop or business dependency. Three WebPs total 146,734 bytes and are isolated to the Fast chunk. Prompts/provenance: docs/design/fast-device-assets.md.
+- Rebuilt picker presentation as a compact instrument console with large engraved keys, selected glass highlights, separate Pulse fields and a recessed combination display. CODE shows single digits and an accessible backspace label; input keys no longer claim toggle-button semantics. Existing handlers, limits, API calls, prices and number encoding are unchanged.
+- Fast live/result cards use the same materials, with flexible rows to prevent overlap around long headings and the Pulse cipher. Server reveal timing, ordering and result values are unchanged. Other lotteries were not restyled.
+- Verification: 8 focused selection/CODE keypad/live-display tests passed; 3 purchase tests excluded. Frontend lint and TypeScript/build; local browser preview at 390×844 and 320×640 covering all three pickers, Pulse 11/12 and P1/P6, ordered repeated CODE digits, no horizontal overflow, and action buttons above the fold. A temporary local fixture verified Pulse live and completed 2+2+cipher rendering; removed after use. No ticket purchase tests or transactions. Actual Telegram device unavailable.
+- Release 1.53.0: miniapp/gateway only, local and VPS rollback backups, production health/version/HTML and new asset checks.
+
 ## Mini App: Casper Bingo emerald ticket edition — 2026-09-28
 
 - Added presentation-only BingoEdition: emerald cardstock, foil frame, medallion, ivory inset and the original server-provided 3×4 row order. Purchased serials, draw/date/price, hits and results retain their existing data. Selection and detail use the new design; live Paper is unchanged.
