@@ -1,3 +1,9 @@
+## Editable Telegram post bank and launch checklist — 2026-10-05
+
+- Created UTF-8 text file docs/publications/block-a/telegram-posts.v1.txt with all 30 prepared A1/A4 Telegram captions, stable variant IDs and explicit pending/excluded labels for A4.4/A4.5. No Story fields; no new editorial claims or automatic rules. Owner can edit and return this file for review; A2/A3/A5/A8 bank remains outstanding.
+- Updated docs/PUBLICATIONS.md with actual delivery status, the single authorized channel test and approved-but-unimplemented Story lifetime. Added concrete manual-delivery and automatic-event launch checklist based on current service/renderer/scheduler code.
+- Verification: exactly 30 caption IDs exported, readable UTF-8 file, documentation diff checked. No runtime change, channel send or production release.
+
 ## Block A participant-record threshold — 2026-10-05
 
 - Owner approves A4.3 only with at least 500 unique participants per draw and at least 20% growth over the previous record; both thresholds inclusive. Updated editorial policy and OD-039. This records a business decision only; automatic delivery remains disabled. Documentation diff checked; no runtime change or deployment.
