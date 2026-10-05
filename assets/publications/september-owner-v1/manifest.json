@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "scope": "Owner atmospheric autumn scenes for september; editorial block A only; no automation.",
+  "artworks": [
+    {
+      "id": "sunset-quay",
+      "name": "Закат на набережной",
+      "file": "sunset-quay.webp",
+      "original": "Изображение ChatGPT 5 окт. 2026 г., 21_39_10-1.png",
+      "originalSha256": "f275689d4b3721fcfc3595fef83ff48bc85842f9cc7d80908e756abc611af165",
+      "originalSize": [
+        941,
+        1672
+      ]
+    },
+    {
+      "id": "quiet-bench",
+      "name": "Скамья у реки",
+      "file": "quiet-bench.webp",
+      "original": "Изображение ChatGPT 5 окт. 2026 г., 21_39_12-2.png",
+      "originalSha256": "72acc577d168aee20be4dd93bd8ab4c4e8c93b069bb96b848ee7c6ef6e001bcd",
+      "originalSize": [
+        941,
+        1672
+      ]
+    },
+    {
+      "id": "fire-lake",
+      "name": "Огонь у озера",
+      "file": "fire-lake.webp",
+      "original": "Изображение ChatGPT 5 окт. 2026 г., 21_39_15-3.png",
+      "originalSha256": "c31f6dddd52cbeea288a35300230be17c0264f3236697f1a5dd4a9a8f6d1f2c5",
+      "originalSize": [
+        941,
+        1672
+      ]
+    },
+    {
+      "id": "rain-reflections",
+      "name": "Отражения после дождя",
+      "file": "rain-reflections.webp",
+      "original": "Изображение ChatGPT 5 окт. 2026 г., 21_39_16-4.png",
+      "originalSha256": "e901b4d59c6ac068acaa0510348233505a8815d056bcb758a9b0e4bbaed91738",
+      "originalSize": [
+        941,
+        1672
+      ]
+    },
+    {
+      "id": "golden-valley",
+      "name": "Золотая долина",
+      "file": "golden-valley.webp",
+      "original": "Изображение ChatGPT 5 окт. 2026 г., 21_39_17-5.png",
+      "originalSha256": "c3c1be8f1ab550e90a47173e31948801efd05359b1fa3d2fdf07a60691a86d10",
+      "originalSize": [
+        941,
+        1672
+      ]
+    },
+    {
+      "id": "city-lantern",
+      "name": "Фонарь на закате",
+      "file": "city-lantern.webp",
+      "original": "Изображение ChatGPT 5 окт. 2026 г., 21_39_18-6.png",
+      "originalSha256": "138479adaa69e3c41366a9790017e7712a8da82c3e9b0120fed7b261b2014377",
+      "originalSize": [
+        941,
+        1672
+      ]
+    },
+    {
+      "id": "moon-fire",
+      "name": "Луна и огонь",
+      "file": "moon-fire.webp",
+      "original": "Изображение ChatGPT 5 окт. 2026 г., 21_39_19-7.png",
+      "originalSha256": "f6035f058109971a8fa5f0501c2286d0cadd8f0303e2cc7e125ed3bbb2b559b7",
+      "originalSize": [
+        941,
+        1672
+      ]
+    },
+    {
+      "id": "rowan-close",
+      "name": "Рябина крупным планом",
+      "file": "rowan-close.webp",
+      "original": "Изображение ChatGPT 5 окт. 2026 г., 21_39_20-8.png",
+      "originalSha256": "af25f02df6f745af278a2bcc91c03f4cd4afa50cb4cb74fc8c9ddbd33a7147d0",
+      "originalSize": [
+        941,
+        1672
+      ]
+    },
+    {
+      "id": "harbor",
+      "name": "Осенняя гавань",
+      "file": "harbor.webp",
+      "original": "Изображение ChatGPT 5 окт. 2026 г., 21_39_21-9.png",
+      "originalSha256": "804f5578bf2601921bd27a5dabd6903312d4811fb8d9872dd0f04f60edc9e418",
+      "originalSize": [
+        941,
+        1672
+      ]
+    },
+    {
+      "id": "mist-quay",
+      "name": "Набережная в тумане",
+      "file": "mist-quay.webp",
+      "original": "Изображение ChatGPT 5 окт. 2026 г., 21_39_22-10.png",
+      "originalSha256": "0e5ab466174c7c140d0232a3b07424d790631cef9b35c47ad1f22d6227d4b984",
+      "originalSize": [
+        941,
+        1672
+      ]
+    }
+  ]
+}

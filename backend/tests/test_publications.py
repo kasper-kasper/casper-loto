@@ -102,7 +102,7 @@ def service(session: Session) -> PublicationService:
 
 
 def test_catalog_and_snapshot_trust_only_server_templates() -> None:
-    assert len(template_catalog()) == 1046
+    assert len(template_catalog()) == 1366
     additions = [t for t in template_catalog() if t["id"].startswith("khan-owner-v1-")]
     assert len(additions) == 9 * 32
     assert {t["lottery"] for t in additions} == {"khan"}

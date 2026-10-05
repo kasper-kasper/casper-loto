@@ -138,6 +138,11 @@
 
 # Development log
 
+## Atmospheric September publication collection — 2026-10-05
+
+- Added ten owner-supplied autumn landscape scenes for september, each in 9:16 Stories and 4:3 posts. Retained full portrait imagery, strengthened lower copy contrast for bright landscapes, reused the manual editor and game-specific CTA. All previous 1046 catalog entries compare equal; 320 new event references share 20 background files per client. No automation or domain/schema changes.
+- Owner requested minimal relevant verification and explicitly authorized one marked test photo post to @casper_loto. Check only catalog preservation, image dimensions, affected frontend lint/typecheck/build, focused editor/export smoke and production health/assets. Persistent channel delivery remains disabled.
+
 ## Owner artwork for 6/36 publications — 2026-10-05
 
 - Added nine owner-supplied navy/gold/ivory scenes exclusively for khan: light trails, six pedestals, ticket, six orbits, cosmos, ball cabinet, arc, stage and one drum. Paired 1080×1920 Stories retain portrait scenes and reserve lower copy; 1200×900 posts use the same scene beside a separate text column. Approved symbol and game label are composited during deterministic SVG/raster compilation; no generated replacement art or embedded event facts.
