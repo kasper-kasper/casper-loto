@@ -29,6 +29,7 @@ async function main(){
   const autumn = await require('./build_september_publication_assets.cjs')(extended);
   const bingo = await require('./build_bingo_publication_assets.cjs')(autumn);
   const fast = await require('./build_fast_publication_assets.cjs')(bingo);
-  await require('./build_dual_publication_assets.cjs')(fast);
+  const dual = await require('./build_dual_publication_assets.cjs')(fast);
+  await require('./build_atmospheric_publication_assets.cjs')(dual);
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

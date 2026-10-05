@@ -102,7 +102,22 @@ def service(session: Session) -> PublicationService:
 
 
 def test_catalog_and_snapshot_trust_only_server_templates() -> None:
-    assert len(template_catalog()) == 1906
+    assert len(template_catalog()) == 2130
+    assert all(t["lottery"] != "kasper-live" for t in template_catalog())
+    for code in ("weekly", "pll", "pss", "grob"):
+        scenes = [
+            t
+            for t in template_catalog()
+            if t["lottery"] == code and t["id"].startswith("atmospheric-v1-")
+        ]
+        assert len(scenes) == 2 * 32
+        assert len({t["formats"]["story"]["background"] for t in scenes}) == 2
+        assert len({t["formats"]["post"]["background"] for t in scenes}) == 2
+        assert len([t for t in template_catalog() if t["lottery"] == code]) == 130
+    with pytest.raises(ValueError):
+        content_snapshot(
+            payload().model_copy(update={"template_id": "a-live-a3-1-hero"})
+        )
     additions = [t for t in template_catalog() if t["id"].startswith("khan-owner-v1-")]
     assert len(additions) == 9 * 32
     assert {t["lottery"] for t in additions} == {"khan"}
@@ -117,7 +132,11 @@ def test_catalog_and_snapshot_trust_only_server_templates() -> None:
         assert len([t for t in bingo if t["subcategory"] == event]) == 10
     fast = [t for t in template_catalog() if t["id"].startswith("fast-owner-v1-")]
     assert len(fast) == 6 * 32
-    for game, art_prefix in (("shadow", "code"), ("flash", "flash"), ("pulse", "pulse")):
+    for game, art_prefix in (
+        ("shadow", "code"),
+        ("flash", "flash"),
+        ("pulse", "pulse"),
+    ):
         assigned = [t for t in fast if t["lottery"] == game]
         assert len(assigned) == 2 * 32
         assert all(t["id"].startswith(f"fast-owner-v1-{art_prefix}-") for t in assigned)

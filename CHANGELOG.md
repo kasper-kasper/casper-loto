@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.58.6] - 2026-10-06
+
+- Added eight atmospheric publication scenes for Casper Grand, 2:22, Casper Ball and ГРОБ, each with editable Story/Post layouts. Existing draw-game templates remain selectable. Instant Casper LIVE is excluded from the publication library.
+
 ## [1.58.5] - 2026-10-06
 
 - Шаблоны Casper Dual заменены пятью изображениями владельца с дневными и ночными пейзажами. Для каждого есть Stories 9:16 и пост 4:3 с редактируемыми текстовыми полями; прежние шаблоны Dual убраны из выбора новых публикаций.
