@@ -1,3 +1,8 @@
+## Casper Dual owner-only publication library — 2026-10-06
+
+- Replaced all 66 old active Dual template choices with five supplied day/night scenes, paired Story/Post layouts and editable copy zones. Source provenance, manifest, paired overview and deterministic compiler added to the full pipeline. Old hashed background files retained for immutable saved publication snapshots; all 1,746 other-game entries preserved exactly. Catalog total 1,906, with 160 Dual scene/event choices sharing only ten backgrounds per client.
+- Versions: Mini App 1.58.5, Admin 1.55.5, API 1.48.5. No automatic rules, channel sends or draw mechanics changed. Verification: focused backend catalog/snapshot regression and both affected frontends typecheck/lint/build passed. Exact other-game preservation, all ten background dimensions, text-zone bounds and matching client bytes checked; 2.02 MiB per client. Paired overview inspected; real Admin renderer with a local mocked API loaded all five pairs, offered five A1.5 choices and had no horizontal overflow at 390px.
+
 ## Additional owner Fast publication scenes — 2026-10-05
 
 - Added six supplied scenes strictly in attachment order: 56-6/54-5 CODE (technical shadow), 53-4/52-3 FLASH, 50-2/48-1 PULSE. Paired 9:16/4:3 layouts and separate editable text, game-specific palette and sans-serif typography. All previous 1,620 entries remain unchanged; 192 additional scene/event choices share just 12 backgrounds per client. Source hashes, assignment manifest and paired overview stored. Compiler added to full pipeline.

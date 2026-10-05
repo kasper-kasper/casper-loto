@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "scope": "Replace active Casper Dual library with all five owner day/night scenes; Story/Post layouts only.",
+  "artworks": [
+    {
+      "id": "twin-arches",
+      "name": "Две арки",
+      "file": "twin-arches.webp",
+      "original": "Изображение ChatGPT 5 окт. 2026 г., 23_30_51-4.png",
+      "originalSha256": "a209d2b0d8e40ff2b60757a43354623346ad5a8550996636661a0b23b5977cdb",
+      "originalSize": [
+        941,
+        1672
+      ]
+    },
+    {
+      "id": "moon-sun-sea",
+      "name": "Солнце и луна над морем",
+      "file": "moon-sun-sea.webp",
+      "original": "Изображение ChatGPT 5 окт. 2026 г., 23_30_52-5.png",
+      "originalSha256": "f44158f517a3ea131dc8e2f80b3c77f36299b635716347a0725c4e8d0e4f39b9",
+      "originalSize": [
+        941,
+        1672
+      ]
+    },
+    {
+      "id": "coastal-lights",
+      "name": "Огни двух берегов",
+      "file": "coastal-lights.webp",
+      "original": "Изображение ChatGPT 5 окт. 2026 г., 23_30_50-3.png",
+      "originalSha256": "9822471136ef70632e5303ebe3ebf4db7272596384d9496062c93c84e4ad06a4",
+      "originalSize": [
+        941,
+        1672
+      ]
+    },
+    {
+      "id": "celestial-stage",
+      "name": "Небесная сцена",
+      "file": "celestial-stage.webp",
+      "original": "Изображение ChatGPT 5 окт. 2026 г., 23_30_49-2.png",
+      "originalSha256": "c039469858b966ffd41a20a95784d33e82a9e552599a3182ff7efa51fb173e96",
+      "originalSize": [
+        941,
+        1672
+      ]
+    },
+    {
+      "id": "two-shores",
+      "name": "Два берега",
+      "file": "two-shores.webp",
+      "original": "Изображение ChatGPT 5 окт. 2026 г., 23_30_47-1.png",
+      "originalSha256": "05b6e6a94e6d0a22fa4b4ac80c3ac6c17f81e6f83921451827df9acc8590b01c",
+      "originalSize": [
+        941,
+        1672
+      ]
+    }
+  ]
+}
