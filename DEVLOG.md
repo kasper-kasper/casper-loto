@@ -138,6 +138,11 @@
 
 # Development log
 
+## Block A owner policy and provisional copy — 2026-10-05
+
+- Recorded owner-approved automatic/editorial categories, milestone approach, no-personal-information rule, same-draw grouping, artwork selection, missed-event handling, 24h Story intent and final hashtag preference. Scheduling, counter scope and Story destination ambiguities remain open; no conditions invented or delivery enabled.
+- Prepared an isolated editorial folder with 30 provisional Story title/channel copy variants for automatic A1/A4 and an interactive seen/unseen Story preview. Owner subsequently confirms Mini App 24h scope and persistent channel posts, and replaces once-daily scheduling with three daily scans plus immediate sending; scan hours remain pending. Text-bank structure validated and focused 390px browser smoke confirms viewed cards are muted/moved last with no horizontal overflow. This is documentation/design preparation, not a product release; production and channel unchanged.
+
 ## Atmospheric September publication collection — 2026-10-05
 
 - Added ten owner-supplied autumn landscape scenes for september, each in 9:16 Stories and 4:3 posts. Retained full portrait imagery, strengthened lower copy contrast for bright landscapes, reused the manual editor and game-specific CTA. All previous 1046 catalog entries compare equal; 320 new event references share 20 background files per client. No automation or domain/schema changes.
