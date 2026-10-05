@@ -1,3 +1,7 @@
+## Block A participant-record threshold — 2026-10-05
+
+- Owner approves A4.3 only with at least 500 unique participants per draw and at least 20% growth over the previous record; both thresholds inclusive. Updated editorial policy and OD-039. This records a business decision only; automatic delivery remains disabled. Documentation diff checked; no runtime change or deployment.
+
 ## Block A schedule clarification and readable texts — 2026-10-05
 
 - Owner confirms Mini App Stories and permanent Telegram posts; native Telegram Stories excluded. Fixed event checks at 12:22, 18:35 and 22:22 Europe/Moscow, immediate automatic publications after each scan, no spacing/daily cap. Removed already-approved formats/grouping from pending decisions; distinguished unimplemented delivery from unanswered business rules.
