@@ -39,7 +39,7 @@ B1.1 — Общее количество игроков
 
 Casper Loto становится больше
 
-В Casper Loto теперь {milestone_players} зарегистрированных игроков. Ещё одна общая отметка пройдена.
+В Casper Loto уже не менее {milestone_players} зарегистрированных игроков. Ещё одна общая отметка пройдена.
 
 #CasperLoto {topic_hashtag}
 [ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]
@@ -87,7 +87,7 @@ B1.2 — Купленные билеты
 
 {milestone_tickets} купленных билетов
 
-За всю историю Casper Loto куплено {milestone_tickets} билетов. Общая отметка всех игр платформы.
+За всю историю Casper Loto куплено не менее {milestone_tickets} билетов. Общая отметка всех игр платформы.
 
 #CasperLoto {topic_hashtag}
 [ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]
@@ -131,7 +131,7 @@ Casper Loto · {milestone_tickets} билетов
 
 Билеты всех игр — одна общая история
 
-Суммарно в Casper Loto куплено {milestone_tickets} билетов. Отметка достигнута.
+Суммарно в Casper Loto куплено не менее {milestone_tickets} билетов. Отметка достигнута.
 
 #CasperLoto {topic_hashtag}
 [ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]
@@ -511,7 +511,7 @@ B3.4 — Самая популярная лотерея периода
 
 Какие игры выбирали чаще
 
-По количеству купленных билетов за {period_moscow} лидирует {popular_games_label}. У каждого лидера — {leader_tickets} билетов.
+Первое место по количеству купленных билетов за {period_moscow}: {popular_games_label}. У каждого лидера — {leader_tickets} билетов.
 
 #CasperLoto {topic_hashtag}
 [ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]
@@ -745,7 +745,7 @@ Casper Loto · {update_name}
 
 Что нового · {update_name}
 
-Подробности: {update_name}:
+Подробности: {update_name}.
 
 {changes_summary}
 
@@ -812,7 +812,7 @@ Casper Loto · {interface_name}
 
 Что нового · {interface_name}
 
-Подробности: {interface_name}:
+Подробности: {interface_name}.
 
 {interface_changes}
 
@@ -879,7 +879,7 @@ Casper Loto · {section_name}
 
 Что нового · {section_name}
 
-Подробности: {section_name}:
+Подробности: {section_name}.
 
 {section_description}
 
@@ -946,7 +946,7 @@ Casper Loto · {platform_name}
 
 Что нового · {platform_name}
 
-Подробности: {platform_name}:
+Подробности: {platform_name}.
 
 {platform_details}
 
@@ -1013,7 +1013,7 @@ Casper Loto · {account_feature_name}
 
 Что нового · {account_feature_name}
 
-Подробности: {account_feature_name}:
+Подробности: {account_feature_name}.
 
 {account_feature_description}
 
@@ -1080,7 +1080,7 @@ Casper Loto · {integration_name}
 
 Что нового · {integration_name}
 
-Подробности: {integration_name}:
+Подробности: {integration_name}.
 
 {integration_description}
 
@@ -1147,7 +1147,7 @@ Casper Loto · {version_name}
 
 Что нового · {version_name}
 
-Подробности: {version_name}:
+Подробности: {version_name}.
 
 {release_summary}
 
