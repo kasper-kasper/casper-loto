@@ -1,3 +1,8 @@
+## Additional owner Fast publication scenes — 2026-10-05
+
+- Added six supplied scenes strictly in attachment order: 56-6/54-5 CODE (technical shadow), 53-4/52-3 FLASH, 50-2/48-1 PULSE. Paired 9:16/4:3 layouts and separate editable text, game-specific palette and sans-serif typography. All previous 1,620 entries remain unchanged; 192 additional scene/event choices share just 12 backgrounds per client. Source hashes, assignment manifest and paired overview stored. Compiler added to full pipeline.
+- Versions: Mini App 1.58.4, Admin 1.55.4, API 1.48.4. No automatic rules, channel sends or lottery mechanics changed. Verification: focused backend catalog/snapshot regression passed; both affected frontends typecheck/lint/build passed. Exact preservation of all 1,620 previous entries, exclusive two-scene game assignments, all twelve raster dimensions and matching client bytes verified; 1.64 MiB added per client. Paired overview inspected; real Admin renderer with local mocked API loaded all six pairs, kept four prior A1.1 choices per game and has no horizontal overflow at 390px. Production deployment pending.
+
 ## Casper Bingo owner collection replacement — 2026-10-05
 
 - Owner authorizes replacing the existing Casper Bingo library with all ten supplied emerald/gold scenes. Added source provenance, manifest, paired overview and deterministic Bingo compiler, integrated into the full asset pipeline. Removed 66 old Bingo templates from active selection; retained old hashed files for immutable publication snapshots. All ten scenes are offered for every existing Bingo A label, including A1.1 jackpot and A1.5 jackpotless series; no unused artwork.
