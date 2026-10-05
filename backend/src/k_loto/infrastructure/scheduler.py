@@ -11,6 +11,7 @@ from k_loto.application.auto_play import AutoPlayService
 from k_loto.application.engagement import PlayerEngagementService
 from k_loto.application.interesting_facts import InterestingFactService
 from k_loto.application.operational_monitoring import OperationalMonitoringService
+from k_loto.application.publication_events import PublicationEventService
 from k_loto.application.scheduler import DrawRecoveryService
 from k_loto.core.config import get_settings
 from k_loto.infrastructure.database.models import SchedulerHeartbeat
@@ -35,6 +36,16 @@ class SchedulerRuntime:
     async def start(self) -> None:
         await self._run()
         await self._run_interesting_facts()
+        await self._run_publication_events()
+        self._scheduler.add_job(
+            self._run_publication_events,
+            trigger="interval",
+            seconds=self._interval_seconds,
+            id="publication-event-reconciliation",
+            replace_existing=True,
+            coalesce=True,
+            max_instances=1,
+        )
         self._scheduler.add_job(
             self._run,
             trigger="interval",
@@ -66,6 +77,14 @@ class SchedulerRuntime:
         except Exception:
             # Content suggestions must never stop settlement or draw recovery.
             logger.exception("interesting_facts_generation_failed")
+
+    async def _run_publication_events(self) -> None:
+        try:
+            async with session_factory() as session:
+                await PublicationEventService(session).scan(now=datetime.now(UTC))
+        except Exception:
+            # Editorial failures must never prevent money/draw recovery.
+            logger.exception("publication_event_scan_failed")
 
     async def _run(self) -> None:
         started = datetime.now(UTC)

@@ -70,7 +70,8 @@ async def _send_miniapp(message: Message) -> None:
     settings = get_settings()
     if settings.miniapp_url is None:
         await message.answer(
-            "Mini App временно недоступен. Попробуйте открыть Casper Loto немного позже."
+            "Mini App временно недоступен. "
+            "Попробуйте открыть Casper Loto немного позже."
         )
         return
     await message.answer(

@@ -1,5 +1,9 @@
 # Changelog
 
+## [API 1.49.0] - 2026-10-06
+
+- Added nonvisual platform events B: configurable cumulative milestones, absolute jackpot record, daily multi-jackpot aggregate and owner-created statistical/product drafts. Existing A artwork/editor is preserved; B delivery remains disabled until its content and visual adapters exist.
+
 ## [1.58.6] - 2026-10-06
 
 - Added eight atmospheric publication scenes for Casper Grand, 2:22, Casper Ball and ГРОБ, each with editable Story/Post layouts. Existing draw-game templates remain selectable. Instant Casper LIVE is excluded from the publication library.

@@ -694,6 +694,12 @@ class Publication(TimestampMixin, Base):
             "status IN ('draft', 'published', 'archived')", name="publication_status"
         ),
         CheckConstraint("revision >= 1", name="publication_revision"),
+        CheckConstraint(
+            "event_mode IS NULL OR event_mode IN ('automatic', 'draft')",
+            name="publication_event_mode",
+        ),
+        UniqueConstraint("event_key", name="uq_publication_event_key"),
+        Index("ix_publications_event_type", "event_type", "created_at"),
         Index("ix_publications_feed", "status", "published_at", "id"),
     )
     id: Mapped[UUID] = mapped_column(
@@ -709,6 +715,17 @@ class Publication(TimestampMixin, Base):
     revision: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     content: Mapped[dict[str, Any]] = mapped_column(JSONB)
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    event_type: Mapped[str | None] = mapped_column(String(12))
+    event_key: Mapped[str | None] = mapped_column(String(180))
+    event_mode: Mapped[str | None] = mapped_column(String(16))
+
+
+class PublicationEventState(TimestampMixin, Base):
+    """Content-only checkpoints/records; never authoritative financial balances."""
+
+    __tablename__ = "publication_event_states"
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[dict[str, Any]] = mapped_column(JSONB)
 
 
 class InterestingFact(Base):

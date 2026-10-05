@@ -47,6 +47,9 @@ class PublicationView(BaseModel):
     revision: int
     content: dict[str, Any]
     published_at: datetime | None
+    event_type: str | None = None
+    event_key: str | None = None
+    event_mode: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -96,18 +99,33 @@ class PublicationService:
         self.session = session
 
     async def list(
-        self, *, player: bool = False, before: UUID | None = None, limit: int = 30
+        self,
+        *,
+        player: bool = False,
+        before: UUID | None = None,
+        limit: int = 30,
+        events: bool = False,
     ) -> list[Publication]:
         if not 1 <= limit <= 100:
             raise ValueError("Invalid publication page size.")
-        statement = select(Publication)
+        if player and events:
+            raise ValueError("Nonvisual events are not player publications.")
+        statement = select(Publication).where(
+            Publication.event_type.is_not(None)
+            if events
+            else Publication.event_type.is_(None)
+        )
         if player:
             statement = statement.where(Publication.status == "published")
         date_column = Publication.published_at if player else Publication.created_at
         # Persisted publication date + UUID gives a stable feed cursor.
         if before is not None:
             cursor = await self.session.get(Publication, before)
-            if cursor is None or (player and cursor.status != "published"):
+            if (
+                cursor is None
+                or bool(cursor.event_type) != events
+                or (player and cursor.status != "published")
+            ):
                 raise ValueError("Publication cursor does not exist.")
             cursor_date = cursor.published_at if player else cursor.created_at
             statement = statement.where(
@@ -174,6 +192,11 @@ class PublicationService:
             )
             if row is None:
                 raise LookupError("Publication does not exist.")
+            if row.event_type is not None and action in ("edit", "publish"):
+                raise PublicationConflict(
+                    "Nonvisual events require a future content/visual adapter; "
+                    "publication is disabled."
+                )
             # Exact retry of a successful state transition is harmless.
             target = {"publish": "published", "archive": "archived"}.get(action)
             if target and row.status == target and row.revision == revision + 1:
@@ -221,6 +244,6 @@ class PublicationService:
                     "revision": row.revision,
                     "content": deepcopy(row.content),
                 },
-                reason=f"Manual publication: {action}",
+                reason=f"Editorial publication: {action}",
             )
         )

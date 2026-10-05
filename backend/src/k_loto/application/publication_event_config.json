@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "timezone": "Europe/Moscow",
+  "scan_times": ["12:22", "18:35", "22:22"],
+  "delivery": {"enabled": false, "minimum_interval_seconds": 1800, "daily_limit": null, "combine_blocks": false},
+  "milestones": {
+    "B1.1": {"metric": "registered_players", "thresholds": [1000, 5000, 10000, 50000, 100000]},
+    "B1.2": {"metric": "purchased_tickets", "thresholds": [100000, 500000, 1000000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 9000000, 10000000], "repeat_after": 10000000, "repeat_step": 5000000},
+    "B1.3": {"metric": "completed_draws", "thresholds": [1000, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1000000], "repeat_after": 1000000, "repeat_step": 500000},
+    "B1.4": {"metric": "winning_tickets", "thresholds": [100000, 500000, 1000000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 9000000, 10000000], "repeat_after": 10000000, "repeat_step": 5000000}
+  },
+  "daily_jackpots_minimum": 4,
+  "include_instant_tickets": true
+}

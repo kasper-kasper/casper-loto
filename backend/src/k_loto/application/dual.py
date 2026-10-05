@@ -1,6 +1,7 @@
 """Transactional settlement for one Casper Dual ticket spanning two draws."""
 
 from datetime import datetime
+from typing import cast
 from uuid import uuid4
 
 from sqlalchemy import or_, select
@@ -27,7 +28,7 @@ from k_loto.domain.errors import (
     InsufficientReserve,
     InvalidStateTransition,
 )
-from k_loto.domain.lottery_rules import DUAL_RULES
+from k_loto.domain.lottery_rules import DUAL_RULES, NumberGenerator
 from k_loto.infrastructure.database.models import (
     Balance,
     Draw,
@@ -45,7 +46,7 @@ async def settle_dual_draw(
     draw: Draw,
     lottery: Lottery,
     timestamp: datetime,
-    generator: object,
+    generator: NumberGenerator,
 ) -> SettlementResult:
     """Settle a Dual draw under the common draw and lottery locks."""
     if draw.status == DrawStatus.COMPLETED:
@@ -143,7 +144,7 @@ async def settle_dual_draw(
     operation_id = uuid4()
     for ticket, amount in completed:
         ticket.matches = dual_match_code(
-            ticket.dual_night_matches, ticket.dual_dawn_matches
+            cast(int, ticket.dual_night_matches), cast(int, ticket.dual_dawn_matches)
         )
         ticket.prize_amount = amount
         ticket.status = TicketStatus.SETTLED

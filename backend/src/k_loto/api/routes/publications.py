@@ -1,5 +1,6 @@
 """Authenticated manual publications; adapters contain no event rules."""
 
+from datetime import UTC, datetime
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
@@ -12,6 +13,12 @@ from k_loto.api.dependencies import (
     get_db_session,
 )
 from k_loto.api.routes.admin import CurrentAdmin, get_current_admin, require_admin_csrf
+from k_loto.application.publication_events import (
+    EVENTS,
+    EventDraftInput,
+    PublicationEventService,
+    event_config,
+)
 from k_loto.application.publications import (
     EditPublicationInput,
     PublicationConflict,
@@ -29,6 +36,56 @@ router = APIRouter(tags=["publications"])
 Session = Annotated[AsyncSession, Depends(get_db_session)]
 Admin = Annotated[CurrentAdmin, Depends(get_current_admin)]
 Editor = Annotated[CurrentAdmin, Depends(require_admin_csrf)]
+
+
+@router.get("/api/v1/admin/publications/event-types")
+async def event_types(_admin: Admin) -> dict[str, Any]:
+    config = event_config()
+    return {
+        "types": [vars(item) for item in EVENTS.values()],
+        "config": config.model_dump(),
+    }
+
+
+@router.get("/api/v1/admin/publications/events", response_model=list[PublicationView])
+async def content_events(
+    _admin: Admin,
+    session: Session,
+    before: UUID | None = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 30,
+) -> list[Publication]:
+    try:
+        return await PublicationService(session).list(
+            events=True, before=before, limit=limit
+        )
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
+@router.post("/api/v1/admin/publications/events/scan")
+async def scan_events(admin: Editor, session: Session) -> dict[str, Any]:
+    return await PublicationEventService(session).scan(
+        now=datetime.now(UTC), force=True, author=admin.user_id
+    )
+
+
+@router.put(
+    "/api/v1/admin/publications/events/{publication_id}", response_model=PublicationView
+)
+async def create_content_draft(
+    publication_id: UUID, payload: EventDraftInput, admin: Editor, session: Session
+) -> Publication:
+    try:
+        return await PublicationEventService(session).create_draft(
+            payload,
+            publication_id=publication_id,
+            author=admin.user_id,
+            now=datetime.now(UTC),
+        )
+    except PublicationConflict as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
 
 
 @router.get("/api/v1/admin/publications/channel")
