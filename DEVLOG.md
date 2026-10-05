@@ -1,3 +1,10 @@
+## Block A schedule clarification and readable texts — 2026-10-05
+
+- Owner confirms Mini App Stories and permanent Telegram posts; native Telegram Stories excluded. Fixed event checks at 12:22, 18:35 and 22:22 Europe/Moscow, immediate automatic publications after each scan, no spacing/daily cap. Removed already-approved formats/grouping from pending decisions; distinguished unimplemented delivery from unanswered business rules.
+- Added docs/publications/block-a/texts.v1.md with all 30 existing copy variants, separate Story fields and Telegram body. Proposed A5 weekdays/rotation and clarified series/A4 thresholds and ticket counters for owner response; proposals remain inactive.
+- Subsequent owner replies approve series thresholds every 50 draws / 200 Fast, A5 Monday/Wednesday/Friday at 12:22, rotation excluding last 3 images / 2 texts with oldest-used fallback, and inclusive sales milestones per draw only. Cumulative A4.5 copy preserved but excluded; A4.4 and minimum participant-record threshold await definition.
+- Verification: generated readable bank contains exactly 30 variants. Documentation/editorial preparation only; no runtime, deployment or channel messages changed.
+
 ## Manual Stories and publication foundation — 2026-10-05
 
 - Owner authorizes implementation in Admin/Mini App and explicitly postpones automatic rules. Added PublicationService, authenticated/CSRF-protected editorial endpoints and migration 0048. Server-owned template snapshots, field bounds, revision checks, transactional row locks, idempotent UUID draft creation/state retries and existing admin audit records. Published content cannot be edited in place; archive preserves content/history. No money/draw/auth rules, scheduler callbacks or personal notifications changed.

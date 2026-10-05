@@ -273,7 +273,7 @@
     },
     "A4.4": {
       "theme": "Активность игры",
-      "status": "editorial_draft",
+      "status": "criteria_pending",
       "shared": {
         "kicker": "{game_name}",
         "value": "{activity_value}",
@@ -305,7 +305,7 @@
     },
     "A4.5": {
       "theme": "Общий объём билетов",
-      "status": "editorial_draft",
+      "status": "excluded_by_owner_per_draw_sales_only",
       "shared": {
         "kicker": "{game_name}",
         "value": "{tickets_total} билетов",
