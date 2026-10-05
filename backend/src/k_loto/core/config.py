@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     owner_telegram_id: int | None = Field(default=None, gt=0)
     operational_stuck_minutes: int = Field(default=10, ge=5, le=1440)
     lottery_bot_token: SecretStr | None = None
+    publication_channel: str | None = Field(default=None, max_length=100)
     bot_outbox_interval_seconds: int = Field(default=2, ge=1, le=60)
     bot_max_tickets_per_purchase: int = Field(default=50, ge=1, le=100)
     miniapp_purchase_requests_per_minute: int = Field(default=10, ge=1, le=120)

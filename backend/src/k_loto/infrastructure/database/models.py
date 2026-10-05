@@ -685,6 +685,32 @@ class InterestingFactBatch(Base):
     )
 
 
+class Publication(TimestampMixin, Base):
+    """Owner-authored content; published snapshots never change in place."""
+
+    __tablename__ = "publications"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('draft', 'published', 'archived')", name="publication_status"
+        ),
+        CheckConstraint("revision >= 1", name="publication_revision"),
+        Index("ix_publications_feed", "status", "published_at", "id"),
+    )
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), primary_key=True, default=uuid4
+    )
+    author_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT")
+    )
+    lottery_code: Mapped[str] = mapped_column(String(32))
+    status: Mapped[str] = mapped_column(
+        String(16), default="draft", server_default="draft"
+    )
+    revision: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    content: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class InterestingFact(Base):
     """Precomputed Telegram-content candidate; status is owner workflow state."""
 
