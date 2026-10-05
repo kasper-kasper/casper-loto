@@ -1,4 +1,5 @@
 import { brandViewData } from "../../shared/brandNames";
+import type { Publication } from "../../shared/publications";
 import type { Highlights } from "./Today";
 import type { ArchivePage } from "./types";
 import type { BingoFeed, BingoInventory } from "./BingoView";
@@ -41,6 +42,7 @@ async function request<T>(path: string, initData: string, init?: RequestInit): P
 }
 
 export const miniAppApi = {
+  publications: (initData: string, before?: string, signal?: AbortSignal) => request<Publication[]>(`/api/v1/miniapp/publications${before ? `?before=${encodeURIComponent(before)}` : ""}`, initData, { signal }),
   drawArchive: (initData: string, lotteryCode: string, jackpotsOnly: boolean, before: string | null = null, signal?: AbortSignal) => {
     const query = new URLSearchParams({ lottery_code: lotteryCode, jackpots_only: String(jackpotsOnly) });
     if (before) query.set("before", before);

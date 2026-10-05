@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 
 import { ApiError, miniAppApi } from "./api";
 import { Today } from "./Today";
+import { Stories } from "./Stories";
 import { MobileNavigation } from "./MobileNavigation";
 import type { Highlights } from "./Today";
 import { logoHorizontal, logoSymbol } from "./brand";
@@ -633,7 +634,7 @@ export default function App({ initData, localDev = false }: AppProps) {
     {selectedTicket && (selectedTicket.lottery_code === "bingo" ? <BingoTicketDetail ticket={selectedTicket} onClose={() => setSelectedTicket(null)} /> : <TicketDetail lottery={dashboard.lotteries.find((item) => item.code === selectedTicket.lottery_code)} onClose={() => setSelectedTicket(null)} ticket={selectedTicket} />)}
 
     {view === "archive" && <Suspense fallback={<Skeleton />}><DrawArchive initData={initData} onBack={() => setView("home")} /></Suspense>}
-    {view === "home" && <section className="view-content home-view" key="home"><Today onArchive={() => { setView("archive"); window.scrollTo({ top: 0, behavior: "instant" }); }} lotteries={standardLotteries} now={serverNow} highlights={highlights} totalTicketCount={dashboard.total_ticket_count} totalWinningTicketCount={dashboard.total_winning_ticket_count} monthlyTotalPayout={dashboard.monthly_total_payout} onOpen={(code, live) => void openLottery(code, [], live)} onCatalog={() => setView("catalog")} onTickets={() => { setTicketsLoading(true); setTicketView("active"); setTicketWinsOnly(false); setAccountView("tickets"); setTicketLotteryFilter("scope:standard"); setView("account"); }} /></section>}
+    {view === "home" && <section className="view-content home-view" key="home"><Today stories={<Stories initData={initData} onOpen={(code) => void openLottery(code)} />} onArchive={() => { setView("archive"); window.scrollTo({ top: 0, behavior: "instant" }); }} lotteries={standardLotteries} now={serverNow} highlights={highlights} totalTicketCount={dashboard.total_ticket_count} totalWinningTicketCount={dashboard.total_winning_ticket_count} monthlyTotalPayout={dashboard.monthly_total_payout} onOpen={(code, live) => void openLottery(code, [], live)} onCatalog={() => setView("catalog")} onTickets={() => { setTicketsLoading(true); setTicketView("active"); setTicketWinsOnly(false); setAccountView("tickets"); setTicketLotteryFilter("scope:standard"); setView("account"); }} /></section>}
     {view === "catalog" && <section className="view-content catalog-view" key="catalog"><LotteryCatalog lotteries={standardLotteries} onOpen={code => void openLottery(code)} /></section>}
     {view === "live" && <section className="view-content catalog-view"><LotteryCatalog lotteries={standardLotteries} onOpen={code => void openLottery(code)} /></section>}
 

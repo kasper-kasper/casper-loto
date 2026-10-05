@@ -2,6 +2,7 @@ import { DimensionalIcon } from "./DimensionalIcon";
 import { Money } from "./components";
 import { countdown, formatCas, formatMoscow } from "./format";
 import type { Lottery } from "./types";
+import type { ReactNode } from "react";
 import ticketArt from "./assets/account/account-tickets-v1.webp";
 import orbitArt from "./assets/home/lottery-orbit-v1.webp";
 import "./discovery.css";
@@ -15,7 +16,7 @@ function ticketsWaiting(count: number): string {
   return `${count} ${word} ${word === "билет" ? "ждёт" : "ждут"} тиража`;
 }
 
-export function Today({ lotteries, now, highlights, totalTicketCount, totalWinningTicketCount, monthlyTotalPayout, onOpen, onCatalog, onTickets, onArchive }: { lotteries: Lottery[]; now: number; highlights: Highlights | null; totalTicketCount: number; totalWinningTicketCount: number; monthlyTotalPayout: number; onOpen: (code: string, live?: boolean) => void; onCatalog: () => void; onTickets: () => void; onArchive: () => void }) {
+export function Today({ stories, lotteries, now, highlights, totalTicketCount, totalWinningTicketCount, monthlyTotalPayout, onOpen, onCatalog, onTickets, onArchive }: { stories?: ReactNode; lotteries: Lottery[]; now: number; highlights: Highlights | null; totalTicketCount: number; totalWinningTicketCount: number; monthlyTotalPayout: number; onOpen: (code: string, live?: boolean) => void; onCatalog: () => void; onTickets: () => void; onArchive: () => void }) {
   const scheduled = [...lotteries].filter(lottery => lottery.scheduled_at).sort((left, right) => Date.parse(left.scheduled_at!) - Date.parse(right.scheduled_at!));
   const event = highlights?.next_event;
   const eventLottery = lotteries.find(lottery => lottery.code === event?.lottery_code);
@@ -30,6 +31,7 @@ export function Today({ lotteries, now, highlights, totalTicketCount, totalWinni
 
   return <div className="home-hub">
     <header className="home-heading"><div><span>ВАШ ДЕНЬ В CASPER</span><h1>Сегодня</h1></div><time dateTime={new Date(now).toISOString()}>{date}</time></header>
+    {stories}
     {next ? <section className={`home-feature home-phase-${phase}`} aria-label="Ближайший тираж">
       <div className="home-feature-top"><span><i />{phase === "live" ? "Сейчас в эфире" : phase === "result" ? "Тираж завершён" : "Ближайший тираж"}</span><small>№ {next.draw_number}</small></div>
       <div className="home-feature-art" aria-hidden="true"><img src={orbitArt} alt="" width="512" height="362" decoding="async" fetchPriority="high" /></div>

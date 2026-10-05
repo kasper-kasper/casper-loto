@@ -1,4 +1,5 @@
 import { brandViewData } from "../../shared/brandNames";
+import type { Publication, PublicationInput, PublicationTemplate } from "../../shared/publications";
 import type {
   AdminSession,
   AuditEntry,
@@ -32,6 +33,9 @@ export class ApiError extends Error {
 let csrfToken = "";
 
 const errorMessages: Record<string, string> = {
+  "Publication changed; reload it.": "Публикация изменена в другой вкладке. Откройте её заново.",
+  "Only drafts can be edited; duplicate a published story first.": "Опубликованную историю можно изменить через создание копии.",
+  "Publication identifier already used.": "Этот черновик уже сохранён. Откройте запись из списка или создайте новую.",
   "Administrator authentication is required.": "Требуется вход администратора.",
   "Administrator session is invalid or expired.": "Сессия администратора недействительна или истекла.",
   "Administrator CSRF token is missing or invalid.": "Защитный токен отсутствует или недействителен.",
@@ -100,6 +104,12 @@ async function drawPage(query = ""): Promise<Draw[]> {
 }
 
 export const adminApi = {
+  publicationTemplates: () => request<PublicationTemplate[]>("/publications/templates"),
+  publicationChannel: (check = false) => request<{ channel: string | null; delivery_enabled: boolean; checked: boolean; can_post: boolean; bot_username?: string; error?: string }>(`/publications/channel?check=${check}`),
+  publications: (before?: string) => request<Publication[]>(`/publications${before ? `?before=${encodeURIComponent(before)}` : ""}`),
+  savePublication: (id: string, payload: PublicationInput) => request<Publication>(`/publications/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  editPublication: (id: string, revision: number, payload: PublicationInput) => request<Publication>(`/publications/${id}`, { method: "PATCH", body: JSON.stringify({ ...payload, revision }) }),
+  publicationAction: (id: string, revision: number, action: "publish" | "archive") => request<Publication>(`/publications/${id}/${action}`, { method: "POST", body: JSON.stringify({ revision }) }),
   login: (username: string, password: string, rememberBrowser = true) =>
     request<AdminSession>("/auth/login", {
       method: "POST",

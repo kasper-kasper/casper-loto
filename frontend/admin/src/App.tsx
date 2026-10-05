@@ -3,6 +3,7 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
 import { ApiError, adminApi } from "./api";
+import { Publications } from "./Publications";
 import logoHorizontal from "../../shared/assets/brand/logo-horizontal.png";
 import "./owner-catalog.css";
 import type {
@@ -27,7 +28,7 @@ import type {
   Transaction,
 } from "./types";
 
-type View = "dashboard" | "fast" | "kasper-live" | "lotteries" | "schedule" | "draws" | "jackpots" | "archive" | "players" | "analytics" | "facts" | "broadcast" | "system";
+type View = "dashboard" | "fast" | "kasper-live" | "lotteries" | "schedule" | "draws" | "jackpots" | "archive" | "players" | "analytics" | "facts" | "broadcast" | "system" | "publications";
 type AnalyticsTab = "lotteries" | "tickets" | "numbers" | "finances";
 type SystemTab = "events" | "health" | "ledger" | "notifications" | "audit" | "development";
 
@@ -43,6 +44,7 @@ const navigation: { id: View; label: string; code: string }[] = [
   { id: "jackpots", label: "Джекпоты", code: "08" },
   { id: "archive", label: "Архив", code: "09" },
   { id: "facts", label: "Интересные факты", code: "10" },
+  { id: "publications", label: "Stories и посты", code: "NEWS" },
   { id: "broadcast", label: "Тест эфира", code: "11" },
   { id: "system", label: "Журналы", code: "12" },
 ];
@@ -918,6 +920,7 @@ export default function App() {
       {!loading && view === "analytics" && dashboard && ticketAnalytics && <AnalyticsView tab={analyticsTab} onTab={setAnalyticsTab} dashboard={dashboard} analytics={ticketAnalytics} lotteries={visibleLotteries} statistics={statistics} selectedLotteryId={statisticsLotteryId} windowSize={statisticsWindow} onLottery={setStatisticsLotteryId} onWindow={setStatisticsWindow} />}
       {!loading && view === "facts" && <InterestingFactsView facts={interestingFacts} lotteries={lotteries} onStatus={async (fact, factStatus) => { try { const updated = await adminApi.setInterestingFactStatus(fact.id, factStatus); setInterestingFacts((current) => current.map((item) => item.id === updated.id ? updated : item)); } catch (reason) { setError(reason instanceof Error ? reason.message : "Не удалось изменить статус факта."); } }} />}
       {!loading && view === "broadcast" && <BroadcastTestView lotteries={lotteries} miniappUrl={session.miniapp_url} />}
+      {!loading && view === "publications" && <Publications />}
       {!loading && view === "system" && <SystemView dashboard={dashboard} releaseNotes={releaseNotes} tab={systemTab} onTab={setSystemTab} transactions={transactions} notifications={notifications} audit={audit} onTransactions={(query) => void adminApi.transactions(query).then(setTransactions).catch((reason: Error) => setError(reason.message))} onOpenPlayer={openPlayerById} />}
     </main>{drawDetail && <DrawDetailPanel detail={drawDetail} onClose={() => setDrawDetail(null)} onOpenPlayer={openPlayerFromTicket} />}
   </div>;
