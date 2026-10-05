@@ -8,7 +8,7 @@ vi.mock("./telegram", () => ({ errorHaptic: vi.fn(), selectionHaptic: vi.fn(), s
 const purchase = { operation_id: "operation", tickets: [
   { id: "one", public_number: 101, symbols: [4, 4, 4], prize_amount: 5_000 },
   { id: "two", public_number: 102, symbols: [4, 5, 6], prize_amount: 0 },
-  { id: "three", public_number: 103, symbols: [7, 7, 7], prize_amount: 1_000 },
+  { id: "three", public_number: 103, symbols: [2, 2, 2], prize_amount: 1_000 },
 ], total_cost: 6_000, total_prize: 6_000, balance_after: 20_000, already_processed: false };
 beforeEach(() => {
   vi.clearAllMocks();
@@ -31,10 +31,10 @@ it("settles one purchase immediately, opens a single ticket then the remainder w
   expect(settled).toHaveBeenCalledWith(purchase);
   expect(screen.getAllByRole("button", { name: /^Открыть билет №/ })).toHaveLength(3);
   expect(screen.queryByRole("status")).not.toBeInTheDocument();
-  expect(within(screen.getByRole("article", { name: "Билет № 101" })).queryByRole("img", { name: "Искра" })).not.toBeInTheDocument();
+  expect(within(screen.getByRole("article", { name: "Билет № 101" })).queryByRole("img", { name: "Золотая звезда" })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Открыть билет № 101" }));
   expect(screen.getAllByRole("button", { name: /^Открыть билет №/ })).toHaveLength(2);
-  expect(within(screen.getByRole("article", { name: "Билет № 101" })).getAllByRole("img", { name: "Искра" })).toHaveLength(3);
+  expect(within(screen.getByRole("article", { name: "Билет № 101" })).getAllByRole("img", { name: "Золотая звезда" })).toHaveLength(3);
   fireEvent.click(screen.getByRole("button", { name: /Открыть все/ }));
   expect(screen.getByRole("status")).toHaveTextContent("Общий выигрыш");
   expect(screen.queryByRole("button", { name: /^Открыть билет №/ })).not.toBeInTheDocument();
@@ -60,4 +60,15 @@ it("shows errors without inventing tickets or a settlement", async () => {
   expect(screen.getByRole("alert")).toHaveTextContent("Проверьте историю");
   expect(settled).not.toHaveBeenCalled();
   expect(screen.queryByRole("article")).not.toBeInTheDocument();
+});
+
+it("renders the maximum server prize with the branded medallion without deriving payouts from artwork", async () => {
+  vi.mocked(miniAppApi.kasperLivePurchase).mockResolvedValue({ ...purchase, tickets: [{ ...purchase.tickets[0], symbols: [7, 7, 7], prize_amount: 1_000_000 }], total_prize: 1_000_000 });
+  render(<KasperLiveView initData="signed" balance={30_000} onClose={vi.fn()} onSettled={vi.fn()} />);
+  await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Купить билет/ })); });
+  const ticket = screen.getByRole("article", { name: "Билет № 101" });
+  expect(within(ticket).queryByRole("img", { name: "Золотой жетон Casper" })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Открыть билет" }));
+  expect(within(ticket).getAllByRole("img", { name: "Золотой жетон Casper" })).toHaveLength(3);
+  expect(screen.getByRole("status").querySelector('.money-value')).toHaveAttribute("aria-label", "1 000 000 CAS");
 });

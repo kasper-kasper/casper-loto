@@ -7,6 +7,7 @@ import { Today } from "./Today";
 import { MobileNavigation } from "./MobileNavigation";
 import type { Highlights } from "./Today";
 import { logoHorizontal, logoSymbol } from "./brand";
+import { LiveSymbol } from "./LiveSymbol";
 import { CART_MAX_TICKETS, configuredCartTtl, loadCart, saveCart } from "./cart";
 import {
   Balance,
@@ -94,13 +95,11 @@ function TicketCard({ ticket, lottery, index = 0, onOpen }: { ticket: Ticket; lo
   </button>;
 }
 
-const instantSymbols = ["★", "◆", "●", "✦", "☾", "⚡", "♣", "7"];
-
 function InstantHistoryCard({ ticket }: { ticket: Ticket }) {
   const winning = ticket.prize_amount > 0;
   return <article className={`ticket-card compact-ticket instant-history-ticket ${winning ? "winner" : ""}`}>
     <div className="ticket-meta"><div><span className="eyebrow">Casper LIVE</span><h3>№ {ticket.public_number.toLocaleString("ru-RU")}</h3></div><StatusBadge active={false} label={winning ? "Выигрыш" : "Без выигрыша"} /></div>
-    <div className="instant-history-symbols">{(ticket.instant_symbols ?? []).map((value, index) => <i key={`${value}:${index}`}>{instantSymbols[value - 1] ?? "●"}</i>)}</div>
+    <div className="instant-history-symbols">{(ticket.instant_symbols ?? []).map((value, index) => <i key={`${value}:${index}`}><LiveSymbol value={value} /></i>)}</div>
     <div className={`ticket-result ${winning ? "win" : "loss"}`}><div><span>{winning ? "Одинаковые символы" : "Разные символы"}</span><small>{winning ? "Выигрыш зачислен" : "Без выигрыша"}</small></div><strong>{winning ? `+${formatCas(ticket.prize_amount)}` : "0 CAS"}</strong></div>
   </article>;
 }

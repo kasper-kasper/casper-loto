@@ -1,0 +1,15 @@
+.live-symbol{display:block;width:50px;height:50px;flex-shrink:0;filter:drop-shadow(0 2px 0 #563315) drop-shadow(0 4px 3px #0005)}
+.live-symbol-cut{fill:none;stroke:#805122;stroke-width:1.2;stroke-linecap:round}
+.live-symbol-glint{fill:#fff9;stroke:none}
+.live-symbol-silver .live-symbol-cut{stroke:#5f7a92}.live-symbol-silver{filter:drop-shadow(0 2px 0 #34495d) drop-shadow(0 4px 3px #0005)}
+.live-symbol-ruby .live-symbol-cut{stroke:#8f2549}.live-symbol-ruby{filter:drop-shadow(0 2px 0 #61162d) drop-shadow(0 4px 3px #0005)}
+.live-symbol-diamond .live-symbol-cut{stroke:#487d9f}.live-symbol-diamond{filter:drop-shadow(0 2px 0 #294e69) drop-shadow(0 4px 3px #0005)}
+.live-symbol-signature{filter:drop-shadow(0 2px 0 #754719) drop-shadow(0 0 5px #f3bc4c55)}
+.instant-history-symbols .live-symbol{width:27px;height:27px}
+.kasper-live-symbols svg.live-symbol-silver{filter:drop-shadow(0 2px 0 #34495d) drop-shadow(0 4px 3px #0005)}
+.kasper-live-symbols svg.live-symbol-ruby{filter:drop-shadow(0 2px 0 #61162d) drop-shadow(0 4px 3px #0005)}
+.kasper-live-symbols svg.live-symbol-diamond{filter:drop-shadow(0 2px 0 #294e69) drop-shadow(0 4px 3px #0005)}
+.kasper-live-symbols svg.live-symbol-signature{filter:drop-shadow(0 2px 0 #754719) drop-shadow(0 0 5px #f3bc4c55)}
+.live-prize-guide{margin-top:23px;border:1px solid #cba26026;border-radius:15px;background:#ffffff03;overflow:hidden}
+.live-prize-guide summary{display:flex;justify-content:space-between;align-items:center;cursor:pointer;list-style:none;padding:15px;color:#dbc5a0;font-size:11px;min-height:46px}.live-prize-guide summary::-webkit-details-marker{display:none}.live-prize-guide summary:focus-visible{outline:2px solid #ffe5a7;outline-offset:-3px}
+.live-prize-guide>p{margin:0;padding:0 15px 10px;font-size:10px;color:#baaa96}.live-prize-guide ul{list-style:none;margin:0;padding:0 15px 9px}.live-prize-guide li{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid #d8b7791c}.live-prize-guide .live-symbol{width:37px;height:37px}.live-prize-guide li>span{font-size:11px;color:#ebd8b6}.live-prize-guide small{display:block;margin-top:4px;font-size:8px;color:#a99279}.live-prize-guide strong{margin-left:auto;white-space:nowrap;font-size:12px;font-weight:500;color:#f6d891}.live-prize-guide li:last-child{border-top-color:#deb45d5c}.live-prize-guide li:last-child>span,.live-prize-guide li:last-child strong{color:#ffe5a7}
