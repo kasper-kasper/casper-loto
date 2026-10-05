@@ -1,68 +1,114 @@
-import { useEffect, useState } from "react";
-
+import { useEffect, useId, useRef, useState } from "react";
+import type { PointerEvent } from "react";
 import { ApiError, miniAppApi } from "./api";
+import { logoSymbol } from "./brand";
 import { Money } from "./components";
 import { errorHaptic, selectionHaptic, successHaptic } from "./telegram";
 import type { InstantPurchaseResult, InstantTicket } from "./types";
-
 import "./kasper-live.css";
 
-const symbols = ["★", "◆", "●", "✦", "☾", "⚡", "♣", "7"];
-const wait = (milliseconds: number) => new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+const names = ["Звезда", "Бриллиант", "Жетон Casper", "Искра", "Луна", "Молния", "Клевер", "Семёрка"];
+function Symbol({ value }: { value: number }) {
+  const gradientId = useId();
+  const shapes = [
+    <path d="m32 7 7 16 18 2-14 12 4 18-15-9-15 9 4-18L7 25l18-2Z" />,
+    <><path d="m19 13-12 14 25 28 25-28-12-14Z" /><path className="symbol-cut" d="m7 27 50 0M19 13l-1 14 14 28 14-28-1-14M32 13l-14 14h28Z" /></>,
+    <><circle cx="32" cy="32" r="25" /><circle className="symbol-cut" cx="32" cy="32" r="20" /><image href={logoSymbol} x="13" y="13" width="38" height="38" /></>,
+    <path d="M32 5c4 18 9 23 27 27-18 4-23 9-27 27C28 41 23 36 5 32 23 28 28 23 32 5Z" />,
+    <path d="M42 8a24 24 0 1 0 14 35A24 24 0 0 1 42 8Z" />,
+    <path d="m36 5-24 31h17l-3 23 26-34H34Z" />,
+    <><path d="M32 32C8 32 6 15 19 12c8-2 13 5 13 12 0-7 5-14 13-12 13 3 11 20-13 20 24-2 27 17 13 20-7 1-13-6-13-12 0 6-6 13-13 12C5 49 8 30 32 32Z" /><path d="m29 40-4 18h14l-4-18Z" /></>,
+    <path d="M14 11h39v9L34 55H20l20-33H14Z" />,
+  ];
+  return <svg viewBox="0 0 64 64" role="img" aria-label={names[value - 1] ?? "Символ"}><defs><linearGradient id={gradientId} x2=".8" y2="1"><stop stopColor="#fff4c4" /><stop offset=".45" stopColor="#e9be62" /><stop offset="1" stopColor="#9d5c1c" /></linearGradient></defs><g fill={`url(#${gradientId})`} stroke="#f8d68c" strokeWidth="1.3" strokeLinejoin="round">{shapes[value - 1] ?? shapes[0]}</g></svg>;
+}
 
-function Ticket({ ticket }: { ticket: InstantTicket }) {
-  return <article className={ticket.prize_amount > 0 ? "kasper-live-ticket winner" : "kasper-live-ticket"}>
-    <header><span>CASPER LIVE</span><b>№ {ticket.public_number.toLocaleString("ru-RU")}</b></header>
-    <div className="kasper-live-symbols">{ticket.symbols.map((value, index) => <i key={`${value}:${index}`}>{symbols[value - 1] ?? "●"}</i>)}</div>
-    <footer><span>{ticket.prize_amount > 0 ? "ОДИНАКОВЫЕ СИМВОЛЫ · ВЫИГРЫШ" : "РАЗНЫЕ СИМВОЛЫ · БЕЗ ВЫИГРЫША"}</span><strong><Money value={ticket.prize_amount} /></strong></footer>
+function ScratchCover({ ticket, onReveal }: { ticket: InstantTicket; onReveal: () => void }) {
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const gesture = useRef<{ x: number; y: number; distance: number; total: number } | null>(null);
+  const dragged = useRef(false);
+  useEffect(() => {
+    const node = canvas.current;
+    const context = node?.getContext("2d");
+    if (!context) return;
+    const gradient = context.createLinearGradient(0, 0, 600, 160);
+    gradient.addColorStop(0, "#c99b48"); gradient.addColorStop(.35, "#f5db97"); gradient.addColorStop(.6, "#b48639"); gradient.addColorStop(1, "#e6c477");
+    context.fillStyle = gradient; context.fillRect(0, 0, 600, 160);
+    if (node) node.style.background = "transparent";
+    context.strokeStyle = "#5a391d22";
+    for (let x = -160; x < 600; x += 12) { context.beginPath(); context.moveTo(x, 0); context.lineTo(x + 160, 160); context.stroke(); }
+  }, []);
+  const scratch = (event: PointerEvent<HTMLButtonElement>) => {
+    const node = canvas.current; const state = gesture.current;
+    if (!node || !state || !(event.buttons & 1)) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const context = node.getContext("2d");
+    if (context) {
+      context.globalCompositeOperation = "destination-out"; context.lineWidth = 62; context.lineCap = "round";
+      context.beginPath(); context.moveTo((state.x - rect.left) * 600 / rect.width, (state.y - rect.top) * 160 / rect.height); context.lineTo((event.clientX - rect.left) * 600 / rect.width, (event.clientY - rect.top) * 160 / rect.height); context.stroke();
+    }
+    const distance = Math.hypot(event.clientX - state.x, event.clientY - state.y);
+    state.x = event.clientX; state.y = event.clientY; state.distance += distance; state.total += distance;
+    dragged.current = state.distance > 8;
+    if (dragged.current) event.currentTarget.dataset.scratched = "true";
+    if (state.total > rect.width * 1.8) { gesture.current = null; onReveal(); }
+  };
+  return <button className="live-scratch-cover" type="button" aria-label={`Открыть билет № ${ticket.public_number}`} onClick={event => { if (!dragged.current || event.detail === 0) onReveal(); }}
+    onPointerDown={event => { event.currentTarget.setPointerCapture?.(event.pointerId); dragged.current = false; gesture.current = { x: event.clientX, y: event.clientY, distance: 0, total: gesture.current?.total ?? 0 }; }}
+    onPointerMove={scratch} onPointerCancel={() => { gesture.current = null; }}>
+    <canvas ref={canvas} width="600" height="160" aria-hidden="true" /><span><img src={logoSymbol} alt="" /><strong>Сотрите покрытие</strong><small>или коснитесь, чтобы открыть</small></span>
+  </button>;
+}
+
+function Ticket({ ticket, revealed = true, onReveal, compact = false }: { ticket: InstantTicket; revealed?: boolean; onReveal?: () => void; compact?: boolean }) {
+  return <article className={`kasper-live-ticket ${revealed ? "revealed" : "sealed"}${revealed && ticket.prize_amount > 0 ? " winner" : ""}${compact ? " compact" : ""}`} aria-label={`Билет № ${ticket.public_number}`}>
+    <header><span>CASPER <b>LIVE</b></span><small>№ {ticket.public_number.toLocaleString("ru-RU")}</small><img src={logoSymbol} alt="" /></header>
+    <div className="live-ticket-field"><div className="kasper-live-symbols" aria-hidden={!revealed}>{ticket.symbols.map((value, index) => <i key={index} style={{ animationDelay: `${index * 70}ms` }}><Symbol value={value} /></i>)}</div>{!revealed && onReveal && <ScratchCover ticket={ticket} onReveal={onReveal} />}</div>
+    <footer>{revealed ? <><span>{ticket.prize_amount > 0 ? "ВАШ ВЫИГРЫШ" : "БЕЗ ВЫИГРЫША"}</span><strong>{ticket.prize_amount > 0 ? <Money value={ticket.prize_amount} /> : "В этот раз не совпало"}</strong></> : <><span>ТРИ ОДИНАКОВЫХ СИМВОЛА</span><strong>Откройте свой результат</strong></>}</footer>
   </article>;
 }
 
 export function KasperLiveView({ initData, balance, onClose, onSettled }: { initData: string; balance: number; onClose: () => void; onSettled: (result: InstantPurchaseResult) => void }) {
   const [history, setHistory] = useState<InstantTicket[]>([]);
   const [result, setResult] = useState<InstantPurchaseResult | null>(null);
-  const [phase, setPhase] = useState<"idle" | "creating" | "numbering" | "generating" | "result">("idle");
+  const [opened, setOpened] = useState<string[]>([]);
+  const [quantity, setQuantity] = useState<1 | 3>(1);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const busy = phase !== "idle" && phase !== "result";
-
+  const buying = useRef(false);
+  const root = useRef<HTMLElement>(null);
+  const historyRequest = useRef(0);
   useEffect(() => {
-    void miniAppApi.kasperLiveHistory(initData).then(setHistory).catch(() => undefined);
+    const version = ++historyRequest.current;
+    let active = true;
+    void miniAppApi.kasperLiveHistory(initData).then(tickets => { if (active && version === historyRequest.current) setHistory(tickets); }).catch(() => undefined);
+    return () => { active = false; };
   }, [initData]);
-
-  const buy = async (quantity: 1 | 3) => {
-    selectionHaptic();
-    setError("");
-    setResult(null);
-    setPhase("creating");
+  const buy = async () => {
+    if (buying.current) return;
+    buying.current = true; selectionHaptic(); setError(""); setBusy(true);
     try {
       const purchase = await miniAppApi.kasperLivePurchase(initData, quantity, crypto.randomUUID());
-      await wait(650);
-      setPhase("numbering");
-      await wait(650);
-      setPhase("generating");
-      await wait(1_200);
-      setResult(purchase);
-      setHistory((current) => [...purchase.tickets, ...current.filter((item) => !purchase.tickets.some((ticket) => ticket.id === item.id))].slice(0, 30));
-      setPhase("result");
+      historyRequest.current += 1;
+      setResult(purchase); setOpened([]);
+      root.current?.scrollIntoView?.({ block: "start", behavior: "instant" });
+      setHistory(current => [...purchase.tickets, ...current.filter(item => !purchase.tickets.some(ticket => ticket.id === item.id))].slice(0, 30));
       onSettled(purchase);
-      successHaptic();
-    } catch (reason) {
-      setPhase("idle");
-      setError(reason instanceof ApiError ? reason.message : "Не удалось создать билет. Попробуйте ещё раз.");
-      errorHaptic();
-    }
+    } catch (reason) { setError(reason instanceof ApiError ? reason.message : "Не удалось получить результат. Проверьте историю билетов перед новой покупкой."); errorHaptic(); }
+    finally { buying.current = false; setBusy(false); }
   };
-
-  const phaseLabel = phase === "creating" ? "Создаём билет" : phase === "numbering" ? "Присваиваем номер" : "Casper генерирует комбинацию";
-  return <main className="kasper-live-page">
-    <header className="kasper-live-header"><button disabled={busy} onClick={onClose} type="button" aria-label="Закрыть">←</button><div><small>НОВОСТЬ В ПРЯМОМ ЭФИРЕ</small><strong>Casper LIVE</strong></div><span><Money value={balance} compact /></span></header>
-    <section className="kasper-live-hero"><span>LIVE</span><h1>Результат.<br />Здесь и сейчас.</h1><p>Билет создаётся и рассчитывается сразу. Никаких тиражей и ожидания.</p><small className="kasper-live-rule">Три одинаковых символа — выигрыш. Разные символы — без выигрыша.</small></section>
-
-    {busy && <section className="kasper-live-processing" aria-live="polite"><i /><strong>{phaseLabel}</strong><span>Выпуск в эфир готовится…</span></section>}
-    {phase === "result" && result && <section className="kasper-live-result" aria-live="polite"><header><span>ЭФИР ЗАВЕРШЁН</span><strong>{result.total_prize > 0 ? <>Выигрыш <Money value={result.total_prize} /></> : "В этот раз без выигрыша"}</strong></header><div className={result.tickets.length === 3 ? "kasper-live-ticket-grid triple" : "kasper-live-ticket-grid"}>{result.tickets.map((ticket) => <Ticket key={ticket.id} ticket={ticket} />)}</div><button type="button" onClick={() => { setResult(null); setPhase("idle"); }}>Купить ещё</button></section>}
-
-    {phase === "idle" && <section className="kasper-live-buy"><div><small>СТОИМОСТЬ БИЛЕТА</small><strong><Money value={2_000} /></strong></div><button disabled={balance < 2_000} onClick={() => void buy(1)} type="button"><span>1 билет</span><b>2 000 CAS</b></button><button disabled={balance < 6_000} onClick={() => void buy(3)} type="button"><span>3 билета</span><b>6 000 CAS</b></button>{error && <p role="alert">{error}</p>}</section>}
-
-    {!busy && history.length > 0 && <section className="kasper-live-history"><header><span>ВАШИ БИЛЕТЫ</span><small>Последние результаты</small></header><div>{history.map((ticket) => <Ticket key={ticket.id} ticket={ticket} />)}</div></section>}
+  const reveal = (ids: string[]) => {
+    setOpened(current => Array.from(new Set([...current, ...ids])));
+    if (result?.tickets.some(ticket => ids.includes(ticket.id) && ticket.prize_amount > 0)) successHaptic(); else selectionHaptic();
+  };
+  const complete = !!result && result.tickets.every(ticket => opened.includes(ticket.id));
+  const previous = history.filter(ticket => !result?.tickets.some(current => current.id === ticket.id));
+  return <main ref={root} className="kasper-live-page">
+    <header className="kasper-live-header"><button disabled={busy} onClick={onClose} type="button" aria-label="Закрыть">←</button><div><small>МГНОВЕННАЯ ЛОТЕРЕЯ</small><strong>Casper <em>LIVE</em></strong></div><span><small>БАЛАНС</small><Money value={balance} compact /></span></header>
+    {!result && <section className="kasper-live-hero"><div className="live-hero-copy"><span className="live-kicker"><i /> CASPER CASINO</span><h1>Ваша удача.<br /><em>Под золотом.</em></h1><p>Один билет. Три символа.<br />Ваш результат — сразу.</p></div><div className="live-hero-art" aria-hidden="true"><img src="/assets/casper-live-casino-v1.webp" alt="" width="768" height="512" /><i /></div><div className="live-hero-bottom"><span>SCRATCH EDITION <b>01</b></span><span>✦ МОМЕНТ УДАЧИ</span></div></section>}
+    {!result && <section className="kasper-live-buy"><div className="live-buy-heading"><span>Ваш выпуск</span><small>Билет <Money value={2_000} /></small></div><div className="live-quantity" role="group" aria-label="Количество билетов"><button type="button" aria-pressed={quantity === 1} disabled={busy} onClick={() => { selectionHaptic(); setQuantity(1); }}><b>1 билет</b><small>Один момент удачи</small></button><button type="button" aria-pressed={quantity === 3} disabled={busy} onClick={() => { selectionHaptic(); setQuantity(3); }}><b>3 билета</b><small>Открывайте вместе</small></button></div><button className="live-gold-button" disabled={busy || balance < quantity * 2_000} onClick={() => void buy()} type="button"><span>{busy ? "Печатаем ваш выпуск…" : `Купить ${quantity === 1 ? "билет" : "3 билета"}`}</span><b><Money value={quantity * 2_000} /></b></button>{balance < quantity * 2_000 && <p className="live-balance-note">Недостаточно CAS для этого выпуска</p>}{error && <p role="alert">{error}</p>}<p className="live-rule"><span>✦ ✦ ✦</span> Три одинаковых символа — выигрыш</p></section>}
+    {result && <section className="kasper-live-result"><header><span className="live-kicker">{complete ? "ВЫПУСК ОТКРЫТ" : "ВАШ ВЫПУСК ГОТОВ"}</span><h1>{complete ? result.total_prize > 0 ? "Золотой момент." : "До следующего совпадения." : "Удача под печатью."}</h1><p>{complete ? "Все результаты этого выпуска перед вами." : "Сотрите покрытие или откройте все билеты одним нажатием."}</p></header><div className="kasper-live-ticket-grid">{result.tickets.map(ticket => <Ticket key={ticket.id} ticket={ticket} revealed={opened.includes(ticket.id)} onReveal={() => reveal([ticket.id])} />)}</div><div className="live-result-actions">{complete ? <><div className="live-total" role="status"><span>{result.total_prize > 0 ? "Общий выигрыш" : "В этот раз без выигрыша"}</span>{result.total_prize > 0 && <strong><Money value={result.total_prize} /></strong>}</div><button className="live-gold-button" type="button" onClick={() => { setResult(null); setOpened([]); }}>Купить ещё <span aria-hidden="true">↗</span></button></> : <button className="live-gold-button" type="button" onClick={() => reveal(result.tickets.map(ticket => ticket.id))}>{result.tickets.length === 1 ? "Открыть билет" : "Открыть все"}<span aria-hidden="true">✦</span></button>}</div></section>}
+    {previous.length > 0 && <details className="kasper-live-history"><summary><span>Ваши предыдущие билеты</span><small>{previous.length} <span aria-hidden="true">＋</span></small></summary><div>{previous.slice(0, 6).map(ticket => <Ticket key={ticket.id} ticket={ticket} compact />)}</div></details>}
+    <footer className="live-page-footer">CASPER LIVE <i>✦</i> Результат сохраняется в истории билетов</footer>
   </main>;
 }
