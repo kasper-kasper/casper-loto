@@ -102,7 +102,12 @@ def service(session: Session) -> PublicationService:
 
 
 def test_catalog_and_snapshot_trust_only_server_templates() -> None:
-    assert len(template_catalog()) == 758
+    assert len(template_catalog()) == 1046
+    additions = [t for t in template_catalog() if t["id"].startswith("khan-owner-v1-")]
+    assert len(additions) == 9 * 32
+    assert {t["lottery"] for t in additions} == {"khan"}
+    assert len({t["formats"]["story"]["background"] for t in additions}) == 9
+    assert len({t["formats"]["post"]["background"] for t in additions}) == 9
     snapshot = content_snapshot(payload())
     snapshot["template"]["lottery"] = "hacked"
     assert template_catalog()[0]["lottery"] == "pulse"

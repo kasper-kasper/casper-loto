@@ -138,6 +138,13 @@
 
 # Development log
 
+## Owner artwork for 6/36 publications — 2026-10-05
+
+- Added nine owner-supplied navy/gold/ivory scenes exclusively for khan: light trails, six pedestals, ticket, six orbits, cosmos, ball cabinet, arc, stage and one drum. Paired 1080×1920 Stories retain portrait scenes and reserve lower copy; 1200×900 posts use the same scene beside a separate text column. Approved symbol and game label are composited during deterministic SVG/raster compilation; no generated replacement art or embedded event facts.
+- Preserved all 758 original catalog snapshots exactly. Added 288 editorial references (nine choices × existing 32 labels) sharing only 18 versioned backgrounds per client. Five text zones remain editable through the existing Admin/ Mini App renderer; game-bound CTA and manual publication workflow are reused. Sources, provenance, paired overview and reproducible incremental compiler are tracked separately from the historical local design gallery.
+- Current product scope is Admin + Mini App. No scheduler, automatic conditions, expiry, channel messages or B/C/D implementation. OD-037 records the remaining block A policy questions and the source README provides a reusable visual brief.
+- Verification: all 758 old catalog entries compare equal to the previous release; nine × 32 unique khan entries reference exactly 18 correctly sized WebPs, about 1.99 MiB per client. Backend 316 tests passed with the existing Windows symlink skip; Admin 35 and Mini App 118 tests passed, both lint/typechecks passed. Vitest required elevated esbuild directory access on Windows. Admin browser smoke selected all nine pairs, checked asset loads, exported a real 1200×900 PNG with editable text and confirmed no overflow at 390 px. Mini App smoke uses synthetic publications only; no example is published to production.
+
 ## Mini App: static cache and screen chunks — 2026-09-28
 
 - Caddy отдаёт `/assets/*` и версионированные `/brand/*` с годовым immutable-кешем. HTML остаётся `no-cache`, API по-прежнему `no-store`: баланс, статусы продаж и результаты не берутся из кеша браузера.

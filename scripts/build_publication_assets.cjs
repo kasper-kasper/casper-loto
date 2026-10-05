@@ -25,5 +25,6 @@ async function main(){
   }
   const output=path.join(root,'backend/src/k_loto/application/publication_templates.json');
   fs.writeFileSync(output,JSON.stringify(catalog));console.log(`Compiled ${catalog.length} template pairs.`);
+  await require('./build_khan_publication_assets.cjs')(catalog);
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});
