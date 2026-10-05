@@ -3120,3 +3120,4 @@ Known limitations:
 ## Casper LIVE brand labels — 2026-10-05
 
 - Owner clarified that the product never uses casino terminology. Hero now reads CASPER LIVE and «Мгновенная лотерея», without fictional edition numbering. Approved medallion artwork, layout, scratching, prices and result mapping are preserved. Scope: two visible labels and PATCH version 1.56.1; Mini App typecheck/lint/build and focused mobile smoke, followed by locked gateway-only publication and health verification.
+- Published 1.56.1 (7a50959): typecheck/lint/build and label/image browser smoke passed. Local and VPS rollback archives plus database backup retained; public HTTPS serves exact HTML/version/brand artwork and health 200. Web/Admin fingerprints and API/bot/database identities are unchanged.
