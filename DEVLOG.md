@@ -1,3 +1,14 @@
+## Casper Bingo owner collection replacement — 2026-10-05
+
+- Owner authorizes replacing the existing Casper Bingo library with all ten supplied emerald/gold scenes. Added source provenance, manifest, paired overview and deterministic Bingo compiler, integrated into the full asset pipeline. Removed 66 old Bingo templates from active selection; retained old hashed files for immutable publication snapshots. All ten scenes are offered for every existing Bingo A label, including A1.1 jackpot and A1.5 jackpotless series; no unused artwork.
+- Catalog now has 1,620 entries (1,300 other-game entries exactly preserved, 320 Bingo scene/event choices), backed by only 20 new shared background files, 2.94 MiB per client. Versions: Mini App 1.58.3, Admin 1.55.3, API 1.48.3. No financial rules, event automation or channel sends changed.
+- Verification: one focused backend catalog/snapshot regression passed, both affected frontends typecheck/lint/build passed; all ten paired choices loaded in the real Admin renderer with mocked local API, A1.5 has ten options, 390px has no horizontal overflow. Exact other-game data preservation, dimensions, text-zone bounds and matching client asset bytes checked; paired overview inspected. Deployment pending below.
+
+## Expanded editable Telegram copy bank — 2026-10-05
+
+- Expanded `docs/publications/block-a/telegram-posts.v1.txt` from 30 to 80 Telegram caption variants: eight for each A1/A4 block, with different lengths and sentence rhythm while preserving the existing placeholders and A4.4/A4.5 status labels.
+- Verification: 80 unique caption IDs, eight variants in each of the ten blocks, UTF-8-readable text, and no runtime or schema changes.
+
 ## Editable Telegram post bank and launch checklist — 2026-10-05
 
 - Created UTF-8 text file docs/publications/block-a/telegram-posts.v1.txt with all 30 prepared A1/A4 Telegram captions, stable variant IDs and explicit pending/excluded labels for A4.4/A4.5. No Story fields; no new editorial claims or automatic rules. Owner can edit and return this file for review; A2/A3/A5/A8 bank remains outstanding.
