@@ -47,3 +47,7 @@ All endpoints use existing admin authentication; writes also require existing CS
 - `POST /api/v1/admin/publications/<UUID>/archive`: existing archive/revision workflow.
 
 An admin UI for these nonvisual drafts is not added in this backend-only phase. The later content/visual adapter should expose these APIs to the owner and connect selected event payloads to templates without changing immutable event keys/history.
+
+## Owner visual library added 2026-10-06
+
+All ten supplied B backgrounds now exist in the shared visual catalog, each selectable for every one of the 18 approved B types (180 choices). The existing manual editor can author platform visuals under `casper-loto`; its centered Story CTA opens the Mini App catalog. All copy fields and CTA are centered. No A template was changed. The nonvisual event guard remains in place: automatic payload-to-visual composition and dispatch are still disabled. Ninety editable channel text variants are in `docs/publications/block-b/telegram-posts.v1.txt`.

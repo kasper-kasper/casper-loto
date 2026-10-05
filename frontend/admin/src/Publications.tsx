@@ -25,7 +25,7 @@ export function Publications() {
   const available = templates.filter(item => item.lottery === game);
   const events = [...new Map(available.map(item => [item.subcategory, item.subcategoryLabel])).entries()];
   const choices = available.filter(item => item.subcategory === event);
-  function changeSelection(nextGame: string, nextEvent?: string) { const gameTemplates = templates.filter(item => item.lottery === nextGame);const actualEvent = nextEvent ?? gameTemplates[0]?.subcategory ?? "";setGame(nextGame);setEvent(actualEvent);setTemplateId(gameTemplates.find(item => item.subcategory === actualEvent)?.id ?? "");setDirty(true); }
+  function changeSelection(nextGame: string, nextEvent?: string) { const gameTemplates = templates.filter(item => item.lottery === nextGame);const actualEvent = nextEvent ?? gameTemplates[0]?.subcategory ?? "";setGame(nextGame);setCta(nextGame === "casper-loto" ? "Открыть Casper Loto" : "Открыть лотерею");setEvent(actualEvent);setTemplateId(gameTemplates.find(item => item.subcategory === actualEvent)?.id ?? "");setDirty(true); }
   function open(row: Publication) { setSelected(row);setFields(row.content.fields);setCta(row.content.cta_label);setCaption(row.content.channel_caption);setGame(row.lottery_code);setEvent(row.content.template.subcategory);setTemplateId(row.content.template.id);setDirty(false);setNotice("");setError(""); }
   function fresh(copy = false) { setSelected(null);setDraftId(crypto.randomUUID());setDirty(true);setNotice("");if (!copy) { setFields(emptyFields);setCaption("");setCta("Открыть лотерею");changeSelection(templates[0]?.lottery ?? "pulse"); } }
   function apply(row: Publication) { setRows(current => [row, ...current.filter(item => item.id !== row.id)]);open(row); }

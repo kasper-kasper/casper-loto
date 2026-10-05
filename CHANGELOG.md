@@ -1,3 +1,7 @@
+## [Mini App 1.58.7 / Admin 1.55.7 / API 1.49.1] - 2026-10-06
+
+- Added all ten owner-supplied B backgrounds for all 18 platform events, with centered Story/Post text and a platform catalog link. Preserved all A layouts; imported edited A copy and prepared 90 B channel-post variants. Automatic delivery remains disabled.
+
 # Changelog
 
 ## [API 1.49.0] - 2026-10-06

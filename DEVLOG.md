@@ -1,3 +1,9 @@
+## Owner platform B artwork and copy — 2026-10-06
+
+- Imported all ten owner PNGs with provenance, deterministic paired compiler and real React preview generator. Added 180 B choices to the existing catalog; all 2,130 A records preserved byte-for-byte as serialized objects. Optional center alignment in both identical renderers retains legacy A positions; B has a central text cluster and central Story CTA. Platform manual drafts use existing workflow and catalog navigation without a fake lottery entity. Nonvisual B guards and delivery-disabled policies remain intact.
+- Imported the supplied A text verbatim (80 variants), retaining one wording concern in OWNER_TEXT_REVIEW.md. Prepared 90 editable B variants with explicit ticket/player distinctions, draft modes, placeholders, stable hashtag mapping and spoiler instructions. No text or images sent to Telegram. API 1.49.1, Admin 1.55.7, Mini App 1.58.7.
+- Verification: backend lint/typecheck passed, full backend suite 335 passed / one Windows symlink capability skip; Admin 36 tests and Mini App 118 tests passed, both typecheck/lint/build passed. Inspected actual React-rendered overview of all ten Story/Post pairs; client renderer/assets identical and all A objects unchanged. Production rollout pending.
+
 ## Platform publication event foundation B — 2026-10-06
 
 - Extended existing Publication storage/workflow with nullable event type/key/mode, unique dedupe and content-only checkpoint table, migration 0049. Exact requested B registry; configurable continuation grids, read-only platform metrics including instant purchase/win tickets and Fast draws, absolute current jackpot record with immutable-history baseline, refreshable one-day jackpot aggregate, explicitly requested B3/B4 drafts. Existing A catalog/feed remains unchanged and nonvisual events cannot publish through visual endpoints.

@@ -2,7 +2,7 @@ export type TextField = "kicker" | "title" | "description" | "value" | "fact";
 export type PublicationFields = Record<TextField, string>;
 export type Rectangle = [number, number, number, number];
 export interface PublicationFormat { width: number; height: number; background: string; zones: Record<TextField, Rectangle>; fonts: Record<TextField, number>; cta: Rectangle | null }
-export interface PublicationTemplate { id: string; lottery: string; lotteryLabel: string; subcategory: string; subcategoryLabel: string; compositionLabel: string; accent: string; base: string; light: string; serif: boolean; formats: Record<"story" | "post", PublicationFormat> }
+export interface PublicationTemplate { id: string; lottery: string; lotteryLabel: string; subcategory: string; subcategoryLabel: string; compositionLabel: string; accent: string; base: string; light: string; serif: boolean; textAlign?: "center"; formats: Record<"story" | "post", PublicationFormat> }
 export interface PublicationInput { template_id: string; fields: PublicationFields; cta_label: string; channel_caption: string }
 export interface Publication { id: string; lottery_code: string; status: "draft" | "published" | "archived"; revision: number; content: { template: PublicationTemplate; fields: PublicationFields; cta_label: string; channel_caption: string }; created_at: string; updated_at: string; published_at: string | null }
 

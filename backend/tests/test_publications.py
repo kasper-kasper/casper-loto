@@ -102,7 +102,7 @@ def service(session: Session) -> PublicationService:
 
 
 def test_catalog_and_snapshot_trust_only_server_templates() -> None:
-    assert len(template_catalog()) == 2130
+    assert len(template_catalog()) == 2310
     assert all(t["lottery"] != "kasper-live" for t in template_catalog())
     for code in ("weekly", "pll", "pss", "grob"):
         scenes = [
@@ -276,3 +276,38 @@ def test_editor_requires_csrf_even_with_valid_admin_dependency() -> None:
         json={"revision": 1},
     )
     assert response.status_code == 403
+
+
+def test_platform_catalog_has_all_backgrounds_and_only_centered_copy() -> None:
+    from k_loto.application.publication_events import EVENTS
+
+    rows = [t for t in template_catalog() if t["lottery"] == "casper-loto"]
+    assert len(rows) == 180
+    assert {r["subcategory"] for r in rows} == set(EVENTS)
+    for code in EVENTS:
+        assert len([r for r in rows if r["subcategory"] == code]) == 10
+    for row in rows:
+        assert row["textAlign"] == "center"
+        for spec in row["formats"].values():
+            for x, y, width, height in spec["zones"].values():
+                assert x + width / 2 == spec["width"] / 2
+                assert spec["height"] * 0.15 < y < spec["height"] * 0.75
+                assert y + height < spec["height"] * 0.8
+
+
+@pytest.mark.asyncio
+async def test_platform_visual_draft_does_not_require_a_fake_lottery() -> None:
+    class PlatformSession(Session):
+        async def scalar(self, statement: Any) -> Any:
+            self.record(statement)
+            return None
+
+    session = PlatformSession()
+    template = next(t for t in template_catalog() if t["lottery"] == "casper-loto")
+    row = await service(session).create(
+        PublicationInput(template_id=template["id"], fields={"title": "Общая новость"}),
+        author=UUID(int=2),
+        publication_id=UUID(int=88),
+    )
+    assert row.lottery_code == "casper-loto" and row.status == "draft"
+    assert row.event_type is None

@@ -158,7 +158,10 @@ class PublicationService:
                     Lottery.code == snapshot["template"]["lottery"]
                 )
             )
-            if lottery is None and snapshot["template"]["lottery"] != "kasper-live":
+            if lottery is None and snapshot["template"]["lottery"] not in (
+                "kasper-live",
+                "casper-loto",
+            ):
                 raise ValueError("Lottery does not exist.")
             now = datetime.now(UTC)
             row = Publication(

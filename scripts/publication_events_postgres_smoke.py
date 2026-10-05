@@ -12,7 +12,12 @@ from k_loto.application.publication_events import (
     PublicationEventService,
     event_config,
 )
-from k_loto.application.publications import PublicationConflict, PublicationService
+from k_loto.application.publications import (
+    PublicationConflict,
+    PublicationInput,
+    PublicationService,
+    template_catalog,
+)
 from k_loto.core.config import get_settings
 from k_loto.domain.enums import DrawStatus
 from k_loto.infrastructure.database.models import (
@@ -164,6 +169,21 @@ async def main() -> None:
                 request, publication_id=uuid4(), author=author, now=now
             )
             assert row.status == "draft"
+    platform = next(t for t in template_catalog() if t["lottery"] == "casper-loto")
+    async with session_factory() as session:
+        visual = await PublicationService(session).create(
+            PublicationInput(
+                template_id=platform["id"], fields={"title": "Platform smoke"}
+            ),
+            publication_id=uuid4(),
+            author=author,
+        )
+        assert visual.lottery_code == "casper-loto" and visual.event_type is None
+    async with session_factory() as session:
+        published = await PublicationService(session).change(
+            visual.id, author=author, revision=1, action="publish"
+        )
+        assert published.status == "published"
     await engine.dispose()
     print(
         "PostgreSQL event smoke: concurrent scan/draft dedupe, Moscow aggregates, "
