@@ -93,11 +93,23 @@ def unique_winners_record_eligible(current: int, previous: int) -> bool:
     )
 
 
+def jackpot_record_eligible(current: int, previous: int) -> bool:
+    return current - previous >= int(
+        lottery_publication_rules()["jackpot_record_minimum_increase_cas"]
+    )
+
+
 def publication_is_eligible(
     code: str | None, game: str, payload: dict[str, Any] | None = None
 ) -> bool:
     """Historical approval changes delivery mode, never event eligibility."""
     rules = lottery_publication_rules()
+    if code in {"A1.3", "A1.4", "B2.1"}:
+        if not payload or not jackpot_record_eligible(
+            int(payload.get("new_record", 0)),
+            int(payload.get("publication_baseline", payload.get("previous_record", 0))),
+        ):
+            return False
     if code == "A5.5":
         if not payload or payload.get("metric") != "unique_winners_per_draw":
             return False
@@ -133,6 +145,15 @@ def publication_eligibility_filter() -> Any:
                 Publication.event_type.in_(rules["enabled_channel_events"]),
                 Publication.event_type.not_in(rules["unresolved_events"]),
                 or_(
+                    Publication.event_type.not_in(["A1.3", "A1.4", "B2.1"]),
+                    payload["new_record"].as_integer()
+                    - func.coalesce(
+                        payload["publication_baseline"].as_integer(),
+                        payload["previous_record"].as_integer(),
+                    )
+                    >= rules["jackpot_record_minimum_increase_cas"],
+                ),
+                or_(
                     Publication.event_type != "A5.5",
                     and_(
                         payload["metric"].astext == "unique_winners_per_draw",
@@ -167,6 +188,32 @@ def format_key(snapshot: dict[str, Any]) -> str:
 def caption_html(text: str) -> str:
     escaped = html.escape(text)
     return re.sub(r"\[ПОД СПОЙЛЕРОМ: (.*?)\]", r"<tg-spoiler>\1</tg-spoiler>", escaped)
+
+
+def editorial_snapshot(content: dict[str, Any], game: str) -> dict[str, Any]:
+    """Apply current presentation rules even to previously prepared queue rows."""
+    result = deepcopy(content)
+    result["channel_caption"] = re.sub(
+        r"\n\nСобытие: [^\n]*\Z", "", result.get("channel_caption", "")
+    )
+    code = result.get("event", {}).get("type", "")
+    if not (code.startswith("A1.") or code in {"B2.1", "B3.1", "B3.5"}):
+        result.get("fields", {}).update(fact="")
+    template = result.get("template", {})
+    if game in lottery_publication_rules()["fast_games"] and not template.get(
+        "id", ""
+    ).startswith("fast-owner-v1-"):
+        approved = [
+            t
+            for t in template_catalog()
+            if t["lottery"] == game
+            and t["subcategory"] == template.get("subcategory")
+            and t["id"].startswith("fast-owner-v1-")
+        ]
+        if not approved:
+            raise ValueError("No owner Fast template for queued publication")
+        result["template"] = deepcopy(approved[0])
+    return result
 
 
 def choose(
@@ -245,9 +292,7 @@ class PublicationAutomation:
         title = caption.split("\n", 1)[0]
         if len(title) > 120:
             title = template["subcategoryLabel"]
-        occurred = datetime.fromisoformat(row.content["event"]["occurred_at"])
-        dated = f"\n\nСобытие: {moscow(occurred)}"
-        if len((caption + dated).encode("utf-16-le")) // 2 > 1024:
+        if len(caption.encode("utf-16-le")) // 2 > 1024:
             raise ValueError(
                 f"Caption exceeds Telegram photo limit for {row.event_key}"
             )
@@ -256,7 +301,7 @@ class PublicationAutomation:
             "title": title,
             "value": values.get("value", ""),
             "description": values.get("description", template["subcategoryLabel"]),
-            "fact": moscow(occurred),
+            "fact": "",
         }
         if any(
             len(fields[k]) > limit
@@ -276,7 +321,7 @@ class PublicationAutomation:
             cta_label="Открыть Casper Loto"
             if code.startswith("B")
             else "Открыть лотерею",
-            channel_caption=caption + dated,
+            channel_caption=caption,
             text_variant=text_id,
         )
         snapshot["delivery"].update(
@@ -1093,6 +1138,36 @@ class PublicationAutomation:
                 )
             ).all()
         }
+        # Published/queued notices are editorial checkpoints. Tiny financial
+        # records must not advance these, otherwise a 100m gap could never accrue.
+        checkpoints: dict[str, int] = {}
+        absolute_checkpoint = 0
+        notices = await self.session.scalars(
+            select(Publication).where(
+                Publication.event_type.in_(["A1.3", "A1.4", "B2.1"]),
+                or_(
+                    Publication.content["delivery"]["state"].astext == "sent",
+                    and_(
+                        Publication.content["delivery"]["state"].astext == "queued",
+                        publication_eligibility_filter(),
+                    ),
+                ),
+            )
+        )
+        for notice in notices:
+            payload = notice.content.get("event", {}).get("payload", {})
+            value = int(payload.get("new_record", 0))
+            if not value:
+                # Older A1.4 notices carried the value in their stable event key.
+                value = int((notice.event_key or "0").rsplit(":", 1)[-1])
+            if notice.event_type == "A1.3":
+                key = (notice.event_key or "").removeprefix("A1.3:").rsplit(":", 1)[0]
+                checkpoints[key] = max(checkpoints.get(key, 0), value)
+            else:
+                absolute_checkpoint = max(absolute_checkpoint, value)
+        for key, value in records.items():
+            checkpoints.setdefault(key, value)
+        absolute_checkpoint = absolute_checkpoint or absolute
         for (_, game, record_key), move in sorted(
             grouped.items(), key=lambda item: (item[1].created_at, item[1].id)
         ):
@@ -1109,52 +1184,64 @@ class PublicationAutomation:
                 topic_hashtag="#Рекорд",
                 public_topic_hashtag="#джекпот",
             )
-            if peak > previous:
-                await self.store(
+            checkpoint = checkpoints.get(record_key, previous)
+            if peak > previous and jackpot_record_eligible(peak, checkpoint):
+                row = await self.store(
                     "A1.3",
                     f"A1.3:{record_key}:{peak}",
                     move.created_at,
                     author,
-                    values,
+                    {**values, "previous_record_cas": number(checkpoint)},
                     game=game,
-                    payload={"previous_record": previous, "new_record": peak},
+                    payload={
+                        "previous_record": previous,
+                        "new_record": peak,
+                        "publication_baseline": checkpoint,
+                    },
                     historical=historical,
                 )
+                if row is not None:
+                    checkpoints[record_key] = peak
             if peak > absolute:
                 old_absolute = absolute
                 absolute = peak
-                await self.store(
-                    "A1.4",
-                    f"A1.4:{peak}",
-                    move.created_at,
-                    author,
-                    {
-                        **values,
-                        "previous_record_cas": number(old_absolute),
-                        "comparison_scope_label": "за всё время Casper Loto",
-                    },
-                    game=game,
-                    historical=historical,
-                )
-                await self.store(
-                    "B2.1",
-                    f"B2.1:record:{peak}",
-                    move.created_at,
-                    author,
-                    {
-                        **values,
-                        "new_record_cas": number(peak),
-                        "previous_record_cas": number(old_absolute),
-                        "topic_hashtag": "#CasperРекорды",
-                    },
-                    payload={
+                if jackpot_record_eligible(peak, absolute_checkpoint):
+                    payload = {
                         "new_record": peak,
                         "previous_record": old_absolute,
+                        "publication_baseline": absolute_checkpoint,
                         "lottery_code": game,
                         "ledger_id": str(move.id),
-                    },
-                    historical=historical,
-                )
+                    }
+                    await self.store(
+                        "A1.4",
+                        f"A1.4:{peak}",
+                        move.created_at,
+                        author,
+                        {
+                            **values,
+                            "previous_record_cas": number(absolute_checkpoint),
+                            "comparison_scope_label": "за всё время Casper Loto",
+                        },
+                        game=game,
+                        payload=payload,
+                        historical=historical,
+                    )
+                    await self.store(
+                        "B2.1",
+                        f"B2.1:record:{peak}",
+                        move.created_at,
+                        author,
+                        {
+                            **values,
+                            "new_record_cas": number(peak),
+                            "previous_record_cas": number(absolute_checkpoint),
+                            "topic_hashtag": "#CasperРекорды",
+                        },
+                        payload=payload,
+                        historical=historical,
+                    )
+                    absolute_checkpoint = peak
             # Individual bases may change; use the approved base captured by the
             # latest win/reset, otherwise the configured approved account base.
             earlier_wins = [
@@ -1279,12 +1366,12 @@ async def deliver_one(
         ):
             return "interval"
         # Rendering errors happen before any network side effect or claim.
+        content = editorial_snapshot(row.content, row.lottery_code)
         image = await asyncio.to_thread(
-            render_post, row.content, assets=assets, fonts=fonts
+            render_post, content, assets=assets, fonts=fonts
         )
-        caption = caption_html(row.content["channel_caption"])
+        caption = caption_html(content["channel_caption"])
         identifier = row.id
-        content = deepcopy(row.content)
         content["delivery"].update(state="sending", attempted_at=now.isoformat())
         row.content = content
     try:

@@ -474,67 +474,67 @@
   "B3.2": [
     {
       "id": "B3-2-1",
-      "text": "Выигрышные билеты сегодня\n\nЗа {day_moscow} в Casper Loto — {winning_tickets_today} выигрышных билетов. Данные на {as_of_moscow} МСК.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+      "text": "Выигрышные билеты сегодня\n\nЗа день в Casper Loto — {winning_tickets_today} выигрышных билетов.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
     },
     {
       "id": "B3-2-2",
-      "text": "Сегодня в Casper Loto\n\n{winning_tickets_today} выигрышных билетов за {day_moscow}. Считаем билеты всех игр платформы; данные на {as_of_moscow} МСК.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+      "text": "Сегодня в Casper Loto\n\n{winning_tickets_today} выигрышных билетов за день. Считаем билеты всех игр платформы.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
     },
     {
       "id": "B3-2-3",
-      "text": "Casper Loto · выигрыши за сегодня\n\nНа {as_of_moscow} МСК за {day_moscow} учтено {winning_tickets_today} выигрышных билетов.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+      "text": "Casper Loto · выигрыши за сегодня\n\nЗа день учтено {winning_tickets_today} выигрышных билетов.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
     },
     {
       "id": "B3-2-4",
-      "text": "Общий счёт выигрышных билетов за день\n\n{winning_tickets_today} выигрышных билетов в Casper Loto за {day_moscow}, по состоянию на {as_of_moscow} МСК.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+      "text": "Общий счёт выигрышных билетов за день\n\n{winning_tickets_today} выигрышных билетов в Casper Loto за день.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
     },
     {
       "id": "B3-2-5",
-      "text": "Один день — игры всей платформы\n\nЗа {day_moscow} в Casper Loto учтено {winning_tickets_today} выигрышных билетов. Данные на {as_of_moscow} МСК.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+      "text": "Один день — игры всей платформы\n\nЗа день в Casper Loto учтено {winning_tickets_today} выигрышных билетов.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
     }
   ],
   "B3.3": [
     {
       "id": "B3-3-1",
-      "text": "Неделя Casper Loto в цифрах\n\nЗа {period_moscow}: куплено билетов — {period_tickets}; игроков с покупками — {period_players}; выигрышных билетов — {period_winning_tickets}; завершено тиражей — {period_draws}.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+      "text": "Неделя Casper Loto в цифрах\n\nЗа выбранный период: куплено билетов — {period_tickets}; игроков с покупками — {period_players}; выигрышных билетов — {period_winning_tickets}; завершено тиражей — {period_draws}.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
     },
     {
       "id": "B3-3-2",
-      "text": "Что произошло за эту неделю\n\nCasper Loto, {period_moscow}: {period_tickets} купленных билетов, {period_players} игроков с покупками, {period_winning_tickets} выигрышных билетов и {period_draws} завершённых тиражей.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+      "text": "Что произошло за эту неделю\n\nCasper Loto за неделю: {period_tickets} купленных билетов, {period_players} игроков с покупками, {period_winning_tickets} выигрышных билетов и {period_draws} завершённых тиражей.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
     },
     {
       "id": "B3-3-3",
-      "text": "Семь дней · Casper Loto\n\nПериод: {period_moscow}. Билеты: {period_tickets}. Игроки с покупками: {period_players}. Выигрышные билеты: {period_winning_tickets}. Тиражи: {period_draws}.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+      "text": "Семь дней · Casper Loto\n\nБилеты: {period_tickets}. Игроки с покупками: {period_players}. Выигрышные билеты: {period_winning_tickets}. Тиражи: {period_draws}.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
     },
     {
       "id": "B3-3-4",
-      "text": "Игры всей платформы за неделю\n\nЗа {period_moscow} в Casper Loto куплено {period_tickets} билетов. Игроков с покупками: {period_players}; выигрышных билетов: {period_winning_tickets}; завершённых тиражей: {period_draws}.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+      "text": "Игры всей платформы за неделю\n\nЗа выбранный период в Casper Loto куплено {period_tickets} билетов. Игроков с покупками: {period_players}; выигрышных билетов: {period_winning_tickets}; завершённых тиражей: {period_draws}.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
     },
     {
       "id": "B3-3-5",
-      "text": "Наша неделя в общих цифрах\n\n{period_moscow}: {period_players} игроков с покупками, {period_tickets} купленных билетов, {period_draws} завершённых тиражей и {period_winning_tickets} выигрышных билетов.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+      "text": "Наша неделя в общих цифрах\n\nЗа неделю: {period_players} игроков с покупками, {period_tickets} купленных билетов, {period_draws} завершённых тиражей и {period_winning_tickets} выигрышных билетов.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
     }
   ],
   "B3.4": [
     {
       "id": "B3-4-1",
-      "text": "Лидер по купленным билетам\n\nЗа {period_moscow} больше всего билетов куплено в {popular_games_label}. Билетов у каждого лидера: {leader_tickets}.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+      "text": "Лидер по купленным билетам\n\nЗа выбранный период больше всего билетов куплено в {popular_games_label}. Билетов у каждого лидера: {leader_tickets}.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
     },
     {
       "id": "B3-4-2",
-      "text": "Какие игры выбирали чаще\n\nПервое место по количеству купленных билетов за {period_moscow}: {popular_games_label}. У каждого лидера — {leader_tickets} билетов.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+      "text": "Какие игры выбирали чаще\n\nПервое место по количеству купленных билетов за выбранный период: {popular_games_label}. У каждого лидера — {leader_tickets} билетов.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
     },
     {
       "id": "B3-4-3",
-      "text": "Популярные игры · Casper Loto\n\n{popular_games_label} — лидер по купленным билетам за {period_moscow}. Билетов у каждого лидера: {leader_tickets}.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+      "text": "Популярные игры · Casper Loto\n\n{popular_games_label} — лидер по купленным билетам за выбранный период. Билетов у каждого лидера: {leader_tickets}.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
     },
     {
       "id": "B3-4-4",
-      "text": "Первое место по билетам\n\nЗа {period_moscow} лидирующую отметку в {leader_tickets} купленных билетов достигли: {popular_games_label}.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+      "text": "Первое место по билетам\n\nЗа выбранный период лидирующую отметку в {leader_tickets} купленных билетов достигли: {popular_games_label}.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
     },
     {
       "id": "B3-4-5",
-      "text": "Выбор игроков за этот период\n\n{popular_games_label} занимает первое место по купленным билетам за {period_moscow}. У каждого лидера: {leader_tickets} билетов.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+      "text": "Выбор игроков за этот период\n\n{popular_games_label} занимает первое место по купленным билетам за выбранный период. У каждого лидера: {leader_tickets} билетов.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
     }
   ],
   "B3.5": [

@@ -413,6 +413,8 @@ class PublicationEventService:
             }
 
     async def _record(self, now: datetime, author: UUID, batch: str) -> None:
+        from k_loto.application.publication_automation import jackpot_record_eligible
+
         record = await self._state("B2.1.record")
         historical = int(
             await self.session.scalar(
@@ -443,8 +445,18 @@ class PublicationEventService:
                 or 0
             )
             baseline = max(baseline, ledger_peak)
+        checkpoint = int(
+            record.value.get(
+                "publication_baseline", record.value.get("value", baseline)
+            )
+        )
         if not record.value or baseline > record.value["value"]:
-            record.value = {"value": baseline, "source": "historical_baseline"}
+            record.value = {
+                **record.value,
+                "value": baseline,
+                "publication_baseline": checkpoint,
+                "source": "historical_baseline",
+            }
         current = (
             await self.session.execute(
                 select(
@@ -460,9 +472,18 @@ class PublicationEventService:
         ).first()
         if current is None or current.balance <= record.value["value"]:
             return
+        previous = record.value["value"]
+        record.value = {
+            **record.value,
+            "value": current.balance,
+            "publication_baseline": checkpoint,
+        }
+        if not jackpot_record_eligible(current.balance, checkpoint):
+            return
         payload = {
             "new_record": current.balance,
-            "previous_record": record.value["value"],
+            "previous_record": previous,
+            "publication_baseline": checkpoint,
             "lottery_code": current.code,
             "lottery_id": str(current.id),
             "jackpot_account_id": str(current.jackpot_account_id),
@@ -472,7 +493,12 @@ class PublicationEventService:
         row = await self._store(
             f"B2.1:record:{current.balance}", "B2.1", payload, now, author, batch
         )
-        record.value = {"value": current.balance, "event_id": str(row.id), **payload}
+        record.value = {
+            "value": current.balance,
+            "event_id": str(row.id),
+            **payload,
+            "publication_baseline": current.balance,
+        }
 
     async def _daily_jackpots(self, now: datetime, author: UUID) -> None:
         # Jackpot wins are rare. Reading the immutable projection catches arbitrarily

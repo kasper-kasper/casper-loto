@@ -288,12 +288,12 @@ def test_event_reads_require_admin_auth(path: str) -> None:
 
 
 class RecordSession(MemorySession):
-    current = 200
+    current = 200000000
 
     async def scalar(self, query: Any) -> Any:
         sql = str(query)
         if "max(" in sql:
-            return 100 if "ledger_transactions" in sql else 0
+            return 100000000 if "ledger_transactions" in sql else 0
         return await super().scalar(query)
 
     async def execute(self, _query: Any) -> Any:
@@ -311,17 +311,22 @@ async def test_record_strict_increase_keeps_previous_value_and_stable_key() -> N
     session = RecordSession()
     service = PublicationEventService(cast(AsyncSession, session))
     await service._record(NOW, AUTHOR, "B:scan:one")
-    row = session.events["B2.1:record:200"]
-    assert row.content["event"]["payload"]["previous_record"] == 100
+    row = session.events["B2.1:record:200000000"]
+    assert row.content["event"]["payload"]["previous_record"] == 100000000
     await service._record(NOW, AUTHOR, "B:scan:one")
-    session.current = 150
+    session.current = 150000000
     await service._record(NOW, AUTHOR, "B:scan:one")
     assert len(session.events) == 1
-    session.current = 300
+    session.current = 225000000
+    await service._record(NOW, AUTHOR, "B:scan:small")
+    assert len(session.events) == 1
+    session.current = 300000000
     await service._record(NOW, AUTHOR, "B:scan:two")
     assert (
-        session.events["B2.1:record:300"].content["event"]["payload"]["previous_record"]
-        == 200
+        session.events["B2.1:record:300000000"].content["event"]["payload"][
+            "previous_record"
+        ]
+        == 225000000
     )
 
 

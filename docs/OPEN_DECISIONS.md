@@ -67,3 +67,7 @@ Supersedes the emergency stop for the corrected replay only: owner authorizes re
 
 Owner retires unique-participant records everywhere: A4.3/A5.2 are removed from the selectable catalog, feeds, approval and delivery. A5.5 means a genuinely new format-scoped record of distinct paid winning users in ONE draw, strictly more than 20; repeat weekly snapshots of an unchanged maximum are not events. Routine draw completion/combination/carryover/winner counts for any lottery do not qualify for the historical or ongoing channel queue. Template metadata is not an approved trigger. Channel event eligibility uses an explicit configured allowlist: approved A1 jackpot events, A4.1/A4.2 threshold/ticket records, the specified A5.5 winner record, and the agreed B types with real source facts. Other design-only A types remain inactive pending defined conditions. “3 сентября” is an existing active lottery NAME and remains included; do not mistake it for an event date or retire that game.
 
+
+## Publication editorial rules — 2026-10-06
+
+Owner explicitly selects a minimum increase of 100,000,000 CAS from the last announced jackpot record for A1.3, A1.4 and B2.1. Small intervening increases update factual maxima without advancing the editorial checkpoint. Existing queued notices must pass the same gap. Remove automatic event/date/time/MSK footers; contextual jackpot dates remain permitted. Non-jackpot copy and artwork omit dates. Remove original Fast templates for flash/shadow/pulse; only fast-owner-v1 is selectable. Preserve published receipts and financial history.

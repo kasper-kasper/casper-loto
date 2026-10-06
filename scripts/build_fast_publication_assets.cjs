@@ -58,7 +58,7 @@ async function build(catalog) {
   const height=52+420*Math.ceil(manifest.artworks.length/2);
   const labels=`<svg width="1300" height="${height}"><rect width="100%" height="100%" fill="#0B1525"/>${manifest.artworks.map((item,i)=>`<text x="${24+(i%2)*650}" y="${32+Math.floor(i/2)*420}" fill="${games[item.lottery].accent}" font-family="Arial" font-size="18">${games[item.lottery].label} · ${escape(item.name)} · Stories / пост</text>`).join('')}</svg>`;
   await sharp(Buffer.from(labels)).composite(previews).png().toFile(path.join(source,'overview.png'));
-  const next=[...original,...templates];
+  const next=[...original.filter(t=>!Object.hasOwn(games,t.lottery)),...templates];
   if(new Set(next.map(t=>t.id)).size!==next.length) throw new Error('Duplicate template IDs.');
   fs.writeFileSync(catalogPath,JSON.stringify(next));
   console.log(`Preserved ${original.length}; added six Fast scene pairs (${templates.length} choices). Total ${next.length}.`);

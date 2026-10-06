@@ -3270,3 +3270,8 @@ Known limitations:
 - Production API 1.50.2: all 264 eligible historical posts delivered, first new message ID 184; no eligible pending/in-flight/uncertain replay rows. Final compact status: transport enabled, invalid queued events 0, Stories 10, ongoing automatic interval 1,800 seconds. “3 сентября” remains active. Unique-participant scenarios are retired; unique-winner records require a new per-draw maximum strictly above 20.
 - Existing retention cleanup passed production health, removed six obsolete gateway images and reclaimed about 396 MB; the three redundant local publication source archives were removed. No new database/source backups were created for this correction at the owner's request. Previously mistaken channel messages (161 receipts now outside the allowed scenarios) remain; publication audit and completed financial/draw history were preserved.
 
+
+## Publication editorial cleanup — 2026-10-06
+
+- API 1.50.3: removed service footer and automatic artwork date; non-jackpot B statistical copy uses plain periods without dates. Removed 198 original Fast template rows, retaining six owner scenes (192 raw template choices); the asset compiler now replaces original Fast layouts. Existing queued snapshots are normalized before rendering. Published messages are not retroactively edited.
+- Configured jackpot record gap 100,000,000 CAS for A1.3/A1.4/B2.1, applied at generation and SQL delivery boundary. Factual maxima remain separate from announced/queued editorial checkpoints so minor changes accumulate. No schema, ledger, ticket or draw changes; no historical replay. Focused publication regressions and Ruff/mypy before API-only release; health verified after deployment.

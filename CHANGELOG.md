@@ -1676,3 +1676,7 @@ All notable changes follow Keep a Changelog and Semantic Versioning principles.
 
 - Remove unique-participant record publications. Publish a unique-winner record only for a new per-draw maximum of at least 21 people. Exclude routine results and unchanged statistical records for every lottery from channel automation.
 
+
+## 1.50.3 — 2026-10-06
+
+- Remove automatic service date/time footers and non-jackpot statistical dates from channel posts. Fast uses only the owner supplied backgrounds. Jackpot record notices require a cumulative increase of at least 100 million CAS from the preceding announced maximum; financial maxima remain accurate.

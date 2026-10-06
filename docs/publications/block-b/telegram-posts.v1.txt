@@ -323,7 +323,7 @@ B3.1 — Общий текущий джекпот
 
 Джекпоты Casper Loto сейчас
 
-Общая сумма текущих джекпотов — {total_jackpot_cas} CAS. Данные на {as_of_moscow} МСК.
+Общая сумма текущих джекпотов — {total_jackpot_cas} CAS.
 
 #CasperLoto {topic_hashtag}
 [ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]
@@ -382,7 +382,7 @@ B3.2 — Выигрышные билеты сегодня
 
 Выигрышные билеты сегодня
 
-За {day_moscow} в Casper Loto — {winning_tickets_today} выигрышных билетов. Данные на {as_of_moscow} МСК.
+За день в Casper Loto — {winning_tickets_today} выигрышных билетов.
 
 #CasperLoto {topic_hashtag}
 [ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]
@@ -393,7 +393,7 @@ B3.2 — Выигрышные билеты сегодня
 
 Сегодня в Casper Loto
 
-{winning_tickets_today} выигрышных билетов за {day_moscow}. Считаем билеты всех игр платформы; данные на {as_of_moscow} МСК.
+{winning_tickets_today} выигрышных билетов за день. Считаем билеты всех игр платформы.
 
 #CasperLoto {topic_hashtag}
 [ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]
@@ -404,7 +404,7 @@ B3.2 — Выигрышные билеты сегодня
 
 Casper Loto · выигрыши за сегодня
 
-На {as_of_moscow} МСК за {day_moscow} учтено {winning_tickets_today} выигрышных билетов.
+За день учтено {winning_tickets_today} выигрышных билетов.
 
 #CasperLoto {topic_hashtag}
 [ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]
@@ -415,7 +415,7 @@ Casper Loto · выигрыши за сегодня
 
 Общий счёт выигрышных билетов за день
 
-{winning_tickets_today} выигрышных билетов в Casper Loto за {day_moscow}, по состоянию на {as_of_moscow} МСК.
+{winning_tickets_today} выигрышных билетов в Casper Loto за день.
 
 #CasperLoto {topic_hashtag}
 [ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]
@@ -426,7 +426,7 @@ Casper Loto · выигрыши за сегодня
 
 Один день — игры всей платформы
 
-За {day_moscow} в Casper Loto учтено {winning_tickets_today} выигрышных билетов. Данные на {as_of_moscow} МСК.
+За день в Casper Loto учтено {winning_tickets_today} выигрышных билетов.
 
 #CasperLoto {topic_hashtag}
 [ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]
@@ -441,7 +441,7 @@ B3.3 — Активность за неделю
 
 Неделя Casper Loto в цифрах
 
-За {period_moscow}: куплено билетов — {period_tickets}; игроков с покупками — {period_players}; выигрышных билетов — {period_winning_tickets}; завершено тиражей — {period_draws}.
+За выбранный период: куплено билетов — {period_tickets}; игроков с покупками — {period_players}; выигрышных билетов — {period_winning_tickets}; завершено тиражей — {period_draws}.
 
 #CasperLoto {topic_hashtag}
 [ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]
@@ -452,7 +452,7 @@ B3.3 — Активность за неделю
 
 Что произошло за эту неделю
 
-Casper Loto, {period_moscow}: {period_tickets} купленных билетов, {period_players} игроков с покупками, {period_winning_tickets} выигрышных билетов и {period_draws} завершённых тиражей.
+Casper Loto за неделю: {period_tickets} купленных билетов, {period_players} игроков с покупками, {period_winning_tickets} выигрышных билетов и {period_draws} завершённых тиражей.
 
 #CasperLoto {topic_hashtag}
 [ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]
@@ -463,7 +463,7 @@ Casper Loto, {period_moscow}: {period_tickets} купленных билетов
 
 Семь дней · Casper Loto
 
-Период: {period_moscow}. Билеты: {period_tickets}. Игроки с покупками: {period_players}. Выигрышные билеты: {period_winning_tickets}. Тиражи: {period_draws}.
+Билеты: {period_tickets}. Игроки с покупками: {period_players}. Выигрышные билеты: {period_winning_tickets}. Тиражи: {period_draws}.
 
 #CasperLoto {topic_hashtag}
 [ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]
@@ -474,7 +474,7 @@ Casper Loto, {period_moscow}: {period_tickets} купленных билетов
 
 Игры всей платформы за неделю
 
-За {period_moscow} в Casper Loto куплено {period_tickets} билетов. Игроков с покупками: {period_players}; выигрышных билетов: {period_winning_tickets}; завершённых тиражей: {period_draws}.
+За выбранный период в Casper Loto куплено {period_tickets} билетов. Игроков с покупками: {period_players}; выигрышных билетов: {period_winning_tickets}; завершённых тиражей: {period_draws}.
 
 #CasperLoto {topic_hashtag}
 [ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]
@@ -485,7 +485,7 @@ Casper Loto, {period_moscow}: {period_tickets} купленных билетов
 
 Наша неделя в общих цифрах
 
-{period_moscow}: {period_players} игроков с покупками, {period_tickets} купленных билетов, {period_draws} завершённых тиражей и {period_winning_tickets} выигрышных билетов.
+За неделю: {period_players} игроков с покупками, {period_tickets} купленных билетов, {period_draws} завершённых тиражей и {period_winning_tickets} выигрышных билетов.
 
 #CasperLoto {topic_hashtag}
 [ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]
@@ -500,7 +500,7 @@ B3.4 — Самая популярная лотерея периода
 
 Лидер по купленным билетам
 
-За {period_moscow} больше всего билетов куплено в {popular_games_label}. Билетов у каждого лидера: {leader_tickets}.
+За выбранный период больше всего билетов куплено в {popular_games_label}. Билетов у каждого лидера: {leader_tickets}.
 
 #CasperLoto {topic_hashtag}
 [ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]
@@ -511,7 +511,7 @@ B3.4 — Самая популярная лотерея периода
 
 Какие игры выбирали чаще
 
-Первое место по количеству купленных билетов за {period_moscow}: {popular_games_label}. У каждого лидера — {leader_tickets} билетов.
+Первое место по количеству купленных билетов за выбранный период: {popular_games_label}. У каждого лидера — {leader_tickets} билетов.
 
 #CasperLoto {topic_hashtag}
 [ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]
@@ -522,7 +522,7 @@ B3.4 — Самая популярная лотерея периода
 
 Популярные игры · Casper Loto
 
-{popular_games_label} — лидер по купленным билетам за {period_moscow}. Билетов у каждого лидера: {leader_tickets}.
+{popular_games_label} — лидер по купленным билетам за выбранный период. Билетов у каждого лидера: {leader_tickets}.
 
 #CasperLoto {topic_hashtag}
 [ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]
@@ -533,7 +533,7 @@ B3.4 — Самая популярная лотерея периода
 
 Первое место по билетам
 
-За {period_moscow} лидирующую отметку в {leader_tickets} купленных билетов достигли: {popular_games_label}.
+За выбранный период лидирующую отметку в {leader_tickets} купленных билетов достигли: {popular_games_label}.
 
 #CasperLoto {topic_hashtag}
 [ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]
@@ -544,7 +544,7 @@ B3.4 — Самая популярная лотерея периода
 
 Выбор игроков за этот период
 
-{popular_games_label} занимает первое место по купленным билетам за {period_moscow}. У каждого лидера: {leader_tickets} билетов.
+{popular_games_label} занимает первое место по купленным билетам за выбранный период. У каждого лидера: {leader_tickets} билетов.
 
 #CasperLoto {topic_hashtag}
 [ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]
@@ -559,7 +559,7 @@ B3.5 — Несколько джекпотов за день
 
 За день сорвано {jackpots_count} джекпотов
 
-В Casper Loto за {day_moscow} сорвано {jackpots_count} джекпотов.
+В Casper Loto за день сорвано {jackpots_count} джекпотов.
 
 {jackpots_list}
 
@@ -572,7 +572,7 @@ B3.5 — Несколько джекпотов за день
 
 День джекпотов · Casper Loto
 
-За {day_moscow} в играх платформы сорвано {jackpots_count} джекпотов.
+За день в играх платформы сорвано {jackpots_count} джекпотов.
 
 {jackpots_list}
 
@@ -598,7 +598,7 @@ B3.5 — Несколько джекпотов за день
 
 Джекпоты платформы нашли выигрышные билеты
 
-За {day_moscow} в Casper Loto сорвано {jackpots_count} джекпотов. Вот все события этого дня:
+За день в Casper Loto сорвано {jackpots_count} джекпотов. Вот все события этого дня:
 
 {jackpots_list}
 
@@ -611,7 +611,7 @@ B3.5 — Несколько джекпотов за день
 
 Один день — {jackpots_count} джекпотов
 
-В играх Casper Loto за {day_moscow} произошло {jackpots_count} срывов джекпота.
+В играх Casper Loto за день произошло {jackpots_count} срывов джекпота.
 
 {jackpots_list}
 

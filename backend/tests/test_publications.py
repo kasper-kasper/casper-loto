@@ -102,7 +102,7 @@ def service(session: Session) -> PublicationService:
 
 
 def test_catalog_and_snapshot_trust_only_server_templates() -> None:
-    assert len(template_catalog()) == 2178
+    assert len(template_catalog()) == 1992
     assert not any(t["subcategory"] in {"A4.3", "A5.2"} for t in template_catalog())
     assert all(t["lottery"] != "kasper-live" for t in template_catalog())
     for code in ("weekly", "pll", "pss", "grob"):
@@ -150,7 +150,7 @@ def test_catalog_and_snapshot_trust_only_server_templates() -> None:
     assert len({t["formats"]["post"]["background"] for t in dual}) == 5
     snapshot = content_snapshot(payload())
     snapshot["template"]["lottery"] = "hacked"
-    assert template_catalog()[0]["lottery"] == "pulse"
+    assert template_catalog()[0]["lottery"] == "khan"
     with pytest.raises(ValueError):
         content_snapshot(payload().model_copy(update={"template_id": "../../evil.svg"}))
     with pytest.raises(ValidationError):
