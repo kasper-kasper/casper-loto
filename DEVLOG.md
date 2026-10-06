@@ -3265,3 +3265,8 @@ Known limitations:
 - Replaced broad automatic eligibility with an explicit configured event allowlist at generation, approval and outbox delivery. No routine draw result/combination/carryover/winner-count posts for any lottery, and no repeated A5 snapshots. Retired A4.3/A5.2 across catalog, feeds and approval, preserving snapshots/assets and audit history.
 - A5.5 now compares distinct paid winning users for a single draw with previous same-format draws and requires a NEW maximum strictly above 20. Ordinary ticket and platform counters retain separate meanings. “3 сентября” verified active; it is a lottery name, not an out-of-window event date. Focused tests: 95 passed; scoped Ruff/mypy and production health for API-only correction, with no new owner-disallowed backups.
 
+## Corrected replay completed — 2026-10-06 04:50 MSK
+
+- Production API 1.50.2: all 264 eligible historical posts delivered, first new message ID 184; no eligible pending/in-flight/uncertain replay rows. Final compact status: transport enabled, invalid queued events 0, Stories 10, ongoing automatic interval 1,800 seconds. “3 сентября” remains active. Unique-participant scenarios are retired; unique-winner records require a new per-draw maximum strictly above 20.
+- Existing retention cleanup passed production health, removed six obsolete gateway images and reclaimed about 396 MB; the three redundant local publication source archives were removed. No new database/source backups were created for this correction at the owner's request. Previously mistaken channel messages (161 receipts now outside the allowed scenarios) remain; publication audit and completed financial/draw history were preserved.
+
