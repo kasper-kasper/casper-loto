@@ -80,13 +80,14 @@ async def run(action: str) -> None:
         )
     elif action == "status":
         async with session_factory() as session:
+            delivery_state = Publication.content["delivery"]["state"].astext.label(
+                "delivery_state"
+            )
             counts = (
                 await session.execute(
-                    select(
-                        Publication.content["delivery"]["state"].astext, func.count()
-                    )
+                    select(delivery_state, func.count())
                     .where(Publication.event_type.is_not(None))
-                    .group_by(Publication.content["delivery"]["state"].astext)
+                    .group_by("delivery_state")
                 )
             ).all()
             print(json.dumps(dict(counts), ensure_ascii=False))
