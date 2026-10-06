@@ -21,7 +21,7 @@ from zoneinfo import ZoneInfo
 from aiogram import Bot
 from aiogram.exceptions import TelegramRetryAfter
 from aiogram.types import BufferedInputFile
-from sqlalchemy import distinct, func, select, union_all
+from sqlalchemy import and_, distinct, func, or_, select, union_all
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from k_loto.application.publication_events import (
@@ -78,6 +78,46 @@ def number(value: int) -> str:
     return f"{value:,}".replace(",", " ")
 
 
+def lottery_publication_rules() -> dict[str, Any]:
+    rules: dict[str, Any] = json.loads(
+        files("k_loto.application")
+        .joinpath("publication_lottery_config.json")
+        .read_text(encoding="utf-8")
+    )
+    return rules
+
+
+def publication_is_eligible(code: str | None, game: str) -> bool:
+    """Historical approval changes delivery mode, never event eligibility."""
+    rules = lottery_publication_rules()
+    return (
+        game not in rules["excluded_games"]
+        and code not in rules["unresolved_events"]
+        and not (
+            game in rules["fast_games"]
+            and code in rules["fast_excluded_routine_events"]
+        )
+    )
+
+
+def publication_eligibility_filter() -> Any:
+    """Same eligibility at the persisted outbox boundary, including old rows."""
+    rules = lottery_publication_rules()
+    return and_(
+        Publication.lottery_code.not_in(rules["excluded_games"]),
+        or_(
+            Publication.event_type.is_(None),
+            and_(
+                Publication.event_type.not_in(rules["unresolved_events"]),
+                ~and_(
+                    Publication.lottery_code.in_(rules["fast_games"]),
+                    Publication.event_type.in_(rules["fast_excluded_routine_events"]),
+                ),
+            ),
+        ),
+    )
+
+
 def moscow(value: datetime) -> str:
     return value.astimezone(MOSCOW).strftime("%d.%m.%Y %H:%M МСК")
 
@@ -117,15 +157,13 @@ class PublicationAutomation:
             .joinpath("publication_copy.json")
             .read_text(encoding="utf-8")
         )
-        self.rules = json.loads(
-            files("k_loto.application")
-            .joinpath("publication_lottery_config.json")
-            .read_text(encoding="utf-8")
-        )
+        self.rules = lottery_publication_rules()
 
     async def snapshot(
         self, row: Publication, values: dict[str, str], *, historical: bool
     ) -> None:
+        if not publication_is_eligible(row.event_type, row.lottery_code):
+            return
         if "template" in row.content or row.status != "draft":
             return
         code = row.event_type
@@ -225,7 +263,9 @@ class PublicationAutomation:
         game: str = "casper-loto",
         payload: dict[str, Any] | None = None,
         historical: bool = False,
-    ) -> Publication:
+    ) -> Publication | None:
+        if not publication_is_eligible(code, game):
+            return None
         row = await self.events._store(key, code, payload or {}, occurred, author, key)
         if row.status == "draft" and "template" not in row.content:
             row.lottery_code = game
@@ -1173,6 +1213,7 @@ async def deliver_one(
             .where(
                 Publication.status == "draft",
                 Publication.content["delivery"]["state"].astext == "queued",
+                publication_eligibility_filter(),
             )
             .order_by(
                 Publication.content["event"]["occurred_at"].astext, Publication.id

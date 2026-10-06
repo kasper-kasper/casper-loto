@@ -2,9 +2,50 @@
 
 from pathlib import Path
 
+import pytest
 from scripts.compile_publication_copy import compile_copy
+from sqlalchemy.dialects import postgresql
 
-from k_loto.application.publication_automation import caption_html, choose, format_key
+from k_loto.application.publication_automation import (
+    PublicationAutomation,
+    caption_html,
+    choose,
+    format_key,
+    publication_eligibility_filter,
+    publication_is_eligible,
+)
+
+
+@pytest.mark.parametrize("game", ["flash", "shadow", "pulse"])
+@pytest.mark.parametrize("code", ["A2.1", "A2.2", "A2.3", "A3.1", "A3.2"])
+async def test_historical_override_never_creates_routine_fast_news(game, code):
+    from unittest.mock import AsyncMock
+
+    automation = PublicationAutomation(AsyncMock())
+    automation.events._store = AsyncMock()
+    assert (
+        await automation.store(
+            code, "routine", None, None, {}, game=game, historical=True
+        )
+        is None
+    )
+    automation.events._store.assert_not_awaited()
+
+
+@pytest.mark.parametrize("game", ["flash", "shadow", "pulse"])
+@pytest.mark.parametrize("code", ["A1.1", "A1.3", "A1.5", "A3.4", "A4.1", "A5.1"])
+def test_significant_fast_events_remain_eligible(game, code):
+    assert publication_is_eligible(code, game)
+
+
+def test_ordinary_results_and_platform_events_remain_eligible():
+    assert publication_is_eligible("A2.1", "weekly")
+    assert publication_is_eligible("B1.2", "casper-loto")
+    assert not publication_is_eligible("A2.4", "weekly")
+    assert not publication_is_eligible("A1.1", "kasper-live")
+    compiled = publication_eligibility_filter().compile(dialect=postgresql.dialect())
+    assert ["flash", "shadow", "pulse"] in compiled.params.values()
+    assert ["A2.1", "A2.2", "A2.3", "A3.1", "A3.2"] in compiled.params.values()
 
 
 def test_rotation_excludes_recent_backgrounds_and_falls_back_to_oldest() -> None:

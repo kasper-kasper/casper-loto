@@ -55,3 +55,11 @@ The owner explicitly authorizes real channel posts and a one-time historical rep
 
 Open criteria remain: unusual result A2.4, what counts as a large ordinary win A3.3/A3.5, activity A4.4/A5.4, anniversary grid A5.7 and unspecified record A5.8. Those types do not invent triggers. A8/B4 need confirmed owner-authored changes. Jackpot milestone ratios use the previously approved configurable 1.5/2/3 approach; ticket/player/streak grids remain as previously approved.
 
+## Publication stop supersedes activation — 2026-10-06
+
+The owner stopped automatic channel delivery because the historical replay included routine Fast results for every draw. Production transport is disabled. The earlier historical activation authorization no longer authorizes further delivery. Leave pending events blocked and published messages intact. Routine Fast results must not be treated as significant news merely because a draw completed; clarify their eligibility before any resumed replay. Resume requires explicit owner authorization.
+
+## Corrected historical replay authorization — 2026-10-06
+
+Supersedes the emergency stop for the corrected replay only: owner authorizes restarting all eligible A/B events since 25 September, including calculated drafts and repeats of previously sent eligible events. Exclude routine per-draw Fast A2.1/A2.2/A2.3 and A3.1/A3.2 at both event generation and outbox delivery. Fast jackpot wins, format/platform records, agreed milestone/streak thresholds and period summaries remain eligible. Missing business criteria remain unresolved and must not be invented. Preserve previous delivery IDs in the event audit when explicitly replaying; normal collection remains idempotent. Historical replay has no editorial interval; subsequent automatic posts retain 30 minutes, with manual sends exempt. Owner requests no additional backups or broad checks for this correction, and removal of unneeded copies after completion.
+
