@@ -61,6 +61,7 @@ EVENTS = {
         ("B4.8", "Большой релиз / новая версия", "draft"),
     )
 }
+LOTTERY_EVENTS: dict[str, EventDefinition] = {}
 
 
 class MilestoneRule(BaseModel):
@@ -97,7 +98,7 @@ class MilestoneRule(BaseModel):
 
 class DeliveryPolicy(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    enabled: Literal[False] = False
+    enabled: bool = False
     minimum_interval_seconds: int = Field(ge=1)
     daily_limit: None = None
     combine_blocks: Literal[False] = False
@@ -180,12 +181,12 @@ def event_content(
     ready_after: datetime | None = None,
 ) -> dict[str, Any]:
     require_utc(now)
-    definition = EVENTS[code]
+    definition = EVENTS.get(code) or LOTTERY_EVENTS[code]
     return {
         "schema_version": 1,
         "event": {
             "type": code,
-            "block": "B",
+            "block": code[0],
             "category": code.split(".")[0],
             "scope": definition.scope,
             "mode": definition.mode,
@@ -281,6 +282,7 @@ class PublicationEventService:
             if (
                 refresh
                 and row.status == "draft"
+                and "template" not in row.content
                 and row.content["event"]["payload"] != payload
             ):
                 # Refresh draft aggregates, never published history.
@@ -302,7 +304,7 @@ class PublicationEventService:
             revision=1,
             event_type=code,
             event_key=key,
-            event_mode=EVENTS[code].mode,
+            event_mode=(EVENTS.get(code) or LOTTERY_EVENTS[code]).mode,
             content=event_content(
                 code, payload, now, batch=batch, ready_after=ready_after
             ),

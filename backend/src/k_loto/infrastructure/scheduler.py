@@ -11,7 +11,7 @@ from k_loto.application.auto_play import AutoPlayService
 from k_loto.application.engagement import PlayerEngagementService
 from k_loto.application.interesting_facts import InterestingFactService
 from k_loto.application.operational_monitoring import OperationalMonitoringService
-from k_loto.application.publication_events import PublicationEventService
+from k_loto.application.publication_automation import PublicationAutomation, drain
 from k_loto.application.scheduler import DrawRecoveryService
 from k_loto.core.config import get_settings
 from k_loto.infrastructure.database.models import SchedulerHeartbeat
@@ -42,6 +42,15 @@ class SchedulerRuntime:
             trigger="interval",
             seconds=self._interval_seconds,
             id="publication-event-reconciliation",
+            replace_existing=True,
+            coalesce=True,
+            max_instances=1,
+        )
+        self._scheduler.add_job(
+            self._run_publication_delivery,
+            trigger="interval",
+            seconds=2,
+            id="publication-delivery",
             replace_existing=True,
             coalesce=True,
             max_instances=1,
@@ -81,10 +90,38 @@ class SchedulerRuntime:
     async def _run_publication_events(self) -> None:
         try:
             async with session_factory() as session:
-                await PublicationEventService(session).scan(now=datetime.now(UTC))
+                from k_loto.application.publication_events import due_slot, event_config
+                from k_loto.infrastructure.database.models import PublicationEventState
+
+                state = await session.get(
+                    PublicationEventState, "publication.transport"
+                )
+                progress = await session.get(
+                    PublicationEventState, "publication.automation"
+                )
+                enabled = bool(state and state.value.get("enabled"))
+                start = progress.value.get("collected_until") if progress else None
+            now = datetime.now(UTC)
+            if (
+                enabled
+                and start
+                and due_slot(now, event_config())
+                > due_slot(datetime.fromisoformat(start), event_config())
+            ):
+                async with session_factory() as session:
+                    await PublicationAutomation(session).collect(
+                        datetime.fromisoformat(start), now, historical=False
+                    )
         except Exception:
             # Editorial failures must never prevent money/draw recovery.
             logger.exception("publication_event_scan_failed")
+
+    async def _run_publication_delivery(self) -> None:
+        try:
+            await drain(session_factory)
+        except Exception as error:
+            # No exception text: HTTP errors can embed bot credentials.
+            logger.error("publication_delivery_failed", error_type=type(error).__name__)
 
     async def _run(self) -> None:
         started = datetime.now(UTC)

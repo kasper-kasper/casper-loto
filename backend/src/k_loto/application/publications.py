@@ -2,14 +2,15 @@
 
 import json
 from copy import deepcopy
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from functools import lru_cache
 from importlib.resources import files
 from typing import Any, Literal, cast
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from sqlalchemy import select
+from sqlalchemy import DateTime, func, or_, select
+from sqlalchemy import cast as sql_cast
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from k_loto.domain.enums import AuditAction
@@ -113,21 +114,48 @@ class PublicationService:
         statement = select(Publication).where(
             Publication.event_type.is_not(None)
             if events
-            else Publication.event_type.is_(None)
+            else Publication.content.has_key("template")  # noqa: W601
+        )
+        date_column: Any = (
+            Publication.published_at if player else Publication.created_at
         )
         if player:
-            statement = statement.where(Publication.status == "published")
-        date_column = Publication.published_at if player else Publication.created_at
+            limit = min(limit, 10)
+            cutoff = datetime.now(UTC) - timedelta(hours=24)
+            date_column = func.coalesce(
+                sql_cast(
+                    Publication.content["event"]["occurred_at"].astext,
+                    DateTime(timezone=True),
+                ),
+                Publication.published_at,
+            )
+            statement = statement.where(
+                or_(
+                    Publication.status == "published",
+                    (Publication.status == "draft")
+                    & Publication.content["story_visible"].as_boolean().is_(True),
+                ),
+                date_column >= cutoff,
+            )
         # Persisted publication date + UUID gives a stable feed cursor.
         if before is not None:
             cursor = await self.session.get(Publication, before)
             if (
                 cursor is None
-                or bool(cursor.event_type) != events
-                or (player and cursor.status != "published")
+                or (events and not cursor.event_type)
+                or (not events and "template" not in cursor.content)
+                or (
+                    player
+                    and cursor.status != "published"
+                    and not cursor.content.get("story_visible")
+                )
             ):
                 raise ValueError("Publication cursor does not exist.")
             cursor_date = cursor.published_at if player else cursor.created_at
+            if player and cursor.event_type:
+                cursor_date = datetime.fromisoformat(
+                    cursor.content["event"]["occurred_at"]
+                )
             statement = statement.where(
                 (date_column < cursor_date)
                 | ((date_column == cursor_date) & (Publication.id < cursor.id))
@@ -195,11 +223,37 @@ class PublicationService:
             )
             if row is None:
                 raise LookupError("Publication does not exist.")
-            if row.event_type is not None and action in ("edit", "publish"):
+            if (
+                row.event_type is not None
+                and action in ("edit", "publish")
+                and ("template" not in row.content or action == "edit")
+            ):
                 raise PublicationConflict(
                     "Nonvisual events require a future content/visual adapter; "
                     "publication is disabled."
                 )
+            if (
+                row.event_type is not None
+                and action == "publish"
+                and row.status == "draft"
+            ):
+                delivery = row.content.get("delivery", {})
+                if delivery.get("state") == "queued" and row.revision == revision + 1:
+                    return row
+                if (
+                    row.revision != revision
+                    or delivery.get("state") != "approval_required"
+                ):
+                    raise PublicationConflict("Event delivery is already scheduled.")
+                old_content = deepcopy(row.content)
+                row.content = {
+                    **row.content,
+                    "delivery": {**delivery, "state": "queued", "manual": True},
+                }
+                row.revision += 1
+                self._audit(row, author, "event_approve", old_content)
+                await self.session.flush()
+                return row
             # Exact retry of a successful state transition is harmless.
             target = {"publish": "published", "archive": "archived"}.get(action)
             if target and row.status == target and row.revision == revision + 1:

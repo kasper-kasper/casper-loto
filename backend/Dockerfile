@@ -10,6 +10,9 @@ COPY pyproject.toml README.md alembic.ini ./
 COPY backend ./backend
 COPY bot ./bot
 COPY scripts ./scripts
+COPY frontend/miniapp/public/assets/publications ./publication-assets
+RUN apt-get update && apt-get install -y --no-install-recommends fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
 RUN --mount=type=cache,target=/root/.cache/pip python -m pip install .
 COPY CHANGELOG.md DEVLOG.md ./
 

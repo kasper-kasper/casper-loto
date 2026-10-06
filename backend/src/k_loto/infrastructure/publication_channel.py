@@ -8,12 +8,17 @@ from aiogram.enums import ChatType
 from aiogram.exceptions import TelegramAPIError
 
 from k_loto.core.config import Settings
+from k_loto.infrastructure.database.models import PublicationEventState
+from k_loto.infrastructure.database.session import session_factory
 
 
 async def channel_status(settings: Settings, *, check: bool = False) -> dict[str, Any]:
+    async with session_factory() as session:
+        state = await session.get(PublicationEventState, "publication.transport")
+        enabled = bool(state and state.value.get("enabled"))
     result: dict[str, Any] = {
         "channel": settings.publication_channel,
-        "delivery_enabled": False,
+        "delivery_enabled": enabled,
         "checked": False,
         "can_post": False,
     }

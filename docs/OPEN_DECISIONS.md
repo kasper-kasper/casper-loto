@@ -49,3 +49,9 @@
 | OD-020 | Навигация и Fast | Resolved 2026-09-05 | Четыре кнопки: Сегодня, Лотереи, Fast, Моё. Билеты остаются в Моём. Главная короткая; каталог обычных лотерей в две колонки, акцент на джекпотах без формата Bingo на лицевой карточке. Эфиры внутри игр. Fast отделён от обычной истории билетов, тиражей, джекпотов и админской аналитики; доступен режим всех игр. Денежные правила и автопокупка не меняются. |
 
 | OD-021 | Косметические выпуски и бренд 2:22 | Resolved 2026-09-05 | ПЛЛ получает отображаемый бренд 2:22. Разные визуальные темы обычных лотерей, Fast без изменений. По указанию владельца для чистой косметики — без новых тестов, полного прогона и финансовой резервной копии; проверка сборки и публикация gateway. Финансовые/механические изменения по-прежнему требуют соответствующих проверок и backup. |
+## Publication activation override — 2026-10-06
+
+The owner explicitly authorizes real channel posts and a one-time historical replay from 25 September 00:00 Europe/Moscow through the captured current UTC cutoff. This replay includes calculated A/B drafts, sends each event separately without an editorial interval, and overrides the normal old-event approval rule. Ongoing automatic posts retain a 30-minute interval without a daily cap; manual approvals bypass and do not reset it. Stories retain only the ten latest relevant events within 24 hours. A/B categories, copy and artwork stay separate. Telegram-required rate limits are respected.
+
+Open criteria remain: unusual result A2.4, what counts as a large ordinary win A3.3/A3.5, activity A4.4/A5.4, anniversary grid A5.7 and unspecified record A5.8. Those types do not invent triggers. A8/B4 need confirmed owner-authored changes. Jackpot milestone ratios use the previously approved configurable 1.5/2/3 approach; ticket/player/streak grids remain as previously approved.
+

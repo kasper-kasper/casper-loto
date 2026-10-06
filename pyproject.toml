@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "k-loto"
-version = "1.49.1"
+version = "1.50.0"
 description = "Casper Loto virtual lottery platform"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -15,6 +15,7 @@ dependencies = [
     "asyncpg>=0.30,<1",
     "fastapi>=0.115,<1",
     "pydantic-settings>=2.7,<3",
+    "Pillow>=12,<13",
     "pwdlib[argon2]>=0.3,<1",
     "sqlalchemy[asyncio]>=2.0.36,<3",
     "structlog>=24.4,<26",
@@ -42,7 +43,7 @@ package-dir = {"" = "backend/src"}
 where = ["backend/src"]
 
 [tool.setuptools.package-data]
-"k_loto.application" = ["publication_templates.json", "publication_event_config.json"]
+"k_loto.application" = ["publication_templates.json", "publication_event_config.json", "publication_copy.json", "publication_lottery_config.json"]
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers"

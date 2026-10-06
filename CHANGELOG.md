@@ -1,3 +1,7 @@
+## [API 1.50.0 / Mini App 1.59.0 / Admin 1.56.0] - 2026-10-06
+
+- Added real Telegram delivery of separately rendered A/B events, a durable owner-authorized historical replay from 25 September, and a 30-minute interval for subsequent automatic posts. Historical calculated drafts are approved for this replay only. Stories show the ten latest relevant news items for 24 hours and remember viewed items.
+
 ## [Mini App 1.58.7 / Admin 1.55.7 / API 1.49.1] - 2026-10-06
 
 - Added all ten owner-supplied B backgrounds for all 18 platform events, with centered Story/Post text and a platform catalog link. Preserved all A layouts; imported edited A copy and prepared 90 B channel-post variants. Automatic delivery remains disabled.

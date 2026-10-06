@@ -1,0 +1,738 @@
+{
+  "A1.1": [
+    {
+      "id": "A1-1-4",
+      "text": "Джекпот нашёл победителя\n\nВ тираже №{draw_number} игры «{game_name}» джекпот сорван. На кону было {jackpot_cas} CAS.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-1-5",
+      "text": "Есть победитель джекпота · {game_name}\n\nДжекпот разыгран. Победителей в тираже №{draw_number}: {winning_tickets_count}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-1-6",
+      "text": "Джекпот забрали\n\nВ «{game_name}» завершился тираж №{draw_number} — джекпот сорван. Выигрышных билетов: {winning_tickets_count}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-1-7",
+      "text": "{game_name}: джекпот в тираже №{draw_number}\n\nДжекпот сорван. Выигрышных билетов: {winning_tickets_count}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-1-8",
+      "text": "Джекпот разыгран в «{game_name}»\n\nТираж №{draw_number} завершён со срывом джекпота. Сумма джекпота: {jackpot_cas} CAS.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-1-1",
+      "text": "Джекпот сорван · {game_name}\n\nВ «{game_name}» сорван джекпот. В тираже №{draw_number} разыграно {jackpot_cas} CAS.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-1-2",
+      "text": "Джекпот сорван в «{game_name}»\n\nДжекпот разыгран в тираже №{draw_number}. Выигрышных билетов: {winning_tickets_count}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-1-3",
+      "text": "{game_name} · Джекпот сорван\n\nВыигрышных билетов: {winning_tickets_count}. Джекпот разыгран в тираже №{draw_number}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "A1.2": [
+    {
+      "id": "A1-2-4",
+      "text": "Джекпот растёт · {game_name}\n\nВ «{game_name}» — {jackpot_cas} CAS. Следующий тираж состоится {next_draw_moscow}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-2-5",
+      "text": "Новая отметка джекпота\n\nДжекпот «{game_name}» достиг {milestone_cas} CAS. Можно ждать следующий тираж: {next_draw_moscow}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-2-6",
+      "text": "{game_name}: {milestone_cas} CAS\n\nДжекпот достиг новой отметки. Ближайший тираж — {next_draw_moscow}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-2-7",
+      "text": "Отметка взята\n\nДжекпот «{game_name}» — уже {jackpot_cas} CAS. Следим за следующим тиражом: {next_draw_moscow}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-2-8",
+      "text": "Новый уровень джекпота «{game_name}»\n\nСумма достигла {milestone_cas} CAS. Следующий тираж: {next_draw_moscow}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-2-1",
+      "text": "Отметка джекпота · {game_name}\n\nДжекпот «{game_name}» достиг {jackpot_cas} CAS. Следующий тираж — {next_draw_moscow}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-2-2",
+      "text": "Отметка джекпота в «{game_name}»\n\n«{game_name}» достигла отметки {milestone_cas} CAS. Следующий тираж: {next_draw_moscow}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-2-3",
+      "text": "{game_name} · Отметка джекпота\n\nСледующий тираж: {next_draw_moscow}. «{game_name}» достигла отметки {milestone_cas} CAS.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "A1.3": [
+    {
+      "id": "A1-3-4",
+      "text": "Новый максимум «{game_name}»\n\nДжекпот поднялся до {jackpot_cas} CAS — это новый рекорд игры. До этого максимум составлял {previous_record_cas} CAS.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-3-5",
+      "text": "«{game_name}» обновила свой рекорд\n\nНовый рекорд джекпота — {jackpot_cas} CAS. Предыдущий: {previous_record_cas} CAS.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-3-6",
+      "text": "Рекордный джекпот\n\nВ «{game_name}» зафиксирован новый максимум — {jackpot_cas} CAS.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-3-7",
+      "text": "{game_name}: рекорд обновлён\n\nНовый максимум джекпота — {jackpot_cas} CAS. Прошлый рекорд был {previous_record_cas} CAS.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-3-8",
+      "text": "Джекпот побил рекорд игры\n\n«{game_name}» установила новый максимум: {jackpot_cas} CAS. Сравнение с прежним рекордом: {previous_record_cas} CAS.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-3-1",
+      "text": "Рекорд игры · {game_name}\n\nДжекпот «{game_name}» достиг нового рекорда: {jackpot_cas} CAS. Прежний максимум — {previous_record_cas} CAS.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-3-2",
+      "text": "Рекорд игры в «{game_name}»\n\nНовый максимум джекпота «{game_name}» в действующем формате. Предыдущий рекорд: {previous_record_cas} CAS.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-3-3",
+      "text": "{game_name} · Рекорд игры\n\nПредыдущий рекорд: {previous_record_cas} CAS. Новый максимум джекпота «{game_name}» в действующем формате.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "A1.4": [
+    {
+      "id": "A1-4-4",
+      "text": "Новый рекорд Casper Loto\n\nДжекпот «{game_name}» достиг {jackpot_cas} CAS и стал рекордным для Casper Loto. Сравнение: {comparison_scope_label}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-4-5",
+      "text": "Рекорд проекта — в «{game_name}»\n\nИгра установила новый рекорд джекпота Casper Loto. Уровень рекорда: {jackpot_cas} CAS.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-4-6",
+      "text": "Casper Loto обновляет рекорд\n\n«{game_name}» показала новый максимум джекпота — {jackpot_cas} CAS. Период сравнения: {comparison_scope_label}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-4-7",
+      "text": "Рекорд джекпота проекта\n\nНовый рекорд Casper Loto установила игра «{game_name}». Джекпот: {jackpot_cas} CAS.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-4-8",
+      "text": "{game_name} вошла в историю проекта\n\nДжекпот достиг рекордной отметки для Casper Loto — {jackpot_cas} CAS. Основание сравнения: {comparison_scope_label}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-4-1",
+      "text": "Рекорд проекта · {game_name}\n\n«{game_name}» установила рекорд джекпота Casper Loto: {jackpot_cas} CAS. Период сравнения: {comparison_scope_label}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-4-2",
+      "text": "Рекорд проекта в «{game_name}»\n\n«{game_name}» установила новый рекорд джекпота Casper Loto. Сравнение: {comparison_scope_label}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-4-3",
+      "text": "{game_name} · Рекорд проекта\n\nСравнение: {comparison_scope_label}. «{game_name}» установила новый рекорд джекпота Casper Loto.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "A1.5": [
+    {
+      "id": "A1-5-4",
+      "text": "Джекпот продолжает расти\n\nУже {draws_without_jackpot} тиражей «{game_name}» подряд джекпот остаётся в игре. Сейчас в нём {jackpot_cas} CAS.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-5-5",
+      "text": "Серия продолжается · {game_name}\n\n{draws_without_jackpot} тиражей без срыва джекпота. Следующая сумма джекпота — {jackpot_cas} CAS.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-5-6",
+      "text": "Пока без победителя джекпота\n\nВ «{game_name}» подряд завершились {draws_without_jackpot} тиражей без срыва джекпота. Текущий джекпот: {jackpot_cas} CAS.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-5-7",
+      "text": "{game_name}: джекпот не сорван\n\nСерия достигла {draws_without_jackpot} тиражей. В джекпоте накопилось {jackpot_cas} CAS.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-5-8",
+      "text": "Ещё один тираж в серии\n\nДжекпот «{game_name}» пока не сорван — таких тиражей уже {draws_without_jackpot}. Текущая сумма: {jackpot_cas} CAS.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-5-1",
+      "text": "Серия без джекпота · {game_name}\n\nВ «{game_name}» завершились {draws_without_jackpot} тиражей подряд без срыва джекпота. Текущая сумма — {jackpot_cas} CAS.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-5-2",
+      "text": "Серия без джекпота в «{game_name}»\n\nСтолько завершённых тиражей «{game_name}» прошло без срыва джекпота. Текущий джекпот: {jackpot_cas} CAS.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A1-5-3",
+      "text": "{game_name} · Серия без джекпота\n\nТекущий джекпот: {jackpot_cas} CAS. Столько завершённых тиражей «{game_name}» прошло без срыва джекпота.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "A4.1": [
+    {
+      "id": "A4-1-4",
+      "text": "Билетов становится больше\n\nВ «{game_name}» продан {milestone_tickets}-й билет в рамках периода {counter_scope_label}. Всего сейчас: {tickets_count}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-1-5",
+      "text": "Новая отметка продаж «{game_name}»\n\nКоличество проданных билетов достигло {milestone_tickets}. Всего за период {counter_scope_label}: {tickets_count}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-1-6",
+      "text": "Продажи пересекли новую отметку\n\nВ игре «{game_name}» — {milestone_tickets} проданных билетов. Считаем по периоду: {counter_scope_label}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-1-7",
+      "text": "{game_name}: уже {milestone_tickets} билетов\n\nОтметка продаж достигнута. Всего билетов — {tickets_count}; период подсчёта — {counter_scope_label}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-1-8",
+      "text": "Нас стало больше в тираже\n\nВ «{game_name}» достигнута отметка {milestone_tickets} билетов. По текущему подсчёту всего: {tickets_count}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-1-1",
+      "text": "Отметка продаж · {game_name}\n\nВ «{game_name}» достигнута отметка {milestone_tickets} проданных билетов. Всего: {tickets_count}. Период: {counter_scope_label}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-1-2",
+      "text": "Отметка продаж в «{game_name}»\n\nДостигнута отметка {milestone_tickets} проданных билетов. «{game_name}» · {counter_scope_label}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-1-3",
+      "text": "{game_name} · Отметка продаж\n\n«{game_name}» · {counter_scope_label}. Достигнута отметка {milestone_tickets} проданных билетов.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "A4.2": [
+    {
+      "id": "A4-2-4",
+      "text": "Самый большой тираж по продажам\n\nВ тираже №{draw_number} игры «{game_name}» продано {tickets_count} билетов — это новый рекорд.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-2-5",
+      "text": "Рекорд продаж в «{game_name}»\n\nТираж №{draw_number} стал самым крупным по числу проданных билетов.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-2-6",
+      "text": "Новый рекорд по билетам\n\n«{game_name}» обновила максимум продаж за один тираж: {tickets_count} билетов в тираже №{draw_number}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-2-7",
+      "text": "Тираж №{draw_number} — рекордный\n\nВ «{game_name}» продано больше билетов, чем за любой предыдущий тираж: {tickets_count}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-2-8",
+      "text": "«{game_name}» собрала рекордный тираж\n\nНа тираж №{draw_number} купили {tickets_count} билетов. Это новый максимум игры за один тираж.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-2-1",
+      "text": "Рекорд билетов · {game_name}\n\nТираж №{draw_number} в «{game_name}» установил рекорд продаж: {tickets_count} билетов.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-2-2",
+      "text": "Рекорд билетов в «{game_name}»\n\nНовый рекорд проданных билетов «{game_name}» за один тираж. Тираж №{draw_number}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-2-3",
+      "text": "{game_name} · Рекорд билетов\n\nТираж №{draw_number}. Новый рекорд проданных билетов «{game_name}» за один тираж.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "A4.3": [
+    {
+      "id": "A4-3-4",
+      "text": "Рекорд участников «{game_name}»\n\nВ тираже №{draw_number} сыграли {players_count} уникальных игроков. Больше всего за один тираж.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-3-5",
+      "text": "Новый максимум игроков\n\nТираж №{draw_number} стал рекордным для «{game_name}»: {players_count} уникальных участников.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-3-6",
+      "text": "В этот раз нас особенно много\n\nВ «{game_name}» за один тираж участвовали {players_count} уникальных игроков. Это новый рекорд игры.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-3-7",
+      "text": "{game_name}: рекорд по участникам\n\nТираж №{draw_number} собрал {players_count} уникальных игроков — новый максимум.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-3-8",
+      "text": "Новый рекорд игры по числу игроков\n\nВ тираже №{draw_number} участвовали {players_count} уникальных участников «{game_name}».\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-3-1",
+      "text": "Рекорд участников · {game_name}\n\nВ тираже №{draw_number} «{game_name}» участвовали {players_count} уникальных игроков — новый рекорд игры.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-3-2",
+      "text": "Рекорд участников в «{game_name}»\n\nНовый максимум уникальных участников тиража «{game_name}». Тираж №{draw_number}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-3-3",
+      "text": "{game_name} · Рекорд участников\n\nТираж №{draw_number}. Новый максимум уникальных участников тиража «{game_name}».\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "A4.4": [
+    {
+      "id": "A4-4-4",
+      "text": "Новый показатель «{game_name}»\n\nВ игре зафиксирован максимум по показателю «{activity_label}»: {activity_value}. Период: {period_label}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-4-5",
+      "text": "«{game_name}» показала лучший результат\n\nПоказатель «{activity_label}» достиг значения {activity_value}. Данные за период: {period_label}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-4-6",
+      "text": "Активность «{game_name}» растёт\n\nНовый максимум показателя «{activity_label}» — {activity_value}. Период измерения: {period_label}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-4-7",
+      "text": "Новая отметка активности\n\n«{game_name}»: {activity_label} — {activity_value}. Отчётный период: {period_label}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-4-8",
+      "text": "{game_name} установила новый максимум\n\nРекорд по показателю «{activity_label}» за период {period_label}: {activity_value}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-4-1",
+      "text": "Активность игры · {game_name}\n\n«{game_name}» установила рекорд по показателю «{activity_label}»: {activity_value}. Период: {period_label}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-4-2",
+      "text": "Активность игры в «{game_name}»\n\n«{game_name}»: новый максимум показателя «{activity_label}». Период: {period_label}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-4-3",
+      "text": "{game_name} · Активность игры\n\nПериод: {period_label}. «{game_name}»: новый максимум показателя «{activity_label}».\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "A4.5": [
+    {
+      "id": "A4-5-4",
+      "text": "Новая отметка в истории «{game_name}»\n\nЗа период {counter_scope_label} продано {tickets_total} билетов. Достигнута отметка {milestone_tickets}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-5-5",
+      "text": "Сколько билетов продано за всё время подсчёта\n\nПо периоду {counter_scope_label} в «{game_name}» — {tickets_total} проданных билетов.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-5-6",
+      "text": "{game_name}: {tickets_total} билетов\n\nОбъём продаж достиг отметки {milestone_tickets}. Период подсчёта: {counter_scope_label}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-5-7",
+      "text": "Продажи в истории игры\n\nВ «{game_name}» продано {tickets_total} билетов за период {counter_scope_label}. Это отметка {milestone_tickets}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-5-8",
+      "text": "Объём продаж растёт\n\nВ истории «{game_name}» — {tickets_total} проданных билетов. Считаем по периоду: {counter_scope_label}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-5-1",
+      "text": "Общий объём билетов · {game_name}\n\nВ истории «{game_name}» достигнута отметка {milestone_tickets} проданных билетов. Общий объём — {tickets_total}. Подсчёт: {counter_scope_label}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-5-2",
+      "text": "Общий объём билетов в «{game_name}»\n\nОбщий объём проданных билетов «{game_name}». Подсчёт: {counter_scope_label}.\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "A4-5-3",
+      "text": "{game_name} · Общий объём билетов\n\nПодсчёт: {counter_scope_label}. Общий объём проданных билетов «{game_name}».\n\n{game_hashtag} {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "B1.1": [
+    {
+      "id": "B1-1-1",
+      "text": "Нас уже {milestone_players}\n\nВ Casper Loto достигнута отметка {milestone_players} зарегистрированных игроков. Спасибо, что вы с нами.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B1-1-2",
+      "text": "Casper Loto становится больше\n\nВ Casper Loto уже не менее {milestone_players} зарегистрированных игроков. Ещё одна общая отметка пройдена.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B1-1-3",
+      "text": "{milestone_players} игроков · Casper Loto\n\nНовая отметка в истории платформы: {milestone_players} зарегистрированных игроков.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B1-1-4",
+      "text": "Новая отметка нашего сообщества\n\nКоличество зарегистрированных игроков Casper Loto достигло {milestone_players}.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B1-1-5",
+      "text": "Эту отметку мы прошли вместе\n\n{milestone_players} зарегистрированных игроков в Casper Loto. Рады каждому, кто присоединился.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "B1.2": [
+    {
+      "id": "B1-2-1",
+      "text": "{milestone_tickets} купленных билетов\n\nЗа всю историю Casper Loto куплено не менее {milestone_tickets} билетов. Общая отметка всех игр платформы.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B1-2-2",
+      "text": "Ещё одна отметка в истории Casper Loto\n\nОбщее количество купленных билетов достигло {milestone_tickets}.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B1-2-3",
+      "text": "Casper Loto · {milestone_tickets} билетов\n\nНовая отметка по всей платформе: {milestone_tickets} купленных билетов за всю историю.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B1-2-4",
+      "text": "Общий счёт билетов растёт\n\nВ Casper Loto пройдена отметка {milestone_tickets} купленных билетов.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B1-2-5",
+      "text": "Билеты всех игр — одна общая история\n\nСуммарно в Casper Loto куплено не менее {milestone_tickets} билетов. Отметка достигнута.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "B1.3": [
+    {
+      "id": "B1-3-1",
+      "text": "{milestone_draws} завершённых тиражей\n\nВ Casper Loto завершилось {milestone_draws} тиражей. В общем счёте — все тиражные игры, включая Casper Fast.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B1-3-2",
+      "text": "Новая отметка тиражей Casper Loto\n\nОбщее количество завершённых тиражей достигло {milestone_draws}.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B1-3-3",
+      "text": "Casper Loto · {milestone_draws} тиражей\n\nЗа всю историю платформы завершено {milestone_draws} тиражей, включая раунды Casper Fast.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B1-3-4",
+      "text": "История тиражей продолжается\n\nВ Casper Loto пройдена отметка {milestone_draws} завершённых тиражей.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B1-3-5",
+      "text": "Ещё одна общая отметка\n\n{milestone_draws} тиражей завершены во всех тиражных играх Casper Loto.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "B1.4": [
+    {
+      "id": "B1-4-1",
+      "text": "{milestone_winning_tickets} выигрышных билетов\n\nВ Casper Loto достигнута отметка {milestone_winning_tickets} выигрышных билетов за всю историю.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B1-4-2",
+      "text": "Новая отметка выигрышных билетов\n\nОбщий счёт выигрышных билетов Casper Loto достиг {milestone_winning_tickets}.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B1-4-3",
+      "text": "Casper Loto · выигрышные билеты\n\n{milestone_winning_tickets} выигрышных билетов во всех играх платформы. Общая отметка достигнута.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B1-4-4",
+      "text": "Выигрышные билеты в общей истории\n\nВ Casper Loto пройдена отметка {milestone_winning_tickets} выигрышных билетов.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B1-4-5",
+      "text": "Ещё одна отметка Casper Loto\n\nЗа всю историю платформы — {milestone_winning_tickets} выигрышных билетов.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "B2.1": [
+    {
+      "id": "B2-1-1",
+      "text": "Самый большой джекпот Casper Loto\n\n«{game_name}» установила абсолютный рекорд платформы: {new_record_cas} CAS. Предыдущий рекорд — {previous_record_cas} CAS.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B2-1-2",
+      "text": "Новый абсолютный рекорд джекпота\n\nДжекпот «{game_name}» достиг {new_record_cas} CAS — это новый максимум в истории Casper Loto. До этого: {previous_record_cas} CAS.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B2-1-3",
+      "text": "Рекорд всей платформы · {game_name}\n\n{new_record_cas} CAS — новый абсолютный максимум джекпота Casper Loto. Предыдущая отметка: {previous_record_cas} CAS.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B2-1-4",
+      "text": "Новая вершина джекпота Casper Loto\n\nВ «{game_name}» — {new_record_cas} CAS. Джекпот превысил прежний рекорд платформы: {previous_record_cas} CAS.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B2-1-5",
+      "text": "Самая высокая отметка в нашей истории\n\nНовый рекорд джекпота Casper Loto установлен в «{game_name}»: {new_record_cas} CAS. Прежний максимум — {previous_record_cas} CAS.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "B3.1": [
+    {
+      "id": "B3-1-1",
+      "text": "Джекпоты Casper Loto сейчас\n\nОбщая сумма текущих джекпотов — {total_jackpot_cas} CAS. Данные на {as_of_moscow} МСК.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B3-1-2",
+      "text": "Все текущие джекпоты — одним числом\n\nВ играх Casper Loto суммарно {total_jackpot_cas} CAS в джекпотах. Состояние на {as_of_moscow} МСК.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B3-1-3",
+      "text": "Casper Loto · {total_jackpot_cas} CAS\n\nТакова общая сумма текущих джекпотов платформы на {as_of_moscow} МСК.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B3-1-4",
+      "text": "Общий джекпот платформы\n\nТекущие джекпоты игр Casper Loto в сумме составляют {total_jackpot_cas} CAS. На {as_of_moscow} МСК.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B3-1-5",
+      "text": "Что сейчас в джекпотах\n\n{total_jackpot_cas} CAS — сумма текущих джекпотов всех применимых игр Casper Loto. На {as_of_moscow} МСК.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "B3.2": [
+    {
+      "id": "B3-2-1",
+      "text": "Выигрышные билеты сегодня\n\nЗа {day_moscow} в Casper Loto — {winning_tickets_today} выигрышных билетов. Данные на {as_of_moscow} МСК.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B3-2-2",
+      "text": "Сегодня в Casper Loto\n\n{winning_tickets_today} выигрышных билетов за {day_moscow}. Считаем билеты всех игр платформы; данные на {as_of_moscow} МСК.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B3-2-3",
+      "text": "Casper Loto · выигрыши за сегодня\n\nНа {as_of_moscow} МСК за {day_moscow} учтено {winning_tickets_today} выигрышных билетов.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B3-2-4",
+      "text": "Общий счёт выигрышных билетов за день\n\n{winning_tickets_today} выигрышных билетов в Casper Loto за {day_moscow}, по состоянию на {as_of_moscow} МСК.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B3-2-5",
+      "text": "Один день — игры всей платформы\n\nЗа {day_moscow} в Casper Loto учтено {winning_tickets_today} выигрышных билетов. Данные на {as_of_moscow} МСК.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "B3.3": [
+    {
+      "id": "B3-3-1",
+      "text": "Неделя Casper Loto в цифрах\n\nЗа {period_moscow}: куплено билетов — {period_tickets}; игроков с покупками — {period_players}; выигрышных билетов — {period_winning_tickets}; завершено тиражей — {period_draws}.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B3-3-2",
+      "text": "Что произошло за эту неделю\n\nCasper Loto, {period_moscow}: {period_tickets} купленных билетов, {period_players} игроков с покупками, {period_winning_tickets} выигрышных билетов и {period_draws} завершённых тиражей.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B3-3-3",
+      "text": "Семь дней · Casper Loto\n\nПериод: {period_moscow}. Билеты: {period_tickets}. Игроки с покупками: {period_players}. Выигрышные билеты: {period_winning_tickets}. Тиражи: {period_draws}.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B3-3-4",
+      "text": "Игры всей платформы за неделю\n\nЗа {period_moscow} в Casper Loto куплено {period_tickets} билетов. Игроков с покупками: {period_players}; выигрышных билетов: {period_winning_tickets}; завершённых тиражей: {period_draws}.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B3-3-5",
+      "text": "Наша неделя в общих цифрах\n\n{period_moscow}: {period_players} игроков с покупками, {period_tickets} купленных билетов, {period_draws} завершённых тиражей и {period_winning_tickets} выигрышных билетов.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "B3.4": [
+    {
+      "id": "B3-4-1",
+      "text": "Лидер по купленным билетам\n\nЗа {period_moscow} больше всего билетов куплено в {popular_games_label}. Билетов у каждого лидера: {leader_tickets}.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B3-4-2",
+      "text": "Какие игры выбирали чаще\n\nПервое место по количеству купленных билетов за {period_moscow}: {popular_games_label}. У каждого лидера — {leader_tickets} билетов.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B3-4-3",
+      "text": "Популярные игры · Casper Loto\n\n{popular_games_label} — лидер по купленным билетам за {period_moscow}. Билетов у каждого лидера: {leader_tickets}.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B3-4-4",
+      "text": "Первое место по билетам\n\nЗа {period_moscow} лидирующую отметку в {leader_tickets} купленных билетов достигли: {popular_games_label}.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B3-4-5",
+      "text": "Выбор игроков за этот период\n\n{popular_games_label} занимает первое место по купленным билетам за {period_moscow}. У каждого лидера: {leader_tickets} билетов.\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "B3.5": [
+    {
+      "id": "B3-5-1",
+      "text": "За день сорвано {jackpots_count} джекпотов\n\nВ Casper Loto за {day_moscow} сорвано {jackpots_count} джекпотов.\n\n{jackpots_list}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B3-5-2",
+      "text": "День джекпотов · Casper Loto\n\nЗа {day_moscow} в играх платформы сорвано {jackpots_count} джекпотов.\n\n{jackpots_list}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B3-5-3",
+      "text": "Несколько джекпотов за один день\n\n{day_moscow}: {jackpots_count} сорванных джекпотов в Casper Loto.\n\n{jackpots_list}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B3-5-4",
+      "text": "Джекпоты платформы нашли выигрышные билеты\n\nЗа {day_moscow} в Casper Loto сорвано {jackpots_count} джекпотов. Вот все события этого дня:\n\n{jackpots_list}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B3-5-5",
+      "text": "Один день — {jackpots_count} джекпотов\n\nВ играх Casper Loto за {day_moscow} произошло {jackpots_count} срывов джекпота.\n\n{jackpots_list}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "B4.1": [
+    {
+      "id": "B4-1-1",
+      "text": "Новая функция · {feature_name}\n\nВ Casper Loto: {feature_name}.\n\n{feature_description}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-1-2",
+      "text": "Casper Loto · {feature_name}\n\nНовая функция.\n\n{feature_description}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-1-3",
+      "text": "{feature_name} в Casper Loto\n\n{feature_description}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-1-4",
+      "text": "Новая функция\n\n{feature_name}\n\n{feature_description}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-1-5",
+      "text": "Что нового · {feature_name}\n\nПодробности: {feature_name}.\n\n{feature_description}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "B4.2": [
+    {
+      "id": "B4-2-1",
+      "text": "Крупное обновление Casper Loto · {update_name}\n\nВ Casper Loto: {update_name}.\n\n{changes_summary}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-2-2",
+      "text": "Casper Loto · {update_name}\n\nКрупное обновление Casper Loto.\n\n{changes_summary}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-2-3",
+      "text": "{update_name} в Casper Loto\n\n{changes_summary}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-2-4",
+      "text": "Крупное обновление Casper Loto\n\n{update_name}\n\n{changes_summary}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-2-5",
+      "text": "Что нового · {update_name}\n\nПодробности: {update_name}.\n\n{changes_summary}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "B4.3": [
+    {
+      "id": "B4-3-1",
+      "text": "Обновляем интерфейс · {interface_name}\n\nВ Casper Loto: {interface_name}.\n\n{interface_changes}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-3-2",
+      "text": "Casper Loto · {interface_name}\n\nОбновляем интерфейс.\n\n{interface_changes}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-3-3",
+      "text": "{interface_name} в Casper Loto\n\n{interface_changes}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-3-4",
+      "text": "Обновляем интерфейс\n\n{interface_name}\n\n{interface_changes}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-3-5",
+      "text": "Что нового · {interface_name}\n\nПодробности: {interface_name}.\n\n{interface_changes}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "B4.4": [
+    {
+      "id": "B4-4-1",
+      "text": "Новый раздел · {section_name}\n\nВ Casper Loto: {section_name}.\n\n{section_description}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-4-2",
+      "text": "Casper Loto · {section_name}\n\nНовый раздел.\n\n{section_description}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-4-3",
+      "text": "{section_name} в Casper Loto\n\n{section_description}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-4-4",
+      "text": "Новый раздел\n\n{section_name}\n\n{section_description}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-4-5",
+      "text": "Что нового · {section_name}\n\nПодробности: {section_name}.\n\n{section_description}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "B4.5": [
+    {
+      "id": "B4-5-1",
+      "text": "Новая платформа · {platform_name}\n\nВ Casper Loto: {platform_name}.\n\n{platform_details}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-5-2",
+      "text": "Casper Loto · {platform_name}\n\nНовая платформа.\n\n{platform_details}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-5-3",
+      "text": "{platform_name} в Casper Loto\n\n{platform_details}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-5-4",
+      "text": "Новая платформа\n\n{platform_name}\n\n{platform_details}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-5-5",
+      "text": "Что нового · {platform_name}\n\nПодробности: {platform_name}.\n\n{platform_details}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "B4.6": [
+    {
+      "id": "B4-6-1",
+      "text": "Новые возможности аккаунта · {account_feature_name}\n\nВ Casper Loto: {account_feature_name}.\n\n{account_feature_description}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-6-2",
+      "text": "Casper Loto · {account_feature_name}\n\nНовые возможности аккаунта.\n\n{account_feature_description}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-6-3",
+      "text": "{account_feature_name} в Casper Loto\n\n{account_feature_description}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-6-4",
+      "text": "Новые возможности аккаунта\n\n{account_feature_name}\n\n{account_feature_description}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-6-5",
+      "text": "Что нового · {account_feature_name}\n\nПодробности: {account_feature_name}.\n\n{account_feature_description}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "B4.7": [
+    {
+      "id": "B4-7-1",
+      "text": "Новое системное расширение · {integration_name}\n\nВ Casper Loto: {integration_name}.\n\n{integration_description}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-7-2",
+      "text": "Casper Loto · {integration_name}\n\nНовое системное расширение.\n\n{integration_description}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-7-3",
+      "text": "{integration_name} в Casper Loto\n\n{integration_description}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-7-4",
+      "text": "Новое системное расширение\n\n{integration_name}\n\n{integration_description}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-7-5",
+      "text": "Что нового · {integration_name}\n\nПодробности: {integration_name}.\n\n{integration_description}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ],
+  "B4.8": [
+    {
+      "id": "B4-8-1",
+      "text": "Новая версия Casper Loto · {version_name}\n\nВ Casper Loto: {version_name}.\n\n{release_summary}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-8-2",
+      "text": "Casper Loto · {version_name}\n\nНовая версия Casper Loto.\n\n{release_summary}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-8-3",
+      "text": "{version_name} в Casper Loto\n\n{release_summary}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-8-4",
+      "text": "Новая версия Casper Loto\n\n{version_name}\n\n{release_summary}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    },
+    {
+      "id": "B4-8-5",
+      "text": "Что нового · {version_name}\n\nПодробности: {version_name}.\n\n{release_summary}\n\n#CasperLoto {topic_hashtag}\n[ПОД СПОЙЛЕРОМ: #лотерея {public_topic_hashtag}]"
+    }
+  ]
+}

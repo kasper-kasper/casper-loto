@@ -1,0 +1,11 @@
+{
+  "ticket_milestones": [10000, 50000, 100000, 500000, 1000000],
+  "record_players_minimum": 500,
+  "record_players_increase_percent": 20,
+  "ordinary_streak_step": 50,
+  "fast_streak_step": 200,
+  "fast_games": ["flash", "shadow", "pulse"],
+  "jackpot_multipliers": [[3, 2], [2, 1], [3, 1]],
+  "excluded_games": ["daily", "kasper-live"],
+  "unresolved_events": ["A2.4", "A3.3", "A3.5", "A4.4", "A5.4", "A5.7", "A5.8"]
+}

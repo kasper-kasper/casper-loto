@@ -10,9 +10,20 @@ vi.mock("./api", () => ({ miniAppApi: { publications: vi.fn() } }));
 const template = fixture as unknown as PublicationTemplate;
 const first: Publication = { id: "1", lottery_code: "pulse", status: "published", revision: 2, content: { template, fields: { kicker: "Новость", title: "Первая история", value: "42 CAS", description: "Текст", fact: "" }, cta_label: "Открыть PULSE", channel_caption: "" }, published_at: "2026-10-05T00:00:00Z", created_at: "2026-10-05T00:00:00Z", updated_at: "2026-10-05T00:00:00Z" };
 beforeEach(() => {
+  vi.clearAllMocks();
+  localStorage.clear();
   vi.mocked(miniAppApi.publications).mockResolvedValue([first, { ...first, id: "2", lottery_code: "shadow", content: { ...first.content, template: { ...template, lottery: "shadow", lotteryLabel: "CODE" }, fields: { ...first.content.fields, title: "Вторая история" }, cta_label: "Открыть CODE" } }]);
   HTMLDialogElement.prototype.showModal = function () { this.setAttribute("open", ""); };
   HTMLDialogElement.prototype.close = function () { this.removeAttribute("open"); };
+});
+
+it("shows at most ten news items and remembers viewed stories", async () => {
+  vi.mocked(miniAppApi.publications).mockResolvedValue(Array.from({ length: 15 }, (_, i) => ({ ...first, id: String(i), content: { ...first.content, fields: { ...first.content.fields, title: `Новость ${i}` } } })));
+  render(<Stories initData="signed" onOpen={vi.fn()} />);
+  fireEvent.click(await screen.findByRole("button", { name: /Новость 0/ }));
+  expect(screen.getByText("10 историй")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /Новость 10/ })).not.toBeInTheDocument();
+  expect(JSON.parse(localStorage.getItem("casper-news-seen")!)).toContain("0");
 });
 
 it("loads once, navigates manually and opens the selected game's existing route", async () => {

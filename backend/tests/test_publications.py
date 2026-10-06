@@ -239,7 +239,8 @@ async def test_player_feed_is_bounded_published_only_and_cursor_is_stable() -> N
     session = Session(stored("published"))
     await service(session).list(player=True, before=UUID(int=1), limit=30)
     sql = session.sql[0]
-    assert "publications.status = 'published'" in sql and "LIMIT 30" in sql
+    assert "publications.status = 'published'" in sql and "LIMIT 10" in sql
+    assert "story_visible" in sql and "TIMESTAMP WITH TIME ZONE" in sql
     assert "publications.id <" in sql and "DESC" in sql
     with pytest.raises(ValueError):
         await service(Session(stored("draft"))).list(player=True, before=UUID(int=1))
