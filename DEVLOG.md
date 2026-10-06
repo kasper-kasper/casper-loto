@@ -3287,3 +3287,8 @@ Known limitations:
 - The native dialog top layer bypassed the app-shell safe padding, placing story controls under Telegram controls. Added dialog-specific safe top/bottom/side geometry with a fullscreen fallback, responsive complete artwork sizing, compact progress/header and accessible tap targets.
 - Added left/right tap and swipe navigation, downward close, seven-second playback, remaining-time-preserving pause and hold-to-pause, background-tab pause, keyboard navigation and final-item close. Body scrolling is locked only while viewing; the existing lottery CTA remains above tap zones.
 - Mini App 1.59.2: eight focused Stories tests plus affected lint/typecheck/build. Browser smoke at 390×844 and 320×568 verifies dialog top 80px with simulated Telegram insets, artwork inside bottom safe area, real tap navigation and uncovered CTA; screenshots inspected. Gateway-only deploy preserves automatic publication transport and API.
+
+## Telegram post Mini App link — 2026-10-06
+
+- Owner requested a Mini App link at the end of channel posts. Shared HTML caption formatting appends the clickable label to new automatic and manual sends, including previously prepared queue rows; existing matching links remain single. Snapshot validation reserves the visible footer inside Telegram’s UTF-16 photo caption limit. Existing published messages remain unchanged; no replay or business-history changes.
+- API 1.50.4: focused caption/publication tests and scoped static checks; API-only deployment under the operations lock with backups, diagnostic archival and health verification.

@@ -48,6 +48,8 @@ from k_loto.infrastructure.database.models import (
 )
 
 MOSCOW = ZoneInfo("Europe/Moscow")
+MINIAPP_URL = "https://t.me/Kasper_loto_bot/app"
+MINIAPP_LINK_LABEL = "Открыть Casper Loto →"
 AUTOMATIC_A = {"A1.1", "A1.2", "A1.3", "A1.4", "A1.5", "A4.1", "A4.2", "A5.5"}
 for _code in AUTOMATIC_A | {
     "A2.1",
@@ -186,8 +188,18 @@ def format_key(snapshot: dict[str, Any]) -> str:
 
 
 def caption_html(text: str) -> str:
+    visible = re.sub(r"\[ПОД СПОЙЛЕРОМ: (.*?)\]", r"\1", text)
+    has_link = "t.me/Kasper_loto_bot/app" in text
+    visible += "" if has_link else "\n\n" + MINIAPP_LINK_LABEL
+    if len(visible.encode("utf-16-le")) // 2 > 1024:
+        raise ValueError("Caption with Mini App link exceeds Telegram photo limit")
     escaped = html.escape(text)
-    return re.sub(r"\[ПОД СПОЙЛЕРОМ: (.*?)\]", r"<tg-spoiler>\1</tg-spoiler>", escaped)
+    caption = re.sub(
+        r"\[ПОД СПОЙЛЕРОМ: (.*?)\]", r"<tg-spoiler>\1</tg-spoiler>", escaped
+    )
+    if not has_link:
+        caption += f'\n\n<a href="{MINIAPP_URL}">{MINIAPP_LINK_LABEL}</a>'
+    return caption
 
 
 def editorial_snapshot(content: dict[str, Any], game: str) -> dict[str, Any]:
@@ -292,10 +304,8 @@ class PublicationAutomation:
         title = caption.split("\n", 1)[0]
         if len(title) > 120:
             title = template["subcategoryLabel"]
-        if len(caption.encode("utf-16-le")) // 2 > 1024:
-            raise ValueError(
-                f"Caption exceeds Telegram photo limit for {row.event_key}"
-            )
+        # Reserve the visible link text while preparing the snapshot too.
+        caption_html(caption)
         fields = {
             "kicker": values.get("game_name", "Casper Loto"),
             "title": title,

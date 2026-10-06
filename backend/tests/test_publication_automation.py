@@ -150,8 +150,20 @@ def test_rotation_excludes_recent_backgrounds_and_falls_back_to_oldest() -> None
 def test_caption_escapes_owner_copy_and_emits_real_spoiler() -> None:
     assert (
         caption_html("<name> [ПОД СПОЙЛЕРОМ: #лотерея]")
-        == "&lt;name&gt; <tg-spoiler>#лотерея</tg-spoiler>"
+        == '&lt;name&gt; <tg-spoiler>#лотерея</tg-spoiler>\n\n'
+        '<a href="https://t.me/Kasper_loto_bot/app">Открыть Casper Loto →</a>'
     )
+
+
+def test_miniapp_link_is_not_duplicated_and_caption_limit_counts_visible_text():
+    from k_loto.application.publication_automation import MINIAPP_LINK_LABEL
+
+    existing = "Новость\n\nhttps://t.me/Kasper_loto_bot/app"
+    assert caption_html(existing).count("t.me/Kasper_loto_bot/app") == 1
+    available = 1024 - 2 - len(MINIAPP_LINK_LABEL.encode("utf-16-le")) // 2
+    assert caption_html("x" * available).endswith("</a>")
+    with pytest.raises(ValueError, match="photo limit"):
+        caption_html("x" * (available + 1))
 
 
 def test_format_records_survive_price_changes_but_reset_for_rule_changes() -> None:

@@ -1688,3 +1688,7 @@ All notable changes follow Keep a Changelog and Semantic Versioning principles.
 ## Mini App 1.59.2 — 2026-10-06
 
 - Stories respect Telegram and device safe areas. Tap the right/left side to move forward/back, swipe horizontally to browse or down to close. Added segmented playback progress, seven-second auto-advance, pause control and hold-to-pause; lottery CTA stays independently clickable.
+
+## 1.50.4 — 2026-10-06
+
+- Telegram channel posts end with a clickable «Открыть Casper Loto →» link to https://t.me/Kasper_loto_bot/app. Existing links are not duplicated; photo caption limits include the visible link text.
