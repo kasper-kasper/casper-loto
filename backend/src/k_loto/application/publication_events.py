@@ -237,6 +237,21 @@ class PublicationEventService:
     ) -> None:
         self.session = session
         self.config = config or event_config()
+        self._known_keys: set[str] | None = None
+        self._cached_rows: dict[str, Publication] = {}
+        self._cached_states: dict[str, PublicationEventState] = {}
+
+    async def prime_cache(self) -> None:
+        """Under the shared lock, batch new replay inserts instead of N+1 flushes."""
+        self._known_keys = set(
+            await self.session.scalars(
+                select(Publication.event_key).where(Publication.event_key.is_not(None))
+            )
+        )
+        self._cached_states = {
+            row.key: row
+            for row in await self.session.scalars(select(PublicationEventState))
+        }
 
     async def _lock(self) -> None:
         # All scheduled scans and owner-generated event drafts share this lock.
@@ -255,11 +270,15 @@ class PublicationEventService:
         )
 
     async def _state(self, key: str) -> PublicationEventState:
+        if key in self._cached_states:
+            return self._cached_states[key]
         row = await self.session.get(PublicationEventState, key)
         if row is None:
             row = PublicationEventState(key=key, value={})
             self.session.add(row)
-            await self.session.flush()
+            if self._known_keys is None:
+                await self.session.flush()
+        self._cached_states[key] = row
         return row
 
     async def _store(
@@ -275,9 +294,13 @@ class PublicationEventService:
         ready_after: datetime | None = None,
         publication_id: UUID | None = None,
     ) -> Publication:
-        row = await self.session.scalar(
-            select(Publication).where(Publication.event_key == key).with_for_update()
-        )
+        row = self._cached_rows.get(key)
+        if row is None and (self._known_keys is None or key in self._known_keys):
+            row = await self.session.scalar(
+                select(Publication)
+                .where(Publication.event_key == key)
+                .with_for_update()
+            )
         if row is not None:
             if (
                 refresh
@@ -312,8 +335,12 @@ class PublicationEventService:
             updated_at=now,
         )
         self.session.add(row)
+        self._cached_rows[key] = row
+        if self._known_keys is not None:
+            self._known_keys.add(key)
         PublicationService(self.session)._audit(row, author, "event_create", None)
-        await self.session.flush()
+        if self._known_keys is None:
+            await self.session.flush()
         return row
 
     async def metrics(self) -> dict[str, int]:

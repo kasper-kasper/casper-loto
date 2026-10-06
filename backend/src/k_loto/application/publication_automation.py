@@ -242,6 +242,7 @@ class PublicationAutomation:
         """Replay facts chronologically with pre-window baselines and stable keys."""
         async with self.session.begin():
             await self.events._lock()
+            await self.events.prime_cache()
             author = await self.session.scalar(
                 select(User.id)
                 .where(User.is_admin.is_(True))

@@ -2,10 +2,9 @@
 
 import asyncio
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
-from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, select
 
@@ -35,8 +34,8 @@ class FakeTransport:
 async def main() -> None:
     if not str(engine.url.database).endswith("_smoke"):
         raise RuntimeError("Disposable database required")
-    start = datetime(2026, 9, 25, tzinfo=ZoneInfo("Europe/Moscow")).astimezone(UTC)
     end = datetime.now(UTC)
+    start = end - timedelta(minutes=30)
     async with session_factory() as session:
         counts = await PublicationAutomation(session).collect(
             start, end, historical=True
