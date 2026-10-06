@@ -1,3 +1,8 @@
+## Casper Dual circular ticket restoration — 2026-10-06
+
+- Replaced the generic Dual number grid with two fixed-position 12-number dials in the Mini App. Reused the existing night/dawn scene and added lightweight CSS-only metal/glass depth, selection glow and reduced-motion handling. Purchase rules and server state are unchanged.
+- Regression test verifies twelve stable positions per dial and the two-number cap. Mini App lint, typecheck, focused 7-test suite and production build passed. Browser preview at 375px and 320px confirmed the number buttons remain within each dial, with no position shift on selection.
+
 ## Owner-authorized publication activation — 2026-10-06
 
 - Added collection of verifiable A jackpot/result/winner/sales facts and scheduled statistical drafts to the existing Publication/event-state engine. Reconstruct historical B milestone crossings and jackpot records from immutable timestamps/ledger, with per-event keys, pre-window baselines and no A/B merging. No financial history is changed. Unspecified unusual/large/activity/anniversary criteria remain excluded.

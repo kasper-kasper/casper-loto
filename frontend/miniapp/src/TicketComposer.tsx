@@ -6,6 +6,24 @@ import { isGrandLottery, lotteryCombination } from "./grand";
 import { selectionHaptic } from "./telegram";
 import type { Favorite, Lottery } from "./types";
 
+function DualDial({ phase, selected, purchasing, onToggle }: { phase: "night" | "dawn"; selected: number[]; purchasing: boolean; onToggle: (value: number, phase: "night" | "dawn") => void }) {
+  const label = phase.toUpperCase();
+  return <section className={`dual-dial-panel dual-dial-${phase}`} aria-label={`${label} · выбор чисел`}>
+    <header className="dual-dial-heading"><strong>{label}</strong><small>{phase === "night" ? "00:30" : "07:30"}</small></header>
+    <div className="dual-dial-face" role="group" aria-label={`${label}: выберите 2 числа из 12`}>
+      <span className="dual-dial-center" aria-hidden="true">{phase === "night" ? "☾" : "☀"}</span>
+      {Array.from({ length: 12 }, (_, index) => index + 1).map((value) => {
+        const angle = value * Math.PI / 6;
+        const active = selected.includes(value);
+        return <span className="dual-dial-position" key={value} style={{ left: `${50 + 35 * Math.sin(angle)}%`, top: `${50 - 35 * Math.cos(angle)}%` }}>
+          <button type="button" className="dual-dial-number" aria-label={`${label} ${value}`} aria-pressed={active} disabled={purchasing} onClick={() => onToggle(value, phase)}><span>{value}</span></button>
+        </span>;
+      })}
+    </div>
+    <div className="dual-dial-count" aria-live="polite"><span>{selected.length} / 2</span><small>выбрано</small></div>
+  </section>;
+}
+
 export function TicketComposer({ lottery, balance, now, purchasing, initialNumbers = [], favorites, onBuy, onBuyMany, onSaveFavorite, onDeleteFavorite }: { lottery: Lottery; balance: number; now: number; purchasing: boolean; initialNumbers?: number[]; favorites: Favorite[]; onBuy: (numbers: number[], drawCount: 1 | 5) => Promise<boolean>; onBuyMany: (numbers: number[][], drawCount: 1 | 5) => Promise<boolean>; onSaveFavorite: (numbers: number[]) => void; onDeleteFavorite: (id: string) => void }) {
   const [selected, setSelected] = useState<number[]>(initialNumbers);
   const [drawCount, setDrawCount] = useState<1 | 5>(1);
@@ -61,17 +79,17 @@ export function TicketComposer({ lottery, balance, now, purchasing, initialNumbe
     if (await onBuy(selected, drawCount)) setSelected([]);
   };
   const closed = dualSalesClosed || !lottery.purchase_available;
-  const field = (label: string, max: number, limit: number, values: number[], offset = 0, phase?: "night" | "dawn") => <section className={`ticket-field ${offset ? "ticket-special" : ""}`}>
+  const field = (label: string, max: number, limit: number, values: number[], offset = 0) => <section className={`ticket-field ${offset ? "ticket-special" : ""}`}>
     <div className="ticket-field-label"><span>{label}</span><small>{values.length} из {limit}</small></div>
     <div className="ticket-number-grid" style={{ "--columns": max <= 8 ? max : max <= 16 ? 4 : max <= 25 ? 5 : 6 } as CSSProperties} aria-label={label}>
-      {Array.from({ length: max }, (_, index) => index + 1).map(value => <button className="ticket-number" type="button" aria-label={phase ? `${phase.toUpperCase()} ${value}` : String(value)} aria-pressed={values.includes(value)} disabled={purchasing} onClick={() => phase ? toggleDual(value, phase) : toggle(value + offset)} key={value}>{value}</button>)}
+      {Array.from({ length: max }, (_, index) => index + 1).map(value => <button className="ticket-number" type="button" aria-label={String(value)} aria-pressed={values.includes(value)} disabled={purchasing} onClick={() => toggle(value + offset)} key={value}>{value}</button>)}
     </div>
   </section>;
 
   return <div className="ticket-composer">
-    {lottery.code === "khan" ? <ClassicTicket lottery={lottery} selected={selected} purchasing={purchasing} drawCount={drawCount} onToggle={toggle} onRandomize={randomize} /> : <div className="ticket-surface">
+    {lottery.code === "khan" ? <ClassicTicket lottery={lottery} selected={selected} purchasing={purchasing} drawCount={drawCount} onToggle={toggle} onRandomize={randomize} /> : <div className={`ticket-surface${dual ? " dual-ticket-surface" : ""}`}>
       <header className="ticket-surface-heading"><div><span>ВАША КОМБИНАЦИЯ</span><h2>Ваш билет</h2></div><button type="button" aria-label="Случайные числа" className="ticket-shuffle" disabled={purchasing} onClick={randomize}><Icon name="spark" />Случайно</button></header>
-      {dual ? <div className="ticket-dual-fields">{field("NIGHT · 00:30", 12, 2, dualNight, 0, "night")}{field("DAWN · 07:30", 12, 2, dualDawn, 12, "dawn")}</div> : grand ? <>
+      {dual ? <div className="dual-dial-pair"><DualDial phase="night" selected={dualNight} purchasing={purchasing} onToggle={toggleDual} /><DualDial phase="dawn" selected={dualDawn} purchasing={purchasing} onToggle={toggleDual} /></div> : grand ? <>
         {field("Основные числа", lottery.primary_max_number ?? 35, grandMainCount, mainSelected)}
         {field(lottery.code === "pss" ? "Casper Ball" : "Звёзды", lottery.secondary_max_number ?? 5, grandSpecialCount, specialSelected.map(value => value - grandOffset), grandOffset)}
       </> : field("Числа", lottery.max_number, lottery.numbers_to_pick, selected)}

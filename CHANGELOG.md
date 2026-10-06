@@ -1,3 +1,7 @@
+## [Mini App 1.59.1] - 2026-10-06
+
+- В Casper Dual возвращён круговой билет NIGHT/DAWN: два атмосферных циферблата с неподвижными числами, световой подсветкой выбора и ограничением два числа на сторону. Исправлен упрощённый вид выбора в мини-приложении.
+
 ## [API 1.50.0 / Mini App 1.59.0 / Admin 1.56.0] - 2026-10-06
 
 - Added real Telegram delivery of separately rendered A/B events, a durable owner-authorized historical replay from 25 September, and a 30-minute interval for subsequent automatic posts. Historical calculated drafts are approved for this replay only. Stories show the ten latest relevant news items for 24 hours and remember viewed items.

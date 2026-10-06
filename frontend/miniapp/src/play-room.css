@@ -53,8 +53,42 @@
 .game-pss .ticket-surface-heading { margin-bottom:10px; }
 .game-pss .ticket-number { min-height:38px; }
 .game-pss .ticket-special .ticket-number { min-height:34px; }
-.ticket-dual-fields .ticket-number-grid { grid-template-columns:repeat(6,minmax(0,1fr)); }
-.ticket-dual-fields .ticket-special { --play-ink:#8a5633; }
+.game-dual .dual-ticket-surface { position:relative; isolation:isolate; padding:13px 9px 11px; border-color:#eac6829c; color:#f9eed5; background:linear-gradient(180deg,#07122522 0%,#061226bf 31%,#07101fef 77%,#07101ff7 100%),url('./assets/lotteries/casper-dual-scene.webp') center 52%/cover; box-shadow:0 16px 36px #0008,inset 0 1px #ffe8b56e,inset 0 0 0 3px #0b152e; }
+.game-dual .dual-ticket-surface::before { content:""; position:absolute; inset:4px; z-index:-1; border:1px solid #f5d48840; border-radius:12px; pointer-events:none; }
+.game-dual .dual-ticket-surface .ticket-surface-heading { position:relative; margin:0 5px 11px; }
+.game-dual .dual-ticket-surface .ticket-surface-heading > div > span { color:#f4d79c; }
+.game-dual .dual-ticket-surface .ticket-surface-heading h2 { color:#fff2d6; font:normal clamp(22px,6vw,29px)/1.1 Georgia,serif; letter-spacing:-.025em; text-shadow:0 2px 9px #000b; }
+.game-dual .dual-ticket-surface .ticket-shuffle { border-color:#f0ce8c70; color:#ffdf9d; background:#09152cdd; box-shadow:inset 0 1px #ffffff36,0 4px 10px #0005; }
+.dual-dial-pair { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+.dual-dial-panel { min-width:0; padding:10px 7px 9px; overflow:hidden; border:1px solid #85baff9c; border-radius:16px; text-align:center; background:linear-gradient(145deg,#183b69a8,#06142bec 61%,#061024e8); box-shadow:inset 0 1px #e7f3ff80,inset 0 0 22px #225fa83d,0 7px 17px #0008; }
+.dual-dial-dawn { border-color:#f4c577ab; background:linear-gradient(145deg,#885128a1,#281a21ea 60%,#160f1bea); box-shadow:inset 0 1px #fff1cb91,inset 0 0 22px #ea964b3d,0 7px 17px #0008; }
+.dual-dial-heading { display:flex; align-items:baseline; justify-content:center; gap:5px; margin-bottom:9px; white-space:nowrap; }
+.dual-dial-heading strong { color:#e3efff; font:normal clamp(15px,4.5vw,23px)/1 Georgia,serif; letter-spacing:.055em; text-shadow:0 1px 8px #6da7ff,0 2px 4px #000; }
+.dual-dial-dawn .dual-dial-heading strong { color:#ffe8b1; text-shadow:0 1px 8px #ffaf64,0 2px 4px #000; }
+.dual-dial-heading small { color:#b8d0f0; font-size:clamp(8px,2.2vw,10px); font-variant-numeric:tabular-nums; }
+.dual-dial-dawn .dual-dial-heading small { color:#f5c991; }
+.dual-dial-face { position:relative; width:100%; max-width:230px; aspect-ratio:1; margin:auto; border:2px solid #a7d6ff; border-radius:50%; background:radial-gradient(circle at 40% 35%,#2e689074 0%,#102a50dd 21%,#06162fed 58%,#030b1c 75%),repeating-conic-gradient(from -15deg,#92c9ff3a 0deg 1deg,transparent 1deg 30deg); box-shadow:0 0 0 3px #061124,0 0 0 4px #8ac4ffad,0 7px 19px #000b,0 0 19px #3d94ff5c,inset 0 0 0 4px #7bb7f91f,inset 0 0 22px #1b62bb91; }
+.dual-dial-dawn .dual-dial-face { border-color:#ffe0a0; background:radial-gradient(circle at 42% 34%,#f5c6709c 0%,#a86437a8 22%,#51301fdc 53%,#1e1420f5 76%),repeating-conic-gradient(from -15deg,#ffe0a83a 0deg 1deg,transparent 1deg 30deg); box-shadow:0 0 0 3px #291823,0 0 0 4px #ffd595ba,0 7px 19px #000b,0 0 19px #ffad5294,inset 0 0 0 4px #ffe2a629,inset 0 0 22px #d9803fa8; }
+.dual-dial-face::before { content:""; position:absolute; inset:5%; border:1px solid #c4e6ff69; border-radius:50%; background:repeating-conic-gradient(from 0deg,#a7d8ff83 0deg .8deg,transparent .8deg 15deg); mask-image:radial-gradient(circle,transparent 0 80%,#000 82% 86%,transparent 88%); pointer-events:none; }
+.dual-dial-dawn .dual-dial-face::before { border-color:#ffdf9c8c; background:repeating-conic-gradient(from 0deg,#ffe7b68c 0deg .8deg,transparent .8deg 15deg); }
+.dual-dial-center { position:absolute; left:50%; top:50%; display:grid; width:28%; aspect-ratio:1; place-items:center; transform:translate(-50%,-50%); border:1px solid #add6ff8f; border-radius:50%; color:#d6efff; background:radial-gradient(circle at 35% 30%,#a1d8ff7b,#123a6a 47%,#071b3a 79%); box-shadow:0 0 14px #74baff77,inset 0 1px #ffffff9c; font:clamp(18px,5vw,28px)/1 Georgia,serif; text-shadow:0 0 9px #e2f6ff; pointer-events:none; }
+.dual-dial-dawn .dual-dial-center { border-color:#ffe2a59e; color:#fff3c9; background:radial-gradient(circle at 35% 30%,#fff2bd,#eda64c 46%,#7b3c21 83%); box-shadow:0 0 15px #ffb4569e,inset 0 1px #fffbd2; text-shadow:0 0 7px #fff7d9; }
+.dual-dial-position { position:absolute; z-index:1; display:block; width:clamp(21px,6vw,30px); aspect-ratio:1; transform:translate(-50%,-50%); }
+.dual-dial-number { display:grid; width:100%; height:100%; padding:0; place-items:center; border:1px solid #d4eaff7d; border-radius:50%; color:#f4f9ff; background:radial-gradient(circle at 32% 24%,#548cbd,#15375c 54%,#08152c 83%); box-shadow:inset 0 1px #ffffff78,inset 0 -2px 3px #0007,0 2px 5px #0009; font:600 clamp(10px,2.8vw,13px)/1 Georgia,serif; font-variant-numeric:tabular-nums; touch-action:manipulation; }
+.dual-dial-dawn .dual-dial-number { border-color:#ffe1ad9e; color:#fff0d0; background:radial-gradient(circle at 32% 24%,#cb9059,#794522 55%,#3a1e19 83%); }
+.dual-dial-number[aria-pressed=true] { z-index:2; border-color:#f4fcff; color:#032049; background:radial-gradient(circle at 35% 24%,#fff,#ace9ff 35%,#339dfa 68%,#0954b7); box-shadow:0 0 0 1px #e9f8ff,0 0 15px 4px #40a8ff,0 3px 8px #0009,inset 0 1px #fff; }
+.dual-dial-dawn .dual-dial-number[aria-pressed=true] { border-color:#fff9d8; color:#55300a; background:radial-gradient(circle at 35% 24%,#fffef2,#ffe8a2 38%,#f7ba53 71%,#ce7f25); box-shadow:0 0 0 1px #fff1c3,0 0 15px 4px #ffc263,0 3px 8px #0009,inset 0 1px #fff; }
+.dual-dial-number[aria-pressed=true] > span { animation:dual-dial-pop .28s ease-out; }
+.dual-dial-number:focus-visible { outline:2px solid #fff; outline-offset:2px; }
+.dual-dial-count { display:flex; align-items:baseline; justify-content:center; gap:4px; margin-top:10px; padding:5px 3px; border:1px solid #bedfff78; border-radius:99px; color:#f4f7fc; background:#04142cca; font-variant-numeric:tabular-nums; }
+.dual-dial-count span { font-size:11px; font-weight:700; }
+.dual-dial-count small { color:#bbd6ef; font-size:9px; }
+.dual-dial-dawn .dual-dial-count { border-color:#ffda9891; background:#221523d9; }
+.dual-dial-dawn .dual-dial-count small { color:#f6d3a4; }
+.game-dual .dual-ticket-surface .ticket-surface-footer { margin:11px 4px 1px; border-color:#f5d29262; color:#d4def0; }
+.game-dual .dual-ticket-surface .ticket-surface-footer > span:last-child { color:#ffe6a6; }
+@keyframes dual-dial-pop { 0% { transform:scale(1); } 45% { transform:translateY(-2px) scale(1.12); } 100% { transform:scale(1); } }
+@media(prefers-reduced-motion:reduce) { .dual-dial-number[aria-pressed=true] > span { animation:none; } }
 .ticket-surface-footer { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:14px; padding-top:10px; border-top:1px dashed #44586b38; color:#65727c; font-size:9px; }
 .ticket-surface-footer > span:last-child { color:var(--play-ink); font-weight:600; }
 .play-quick { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:12px 0; padding:12px 13px; border:1px solid #ffffff1c; border-radius:12px; background:#ffffff04; }

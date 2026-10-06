@@ -44,8 +44,14 @@ describe("ticket selection presentation", () => {
   it("keeps Dual's two independent fields without repeat options", () => {
     setup({ ...base, code: "dual", numbers_to_pick: 4, max_number: 24 });
     for (const phase of ["NIGHT", "DAWN"]) {
+      const dial = screen.getByRole("group", { name: `${phase}: выберите 2 числа из 12` });
+      expect(within(dial).getAllByRole("button")).toHaveLength(12);
+      const number = screen.getByRole("button", { name: `${phase} 1` });
+      const fixedPosition = number.parentElement?.getAttribute("style");
       for (const value of [1, 2, 3]) fireEvent.click(screen.getByRole("button", { name: `${phase} ${value}` }));
       expect(screen.getByRole("button", { name: `${phase} 3` })).toHaveAttribute("aria-pressed", "false");
+      expect(number.parentElement).toHaveAttribute("style", fixedPosition);
+      expect(within(dial).getAllByRole("button", { pressed: true })).toHaveLength(2);
     }
     expect(screen.getByRole("button", { name: "Купить билет" })).toBeEnabled();
     expect(screen.queryByText("Повторы и избранное")).not.toBeInTheDocument();
