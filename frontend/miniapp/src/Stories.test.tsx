@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { Stories } from "./Stories";
 import { miniAppApi } from "./api";
@@ -51,4 +51,72 @@ it("fits maximum field lengths and explicit line breaks inside the smallest safe
     expect(Math.max(...result.lines.map(line => line.length)) * result.size * 1.05).toBeLessThanOrEqual(box[2]);
   }
   expect(fitPublicationText("Один\nДва", [0, 0, 500, 200], 40).lines).toEqual(["Один", "Два"]);
+});
+
+it("moves forward and back by taps and closes after the final story", async () => {
+  render(<Stories initData="signed" onOpen={vi.fn()} />);
+  fireEvent.click(await screen.findByRole("button", { name: /Первая история/ }));
+  fireEvent.click(screen.getByRole("button", { name: "Предыдущая история" }));
+  expect(screen.getByRole("dialog")).toHaveAccessibleName("Первая история");
+  fireEvent.click(screen.getByRole("button", { name: "Следующая история" }));
+  expect(screen.getByRole("dialog")).toHaveAccessibleName("Вторая история");
+  fireEvent.click(screen.getByRole("button", { name: "Предыдущая история" }));
+  expect(screen.getByRole("dialog")).toHaveAccessibleName("Первая история");
+  fireEvent.click(screen.getByRole("button", { name: "Следующая история" }));
+  fireEvent.click(screen.getByRole("button", { name: "Следующая история" }));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+});
+
+it("uses the fullscreen Telegram fallback and keeps the lottery action separate", async () => {
+  window.Telegram = { WebApp: { initData: "signed", ready: vi.fn(), expand: vi.fn(), isFullscreen: true } };
+  const onOpen = vi.fn();
+  render(<Stories initData="signed" onOpen={onOpen} />);
+  fireEvent.click(await screen.findByRole("button", { name: /Первая история/ }));
+  expect(screen.getByRole("dialog").style.getPropertyValue("--story-telegram-top")).toBe("56px");
+  fireEvent.click(screen.getByRole("button", { name: "Открыть PULSE" }));
+  expect(onOpen).toHaveBeenCalledExactlyOnceWith("pulse");
+  delete window.Telegram;
+});
+
+it("handles a swipe only once and does not advance on a long press", async () => {
+  window.PointerEvent = MouseEvent as typeof PointerEvent;
+  render(<Stories initData="signed" onOpen={vi.fn()} />);
+  fireEvent.click(await screen.findByRole("button", { name: /Первая история/ }));
+  const next = screen.getByRole("button", { name: "Следующая история" });
+  fireEvent.pointerDown(next, { clientX: 260, clientY: 180 });
+  fireEvent.pointerUp(next, { clientX: 140, clientY: 180 });
+  fireEvent.click(next);
+  expect(screen.getByRole("dialog")).toHaveAccessibleName("Вторая история");
+  const previous = screen.getByRole("button", { name: "Предыдущая история" });
+  const clock = vi.spyOn(Date, "now").mockReturnValue(1000);
+  fireEvent.pointerDown(previous, { clientX: 30, clientY: 180 });
+  clock.mockReturnValue(1400);
+  fireEvent.pointerUp(previous, { clientX: 30, clientY: 180 });
+  fireEvent.click(previous);
+  expect(screen.getByRole("dialog")).toHaveAccessibleName("Вторая история");
+  clock.mockRestore();
+});
+
+it("advances automatically, preserves remaining time when paused and pauses while held", async () => {
+  render(<Stories initData="signed" onOpen={vi.fn()} />);
+  fireEvent.click(await screen.findByRole("button", { name: /Первая история/ }));
+  vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "performance"] });
+  // Toggle the control to start the player on the mocked clock.
+  fireEvent.click(screen.getByRole("button", { name: "Приостановить истории" }));
+  fireEvent.click(screen.getByRole("button", { name: "Продолжить истории" }));
+  act(() => vi.advanceTimersByTime(4000));
+  const next = screen.getByRole("button", { name: "Следующая история" });
+  fireEvent.pointerDown(next, { clientX: 260, clientY: 180 });
+  act(() => vi.advanceTimersByTime(10000));
+  expect(screen.getByRole("dialog")).toHaveAccessibleName("Первая история");
+  fireEvent.pointerUp(next, { clientX: 260, clientY: 180 });
+  fireEvent.click(screen.getByRole("button", { name: "Приостановить истории" }));
+  act(() => vi.advanceTimersByTime(10000));
+  expect(screen.getByRole("dialog")).toHaveAccessibleName("Первая история");
+  fireEvent.click(screen.getByRole("button", { name: "Продолжить истории" }));
+  act(() => vi.advanceTimersByTime(3050));
+  expect(screen.getByRole("dialog")).toHaveAccessibleName("Вторая история");
+  act(() => vi.advanceTimersByTime(7050));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  vi.useRealTimers();
 });

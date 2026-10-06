@@ -3281,3 +3281,9 @@ Known limitations:
 
 - API 1.50.3: removed service footer and automatic artwork date; non-jackpot B statistical copy uses plain periods without dates. Removed 198 original Fast template rows, retaining six owner scenes (192 raw template choices); the asset compiler now replaces original Fast layouts. Existing queued snapshots are normalized before rendering. Published messages are not retroactively edited.
 - Configured jackpot record gap 100,000,000 CAS for A1.3/A1.4/B2.1, applied at generation and SQL delivery boundary. Factual maxima remain separate from announced/queued editorial checkpoints so minor changes accumulate. No schema, ledger, ticket or draw changes; no historical replay. Focused publication regressions and Ruff/mypy before API-only release; health verified after deployment.
+
+## Telegram Stories player — 2026-10-06
+
+- The native dialog top layer bypassed the app-shell safe padding, placing story controls under Telegram controls. Added dialog-specific safe top/bottom/side geometry with a fullscreen fallback, responsive complete artwork sizing, compact progress/header and accessible tap targets.
+- Added left/right tap and swipe navigation, downward close, seven-second playback, remaining-time-preserving pause and hold-to-pause, background-tab pause, keyboard navigation and final-item close. Body scrolling is locked only while viewing; the existing lottery CTA remains above tap zones.
+- Mini App 1.59.2: eight focused Stories tests plus affected lint/typecheck/build. Browser smoke at 390×844 and 320×568 verifies dialog top 80px with simulated Telegram insets, artwork inside bottom safe area, real tap navigation and uncovered CTA; screenshots inspected. Gateway-only deploy preserves automatic publication transport and API.

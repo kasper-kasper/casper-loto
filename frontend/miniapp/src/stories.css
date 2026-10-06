@@ -1,1 +1,28 @@
 .home-stories{min-width:0;margin:0 0 20px}.home-stories>header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px}.home-stories h2{font-size:18px;font-weight:500;margin:0}.home-stories>header>span{font-size:12px;color:#e7c489}.stories-strip{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x proximity}.story-cover{position:relative;flex:0 0 132px;height:172px;overflow:hidden;border:1px solid;border-radius:14px;color:#fff;text-align:left;padding:12px;display:flex;flex-direction:column;justify-content:flex-end;gap:8px;scroll-snap-align:start}.story-cover img{position:absolute;width:100%;height:100%;object-fit:cover;object-position:center 10%;inset:0;opacity:.7}.story-cover:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,#080c15 5%,#080c15e8 36%,transparent 85%)}.story-cover>*:not(img){position:relative;z-index:1}.story-cover-game{font-size:10px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.story-cover strong{font-size:14px;line-height:1.2;font-weight:500;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}.story-cover small{font-size:11px;color:#ebd0a2}.story-more{flex:0 0 132px;border:1px solid #3c485f;border-radius:14px;color:#edcf9b;background:#162033;padding:16px}.stories-retry{border:0;background:transparent;color:#ceb794;padding:12px 0;font:inherit}.story-dialog{padding:0;border:1px solid #3c485c;border-radius:16px;background:#060c17;color:#fff;width:min(440px,calc(100vw - 20px),calc((100dvh - 115px)*.5625));max-height:calc(100dvh - 16px);overflow:auto}.story-dialog::backdrop{background:#000d}.story-dialog-controls{display:flex;align-items:center;justify-content:space-between;padding:4px 12px;font-size:12px}.story-dialog-controls button{width:44px;height:44px;font-size:28px;border:0;background:transparent;color:#fff}.story-dialog-navigation{display:flex;justify-content:space-between;gap:12px;padding:4px 12px}.story-dialog-navigation button{min-height:44px;background:transparent;border:0;color:#e5c694;font:inherit}.story-dialog-navigation button:disabled{opacity:.35}.publication-story-cta:focus-visible{outline:3px solid #fff;outline-offset:3px}.story-cover:focus-visible,.home-stories button:focus-visible{outline:2px solid #e7c489;outline-offset:2px}
+
+/* Native dialogs enter the top layer; app-shell safe padding does not apply. */
+.story-dialog {
+  --story-safe-top:max(var(--app-safe-top,0px),calc(env(safe-area-inset-top,0px) + var(--story-telegram-top,0px)));
+  --story-height:calc(100dvh - var(--story-safe-top) - var(--app-safe-bottom,0px) - 16px);
+  position:fixed;inset:calc(var(--story-safe-top) + 8px) calc(var(--app-safe-right,0px) + 8px) calc(var(--app-safe-bottom,0px) + 8px) calc(var(--app-safe-left,0px) + 8px);
+  margin:auto;width:min(440px,calc(100vw - var(--app-safe-left,0px) - var(--app-safe-right,0px) - 16px));height:var(--story-height);max-height:var(--story-height);max-width:none;border:0;border-radius:12px;overflow:hidden;box-sizing:border-box;
+}
+.story-dialog[open]{display:flex;flex-direction:column;align-items:center;justify-content:center}
+.story-dialog-header{width:100%;flex:none;padding:10px 12px 0;box-sizing:border-box}
+.story-progress{display:flex;gap:4px;height:3px}
+.story-progress span{flex:1;border-radius:3px;background:#ffffff45}
+.story-progress span{overflow:hidden}
+.story-progress i{display:block;width:100%;height:100%;background:#fff;transform-origin:left;transition:transform 50ms linear}
+.story-player-actions{display:flex;gap:2px}
+.story-dialog-controls{padding:4px 0;min-height:44px}
+.story-dialog-controls>span{font-size:13px;font-weight:500;display:flex;align-items:center;gap:10px}
+.story-dialog-controls small{font-size:11px;font-weight:400;color:#ffffff9a}
+.story-dialog-controls button{border-radius:50%;width:44px;height:44px;flex:none}
+.story-stage{position:relative;flex:none;width:min(100%,calc((var(--story-height) - 65px)*.5625));aspect-ratio:9/16;touch-action:none;user-select:none;-webkit-user-select:none}
+.story-stage .publication-artwork{line-height:0}
+.story-tap{position:absolute;top:0;bottom:0;border:0;padding:0;border-radius:0;background:transparent;z-index:2;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.story-tap-previous{left:0;width:35%}
+.story-tap-next{right:0;width:65%}
+.story-stage .publication-story-cta{z-index:3}
+.story-tap:focus-visible{outline:2px solid #fff;outline-offset:-4px}
+.story-dialog-controls button:focus-visible{outline:2px solid #fff}

@@ -1684,3 +1684,7 @@ All notable changes follow Keep a Changelog and Semantic Versioning principles.
 ## 1.50.3 — 2026-10-06
 
 - Remove automatic service date/time footers and non-jackpot statistical dates from channel posts. Fast uses only the owner supplied backgrounds. Jackpot record notices require a cumulative increase of at least 100 million CAS from the preceding announced maximum; financial maxima remain accurate.
+
+## Mini App 1.59.2 — 2026-10-06
+
+- Stories respect Telegram and device safe areas. Tap the right/left side to move forward/back, swipe horizontally to browse or down to close. Added segmented playback progress, seven-second auto-advance, pause control and hold-to-pause; lottery CTA stays independently clickable.
