@@ -13,12 +13,17 @@ from k_loto.application.publication_automation import (
     format_key,
     publication_eligibility_filter,
     publication_is_eligible,
+    unique_winners_record_eligible,
 )
 
 
-@pytest.mark.parametrize("game", ["flash", "shadow", "pulse"])
-@pytest.mark.parametrize("code", ["A2.1", "A2.2", "A2.3", "A3.1", "A3.2"])
-async def test_historical_override_never_creates_routine_fast_news(game, code):
+@pytest.mark.parametrize(
+    "game", ["flash", "shadow", "pulse", "weekly", "dual", "september"]
+)
+@pytest.mark.parametrize(
+    "code", ["A2.1", "A2.2", "A2.3", "A3.1", "A3.2", "A4.3", "A5.2"]
+)
+async def test_historical_override_never_creates_unqualified_news(game, code):
     from unittest.mock import AsyncMock
 
     automation = PublicationAutomation(AsyncMock())
@@ -33,19 +38,48 @@ async def test_historical_override_never_creates_routine_fast_news(game, code):
 
 
 @pytest.mark.parametrize("game", ["flash", "shadow", "pulse"])
-@pytest.mark.parametrize("code", ["A1.1", "A1.3", "A1.5", "A3.4", "A4.1", "A5.1"])
+@pytest.mark.parametrize("code", ["A1.1", "A1.3", "A1.5", "A4.1"])
 def test_significant_fast_events_remain_eligible(game, code):
     assert publication_is_eligible(code, game)
 
 
-def test_ordinary_results_and_platform_events_remain_eligible():
-    assert publication_is_eligible("A2.1", "weekly")
+def test_routine_results_blocked_and_platform_events_remain_eligible():
+    assert not publication_is_eligible("A2.1", "weekly")
     assert publication_is_eligible("B1.2", "casper-loto")
     assert not publication_is_eligible("A2.4", "weekly")
     assert not publication_is_eligible("A1.1", "kasper-live")
     compiled = publication_eligibility_filter().compile(dialect=postgresql.dialect())
     assert ["flash", "shadow", "pulse"] in compiled.params.values()
     assert ["A2.1", "A2.2", "A2.3", "A3.1", "A3.2"] in compiled.params.values()
+
+
+@pytest.mark.parametrize(
+    "current,previous,eligible",
+    [(20, 0, False), (21, 0, True), (21, 21, False), (22, 23, False), (25, 21, True)],
+)
+def test_unique_winner_record_requires_more_than_twenty_and_a_new_maximum(
+    current, previous, eligible
+):
+    assert unique_winners_record_eligible(current, previous) == eligible
+    assert (
+        publication_is_eligible(
+            "A5.5",
+            "dual",
+            {
+                "metric": "unique_winners_per_draw",
+                "new_record": current,
+                "previous_record": previous,
+            },
+        )
+        == eligible
+    )
+    assert not publication_is_eligible("A5.5", "dual", {"value": current})
+
+
+def test_participant_records_are_absent_from_manual_catalog():
+    from k_loto.application.publications import template_catalog
+
+    assert not any(t["subcategory"] in {"A4.3", "A5.2"} for t in template_catalog())
 
 
 def test_rotation_excludes_recent_backgrounds_and_falls_back_to_oldest() -> None:

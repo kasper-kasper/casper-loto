@@ -48,7 +48,7 @@ from k_loto.infrastructure.database.models import (
 )
 
 MOSCOW = ZoneInfo("Europe/Moscow")
-AUTOMATIC_A = {"A1.1", "A1.2", "A1.3", "A1.4", "A1.5", "A4.1", "A4.2", "A4.3"}
+AUTOMATIC_A = {"A1.1", "A1.2", "A1.3", "A1.4", "A1.5", "A4.1", "A4.2", "A5.5"}
 for _code in AUTOMATIC_A | {
     "A2.1",
     "A2.2",
@@ -57,7 +57,6 @@ for _code in AUTOMATIC_A | {
     "A3.2",
     "A3.4",
     "A5.1",
-    "A5.2",
     "A5.3",
     "A5.5",
     "A5.6",
@@ -87,11 +86,28 @@ def lottery_publication_rules() -> dict[str, Any]:
     return rules
 
 
-def publication_is_eligible(code: str | None, game: str) -> bool:
+def unique_winners_record_eligible(current: int, previous: int) -> bool:
+    return (
+        current > lottery_publication_rules()["unique_winners_record_exclusive_minimum"]
+        and current > previous
+    )
+
+
+def publication_is_eligible(
+    code: str | None, game: str, payload: dict[str, Any] | None = None
+) -> bool:
     """Historical approval changes delivery mode, never event eligibility."""
     rules = lottery_publication_rules()
+    if code == "A5.5":
+        if not payload or payload.get("metric") != "unique_winners_per_draw":
+            return False
+        if not unique_winners_record_eligible(
+            payload["new_record"], payload["previous_record"]
+        ):
+            return False
     return (
         game not in rules["excluded_games"]
+        and (code is None or code in rules["enabled_channel_events"])
         and code not in rules["unresolved_events"]
         and not (
             game in rules["fast_games"]
@@ -103,12 +119,29 @@ def publication_is_eligible(code: str | None, game: str) -> bool:
 def publication_eligibility_filter() -> Any:
     """Same eligibility at the persisted outbox boundary, including old rows."""
     rules = lottery_publication_rules()
-    return and_(
+    payload = Publication.content["event"]["payload"]
+    predicate = and_(
         Publication.lottery_code.not_in(rules["excluded_games"]),
+        func.coalesce(
+            Publication.event_type,
+            Publication.content["template"]["subcategory"].astext,
+            "",
+        ).not_in(rules["retired_event_types"]),
         or_(
             Publication.event_type.is_(None),
             and_(
+                Publication.event_type.in_(rules["enabled_channel_events"]),
                 Publication.event_type.not_in(rules["unresolved_events"]),
+                or_(
+                    Publication.event_type != "A5.5",
+                    and_(
+                        payload["metric"].astext == "unique_winners_per_draw",
+                        payload["new_record"].as_integer()
+                        > rules["unique_winners_record_exclusive_minimum"],
+                        payload["new_record"].as_integer()
+                        > payload["previous_record"].as_integer(),
+                    ),
+                ),
                 ~and_(
                     Publication.lottery_code.in_(rules["fast_games"]),
                     Publication.event_type.in_(rules["fast_excluded_routine_events"]),
@@ -116,6 +149,8 @@ def publication_eligibility_filter() -> Any:
             ),
         ),
     )
+    # Missing legacy payload fields are ineligible, including under NOT(predicate).
+    return func.coalesce(predicate, False)
 
 
 def moscow(value: datetime) -> str:
@@ -162,7 +197,11 @@ class PublicationAutomation:
     async def snapshot(
         self, row: Publication, values: dict[str, str], *, historical: bool
     ) -> None:
-        if not publication_is_eligible(row.event_type, row.lottery_code):
+        if not publication_is_eligible(
+            row.event_type,
+            row.lottery_code,
+            row.content.get("event", {}).get("payload"),
+        ):
             return
         if "template" in row.content or row.status != "draft":
             return
@@ -264,7 +303,7 @@ class PublicationAutomation:
         payload: dict[str, Any] | None = None,
         historical: bool = False,
     ) -> Publication | None:
-        if not publication_is_eligible(code, game):
+        if not publication_is_eligible(code, game, payload):
             return None
         row = await self.events._store(key, code, payload or {}, occurred, author, key)
         if row.status == "draft" and "template" not in row.content:
@@ -445,6 +484,7 @@ class PublicationAutomation:
             epochs: dict[str, str] = {}
             ticket_records: dict[str, int] = {}
             player_records: dict[str, int] = {}
+            winner_records: dict[str, int] = {}
             for draw in draws:
                 game = games[draw.lottery_id].code
                 if game in excluded:
@@ -460,11 +500,43 @@ class PublicationAutomation:
                 participants = int(participant_counts.get(draw.id, 0))
                 old_players = player_records.get(record_key, 0)
                 player_records[record_key] = max(old_players, participants)
+                unique_winners = int(winner_users.get(draw.id, 0))
+                previous_winners = winner_records.get(record_key, 0)
+                winner_records[record_key] = max(previous_winners, unique_winners)
                 prize = largest_prizes.get(draw.id, 0)
                 previous_prize = prize_records.get(record_key, 0)
                 prize_records[record_key] = max(previous_prize, prize)
                 if not start <= draw.executed_at < end:
                     continue
+                if unique_winners_record_eligible(unique_winners, previous_winners):
+                    await self.store(
+                        "A5.5",
+                        f"A5.5:unique-winners:draw:{draw.id}",
+                        draw.executed_at,
+                        author,
+                        dict(
+                            game_name=names[game],
+                            value=number(unique_winners),
+                            description="Уникальных победителей за один тираж",
+                            caption=(
+                                f"Рекорд уникальных победителей · {names[game]}\n\n"
+                                f"В тираже №{draw.public_number} выиграли "
+                                f"{number(unique_winners)} человек. "
+                                "Предыдущий рекорд в действующем формате: "
+                                f"{number(previous_winners)}.\n\n"
+                                f"#{re.sub(r'\W', '', names[game])} #Рекорд"
+                            ),
+                        ),
+                        game=game,
+                        payload={
+                            "metric": "unique_winners_per_draw",
+                            "new_record": unique_winners,
+                            "previous_record": previous_winners,
+                            "draw_id": str(draw.id),
+                            "format": record_key,
+                        },
+                        historical=historical,
+                    )
                 values = dict(
                     game_name=names[game],
                     draw_number=number(draw.public_number),
@@ -653,42 +725,10 @@ class PublicationAutomation:
                         game=game,
                         historical=historical,
                     )
-                if (
-                    participants >= self.rules["record_players_minimum"]
-                    and participants * 100
-                    >= old_players
-                    * (100 + self.rules["record_players_increase_percent"])
-                    and participants > old_players
-                ):
-                    await self.store(
-                        "A4.3",
-                        f"A4.3:{draw.id}",
-                        draw.executed_at,
-                        author,
-                        {
-                            **values,
-                            "value": number(participants),
-                            "topic_hashtag": "#Рекорд",
-                        },
-                        game=game,
-                        historical=historical,
-                    )
             await self._jackpot_records(
                 start, end, author, games, names, wins, historical
             )
             await self._milestones(start, end, author, historical)
-            await self._statistics_a(
-                start,
-                end,
-                author,
-                games,
-                names,
-                draws,
-                participant_counts,
-                winner_users,
-                win_draws,
-                historical,
-            )
             if historical:
                 await self._historical_statistics(start, end, author, names)
             await self.events._daily_jackpots(end, author)

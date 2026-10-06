@@ -3259,3 +3259,9 @@ Known limitations:
 - Added a shared configured exclusion for routine per-draw Fast results, combinations, jackpot carryovers and ordinary winning-ticket notices. Both collection/snapshot and final outbox selection enforce eligibility independently of historical draft approval, including existing queued rows. Significant threshold/record/jackpot events and ordinary-lottery results remain available.
 - Explicit owner-authorized restart requeues all eligible events since 25 September, even previously sent ones, preserving prior delivery receipts. Excluded rows remain in the audit with blocked delivery and no approved Story visibility. No draw/ticket/ledger history changes, no schema changes. Scoped regression tests and backend static checks; owner explicitly skips new backups and broad release checks.
 
+## Strict publication criteria and retired participant records — 2026-10-06
+
+- Stopped delivery again after owner identified ordinary non-Fast results and repeated small weekly “records”. The initial Fast-only fix was insufficient: design subcategories and permission to deliver drafts had been mistaken for qualified events.
+- Replaced broad automatic eligibility with an explicit configured event allowlist at generation, approval and outbox delivery. No routine draw result/combination/carryover/winner-count posts for any lottery, and no repeated A5 snapshots. Retired A4.3/A5.2 across catalog, feeds and approval, preserving snapshots/assets and audit history.
+- A5.5 now compares distinct paid winning users for a single draw with previous same-format draws and requires a NEW maximum strictly above 20. Ordinary ticket and platform counters retain separate meanings. “3 сентября” verified active; it is a lottery name, not an out-of-window event date. Focused tests: 95 passed; scoped Ruff/mypy and production health for API-only correction, with no new owner-disallowed backups.
+

@@ -103,7 +103,7 @@ async def run(action: str) -> None:
                         Publication.content["event"]["occurred_at"].astext
                         >= bounds["start"],
                         Publication.content["event"]["occurred_at"].astext
-                        < bounds["end"],
+                        <= bounds["end"],
                     )
                 ):
                     content = deepcopy(row.content)

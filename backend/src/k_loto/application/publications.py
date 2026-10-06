@@ -64,8 +64,18 @@ class EditPublicationInput(PublicationInput):
 
 
 @lru_cache(maxsize=1)
+def retired_event_types() -> list[str]:
+    rules = json.loads(
+        files("k_loto.application")
+        .joinpath("publication_lottery_config.json")
+        .read_text(encoding="utf-8")
+    )
+    return cast(list[str], rules["retired_event_types"])
+
+
+@lru_cache(maxsize=1)
 def template_catalog() -> list[dict[str, Any]]:
-    return cast(
+    catalog = cast(
         list[dict[str, Any]],
         json.loads(
             files("k_loto.application")
@@ -73,6 +83,9 @@ def template_catalog() -> list[dict[str, Any]]:
             .read_text(encoding="utf-8")
         ),
     )
+    return [
+        item for item in catalog if item["subcategory"] not in retired_event_types()
+    ]
 
 
 def content_snapshot(payload: PublicationInput) -> dict[str, Any]:
@@ -115,6 +128,13 @@ class PublicationService:
             Publication.event_type.is_not(None)
             if events
             else Publication.content.has_key("template")  # noqa: W601
+        )
+        statement = statement.where(
+            func.coalesce(
+                Publication.event_type,
+                Publication.content["template"]["subcategory"].astext,
+                "",
+            ).not_in(retired_event_types())
         )
         date_column: Any = (
             Publication.published_at if player else Publication.created_at
@@ -223,6 +243,26 @@ class PublicationService:
             )
             if row is None:
                 raise LookupError("Publication does not exist.")
+            event_code = row.event_type or row.content.get("template", {}).get(
+                "subcategory"
+            )
+            if action in {"edit", "publish"} and event_code in retired_event_types():
+                raise PublicationConflict(
+                    "Participant-record publications are retired."
+                )
+            if action == "publish" and row.event_type is not None:
+                from k_loto.application.publication_automation import (
+                    publication_is_eligible,
+                )
+
+                if not publication_is_eligible(
+                    row.event_type,
+                    row.lottery_code,
+                    row.content.get("event", {}).get("payload"),
+                ):
+                    raise PublicationConflict(
+                        "Event does not meet publication eligibility."
+                    )
             if (
                 row.event_type is not None
                 and action in ("edit", "publish")

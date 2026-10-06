@@ -102,7 +102,8 @@ def service(session: Session) -> PublicationService:
 
 
 def test_catalog_and_snapshot_trust_only_server_templates() -> None:
-    assert len(template_catalog()) == 2310
+    assert len(template_catalog()) == 2178
+    assert not any(t["subcategory"] in {"A4.3", "A5.2"} for t in template_catalog())
     assert all(t["lottery"] != "kasper-live" for t in template_catalog())
     for code in ("weekly", "pll", "pss", "grob"):
         scenes = [
@@ -110,40 +111,40 @@ def test_catalog_and_snapshot_trust_only_server_templates() -> None:
             for t in template_catalog()
             if t["lottery"] == code and t["id"].startswith("atmospheric-v1-")
         ]
-        assert len(scenes) == 2 * 32
+        assert len(scenes) == 2 * 30
         assert len({t["formats"]["story"]["background"] for t in scenes}) == 2
         assert len({t["formats"]["post"]["background"] for t in scenes}) == 2
-        assert len([t for t in template_catalog() if t["lottery"] == code]) == 130
+        assert len([t for t in template_catalog() if t["lottery"] == code]) == 122
     with pytest.raises(ValueError):
         content_snapshot(
             payload().model_copy(update={"template_id": "a-live-a3-1-hero"})
         )
     additions = [t for t in template_catalog() if t["id"].startswith("khan-owner-v1-")]
-    assert len(additions) == 9 * 32
+    assert len(additions) == 9 * 30
     assert {t["lottery"] for t in additions} == {"khan"}
     assert len({t["formats"]["story"]["background"] for t in additions}) == 9
     assert len({t["formats"]["post"]["background"] for t in additions}) == 9
     bingo = [t for t in template_catalog() if t["lottery"] == "bingo"]
-    assert len(bingo) == 10 * 32
+    assert len(bingo) == 10 * 30
     assert all(t["id"].startswith("bingo-owner-v1-") for t in bingo)
     assert len({t["formats"]["story"]["background"] for t in bingo}) == 10
     assert len({t["formats"]["post"]["background"] for t in bingo}) == 10
     for event in ("A1.1", "A1.5"):
         assert len([t for t in bingo if t["subcategory"] == event]) == 10
     fast = [t for t in template_catalog() if t["id"].startswith("fast-owner-v1-")]
-    assert len(fast) == 6 * 32
+    assert len(fast) == 6 * 30
     for game, art_prefix in (
         ("shadow", "code"),
         ("flash", "flash"),
         ("pulse", "pulse"),
     ):
         assigned = [t for t in fast if t["lottery"] == game]
-        assert len(assigned) == 2 * 32
+        assert len(assigned) == 2 * 30
         assert all(t["id"].startswith(f"fast-owner-v1-{art_prefix}-") for t in assigned)
         assert len({t["formats"]["story"]["background"] for t in assigned}) == 2
         assert len({t["formats"]["post"]["background"] for t in assigned}) == 2
     dual = [t for t in template_catalog() if t["lottery"] == "dual"]
-    assert len(dual) == 5 * 32
+    assert len(dual) == 5 * 30
     assert all(t["id"].startswith("dual-owner-v1-") for t in dual)
     assert len({t["formats"]["story"]["background"] for t in dual}) == 5
     assert len({t["formats"]["post"]["background"] for t in dual}) == 5

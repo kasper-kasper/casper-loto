@@ -1672,3 +1672,7 @@ All notable changes follow Keep a Changelog and Semantic Versioning principles.
 
 - Exclude routine Fast draw results from historical and automatic channel publication. Significant A/B events retain their configured conditions. Corrected historical replay can explicitly repeat eligible messages while preserving prior delivery receipts.
 
+## 1.50.2 — 2026-10-06
+
+- Remove unique-participant record publications. Publish a unique-winner record only for a new per-draw maximum of at least 21 people. Exclude routine results and unchanged statistical records for every lottery from channel automation.
+
