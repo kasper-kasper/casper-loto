@@ -313,3 +313,64 @@ async def test_platform_visual_draft_does_not_require_a_fake_lottery() -> None:
     )
     assert row.lottery_code == "casper-loto" and row.status == "draft"
     assert row.event_type is None
+
+
+@pytest.mark.asyncio
+async def test_proposal_edit_preserves_source_and_delete_cancels_delivery() -> None:
+    row = stored()
+    row.lottery_code = row.content["template"]["lottery"]
+    row.event_type = row.content["template"]["subcategory"]
+    row.event_key = "stable-proposal"
+    row.content = {
+        **row.content,
+        "event": {"payload": {"value": 42}},
+        "delivery": {"state": "approval_required"},
+    }
+    session = Session(row)
+    service = PublicationService(cast(AsyncSession, session))
+    edited = payload().model_copy(update={"channel_caption": "Новый текст"})
+    await service.change(
+        row.id, author=UUID(int=2), revision=1, action="edit", payload=edited
+    )
+    assert row.content["event"]["payload"] == {"value": 42}
+    assert row.content["delivery"]["state"] == "approval_required"
+    bad = edited.model_copy(
+        update={"fields": edited.fields.model_copy(update={"value": "99 CAS"})}
+    )
+    with pytest.raises(PublicationConflict):
+        await service.change(
+            row.id, author=UUID(int=2), revision=2, action="edit", payload=bad
+        )
+    await service.change(row.id, author=UUID(int=2), revision=2, action="delete")
+    assert row.status == "archived"
+    assert row.content["deleted"] is True
+    assert row.content["delivery"]["state"] == "cancelled"
+    assert row.event_key == "stable-proposal"
+    await service.change(row.id, author=UUID(int=2), revision=2, action="delete")
+    assert row.revision == 3
+
+
+@pytest.mark.asyncio
+async def test_suggestions_filter_before_pagination_and_hide_deleted() -> None:
+    session = Session(rows=[])
+    await PublicationService(cast(AsyncSession, session)).list(view="suggestions")
+    query = session.sql[-1]
+    assert "approval_required" in query and "deleted" in query
+    assert "LIMIT 30" in query
+
+
+@pytest.mark.asyncio
+async def test_queued_event_cannot_be_deleted_or_edited() -> None:
+    row = stored()
+    row.event_type = row.content["template"]["subcategory"]
+    row.content = {**row.content, "delivery": {"state": "queued"}}
+    service = PublicationService(cast(AsyncSession, Session(row)))
+    for action in ("edit", "delete"):
+        with pytest.raises(PublicationConflict):
+            await service.change(
+                row.id,
+                author=UUID(int=2),
+                revision=1,
+                action=action,
+                payload=payload() if action == "edit" else None,
+            )

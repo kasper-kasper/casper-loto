@@ -106,10 +106,11 @@ async function drawPage(query = ""): Promise<Draw[]> {
 export const adminApi = {
   publicationTemplates: () => request<PublicationTemplate[]>("/publications/templates"),
   publicationChannel: (check = false) => request<{ channel: string | null; delivery_enabled: boolean; checked: boolean; can_post: boolean; bot_username?: string; error?: string }>(`/publications/channel?check=${check}`),
-  publications: (before?: string) => request<Publication[]>(`/publications${before ? `?before=${encodeURIComponent(before)}` : ""}`),
+  preparePublicationSuggestions: () => request<{ prepared: boolean }>("/publications/suggestions/prepare", { method: "POST" }),
+  publications: (before?: string, view: "all" | "suggestions" = "all") => request<Publication[]>(`/publications?view=${view}${before ? `&before=${encodeURIComponent(before)}` : ""}`),
   savePublication: (id: string, payload: PublicationInput) => request<Publication>(`/publications/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
   editPublication: (id: string, revision: number, payload: PublicationInput) => request<Publication>(`/publications/${id}`, { method: "PATCH", body: JSON.stringify({ ...payload, revision }) }),
-  publicationAction: (id: string, revision: number, action: "publish" | "archive") => request<Publication>(`/publications/${id}/${action}`, { method: "POST", body: JSON.stringify({ revision }) }),
+  publicationAction: (id: string, revision: number, action: "publish" | "archive" | "delete") => request<Publication>(`/publications/${id}/${action}`, { method: "POST", body: JSON.stringify({ revision }) }),
   login: (username: string, password: string, rememberBrowser = true) =>
     request<AdminSession>("/auth/login", {
       method: "POST",

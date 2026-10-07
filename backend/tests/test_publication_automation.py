@@ -150,7 +150,7 @@ def test_rotation_excludes_recent_backgrounds_and_falls_back_to_oldest() -> None
 def test_caption_escapes_owner_copy_and_emits_real_spoiler() -> None:
     assert (
         caption_html("<name> [ПОД СПОЙЛЕРОМ: #лотерея]")
-        == '&lt;name&gt; <tg-spoiler>#лотерея</tg-spoiler>\n\n'
+        == "&lt;name&gt; <tg-spoiler>#лотерея</tg-spoiler>\n\n"
         '<a href="https://t.me/Kasper_loto_bot/app">Открыть Casper Loto →</a>'
     )
 
@@ -200,3 +200,35 @@ def test_copy_compiler_has_all_owner_variants(tmp_path: Path) -> None:
     )
     assert sum(len(v) for v in data.values()) == 170
     assert len(data["A1.1"]) == 8 and len(data["B1.1"]) == 5
+
+
+async def test_current_proposals_use_draft_mode_and_stable_daily_keys():
+    from datetime import UTC, datetime, timedelta
+    from unittest.mock import AsyncMock, MagicMock
+
+    session = MagicMock()
+    session.begin.return_value.__aenter__ = AsyncMock()
+    session.begin.return_value.__aexit__ = AsyncMock()
+    session.scalar = AsyncMock(return_value=100)
+    automation = PublicationAutomation(session)
+    automation.events._lock = AsyncMock()
+    automation.events._winning_period = AsyncMock(return_value=2)
+    automation.events._activity = AsyncMock(
+        return_value={
+            "purchased_tickets": 100,
+            "active_players": 5,
+            "winning_tickets": 2,
+            "completed_draws": 10,
+            "most_popular_lotteries": ["pulse"],
+            "tickets_by_lottery": {"pulse": 100},
+        }
+    )
+    automation.store = AsyncMock()
+    now = datetime(2026, 10, 8, 8, tzinfo=UTC)
+    await automation.prepare_suggestions(author=None, now=now)
+    first = list(automation.store.await_args_list)
+    await automation.prepare_suggestions(author=None, now=now + timedelta(hours=1))
+    second = automation.store.await_args_list[4:]
+    assert [call.args[0] for call in first] == ["B3.1", "B3.2", "B3.3", "B3.4"]
+    assert [call.args[1] for call in first] == [call.args[1] for call in second]
+    assert all(call.kwargs["historical"] is False for call in first + second)

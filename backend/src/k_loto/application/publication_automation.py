@@ -928,11 +928,35 @@ class PublicationAutomation:
                             )
             day += timedelta(days=1)
 
+    async def prepare_suggestions(self, *, author: Any, now: datetime) -> None:
+        """Prepare current drafts, retaining daily rejection tombstones."""
+        async with self.session.begin():
+            await self.events._lock()
+            names = {
+                item["lottery"]: item["lotteryLabel"] for item in template_catalog()
+            }
+            await self._historical_statistics(
+                now - timedelta(days=7),
+                now,
+                author,
+                names,
+                historical=False,
+                key_suffix=f"suggestion:{now.astimezone(MOSCOW).date()}",
+            )
+
     async def _historical_statistics(
-        self, start: datetime, end: datetime, author: Any, names: dict[str, str]
+        self,
+        start: datetime,
+        end: datetime,
+        author: Any,
+        names: dict[str, str],
+        *,
+        historical: bool = True,
+        key_suffix: str | None = None,
     ) -> None:
         """One owner-requested snapshot; never creates a recurring summary job."""
         day = end.astimezone(MOSCOW).date()
+        suffix = key_suffix or f"owner-backfill:{end.isoformat()}"
         day_start, _ = day_bounds(day)
         common = dict(
             as_of_moscow=moscow(end),
@@ -950,7 +974,7 @@ class PublicationAutomation:
         )
         await self.store(
             "B3.1",
-            f"B3.1:owner-backfill:{end.isoformat()}",
+            f"B3.1:{suffix}",
             end,
             author,
             {
@@ -959,12 +983,12 @@ class PublicationAutomation:
                 "value": f"{number(total)} CAS",
             },
             payload={"total_jackpot": total, "unit": "CAS"},
-            historical=True,
+            historical=historical,
         )
         winners = await self.events._winning_period(day_start, end)
         await self.store(
             "B3.2",
-            f"B3.2:owner-backfill:{end.isoformat()}",
+            f"B3.2:{suffix}",
             end,
             author,
             {
@@ -973,13 +997,13 @@ class PublicationAutomation:
                 "value": number(winners),
             },
             payload={"day": str(day), "count": winners},
-            historical=True,
+            historical=historical,
         )
         week_start = end - timedelta(days=7)
         activity = await self.events._activity(week_start, end)
         await self.store(
             "B3.3",
-            f"B3.3:owner-backfill:{end.isoformat()}",
+            f"B3.3:{suffix}",
             end,
             author,
             {
@@ -993,7 +1017,7 @@ class PublicationAutomation:
                 "description": "Купленных билетов за выбранную неделю",
             },
             payload=activity,
-            historical=True,
+            historical=historical,
         )
         popularity = await self.events._activity(start, end)
         leaders = popularity["most_popular_lotteries"]
@@ -1004,7 +1028,7 @@ class PublicationAutomation:
             leader_tickets = popularity["tickets_by_lottery"][leaders[0]]
             await self.store(
                 "B3.4",
-                f"B3.4:owner-backfill:{end.isoformat()}",
+                f"B3.4:{suffix}",
                 end,
                 author,
                 {
@@ -1016,7 +1040,7 @@ class PublicationAutomation:
                     "description": label,
                 },
                 payload=popularity,
-                historical=True,
+                historical=historical,
             )
 
     async def _milestones(

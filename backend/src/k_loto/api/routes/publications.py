@@ -107,12 +107,25 @@ async def admin_publications(
     _admin: Admin,
     session: Session,
     before: UUID | None = None,
+    view: Literal["all", "suggestions"] = "all",
     limit: Annotated[int, Query(ge=1, le=100)] = 30,
 ) -> list[Publication]:
     try:
-        return await PublicationService(session).list(before=before, limit=limit)
+        return await PublicationService(session).list(
+            before=before, limit=limit, view=view
+        )
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
+
+
+@router.post("/api/v1/admin/publications/suggestions/prepare")
+async def prepare_suggestions(admin: Editor, session: Session) -> dict[str, bool]:
+    from k_loto.application.publication_automation import PublicationAutomation
+
+    await PublicationAutomation(session).prepare_suggestions(
+        author=admin.user_id, now=datetime.now(UTC)
+    )
+    return {"prepared": True}
 
 
 @router.get("/api/v1/miniapp/publications", response_model=list[PublicationView])
@@ -188,12 +201,21 @@ async def archive(
     return await _transition(publication_id, payload, admin, session, "archive")
 
 
+@router.post(
+    "/api/v1/admin/publications/{publication_id}/delete", response_model=PublicationView
+)
+async def delete_proposal(
+    publication_id: UUID, payload: RevisionInput, admin: Editor, session: Session
+) -> Publication:
+    return await _transition(publication_id, payload, admin, session, "delete")
+
+
 async def _transition(
     publication_id: UUID,
     payload: RevisionInput,
     admin: CurrentAdmin,
     session: AsyncSession,
-    action: Literal["publish", "archive"],
+    action: Literal["publish", "archive", "delete"],
 ) -> Publication:
     try:
         return await PublicationService(session).change(

@@ -119,6 +119,7 @@ class PublicationService:
         before: UUID | None = None,
         limit: int = 30,
         events: bool = False,
+        view: Literal["all", "suggestions"] = "all",
     ) -> list[Publication]:
         if not 1 <= limit <= 100:
             raise ValueError("Invalid publication page size.")
@@ -136,6 +137,18 @@ class PublicationService:
                 "",
             ).not_in(retired_event_types())
         )
+        statement = statement.where(
+            Publication.content["deleted"].as_boolean().is_distinct_from(True)
+        )
+        if view == "suggestions":
+            statement = statement.where(
+                Publication.status == "draft",
+                or_(
+                    Publication.event_type.is_(None),
+                    Publication.content["delivery"]["state"].astext
+                    == "approval_required",
+                ),
+            )
         date_column: Any = (
             Publication.published_at if player else Publication.created_at
         )
@@ -233,11 +246,14 @@ class PublicationService:
         *,
         author: UUID,
         revision: int,
-        action: Literal["edit", "publish", "archive"],
+        action: Literal["edit", "publish", "archive", "delete"],
         payload: PublicationInput | None = None,
     ) -> Publication:
         snapshot = content_snapshot(payload) if payload is not None else None
         async with self.session.begin():
+            from k_loto.application.publication_events import PublicationEventService
+
+            await PublicationEventService(self.session)._lock()
             row = await self.session.get(
                 Publication, publication_id, with_for_update=True
             )
@@ -266,7 +282,7 @@ class PublicationService:
             if (
                 row.event_type is not None
                 and action in ("edit", "publish")
-                and ("template" not in row.content or action == "edit")
+                and "template" not in row.content
             ):
                 raise PublicationConflict(
                     "Nonvisual events require a future content/visual adapter; "
@@ -295,11 +311,31 @@ class PublicationService:
                 await self.session.flush()
                 return row
             # Exact retry of a successful state transition is harmless.
-            target = {"publish": "published", "archive": "archived"}.get(action)
-            if target and row.status == target and row.revision == revision + 1:
+            target = {
+                "publish": "published",
+                "archive": "archived",
+                "delete": "archived",
+            }.get(action)
+            if (
+                target
+                and row.status == target
+                and row.revision == revision + 1
+                and (action != "delete" or row.content.get("deleted"))
+            ):
                 return row
             if row.revision != revision:
                 raise PublicationConflict("Publication changed; reload it.")
+            if action in {"edit", "delete"} and row.event_type is not None:
+                if (
+                    row.status != "draft"
+                    or row.content.get("delivery", {}).get("state")
+                    != "approval_required"
+                ):
+                    raise PublicationConflict(
+                        "Only proposals awaiting approval can be edited or deleted."
+                    )
+            if action == "delete" and row.status != "draft":
+                raise PublicationConflict("Only unpublished proposals can be deleted.")
             old = {
                 "status": row.status,
                 "revision": row.revision,
@@ -310,7 +346,25 @@ class PublicationService:
                     raise PublicationConflict(
                         "Only drafts can be edited; duplicate a published story first."
                     )
-                row.content = snapshot
+                if row.event_type is not None:
+                    original = row.content
+                    if (
+                        snapshot["template"]["subcategory"] != row.event_type
+                        or snapshot["template"]["lottery"] != row.lottery_code
+                        or any(
+                            snapshot["fields"][key] != original["fields"][key]
+                            for key in ("value", "fact")
+                        )
+                    ):
+                        raise PublicationConflict(
+                            "Source event and calculated facts cannot be changed."
+                        )
+                    from k_loto.application.publication_automation import caption_html
+
+                    caption_html(snapshot["channel_caption"])
+                    row.content = {**original, **snapshot}
+                else:
+                    row.content = snapshot
                 row.lottery_code = snapshot["template"]["lottery"]
             elif action == "publish":
                 if row.status != "draft":
@@ -319,6 +373,16 @@ class PublicationService:
                 row.published_at = datetime.now(UTC)
             else:
                 row.status = "archived"
+                if action == "delete":
+                    row.content = {
+                        **row.content,
+                        "deleted": True,
+                        "story_visible": False,
+                        "delivery": {
+                            **row.content.get("delivery", {}),
+                            "state": "cancelled",
+                        },
+                    }
             row.revision += 1
             row.updated_at = datetime.now(UTC)
             self._audit(row, author, action, old)

@@ -3292,3 +3292,11 @@ Known limitations:
 
 - Owner requested a Mini App link at the end of channel posts. Shared HTML caption formatting appends the clickable label to new automatic and manual sends, including previously prepared queue rows; existing matching links remain single. Snapshot validation reserves the visible footer inside Telegram’s UTF-16 photo caption limit. Existing published messages remain unchanged; no replay or business-history changes.
 - API 1.50.4: focused caption/publication tests and scoped static checks; API-only deployment under the operations lock with backups, diagnostic archival and health verification.
+
+
+## Ready publication proposals — 2026-10-08
+
+- API 1.50.5 / Admin 1.56.1: default ready-proposal cards, separate history/manual editor, server-side approval filtering before pagination. Owner keeps automatic A/B transport unchanged; calculated drafts require explicit acceptance.
+- On admin load/refresh, existing B3 adapters prepare current statistical drafts using stable daily keys, without a recurring summary job or automatic approval. Event copy/layout can be edited while preserving source payload, event identity and calculated value/fact; queued/sending events remain protected.
+- Draft deletion cancels delivery and hides the snapshot from all admin/player feeds, retaining an audited tombstone/key so refresh cannot resurrect it. Shared event lock and revision checks serialize editorial changes with collection/delivery. No Telegram posts are sent or removed by release checks; no schema, ledger or draw changes.
+- Focused publication backend regressions, four editor UI tests, affected lint/typecheck/build and production health/ready-draft smoke; deployment only API and gateway under the operations lock with standard backup/diagnostic preservation.

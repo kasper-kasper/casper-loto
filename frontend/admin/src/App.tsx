@@ -44,7 +44,7 @@ const navigation: { id: View; label: string; code: string }[] = [
   { id: "jackpots", label: "Джекпоты", code: "08" },
   { id: "archive", label: "Архив", code: "09" },
   { id: "facts", label: "Интересные факты", code: "10" },
-  { id: "publications", label: "Stories и посты", code: "NEWS" },
+  { id: "publications", label: "Предложка и посты", code: "NEWS" },
   { id: "broadcast", label: "Тест эфира", code: "11" },
   { id: "system", label: "Журналы", code: "12" },
 ];
