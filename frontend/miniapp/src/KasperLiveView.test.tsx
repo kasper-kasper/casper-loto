@@ -72,3 +72,37 @@ it("renders the maximum server prize with the branded medallion without deriving
   expect(within(ticket).getAllByRole("img", { name: "Золотой жетон Casper" })).toHaveLength(3);
   expect(screen.getByRole("status").querySelector('.money-value')).toHaveAttribute("aria-label", "1 000 000 CAS");
 });
+
+it("locks only while scratching, keeps partial strokes and reveals without another purchase", async () => {
+  window.PointerEvent = MouseEvent as typeof PointerEvent;
+  render(<KasperLiveView initData="signed" balance={30_000} onClose={vi.fn()} onSettled={vi.fn()} />);
+  await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Купить билет/ })); });
+  const cover = screen.getByRole("button", { name: "Открыть билет № 101" });
+  vi.spyOn(cover, "getBoundingClientRect").mockReturnValue({ left: 0, top: 0, width: 200, height: 85 } as DOMRect);
+  fireEvent.pointerDown(cover, { clientX: 0, clientY: 20 });
+  expect(document.body.style.position).toBe("fixed");
+  fireEvent.pointerMove(cover, { clientX: 190, clientY: 20, buttons: 1 });
+  fireEvent.pointerUp(cover, { clientX: 190, clientY: 20 });
+  fireEvent.click(cover, { detail: 1 });
+  expect(cover).toBeInTheDocument();
+  expect(document.body.style.position).toBe("");
+  fireEvent.pointerDown(cover, { clientX: 190, clientY: 20 });
+  fireEvent.pointerMove(cover, { clientX: 0, clientY: 20, buttons: 1 });
+  expect(cover).not.toBeInTheDocument();
+  expect(document.body.style.position).toBe("");
+  expect(miniAppApi.kasperLivePurchase).toHaveBeenCalledOnce();
+});
+
+it("releases a cancelled scratch and viewport lock when unmounted", async () => {
+  window.PointerEvent = MouseEvent as typeof PointerEvent;
+  const { unmount } = render(<KasperLiveView initData="signed" balance={30_000} onClose={vi.fn()} onSettled={vi.fn()} />);
+  await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Купить билет/ })); });
+  const cover = screen.getByRole("button", { name: "Открыть билет № 101" });
+  fireEvent.pointerDown(cover, { clientX: 10, clientY: 20 });
+  fireEvent.pointerCancel(cover);
+  expect(document.body.style.position).toBe("");
+  expect(cover).toBeInTheDocument();
+  fireEvent.pointerDown(cover, { clientX: 10, clientY: 20 });
+  unmount();
+  expect(document.body.style.position).toBe("");
+});

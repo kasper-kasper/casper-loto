@@ -2,6 +2,9 @@ interface TelegramWebApp {
   initData: string;
   colorScheme?: "light" | "dark";
   isFullscreen?: boolean;
+  isVerticalSwipesEnabled?: boolean;
+  disableVerticalSwipes?(): void;
+  enableVerticalSwipes?(): void;
   isVersionAtLeast?(version: string): boolean;
   requestFullscreen?(): void;
   setHeaderColor?(color: string): void;

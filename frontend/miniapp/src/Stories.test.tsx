@@ -101,22 +101,59 @@ it("advances automatically, preserves remaining time when paused and pauses whil
   render(<Stories initData="signed" onOpen={vi.fn()} />);
   fireEvent.click(await screen.findByRole("button", { name: /Первая история/ }));
   vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "performance"] });
-  // Toggle the control to start the player on the mocked clock.
-  fireEvent.click(screen.getByRole("button", { name: "Приостановить истории" }));
-  fireEvent.click(screen.getByRole("button", { name: "Продолжить истории" }));
+  fireEvent.keyDown(screen.getByRole("dialog"), { code: "Space" });
+  fireEvent.keyDown(screen.getByRole("dialog"), { code: "Space" });
   act(() => vi.advanceTimersByTime(4000));
   const next = screen.getByRole("button", { name: "Следующая история" });
   fireEvent.pointerDown(next, { clientX: 260, clientY: 180 });
   act(() => vi.advanceTimersByTime(10000));
   expect(screen.getByRole("dialog")).toHaveAccessibleName("Первая история");
   fireEvent.pointerUp(next, { clientX: 260, clientY: 180 });
-  fireEvent.click(screen.getByRole("button", { name: "Приостановить истории" }));
+  fireEvent.keyDown(screen.getByRole("dialog"), { code: "Space" });
   act(() => vi.advanceTimersByTime(10000));
   expect(screen.getByRole("dialog")).toHaveAccessibleName("Первая история");
-  fireEvent.click(screen.getByRole("button", { name: "Продолжить истории" }));
+  fireEvent.keyDown(screen.getByRole("dialog"), { code: "Space" });
   act(() => vi.advanceTimersByTime(3050));
   expect(screen.getByRole("dialog")).toHaveAccessibleName("Вторая история");
   act(() => vi.advanceTimersByTime(7050));
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  vi.useRealTimers();
+});
+
+it("closes on a downward swipe, restores the viewport and has no pause icon", async () => {
+  window.PointerEvent = MouseEvent as typeof PointerEvent;
+  const disableVerticalSwipes = vi.fn(), enableVerticalSwipes = vi.fn();
+  window.Telegram = { WebApp: { initData: "signed", ready: vi.fn(), expand: vi.fn(), isVerticalSwipesEnabled: true, disableVerticalSwipes, enableVerticalSwipes } };
+  render(<Stories initData="signed" onOpen={vi.fn()} />);
+  fireEvent.click(await screen.findByRole("button", { name: /Первая история/ }));
+  expect(screen.queryByRole("button", { name: /Приостановить|Продолжить истории/ })).not.toBeInTheDocument();
+  expect(document.body.style.position).toBe("fixed");
+  expect(disableVerticalSwipes).toHaveBeenCalledOnce();
+  const next = screen.getByRole("button", { name: "Следующая история" });
+  fireEvent.pointerDown(next, { clientX: 180, clientY: 100 });
+  fireEvent.pointerUp(next, { clientX: 185, clientY: 220 });
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(document.body.style.position).toBe("");
+  expect(enableVerticalSwipes).toHaveBeenCalledOnce();
+  delete window.Telegram;
+});
+
+it("does not count time spent in a hidden app when returning to a story", async () => {
+  render(<Stories initData="signed" onOpen={vi.fn()} />);
+  fireEvent.click(await screen.findByRole("button", { name: /Первая история/ }));
+  vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "performance"] });
+  fireEvent.keyDown(screen.getByRole("dialog"), { code: "Space" });
+  fireEvent.keyDown(screen.getByRole("dialog"), { code: "Space" });
+  act(() => vi.advanceTimersByTime(3000));
+  const hidden = vi.spyOn(document, "hidden", "get").mockReturnValue(true);
+  fireEvent(document, new Event("visibilitychange"));
+  act(() => vi.advanceTimersByTime(20000));
+  hidden.mockReturnValue(false);
+  fireEvent(document, new Event("visibilitychange"));
+  act(() => vi.advanceTimersByTime(3000));
+  expect(screen.getByRole("dialog")).toHaveAccessibleName("Первая история");
+  act(() => vi.advanceTimersByTime(1100));
+  expect(screen.getByRole("dialog")).toHaveAccessibleName("Вторая история");
+  hidden.mockRestore();
   vi.useRealTimers();
 });

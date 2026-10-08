@@ -26,3 +26,5 @@
 .story-stage .publication-story-cta{z-index:3}
 .story-tap:focus-visible{outline:2px solid #fff;outline-offset:-4px}
 .story-dialog-controls button:focus-visible{outline:2px solid #fff}
+
+.story-dialog{touch-action:none;overscroll-behavior:none}

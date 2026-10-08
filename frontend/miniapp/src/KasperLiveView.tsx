@@ -8,11 +8,19 @@ import { liveSymbolDefinitions } from "./liveSymbols";
 import { errorHaptic, selectionHaptic, successHaptic } from "./telegram";
 import type { InstantPurchaseResult, InstantTicket } from "./types";
 import "./kasper-live.css";
+import { disableTelegramVerticalSwipes, lockInteractionViewport } from "./interactionLock";
 
 function ScratchCover({ ticket, onReveal }: { ticket: InstantTicket; onReveal: () => void }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const gesture = useRef<{ x: number; y: number; distance: number; total: number } | null>(null);
   const dragged = useRef(false);
+  const scratchedDistance = useRef(0);
+  const releaseViewport = useRef<(() => void) | null>(null);
+  const finishGesture = () => {
+    gesture.current = null;
+    releaseViewport.current?.(); releaseViewport.current = null;
+  };
+  useEffect(() => () => { releaseViewport.current?.(); }, []);
   useEffect(() => {
     const node = canvas.current;
     const context = node?.getContext("2d");
@@ -37,11 +45,12 @@ function ScratchCover({ ticket, onReveal }: { ticket: InstantTicket; onReveal: (
     state.x = event.clientX; state.y = event.clientY; state.distance += distance; state.total += distance;
     dragged.current = state.distance > 8;
     if (dragged.current) event.currentTarget.dataset.scratched = "true";
-    if (state.total > rect.width * 1.8) { gesture.current = null; onReveal(); }
+    scratchedDistance.current = state.total;
+    if (state.total > rect.width * 1.8) { finishGesture(); onReveal(); }
   };
   return <button className="live-scratch-cover" type="button" aria-label={`Открыть билет № ${ticket.public_number}`} onClick={event => { if (!dragged.current || event.detail === 0) onReveal(); }}
-    onPointerDown={event => { event.currentTarget.setPointerCapture?.(event.pointerId); dragged.current = false; gesture.current = { x: event.clientX, y: event.clientY, distance: 0, total: gesture.current?.total ?? 0 }; }}
-    onPointerMove={scratch} onPointerCancel={() => { gesture.current = null; }}>
+    onPointerDown={event => { if (event.button !== 0 || gesture.current) return; releaseViewport.current = lockInteractionViewport(); event.currentTarget.setPointerCapture?.(event.pointerId); dragged.current = false; gesture.current = { x: event.clientX, y: event.clientY, distance: 0, total: scratchedDistance.current }; }}
+    onPointerMove={scratch} onPointerUp={finishGesture} onPointerCancel={() => { dragged.current = true; finishGesture(); }} onLostPointerCapture={finishGesture}>
     <canvas ref={canvas} width="600" height="160" aria-hidden="true" /><span><img src={logoSymbol} alt="" /><strong>Сотрите покрытие</strong><small>или коснитесь, чтобы открыть</small></span>
   </button>;
 }
@@ -64,6 +73,7 @@ export function KasperLiveView({ initData, balance, onClose, onSettled }: { init
   const buying = useRef(false);
   const root = useRef<HTMLElement>(null);
   const historyRequest = useRef(0);
+  useEffect(() => disableTelegramVerticalSwipes(), []);
   useEffect(() => {
     const version = ++historyRequest.current;
     let active = true;

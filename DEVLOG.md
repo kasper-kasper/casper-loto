@@ -1,3 +1,11 @@
+## Stage 1: scratch and Stories gesture fixes — 2026-10-08
+
+- Added a shared reference-counted viewport lock that freezes the body at its current scroll position and restores inline styles/scroll on release, cancellation and unmount. Native Telegram vertical swipes are disabled before interaction while LIVE is open and while Stories are visible; unsupported clients retain browser protection, previously disabled swipes remain disabled.
+- Kept all LIVE reveal paths and server purchase/settlement behavior. Scratch distance survives separate strokes, pointer-up now ends the gesture, cancellation does not reveal a ticket. Stories retain tap/swipe navigation and press-to-pause without the pause icon; background time no longer consumes the remaining story duration.
+- Verification: affected regression suite 19 passed; Mini App lint, typecheck and production build passed. Chromium at 390x844 confirmed stable scratch bounds, restored scroll, button/tap reveal, hold beyond seven seconds and downward dismissal with mocked Telegram/purchase data. Native Telegram Android/iOS device testing is unavailable in this session.
+- Full Mini App suite: 127 passed, one pre-existing Dual assertion failed at App.test.tsx:671 (expects the old “2 из 2” text); App/Dual implementation and test are unchanged. scripts/check.ps1 was attempted and stopped at Ruff with 759 existing errors across unrelated .tmp scripts/backend migrations; later backend/admin/web checks were not reached. Per AGENTS.md frontend-only policy, unrelated failures do not block this scoped gateway release.
+- Production publication and health verification pending; release uses the existing locked gateway-only helper, local/source/database backups, rollback image and preserved Web/Admin assets.
+
 ## Casper Dual circular ticket restoration — 2026-10-06
 
 - Replaced the generic Dual number grid with two fixed-position 12-number dials in the Mini App. Reused the existing night/dawn scene and added lightweight CSS-only metal/glass depth, selection glow and reduced-motion handling. Purchase rules and server state are unchanged.
