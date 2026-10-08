@@ -110,6 +110,7 @@ class LotteryResponse(BaseModel):
     sales_status: str
     max_tickets_per_purchase: int
     max_tickets_per_user_per_draw: int
+    fixed_payouts: dict[int, int] | None = None
 
 
 class TicketResponse(BaseModel):
@@ -136,6 +137,7 @@ class TicketResponse(BaseModel):
     second_winning_numbers: list[int] | None = None
     dual_night_matches: int | None = None
     dual_dawn_matches: int | None = None
+    primary_max_number: int | None = None
 
 
 class DashboardResponse(BaseModel):
@@ -233,6 +235,7 @@ class LiveDrawResponse(BaseModel):
     live_ends_at: datetime
     primary_numbers_to_pick: int = 0
     secondary_storage_offset: int = 0
+    primary_max_number: int = 0
 
 
 class LiveFeedResponse(BaseModel):
@@ -380,6 +383,7 @@ def _lottery_response(item: MiniAppLottery) -> LotteryResponse:
         sales_status=item.sales_status,
         max_tickets_per_purchase=item.max_tickets_per_purchase,
         max_tickets_per_user_per_draw=item.max_tickets_per_user_per_draw,
+        fixed_payouts=item.fixed_payouts,
     )
 
 
@@ -412,6 +416,7 @@ def _ticket_response(item: MiniAppTicket) -> TicketResponse:
         else None,
         dual_night_matches=item.dual_night_matches,
         dual_dawn_matches=item.dual_dawn_matches,
+        primary_max_number=item.primary_max_number,
     )
 
 
@@ -459,6 +464,7 @@ def _live_draw_response(item: MiniAppLiveDraw) -> LiveDrawResponse:
         live_ends_at=item.live_ends_at,
         primary_numbers_to_pick=item.primary_numbers_to_pick,
         secondary_storage_offset=item.secondary_storage_offset,
+        primary_max_number=item.primary_max_number,
     )
 
 

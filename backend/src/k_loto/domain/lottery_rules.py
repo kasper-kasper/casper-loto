@@ -604,6 +604,19 @@ GROB_RULES = LotteryRuleStrategy(
     MappingProxyType({1: 666, 2: 6_666}),
     True,
 )
+HALLOWEEN_RULES = LotteryRuleStrategy(
+    "halloween_3_28",
+    "Casper Halloween",
+    3,
+    28,
+    1,
+    PayoutRatio(1),
+    MappingProxyType({}),
+    None,
+    3,
+    MappingProxyType({2: 28_000}),
+    True,
+)
 LEGACY_FAST_RULES = LotteryRuleStrategy(
     "fast_3_15",
     "Fast",
@@ -789,6 +802,7 @@ LOTTERY_RULES: Mapping[str, LotteryRuleStrategy] = MappingProxyType(
             DUAL_RULES,
             SEPTEMBER_RULES,
             GROB_RULES,
+            HALLOWEEN_RULES,
             LEGACY_FAST_RULES,
             LEGACY_FLASH_RULES,
             LEGACY_FLASH_V2_RULES,

@@ -78,6 +78,7 @@ class MiniAppLottery:
     sales_status: str
     max_tickets_per_purchase: int
     max_tickets_per_user_per_draw: int
+    fixed_payouts: dict[int, int] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,6 +106,7 @@ class MiniAppTicket:
     second_winning_numbers: tuple[int, ...] | None = None
     dual_night_matches: int | None = None
     dual_dawn_matches: int | None = None
+    primary_max_number: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -161,6 +163,7 @@ class MiniAppLiveDraw:
     live_ends_at: datetime
     primary_numbers_to_pick: int = 0
     secondary_storage_offset: int = 0
+    primary_max_number: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -611,6 +614,7 @@ class MiniAppQueryService:
                     ),
                     max_tickets_per_purchase=lottery.max_tickets_per_purchase,
                     max_tickets_per_user_per_draw=lottery.max_tickets_per_user_per_draw,
+                    fixed_payouts=dict(rules.fixed_payouts),
                 )
             )
         recent_results = await self.tickets(user_id, active=False, limit=3)
@@ -749,6 +753,18 @@ class MiniAppQueryService:
                     ),
                     draw_ticket_count=int(draw_ticket_count),
                     bingo_result=ticket.bingo_result,
+                    primary_max_number=(
+                        16
+                        if lottery.code == "grob"
+                        and ticket.status == TicketStatus.REFUNDED
+                        else int(
+                            (draw.configuration_snapshot or {}).get(
+                                "max_number", lottery.max_number
+                            )
+                        )
+                        if lottery.code == "grob"
+                        else None
+                    ),
                     second_draw_number=second.public_number
                     if second is not None
                     else None,
@@ -1093,6 +1109,7 @@ class MiniAppQueryService:
             live_ends_at=timeline.ends_at,
             primary_numbers_to_pick=rules.display_primary_numbers_to_pick,
             secondary_storage_offset=rules.secondary_storage_offset,
+            primary_max_number=rules.display_primary_max_number,
         )
 
     async def activity(

@@ -10,6 +10,22 @@ from k_loto.core.config import Settings
 from k_loto.infrastructure.publication_channel import channel_status
 
 
+@pytest.fixture(autouse=True)
+def isolated_transport_state(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Permission unit tests must not connect to a local production database."""
+
+    class Session:
+        async def __aenter__(self):
+            return SimpleNamespace(get=AsyncMock(return_value=None))
+
+        async def __aexit__(self, *_args):
+            return None
+
+    monkeypatch.setattr(
+        "k_loto.infrastructure.publication_channel.session_factory", Session
+    )
+
+
 async def test_probe_reads_only_identity_channel_and_membership(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

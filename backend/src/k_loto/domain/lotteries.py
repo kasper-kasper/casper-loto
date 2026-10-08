@@ -23,7 +23,7 @@ LOTTERY_DEFINITIONS = (
     LotteryDefinition("pss", "Casper Ball", LotteryKind.DAILY, "12:00 / 20:30"),
     LotteryDefinition("khan", "6 из 36", LotteryKind.DAILY, "09:00 / 18:00"),
     LotteryDefinition("september", "3 СЕНТЯБРЯ", LotteryKind.DAILY, "03:33 / 15:33"),
-    LotteryDefinition("grob", "ГРОБ", LotteryKind.DAILY, "06:06 / 23:06"),
+    LotteryDefinition("grob", "Casper Halloween", LotteryKind.DAILY, "06:06 / 23:06"),
     LotteryDefinition("flash", "FLASH", LotteryKind.DAILY, "каждые 9 минут"),
     LotteryDefinition("shadow", "CODE", LotteryKind.DAILY, "каждые 9 минут"),
     LotteryDefinition("pulse", "PULSE", LotteryKind.DAILY, "каждые 9 минут"),
