@@ -145,7 +145,7 @@ function TicketDetail({ ticket, lottery, onClose }: { ticket: Ticket; lottery?: 
   const selected = new Set(ticket.numbers);
   const matched = new Set(ticket.numbers.filter((value) => winning.has(value)));
   const offset = lottery?.secondary_storage_offset ?? 0;
-  const primaryMax = lottery?.primary_max_number ?? lottery?.max_number ?? Math.max(...ticket.numbers, ...(ticket.winning_numbers ?? []));
+  const primaryMax = ticket.primary_max_number ?? lottery?.primary_max_number ?? lottery?.max_number ?? Math.max(...ticket.numbers, ...(ticket.winning_numbers ?? []));
   const secondaryMax = lottery?.secondary_max_number ?? 0;
   const renderField = (max: number, valueOffset = 0) => <div className="paper-number-field">{Array.from({ length: max }, (_, index) => index + 1).map((display) => {
     const value = display + valueOffset;
@@ -164,7 +164,7 @@ function TicketDetail({ ticket, lottery, onClose }: { ticket: Ticket; lottery?: 
     <section><div className="paper-field-title"><b>{codeMode ? `${ticket.numbers.length}-значный код` : secondaryMax ? "Основное поле" : "Комбинация"}</b><small>{ticket.numbers.filter((value) => !offset || value <= offset).join(codeMode ? "" : " · ")}</small></div>{codeMode ? <div className="paper-code-field">{ticket.numbers.map((value, index) => <i className={`${ticket.winning_numbers?.[index] !== undefined ? "winning" : ""} ${ticket.winning_numbers?.[index] === value ? "matched" : ""}`} key={index}>{value}</i>)}</div> : renderField(primaryMax)}</section>
     {secondaryMax > 0 && <section className="paper-special"><div className="paper-field-title"><b>Специальное поле</b><small>{ticket.numbers.filter((value) => value > offset && value <= offset + secondaryMax).map((value) => value - offset).join(" · ")}</small></div>{renderField(secondaryMax, offset)}</section>}
     {cipher && <section className={`paper-cipher ${completed && cipher === winningCipher ? "matched" : ""}`}><span>ШИФР БИЛЕТА</span><strong>{String(cipher - 1_000).padStart(3, "0")}</strong>{completed && <small>Шифр тиража: {winningCipher ? String(winningCipher - 1_000).padStart(3, "0") : "—"}</small>}</section>}
-    {completed && <section className="paper-result"><div><span>Выпавшие числа</span><strong>{compactCombination({ ...ticket, numbers: ticket.winning_numbers ?? [] }, lottery)}</strong></div><p>{ticket.matches ? `Совпало ${matchLabel(ticket.lottery_code, ticket.matches, ticket.numbers.length === 7)}` : "Совпадений нет"}</p><b className={ticket.prize_amount > 0 ? "win" : "loss"}>{ticket.prize_amount > 0 ? `Выигрыш: ${formatCas(ticket.prize_amount)}` : "Без выигрыша"}</b></section>}
+    {ticket.status === "REFUNDED" ? <section className="paper-result"><b>Билет возвращён</b><p>Стоимость зачислена на баланс</p><strong>+{formatCas(ticket.purchase_price)}</strong></section> : completed && <section className="paper-result"><div><span>Выпавшие числа</span><strong>{compactCombination({ ...ticket, numbers: ticket.winning_numbers ?? [] }, lottery)}</strong></div><p>{ticket.matches ? `Совпало ${matchLabel(ticket.lottery_code, ticket.matches, ticket.numbers.length === 7)}` : "Совпадений нет"}</p><b className={ticket.prize_amount > 0 ? "win" : "loss"}>{ticket.prize_amount > 0 ? `Выигрыш: ${formatCas(ticket.prize_amount)}` : "Без выигрыша"}</b></section>}
     <footer><span>Стоимость</span><strong>{formatCas(ticket.purchase_price)}</strong><small>CAS · CASPER LOTO</small></footer>
   </motion.article></div>;
 }

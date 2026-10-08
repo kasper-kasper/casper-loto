@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { CSSProperties } from "react";
 import { Icon, Money } from "./components";
 import { ClassicTicket } from "./ClassicTicket";
+import { HalloweenTicket } from "./HalloweenTicket";
 import { isGrandLottery, lotteryCombination } from "./grand";
 import { selectionHaptic } from "./telegram";
 import type { Favorite, Lottery } from "./types";
@@ -87,7 +88,7 @@ export function TicketComposer({ lottery, balance, now, purchasing, initialNumbe
   </section>;
 
   return <div className="ticket-composer">
-    {lottery.code === "khan" ? <ClassicTicket lottery={lottery} selected={selected} purchasing={purchasing} drawCount={drawCount} onToggle={toggle} onRandomize={randomize} /> : <div className={`ticket-surface${dual ? " dual-ticket-surface" : ""}`}>
+    {lottery.code === "khan" ? <ClassicTicket lottery={lottery} selected={selected} purchasing={purchasing} drawCount={drawCount} onToggle={toggle} onRandomize={randomize} /> : lottery.code === "grob" ? <HalloweenTicket lottery={lottery} selected={selected} purchasing={purchasing} drawCount={drawCount} onToggle={toggle} onRandomize={randomize} /> : <div className={`ticket-surface${dual ? " dual-ticket-surface" : ""}`}>
       <header className="ticket-surface-heading"><div><span>ВАША КОМБИНАЦИЯ</span><h2>Ваш билет</h2></div><button type="button" aria-label="Случайные числа" className="ticket-shuffle" disabled={purchasing} onClick={randomize}><Icon name="spark" />Случайно</button></header>
       {dual ? <div className="dual-dial-pair"><DualDial phase="night" selected={dualNight} purchasing={purchasing} onToggle={toggleDual} /><DualDial phase="dawn" selected={dualDawn} purchasing={purchasing} onToggle={toggleDual} /></div> : grand ? <>
         {field("Основные числа", lottery.primary_max_number ?? 35, grandMainCount, mainSelected)}

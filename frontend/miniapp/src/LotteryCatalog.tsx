@@ -7,7 +7,9 @@ import classic from "./assets/lotteries/classic-drum-v1.webp";
 import september from "./assets/lotteries/september-embankment.jpg";
 import portal from "./assets/lotteries/pll-portal.jpg";
 import nature from "./assets/lotteries/pss-nature-scene.webp";
-import grob from "./assets/lotteries/grob-scene.webp";
+import grob from "./assets/lotteries/halloween-pumpkins-v1.webp";
+import { HalloweenBrand } from "./HalloweenBrand";
+import "./halloween.css";
 import dual from "./assets/lotteries/casper-dual-scene.webp";
 import bingo from "./assets/lotteries/bingo-edition-v1.webp";
 import flash from "./assets/lotteries/fast-flash-device-v1.webp";
@@ -72,7 +74,7 @@ export function LotteryCatalog({ lotteries, onOpen, now, selectedFilter, onFilte
             <span className="collection-tag">{identity?.label ?? (lottery ? "Тиражная" : "Сотрите билет")}</span><span className="collection-art-arrow">↗</span>
           </div>
           <div className="collection-card-content">
-            <h2>{name}</h2>
+            <h2 aria-label={name}>{code === "grob" ? <HalloweenBrand /> : name}</h2>
             <div className="collection-prize">{lottery ? <><small>Джекпот</small><strong title={formatCas(lottery.jackpot)}><Money value={lottery.jackpot} compact /></strong></> : <><small>Моментальная игра</small><strong className="collection-instant-prize">Выигрыш по символам</strong></>}</div>
             <div className="collection-price">{lottery?.ticket_price === null ? "Цена скоро" : <>Билет <Money value={lottery?.ticket_price ?? 2_000} compact /></>}</div>
             <div className="collection-time"><span aria-hidden="true">{lottery ? "◷" : "ϟ"}</span>{lottery ? <time dateTime={lottery.scheduled_at ?? undefined} title={lottery.scheduled_at ? `${formatMoscow(lottery.scheduled_at)} МСК` : undefined}>{drawTime(lottery, now)}</time> : <span>Результат сразу</span>}</div>

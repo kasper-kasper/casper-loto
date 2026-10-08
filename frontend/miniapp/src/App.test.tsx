@@ -234,7 +234,7 @@ it("shows the personal home dashboard while keeping Fast separate", async () => 
       dashboard.lotteries[1],
       { ...template, code: "pss", name: "ПСС-Лото", scheduled_at: "2026-08-15T16:00:00Z" },
       { ...template, code: "khan", name: "ХАН-Лото", scheduled_at: "2026-08-15T17:00:00Z" },
-      { ...template, code: "grob", name: "ГРОБ", scheduled_at: "2026-08-15T18:00:00Z" },
+      { ...template, code: "grob", name: "Casper Halloween", scheduled_at: "2026-08-15T18:00:00Z" },
       { ...template, code: "september", name: "3 сентября", scheduled_at: "2026-08-15T19:00:00Z" },
       ...dashboard.lotteries.slice(2),
     ],
@@ -253,7 +253,7 @@ it("shows the personal home dashboard while keeping Fast separate", async () => 
   fireEvent.click(screen.getByRole("button", { name: "Лотереи" }));
   const storefront = await screen.findByLabelText("Витрина лотерей");
   expect(within(storefront).getAllByRole("heading").map((heading) => heading.textContent)).toEqual([
-    "Casper LIVE", "ХАН-Лото", "Casper Bingo", "Weekly 5/20", "ПЛЛ-лото", "ПСС-Лото", "3 сентября", "ГРОБ", "FLASH", "PULSE", "SHADOW",
+    "Casper LIVE", "ХАН-Лото", "Casper Bingo", "Weekly 5/20", "ПЛЛ-лото", "ПСС-Лото", "3 сентября", "Casper Halloween", "FLASH", "PULSE", "SHADOW",
   ]);
   expect(screen.queryByText("Каспер выплатил игрокам за месяц")).not.toBeInTheDocument();
   expect(screen.queryByText("Случайная комбинация")).not.toBeInTheDocument();
@@ -267,15 +267,16 @@ it("shows unread notifications as a red dot without exposing the count", async (
   expect(container.querySelector(".mobile-dock .dock-notification")?.textContent).toBe("");
 });
 
-it("renders the GROB identity and its three-of-sixteen picker", async () => {
+it("renders Casper Halloween and its three-of-twenty-eight picker", async () => {
   const grobDashboard: Dashboard = {
     ...dashboard,
     lotteries: [{
       code: "grob",
-      name: "ГРОБ",
+      name: "Casper Halloween",
       kind: "DAILY",
       numbers_to_pick: 3,
-      max_number: 16,
+      max_number: 28,
+      fixed_payouts: { "2": 28_000 },
       ticket_price: 6_666,
       jackpot: 6_666_666,
       draw_number: 1,
@@ -292,14 +293,14 @@ it("renders the GROB identity and its three-of-sixteen picker", async () => {
   vi.mocked(miniAppApi.dashboard).mockResolvedValue(grobDashboard);
   const { container } = render(<App initData="signed" />);
 
-  expect(await screen.findByRole("heading", { name: "ГРОБ" })).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "Casper Halloween" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Открыть лотерею" }));
 
   await waitFor(() => expect(container.querySelector(".ticket-number-grid")).not.toBeNull());
   const grid = container.querySelector(".ticket-number-grid");
   expect(grid).not.toBeNull();
-  expect(within(grid as HTMLElement).getAllByRole("button")).toHaveLength(16);
-  expect(screen.getByRole("heading", { name: "Ваш билет" })).toBeInTheDocument();
+  expect(within(grid as HTMLElement).getAllByRole("button")).toHaveLength(28);
+  expect(screen.getByRole("heading", { name: "Выберите 3 числа из 28" })).toBeInTheDocument();
 });
 
 it("renders the classic 6 of 36 identity and complete number field", async () => {

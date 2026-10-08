@@ -13,6 +13,27 @@ function setup(lottery = base, purchasing = false) {
 }
 
 describe("ticket selection presentation", () => {
+  it("keeps Halloween selection, removable lanterns and ×25 purchases on server rules", () => {
+    const lottery = { ...base, code: "grob", name: "Casper Halloween", numbers_to_pick: 3, max_number: 28, ticket_price: 6666, fixed_payouts: { "2": 28_000 } };
+    const { onBuyMany } = setup(lottery);
+    const grid = screen.getByLabelText("Числа");
+    expect(within(grid).getAllByRole("button")).toHaveLength(28);
+    for (const n of [1, 14, 28, 5]) fireEvent.click(within(grid).getByRole("button", { name: String(n) }));
+    expect(within(grid).getAllByRole("button", { pressed: true })).toHaveLength(3);
+    expect(screen.getByRole("button", { name: "Купить билет" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Убрать число 14" }));
+    expect(screen.getByRole("button", { name: "Купить билет" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Купить 25 случайных билетов" }));
+    expect(onBuyMany).toHaveBeenCalledWith(expect.arrayContaining([expect.any(Array)]), 1);
+    expect(onBuyMany.mock.calls[0][0]).toHaveLength(25);
+    for (const combination of onBuyMany.mock.calls[0][0] as number[][]) {
+      expect(combination).toHaveLength(3);
+      expect(new Set(combination).size).toBe(3);
+      expect(combination.every(n => n >= 1 && n <= 28)).toBe(true);
+    }
+    expect(screen.getByLabelText("Выигрыши")).toHaveTextContent("28");
+    expect(screen.queryByText("Цена после согласования")).not.toBeInTheDocument();
+  });
   it("limits a 6/36 selection, enables the direct action, and never adds a cart step", () => {
     const { onBuy, onBuyMany } = setup();
     expect(screen.getByRole("button", { name: "Купить билет" })).toBeDisabled();

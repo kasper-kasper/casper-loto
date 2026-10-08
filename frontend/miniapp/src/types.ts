@@ -42,6 +42,7 @@ export interface Lottery {
   sales_status: "OPEN" | "CLOSING_SOON" | "CLOSED" | "DRAWING" | "COMPLETED";
   max_tickets_per_purchase: number;
   max_tickets_per_user_per_draw: number;
+  fixed_payouts?: Record<string, number> | null;
 }
 
 export interface Ticket {
@@ -68,6 +69,7 @@ export interface Ticket {
   second_winning_numbers?: number[] | null;
   dual_night_matches?: number | null;
   dual_dawn_matches?: number | null;
+  primary_max_number?: number | null;
 }
 
 export interface Dashboard {
@@ -90,6 +92,7 @@ export interface LiveTicket {
 }
 
 export interface LiveDraw {
+  primary_max_number?: number;
   lottery_code: string;
   lottery_name: string;
   lottery_kind: LotteryKind;

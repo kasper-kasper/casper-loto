@@ -5,8 +5,8 @@ import { ApiError, webApi } from "./api";
 import type { Account, BingoInventory, Dashboard, LiveDraw, Lottery, Ticket, WebSession } from "./types";
 
 type View="lotteries"|"fast"|"live"|"tickets"|"profile";
-const GrobExperienceHost=lazy(()=>import("./grob/GrobExperienceHost"));
-const GrobLiveHost=lazy(()=>import("./grob/GrobLiveHost"));
+const GrobExperienceHost=lazy(()=>import("./halloween/HalloweenExperienceHost"));
+const GrobLiveHost=lazy(()=>import("./halloween/HalloweenLiveHost"));
 const KhanExperienceHost=lazy(()=>import("./khan/KhanExperienceHost"));
 const fastCodes = new Set(["flash", "shadow", "pulse"]);
 const cas=(value:number)=>`${value.toLocaleString("ru-RU")} CAS`;
@@ -104,7 +104,7 @@ export default function App() {
     void refresh().catch(()=>setError("Покупка завершена. Обновление баланса задерживается."));
   };
   const names:Record<View,string>={lotteries:"Коллекция",fast:"Casper Fast",live:"Эфир",tickets:"Мои билеты",profile:"Профиль"};
-  if(picker?.code.toLowerCase()==="grob")return <Suspense fallback={<main className="grob-loading-shell">Открываем нижнюю крипту</main>}><GrobExperienceHost lottery={picker} balance={dashboard?.balance??0} userId={session.user_id} onClose={()=>setPicker(null)} onBalance={balance=>setDashboard(current=>current?{...current,balance}:current)}/></Suspense>;
+  if(picker?.code.toLowerCase()==="grob")return <Suspense fallback={<main className="grob-loading-shell">Открываем Casper Halloween</main>}><GrobExperienceHost lottery={picker} balance={dashboard?.balance??0} userId={session.user_id} onClose={()=>setPicker(null)} onBalance={balance=>setDashboard(current=>current?{...current,balance}:current)}/></Suspense>;
   if(picker&&isKhanLottery(picker))return <Suspense fallback={<main className="khan-loading-shell">Готовим классический тираж</main>}><KhanExperienceHost lottery={picker} balance={dashboard?.balance??0} userId={session.user_id} onClose={()=>setPicker(null)} onBalance={balance=>setDashboard(current=>current?{...current,balance}:current)}/></Suspense>;
   return <div className={`app ${view==="fast"?"fast-mode":""}`}>
     <header className="site-header"><button className="brand-button" onClick={()=>setView("lotteries")} aria-label="Casper Loto — коллекция"><Brand/></button>
@@ -116,7 +116,7 @@ export default function App() {
       {error&&<div role="alert" className="error global-error">{error}<button onClick={()=>{setError("");void refresh().catch(()=>setError("Сервер недоступен. Повторите позже."))}}>Обновить</button></div>}
       {view==="lotteries"&&<LotteryGallery lotteries={ordered.filter(l=>!fastCodes.has(l.code))} now={now} onOpen={l=>void openLottery(l)}/>}
       {view==="fast"&&<FastExperience lotteries={ordered.filter(l=>fastCodes.has(l.code))} now={now} balance={dashboard?.balance??0} userId={session.user_id} onBought={bought} onTickets={()=>setView("tickets")}/>}
-      {view==="live"&&<><div className="page-heading"><span className="eyebrow">CASPER LIVE / СОБЫТИЯ</span><h1>В первом ряду.</h1></div>{showGrobLive&&live.grob&&grobLottery&&<section className="content live-grid grob-live-grid"><Suspense fallback={<div className="grob-live-loading">Крипта готовится к вскрытию</div>}><GrobLiveHost draw={live.grob} lottery={grobLottery} balance={dashboard?.balance??0} now={now}/></Suspense></section>}{(!showGrobLive||live.standard?.lottery_code!=="grob")&&<section className="content live-grid"><LiveStage draw={live.standard} now={now}/></section>}<FastExperience lotteries={ordered.filter(l=>fastCodes.has(l.code))} now={now} balance={dashboard?.balance??0} userId={session.user_id} onBought={bought} onTickets={()=>setView("tickets")}/></>}
+      {view==="live"&&<><div className="page-heading"><span className="eyebrow">CASPER LIVE / СОБЫТИЯ</span><h1>В первом ряду.</h1></div>{showGrobLive&&live.grob&&grobLottery&&<section className="content live-grid grob-live-grid"><Suspense fallback={<div className="grob-live-loading">Готовим праздничный эфир</div>}><GrobLiveHost draw={live.grob} lottery={grobLottery} balance={dashboard?.balance??0} now={now}/></Suspense></section>}{(!showGrobLive||live.standard?.lottery_code!=="grob")&&<section className="content live-grid"><LiveStage draw={live.standard} now={now}/></section>}<FastExperience lotteries={ordered.filter(l=>fastCodes.has(l.code))} now={now} balance={dashboard?.balance??0} userId={session.user_id} onBought={bought} onTickets={()=>setView("tickets")}/></>}
       {view==="tickets"&&<><div className="page-heading"><span className="eyebrow">ВАША КОЛЛЕКЦИЯ МОМЕНТОВ</span><h1>Мои билеты.</h1></div><div className="tabs"><button aria-pressed={ticketState==="active"} className={ticketState==="active"?"active":""} onClick={()=>setTicketState("active")}>В игре</button><button aria-pressed={ticketState==="history"} className={ticketState==="history"?"active":""} onClick={()=>setTicketState("history")}>История</button></div><Tickets key={ticketState} state={ticketState}/></>}
       {view==="profile"&&<><Profile account={account}/><section className="profile-identity"><span className="eyebrow">ВАШ УНИКАЛЬНЫЙ CASPER ID</span><code>{session.user_id}</code><button className="text-button" onClick={()=>void webApi.logout().then(()=>{setSession(null);setDashboard(null);setAccount(null)}).catch(()=>setError("Не удалось выйти. Повторите попытку."))}>Выйти из аккаунта ↗</button></section><AddPassword/></>}
     </main>

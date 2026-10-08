@@ -1,0 +1,12 @@
+.halloween-web{max-width:460px;margin:0 auto;padding:22px 18px 30px;--app-safe-bottom:0px}
+.halloween-web .icon{width:18px;height:18px}
+.halloween-web .play-checkout{position:sticky;bottom:0;left:auto;right:auto;transform:none;width:100%;max-width:none;box-sizing:border-box;padding:15px 12px;border:1px solid #bd914747;border-radius:14px;margin-top:12px}
+.halloween-web .halloween-number-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px 5px}
+.halloween-web-message{padding:12px;border:1px solid #f5c67855;border-radius:10px;color:#ffe1a4;background:#22142a;font-size:13px}
+.halloween-web-live{position:relative;isolation:isolate;min-height:380px;overflow:hidden;border:1px solid #d8a15465;border-radius:18px;padding:30px;color:#ffe3a9;background:#190e25}
+.halloween-web-live>img{position:absolute;inset:0;z-index:-2;width:100%;height:100%;object-fit:cover}
+.halloween-web-live:before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,#170d22ec,#170d2299)}
+.halloween-web-live h2{margin:20px 0;font-size:40px}
+.halloween-web-live .halloween-brand>span:first-child{font-size:15px}
+.halloween-web-live .reveal-row{justify-content:flex-start}
+.halloween-web-live .reveal-row>span{border-color:#dfaf63;background:#a35720aa;color:#ffe5a8}

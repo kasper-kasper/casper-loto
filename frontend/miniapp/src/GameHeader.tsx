@@ -7,7 +7,7 @@ import classic from "./assets/lotteries/khan-scene.webp";
 import september from "./assets/lotteries/september-embankment.jpg";
 import portal from "./assets/lotteries/pll-portal.jpg";
 import nature from "./assets/lotteries/pss-nature-scene.webp";
-import grob from "./assets/lotteries/grob-scene.webp";
+import grob from "./assets/lotteries/halloween-pumpkins-v1.webp";
 import dual from "./assets/lotteries/casper-dual-scene.webp";
 import bingo from "./assets/lotteries/weekly-scene.webp";
 import "./play-room.css";

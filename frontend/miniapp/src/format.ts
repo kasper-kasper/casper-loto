@@ -15,11 +15,11 @@ export function formatDraw(value: number): string {
 }
 
 export function formatDrawLabel(lotteryCode: string, value: number): string {
-  return lotteryCode === "grob" ? `RIP ${formatDraw(value)}` : lotteryCode === "dual" ? `Раунд #${formatDraw(value)}` : `Тираж #${formatDraw(value)}`;
+  return lotteryCode === "dual" ? `Раунд #${formatDraw(value)}` : `Тираж #${formatDraw(value)}`;
 }
 
-export function formatTicketLabel(lotteryCode: string, value: number): string {
-  return lotteryCode === "grob" ? `Могила ${formatDraw(value)}` : `Билет #${formatDraw(value)}`;
+export function formatTicketLabel(_lotteryCode: string, value: number): string {
+  return `Билет #${formatDraw(value)}`;
 }
 
 export function formatMoscow(value: string): string {

@@ -30,7 +30,7 @@ function lotteryFormat(draw: LiveDraw): string {
   if (draw.lottery_code === "pss") return "ЕЖЕДНЕВНАЯ · 5 ИЗ 36 + CASPER BALL 1 ИЗ 8";
   if (draw.lottery_code === "khan") return "ЕЖЕДНЕВНАЯ · 6 ИЗ 36";
   if (draw.lottery_code === "september") return "DAILY · 3 ИЗ 33";
-  if (draw.lottery_code === "grob") return "DAILY · 3 ИЗ 16";
+  if (draw.lottery_code === "grob") return `ПРАЗДНИЧНАЯ · 3 ИЗ ${draw.primary_max_number || 16}`;
   return draw.lottery_kind === "WEEKLY" ? "ЕЖЕНЕДЕЛЬНАЯ · 5 ИЗ 35 + 2 ИЗ 5" : "DAILY · 4 ИЗ 15";
 }
 

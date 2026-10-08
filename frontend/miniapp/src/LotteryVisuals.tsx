@@ -6,7 +6,7 @@ import septemberScene from "./assets/lotteries/september-embankment.jpg";
 import pllScene from "./assets/lotteries/pll-portal.jpg";
 import pssScene from "./assets/lotteries/pss-nature-scene.webp";
 import kasperGrandScene from "./assets/lotteries/kasper-grand-scene.webp";
-import grobScene from "./assets/lotteries/grob-scene.webp";
+import grobScene from "./assets/lotteries/halloween-pumpkins-v1.webp";
 import dualScene from "./assets/lotteries/casper-dual-scene.webp";
 
 type VisualContext = "catalog" | "hero" | "picker" | "live";

@@ -64,7 +64,7 @@ export function useGrobExperience({ bridge, initialLottery, initialBalance, user
       const fresh = await syncDashboard();
       const current = fresh.lotteries.find(item => item.code === "grob");
       if (!current || !current.purchase_available || current.draw_number !== lottery.draw_number) { setPhase("drawWaiting"); return; }
-      if (current.primary_numbers_to_pick !== 3 || current.primary_max_number !== 16 || current.draw_number == null || current.ticket_price == null) {
+      if (current.primary_numbers_to_pick !== lottery.primary_numbers_to_pick || current.primary_max_number !== lottery.primary_max_number || current.draw_number == null || current.ticket_price == null) {
         setPurchase({ mode, quantity, status: "error", message: "Игра обновилась. Покупка временно закрыта.", ticketIds: [] }); return;
       }
       const combinations = mode === "manual" ? [selected.slice().sort((a,b)=>a-b)] : createRandomTickets(quantity, current.primary_max_number, current.primary_numbers_to_pick);
@@ -75,7 +75,7 @@ export function useGrobExperience({ bridge, initialLottery, initialBalance, user
       setPurchase({ mode, quantity, status: "error", message: reason instanceof Error ? reason.message : "Сервер недоступен", ticketIds: [] });
       setPhase("purchaseError");
     }
-  }, [lottery.draw_number, runPurchase, selected, syncDashboard, userId]);
+  }, [lottery.draw_number, lottery.primary_numbers_to_pick, lottery.primary_max_number, runPurchase, selected, syncDashboard, userId]);
 
   useEffect(() => {
     const unsubscribe = bridge.subscribeIntent((intent: GrobIntent) => {
