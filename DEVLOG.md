@@ -2,7 +2,7 @@
 
 - Replaced the selected-circle CSS approximation with decorative SVG pumpkin bodies: sculpted ribs, curved stems, warm highlights and glow. Shared ticket component updates Mini App and Web; added an inset field matching the approved first concept. Number text, accessible button state, keyboard operation and selection/purchase services remain unchanged.
 - Scoped verification: affected frontends lint/typecheck/build; TicketComposer regression (8 tests), Web Halloween host regression (2 tests); browser smoke at 320/390/430 px confirms seven columns, no horizontal overflow, three pumpkins in the field and removable selected pumpkins. Actual screen: `.tools/halloween-pumpkin-fix-390.png`. The decorative component uses parent-supplied SVG IDs so the Web shared-source import does not load a second React hook dispatcher.
-- Gateway-only publication follows after checks, with the operations lock, database/source/image backups and public version/HTML/bundle/health verification.
+- Published implementation 90a5888 as Mini App 1.61.1 / Web 1.55.1 under the operations lock with database/source/image backups. Only gateway restarted. Public HTTPS verified version 1.61.1, exact Mini App/Web HTML and every built JS/CSS bundle, brand asset and health 200. Admin fingerprint and API/bot/database container identities are unchanged.
 
 ## Casper Halloween format and pumpkin experience — 2026-10-09
 
