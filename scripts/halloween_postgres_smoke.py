@@ -79,7 +79,9 @@ async def main() -> None:
         purchase = await LotteryTicketPurchaseService(
             session, lottery_code="grob"
         ).purchase(
-            user_id, [[1, 2, 3], [2, 3, 16]], idempotency_key=f"smoke:{user_id}:buy"
+            user_id=user_id,
+            combinations=[[1, 2, 3], [2, 3, 16]],
+            idempotency_key=f"smoke:{user_id}:buy",
         )
     before = await fingerprint()
     # Force failure after all account/ticket changes; transaction must restore
@@ -146,8 +148,8 @@ async def main() -> None:
         fresh = await LotteryTicketPurchaseService(
             session, lottery_code="grob"
         ).purchase(
-            user_id,
-            [[1, 14, 28]],
+            user_id=user_id,
+            combinations=[[1, 14, 28]],
             idempotency_key=f"smoke:{user_id}:new",
             now=datetime.now(UTC),
         )

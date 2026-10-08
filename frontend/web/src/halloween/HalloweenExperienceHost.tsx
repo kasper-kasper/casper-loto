@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { HalloweenHeader } from "../../../miniapp/src/HalloweenHeader";
 import { HalloweenTicket } from "../../../miniapp/src/HalloweenTicket";
 import "../../../miniapp/src/play-room.css";
@@ -10,7 +10,10 @@ import "./halloween-web.css";
 
 export default function HalloweenExperienceHost({ lottery, balance, userId, onClose, onBalance }: { lottery: Lottery; balance: number; userId: string; onClose: () => void; onBalance: (balance: number) => void }) {
   const bridge = useMemo(() => new GrobBridge(), []);
-  const snapshot = useGrobExperience({ bridge, initialLottery: lottery, initialBalance: balance, userId, onExit: onClose, onBalance });
+  const balanceCallback = useRef(onBalance);
+  useEffect(() => { balanceCallback.current = onBalance; }, [onBalance]);
+  const reportBalance = useCallback((value: number) => balanceCallback.current(value), []);
+  const snapshot = useGrobExperience({ bridge, initialLottery: lottery, initialBalance: balance, userId, onExit: onClose, onBalance: reportBalance });
   const busy = snapshot.purchase.status === "pending" || snapshot.purchase.status === "uncertain";
   const presentation = { ...snapshot.lottery, sales_open: snapshot.salesOpen, max_tickets_per_user_per_draw: snapshot.lottery.max_tickets_per_user_per_draw ?? snapshot.lottery.max_tickets_per_purchase };
   const toggle = (value: number) => bridge.emitIntent({ type: "TOGGLE_NUMBER", value });

@@ -21,3 +21,14 @@ test("web Halloween accepts 28 and preserves idempotent purchase through the exi
   expect(screen.getByRole("button", { name: "Купить 25 случайных билетов" })).toBeInTheDocument();
   vi.unstubAllGlobals();
 });
+
+test("changing the parent balance callback does not restart dashboard polling", async () => {
+  vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
+  vi.mocked(webApi.dashboard).mockClear().mockResolvedValue(dashboard);
+  const props = { lottery, balance: 1000000, userId: "halloween-callback", onClose: vi.fn() };
+  const { rerender } = render(<HalloweenExperienceHost {...props} onBalance={vi.fn()} />);
+  await waitFor(() => expect(webApi.dashboard).toHaveBeenCalledTimes(1));
+  rerender(<HalloweenExperienceHost {...props} onBalance={vi.fn()} />);
+  expect(webApi.dashboard).toHaveBeenCalledTimes(1);
+  vi.unstubAllGlobals();
+});
