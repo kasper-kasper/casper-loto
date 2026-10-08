@@ -21,16 +21,18 @@
 .halloween-ticket header span{font-size:8px;letter-spacing:.12em;color:#d1ac88}
 .halloween-ticket h2{margin:6px 0 0;color:#ffda90;font:normal clamp(17px,5vw,23px)/1.15 Georgia,serif;letter-spacing:-.03em}
 .halloween-ticket header button{flex-shrink:0;display:grid;place-items:center;min-width:36px;min-height:40px;padding:0;border:1px solid #caa56366;border-radius:9px;color:#ffda90;background:#38203b}
-.halloween-number-grid{grid-template-columns:repeat(7,minmax(0,1fr));gap:7px 5px}
+.halloween-number-grid{grid-template-columns:repeat(7,minmax(0,1fr));gap:11px 5px;padding:12px 5px 10px;border:1px solid #986f9e26;border-radius:13px;background:radial-gradient(ellipse at 50% 0,#59244942,transparent 75%),#160d21;box-shadow:inset 0 2px 14px #0005}
 .halloween-number{position:relative;isolation:isolate;min-width:0;min-height:44px;padding:0;border:1px solid #d9a45f8a;border-radius:50%;color:#fbe4ba;background:radial-gradient(circle at 35% 23%,#604332,#26162c 48%,#110e1a 80%);box-shadow:inset 0 0 0 2px #180f25,inset 0 0 0 3px #f2c47d36,0 3px 7px #0006;font:normal clamp(15px,4.2vw,20px)/1 Georgia,serif;touch-action:manipulation;transition:background .18s,box-shadow .18s,color .18s}
-.halloween-number[aria-pressed=true]{color:#422006;border-color:#ffe2a5;background:repeating-linear-gradient(90deg,transparent 0 18%,#d76f192b 20% 23%,transparent 25% 38%),radial-gradient(circle at 35% 24%,#fff6c5,#ffd377 40%,#eb8a25 77%);box-shadow:inset 0 0 0 2px #e69333,0 0 14px #ff961b82,0 3px 7px #0005}
-.halloween-number[aria-pressed=true]:before{content:"";position:absolute;z-index:-1;width:5px;height:7px;border-radius:3px;background:#835826;top:-4px;left:calc(50% - 2px);transform:rotate(17deg)}
+.halloween-pumpkin{position:absolute;inset:-9px -3px -4px;width:calc(100% + 6px);height:calc(100% + 13px);overflow:visible;pointer-events:none;filter:drop-shadow(0 0 4px #ffb135b3) drop-shadow(0 0 9px #f476163d)}
+.halloween-number>span,.halloween-lantern>span{position:relative;z-index:1}
+.halloween-number[aria-pressed=true]{color:#351507;border-color:transparent;background:transparent;box-shadow:none;text-shadow:0 1px 1px #fff4b8;font-weight:600}
+.halloween-number[aria-pressed=true]>span{display:inline-block;transform:translateY(1px)}
+.halloween-number:focus-visible,.halloween-lantern:focus-visible{outline:2px solid #fff0ad;outline-offset:5px}
 .halloween-selected{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-top:14px;padding-top:12px;border-top:1px solid #e3b46929}
 .halloween-selected>span{font-size:9px;color:#c9b3c7;max-width:67px;line-height:1.5}
 .halloween-selected>div{display:flex;gap:8px}
 .halloween-lantern{position:relative;display:grid;place-items:center;width:38px;height:35px;padding:0;border:1px solid #b783413b;border-radius:43% 43% 40% 40%;color:#7b5a60;background:radial-gradient(circle,#3a2231,#1c1327);font:normal 17px/1 Georgia,serif}
-.halloween-lantern:before{content:"";position:absolute;top:-5px;width:5px;height:7px;background:#826332;border-radius:2px;transform:rotate(17deg)}
-.halloween-lantern.lit{border-color:#ffd27a;color:#512406;background:repeating-linear-gradient(90deg,transparent 0 18%,#d66a2724 21% 24%,transparent 26% 37%),radial-gradient(circle at 35% 28%,#fff2c0,#ffcb5e 42%,#e68223 85%);box-shadow:0 0 18px #f9953555,inset 0 1px #fff6bb;animation:halloween-light .25s ease-out}
+.halloween-lantern.lit{border-color:transparent;color:#351507;background:transparent;text-shadow:0 1px 1px #fff4b8;font-weight:600;animation:halloween-light .25s ease-out}
 .halloween-selected>small{color:#e2c8a5;font-size:10px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .halloween-ticket>footer{margin-top:10px;text-align:center;font-size:9px;color:#9e8caa}
 .halloween-prizes{display:flex;justify-content:center;gap:12px;margin-top:13px;padding-top:11px;border-top:1px solid #dbb07233}

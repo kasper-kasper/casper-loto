@@ -1,3 +1,9 @@
+## Halloween pumpkin number field correction — 2026-10-09
+
+- Replaced the selected-circle CSS approximation with decorative SVG pumpkin bodies: sculpted ribs, curved stems, warm highlights and glow. Shared ticket component updates Mini App and Web; added an inset field matching the approved first concept. Number text, accessible button state, keyboard operation and selection/purchase services remain unchanged.
+- Scoped verification: affected frontends lint/typecheck/build; TicketComposer regression (8 tests), Web Halloween host regression (2 tests); browser smoke at 320/390/430 px confirms seven columns, no horizontal overflow, three pumpkins in the field and removable selected pumpkins. Actual screen: `.tools/halloween-pumpkin-fix-390.png`. The decorative component uses parent-supplied SVG IDs so the Web shared-source import does not load a second React hook dispatcher.
+- Gateway-only publication follows after checks, with the operations lock, database/source/image backups and public version/HTML/bundle/health verification.
+
 ## Casper Halloween format and pumpkin experience — 2026-10-09
 
 - Owner approved Casper Halloween, 3/28, 6,666 CAS price, 28,000 CAS for exactly two matches, no one-match payout, original bat decoration and first pumpkin art direction (OD-046). Schedule, base jackpot and existing funding/sharing remain unchanged.
