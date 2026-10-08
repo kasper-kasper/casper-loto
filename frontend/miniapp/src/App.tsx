@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+import type { CatalogFilter } from "./LotteryCatalog";
 import { motion } from "motion/react";
 
 import { ApiError, miniAppApi } from "./api";
@@ -32,7 +33,7 @@ import type { Account, CartTicket, Dashboard, Favorite, LiveFeed, Lottery, Notif
 
 const AccountOverview = lazy(() => import("./AccountHub").then(({ AccountHub }) => ({ default: AccountHub })));
 const NumberPicker = lazy(() => import("./TicketComposer").then(({ TicketComposer }) => ({ default: TicketComposer })));
-const LotteryCatalog = lazy(() => import("./Discovery").then(({ LotteryCatalog }) => ({ default: LotteryCatalog })));
+const LotteryCatalog = lazy(() => import("./LotteryCatalog").then(({ LotteryCatalog }) => ({ default: LotteryCatalog })));
 const LotteryRoom = lazy(() => import("./Discovery").then(({ LotteryRoom }) => ({ default: LotteryRoom })));
 const BingoView = lazy(() => import("./BingoView").then(({ BingoView }) => ({ default: BingoView })));
 const BingoTicketDetail = lazy(() => import("./BingoView").then(({ BingoTicketDetail }) => ({ default: BingoTicketDetail })));
@@ -206,6 +207,8 @@ export default function App({ initData, localDev = false }: AppProps) {
   const [ticketsHaveMore, setTicketsHaveMore] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [cart, setCart] = useState<CartTicket[]>(() => loadCart(cartTtl));
+  const [catalogFilter, setCatalogFilter] = useState<CatalogFilter>("all");
+  const [catalogScroll, setCatalogScroll] = useState(0);
   const [pickerLottery, setPickerLottery] = useState<Lottery | null>(null);
   const [pickerInitialNumbers, setPickerInitialNumbers] = useState<number[]>([]);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
@@ -229,8 +232,8 @@ export default function App({ initData, localDev = false }: AppProps) {
   const clockAnchor = useRef<{ server: number; monotonic: number } | null>(null);
   const clockNeedsSync = useRef(true);
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "instant" });
-  }, [view, accountView, pickerLottery?.code, bingoOpen, kasperLiveOpen]);
+    window.scrollTo({ top: view === "catalog" && !pickerLottery?.code && !bingoOpen && !kasperLiveOpen ? catalogScroll : 0, behavior: "instant" });
+  }, [view, accountView, pickerLottery?.code, bingoOpen, kasperLiveOpen, catalogScroll]);
   const nearestDrawIn = Math.min(
     ...(dashboard?.lotteries
       .map((lottery) => lottery.scheduled_at ? Date.parse(lottery.scheduled_at) - now : Number.POSITIVE_INFINITY)
@@ -624,7 +627,7 @@ export default function App({ initData, localDev = false }: AppProps) {
     setAccount((current) => current ? { ...current, balance: result.balance_after, ticket_count: current.ticket_count + result.tickets.length, winning_ticket_count: current.winning_ticket_count + winning.length, total_spent: current.total_spent + result.total_cost, total_won: current.total_won + result.total_prize, best_win: Math.max(current.best_win, ...result.tickets.map((ticket) => ticket.prize_amount)) } : current);
   }} /></Suspense>;
   if (bingoOpen && bingoLottery) return <Suspense fallback={<Skeleton />}><BingoView initialTab={roomLive ? "live" : "choose"} lottery={bingoLottery} initData={initData} now={serverNow} balance={dashboard.balance} onClose={() => setBingoOpen(false)} onPurchased={(result) => { applyPurchaseSnapshot("bingo", result, result.ticket_ids.length); void Promise.allSettled([refreshDashboard(), refreshAccount()]); }} /></Suspense>;
-  if (pickerLottery) return <main className={`app-shell picker-page ${isFastLottery(pickerLottery.code) ? "" : "draw-play-page"}`}><Suspense fallback={<Skeleton />}>{isFastLottery(pickerLottery.code) ? <FastPicker key={pickerLottery.code} error={error} lottery={pickerLottery} purchasing={purchasing} success={purchaseSuccess} onBuy={(numbers) => purchaseDirect(pickerLottery.code, [numbers], 1)} onClose={() => { setPickerLottery(null); setView("fast"); }} /> : <LotteryRoom balance={dashboard.balance} initialLive={roomLive} key={pickerLottery.code} lottery={pickerLottery} initData={initData} now={serverNow} onClose={() => { setRoomLive(false); setPickerLottery(null); }} onLiveModeChange={setRoomLive} onTickets={() => { setRoomLive(false); setPickerLottery(null); setTicketLotteryFilter(pickerLottery.code); setTicketsLoading(true); setAccountView("tickets"); setView("account"); }}><>{error && <p className="play-message is-error" role="alert">{error}</p>}{notice && <p className="play-message" role="status">{notice}</p>}<NumberPicker lottery={pickerLottery} balance={dashboard.balance} now={serverNow} purchasing={purchasing} initialNumbers={pickerInitialNumbers} favorites={favorites} onBuy={(numbers, drawCount) => purchaseDirect(pickerLottery.code, [numbers], drawCount)} onBuyMany={(combinations, drawCount) => purchaseDirect(pickerLottery.code, combinations, drawCount)} onSaveFavorite={(numbers) => void saveFavorite(numbers)} onDeleteFavorite={(id) => void deleteFavorite(id)} /></></LotteryRoom>}</Suspense></main>;
+  if (pickerLottery) return <main className={`app-shell picker-page ${isFastLottery(pickerLottery.code) ? "" : "draw-play-page"}`}><Suspense fallback={<Skeleton />}>{isFastLottery(pickerLottery.code) ? <FastPicker key={pickerLottery.code} error={error} lottery={pickerLottery} purchasing={purchasing} success={purchaseSuccess} onBuy={(numbers) => purchaseDirect(pickerLottery.code, [numbers], 1)} onClose={() => { setPickerLottery(null); setView(current => current === "catalog" || current === "live" ? current : "fast"); }} /> : <LotteryRoom balance={dashboard.balance} initialLive={roomLive} key={pickerLottery.code} lottery={pickerLottery} initData={initData} now={serverNow} onClose={() => { setRoomLive(false); setPickerLottery(null); }} onLiveModeChange={setRoomLive} onTickets={() => { setRoomLive(false); setPickerLottery(null); setTicketLotteryFilter(pickerLottery.code); setTicketsLoading(true); setAccountView("tickets"); setView("account"); }}><>{error && <p className="play-message is-error" role="alert">{error}</p>}{notice && <p className="play-message" role="status">{notice}</p>}<NumberPicker lottery={pickerLottery} balance={dashboard.balance} now={serverNow} purchasing={purchasing} initialNumbers={pickerInitialNumbers} favorites={favorites} onBuy={(numbers, drawCount) => purchaseDirect(pickerLottery.code, [numbers], drawCount)} onBuyMany={(combinations, drawCount) => purchaseDirect(pickerLottery.code, combinations, drawCount)} onSaveFavorite={(numbers) => void saveFavorite(numbers)} onDeleteFavorite={(id) => void deleteFavorite(id)} /></></LotteryRoom>}</Suspense></main>;
 
   return <main className={`app-shell ${view === "fast" ? "fast-shell" : ""}`}>
     {view !== "account" && <header className="app-header"><div aria-label="Casper Loto" className="brand-lockup"><picture><source media="(max-width: 520px)" srcSet={logoSymbol} /><img alt="" className="brand-logo-horizontal" width="138" height="46" fetchPriority="high" src={logoHorizontal} /></picture></div><div className="header-actions">{localDev && import.meta.env.VITE_DESIGN_PREVIEW !== "true" && <button className="dev-badge" onClick={() => void refillDevBalance()} type="button">+ TEST CAS</button>}{cart.length > 0 && <button aria-label={`Корзина: ${cart.length} ${plural(cart.length, "комбинация", "комбинации", "комбинаций")}`} className="header-cart" onClick={() => setView("cart")} type="button"><Icon name="cart" /><small>{cart.length}</small></button>}<Balance value={dashboard.balance} /></div></header>}
@@ -635,8 +638,8 @@ export default function App({ initData, localDev = false }: AppProps) {
 
     {view === "archive" && <Suspense fallback={<Skeleton />}><DrawArchive initData={initData} onBack={() => setView("home")} /></Suspense>}
     {view === "home" && <section className="view-content home-view" key="home"><Today stories={<Stories initData={initData} onOpen={(code) => { if (code === "casper-loto") setView("catalog"); else void openLottery(code); }} />} onArchive={() => { setView("archive"); window.scrollTo({ top: 0, behavior: "instant" }); }} lotteries={standardLotteries} now={serverNow} highlights={highlights} totalTicketCount={dashboard.total_ticket_count} totalWinningTicketCount={dashboard.total_winning_ticket_count} monthlyTotalPayout={dashboard.monthly_total_payout} onOpen={(code, live) => void openLottery(code, [], live)} onCatalog={() => setView("catalog")} onTickets={() => { setTicketsLoading(true); setTicketView("active"); setTicketWinsOnly(false); setAccountView("tickets"); setTicketLotteryFilter("scope:standard"); setView("account"); }} /></section>}
-    {view === "catalog" && <section className="view-content catalog-view" key="catalog"><LotteryCatalog lotteries={standardLotteries} onOpen={code => void openLottery(code)} /></section>}
-    {view === "live" && <section className="view-content catalog-view"><LotteryCatalog lotteries={standardLotteries} onOpen={code => void openLottery(code)} /></section>}
+    {view === "catalog" && <section className="view-content catalog-view" key="catalog"><LotteryCatalog lotteries={dashboard.lotteries} now={serverNow} selectedFilter={catalogFilter} restoreScroll={catalogScroll} onFilterChange={filter => { setCatalogFilter(filter);setCatalogScroll(0);window.scrollTo({ top: 0, behavior: "instant" }); }} onOpen={code => { setCatalogScroll(window.scrollY);void openLottery(code); }} /></section>}
+    {view === "live" && <section className="view-content catalog-view"><LotteryCatalog lotteries={dashboard.lotteries} now={serverNow} selectedFilter={catalogFilter} restoreScroll={catalogScroll} onFilterChange={filter => { setCatalogFilter(filter);setCatalogScroll(0);window.scrollTo({ top: 0, behavior: "instant" }); }} onOpen={code => { setCatalogScroll(window.scrollY);void openLottery(code); }} /></section>}
 
     {view === "fast" && <section className="view-content fast-world" key="fast"><FastView lotteries={fastLotteries} feed={fastFeed} now={serverNow} balance={dashboard.balance} purchasing={purchasing} onOpen={(code) => void openLottery(code)} onQuickBuy={(code, combinations) => void purchaseDirect(code, combinations, 1)} /><footer className="fast-world-footer">{fastHighlights?.last_jackpot && <div className="fast-last-jackpot"><small>ПОСЛЕДНИЙ ДЖЕКПОТ</small><strong><Money value={fastHighlights.last_jackpot.jackpot_amount} compact /></strong><span>{fastHighlights.last_jackpot.lottery_name} · {formatMoscow(fastHighlights.last_jackpot.occurred_at)} МСК</span></div>}<button className="fast-history-button" type="button" onClick={() => { setTicketsLoading(true); setTicketLotteryFilter("scope:fast"); setAccountView("tickets"); setView("account"); }}><Icon name="ticket" /><span><b>Билеты Casper Fast</b><small>Активные и история</small></span><strong>→</strong></button></footer></section>}
 

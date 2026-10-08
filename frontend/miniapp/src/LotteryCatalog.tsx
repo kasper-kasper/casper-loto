@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { Money } from "./components";
-import { formatCas, formatMoscow } from "./format";
+import { formatCas, formatMoscow, formatMoscowTime } from "./format";
 import type { Lottery } from "./types";
 import grand from "./assets/lotteries/kasper-grand-scene.webp";
 import classic from "./assets/lotteries/classic-drum-v1.webp";
@@ -10,44 +10,77 @@ import nature from "./assets/lotteries/pss-nature-scene.webp";
 import grob from "./assets/lotteries/grob-scene.webp";
 import dual from "./assets/lotteries/casper-dual-scene.webp";
 import bingo from "./assets/lotteries/bingo-edition-v1.webp";
+import flash from "./assets/lotteries/fast-flash-device-v1.webp";
+import pulse from "./assets/lotteries/fast-pulse-device-v1.webp";
+import code from "./assets/lotteries/fast-code-device-v1.webp";
 import "./lottery-catalog.css";
 
-const identities: Record<string, { image: string; caption: string }> = {
-  weekly: { image: grand, caption: "Событие недели" },
-  khan: { image: classic, caption: "Ваши числа. Большая классика." },
-  september: { image: september, caption: "У каждого числа своя история" },
-  pll: { image: portal, caption: "Время неизбежно" },
-  pss: { image: nature, caption: "Там, где начинается тишина" },
-  grob: { image: grob, caption: "Тишина. Тираж начинается." },
-  dual: { image: dual, caption: "NIGHT / DAWN" },
-  bingo: { image: bingo, caption: "Ваш билет в вечернюю игру" },
+const identities: Record<string, { image: string; label: string }> = {
+  weekly: { image: grand, label: "Раз в неделю" },
+  khan: { image: classic, label: "Классика" },
+  september: { image: september, label: "3 СЕНТЯБРЯ" },
+  pll: { image: portal, label: "2:22" },
+  pss: { image: nature, label: "Выберите числа" },
+  grob: { image: grob, label: "Праздничная" },
+  dual: { image: dual, label: "NIGHT / DAWN" },
+  bingo: { image: bingo, label: "Готовый билет" },
+  flash: { image: flash, label: "FLASH" },
+  pulse: { image: pulse, label: "PULSE" },
+  shadow: { image: code, label: "CODE" },
 };
+const order = ["kasper-live", "khan", "bingo", "dual", "weekly", "pll", "pss", "september", "grob", "flash", "pulse", "shadow"];
+const filters = [["all", "Все"], ["instant", "Моментальные"], ["draw", "Тиражные"], ["holiday", "Праздничные"]] as const;
+export type CatalogFilter = typeof filters[number][0];
 
-export function LotteryCatalog({ lotteries, onOpen }: { lotteries: Lottery[]; onOpen: (code: string) => void }) {
-  const [filter, setFilter] = useState("all");
-  const largest = Math.max(0, ...lotteries.map(lottery => lottery.jackpot));
-  const visible = [...lotteries].filter(lottery => filter === "all" || lottery.kind === filter).sort((a, b) => b.jackpot - a.jackpot);
+function drawTime(lottery: Lottery, now: number): string {
+  if (!lottery.scheduled_at) return "Расписание внутри";
+  const remaining = new Date(lottery.scheduled_at).getTime() - now;
+  if (remaining <= 0) return lottery.sales_status === "COMPLETED" ? "Результаты внутри" : lottery.sales_status === "DRAWING" ? "Розыгрыш идёт" : "Обновляем тираж";
+  if (remaining < 60 * 60 * 1000) return `Через ${Math.max(1, Math.ceil(remaining / 60000))} мин`;
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Moscow" });
+  if (today.format(new Date(now)) === today.format(new Date(lottery.scheduled_at))) return `Сегодня, ${formatMoscowTime(lottery.scheduled_at)}`;
+  return formatMoscow(lottery.scheduled_at);
+}
+
+export function LotteryCatalog({ lotteries, onOpen, now, selectedFilter, onFilterChange, restoreScroll = 0 }: { lotteries: Lottery[]; onOpen: (code: string) => void; now: number; selectedFilter?: CatalogFilter; onFilterChange?: (filter: CatalogFilter) => void; restoreScroll?: number }) {
+  const [localFilter, setFilter] = useState<CatalogFilter>("all");
+  const filter = selectedFilter ?? localFilter;
+  useLayoutEffect(() => {
+    // The lazy catalogue must exist before restoring its scrollable height.
+    const frame = window.requestAnimationFrame(() => { if (restoreScroll > 0) window.scrollTo({ top: restoreScroll, behavior: "instant" }); });
+    return () => window.cancelAnimationFrame(frame);
+  }, [restoreScroll]);
+  const visible = lotteries.filter(lottery => lottery.code !== "kasper-live" && (filter === "all" || filter === "draw" || (filter === "holiday" && lottery.code === "grob")));
+  const entries: (Lottery | null)[] = filter === "all" || filter === "instant" ? [null, ...visible] : visible;
+  const rank = (code: string) => order.includes(code) ? order.indexOf(code) : order.length;
+  entries.sort((a, b) => rank(a?.code ?? "kasper-live") - rank(b?.code ?? "kasper-live") || (a?.code ?? "").localeCompare(b?.code ?? ""));
 
   return <section className="lottery-collection">
-    <header className="collection-heading"><span>CASPER / КОЛЛЕКЦИЯ</span><h1>Лотереи<span>{lotteries.length.toString().padStart(2, "0")}</span></h1></header>
+    <header className="collection-heading"><div><h1>Лотереи</h1><p>Выберите свою игру</p></div><span className="collection-count" aria-label={`${lotteries.filter(item => item.code !== "kasper-live").length + 1} игр`}>{lotteries.filter(item => item.code !== "kasper-live").length + 1}<small>игр</small></span></header>
     <nav className="collection-filters" aria-label="Каталог лотерей">
-      {[["all", "Все"], ["DAILY", "Каждый день"], ["WEEKLY", "Раз в неделю"]].map(([id, label]) => <button key={id} type="button" aria-pressed={filter === id} onClick={() => setFilter(id)}>{label}</button>)}
+      {filters.map(([id, label]) => <button key={id} type="button" aria-pressed={filter === id} onClick={() => { setFilter(id);onFilterChange?.(id); }}>{label}</button>)}
     </nav>
     <div className="collection-list" aria-label="Витрина лотерей">
-      {visible.map((lottery, index) => {
-        const identity = identities[lottery.code];
-        return <button className={`collection-card collection-${lottery.code}`} key={lottery.code} type="button" onClick={() => onOpen(lottery.code)} aria-label={`Открыть ${lottery.name}`}>
-          {identity && <img className="collection-scene" src={identity.image} alt="" width="1536" height="1024" loading={index === 0 ? "eager" : "lazy"} decoding="async" />}
+      {entries.map((lottery, index) => {
+        const code = lottery?.code ?? "kasper-live";
+        const name = lottery?.name ?? "Casper LIVE";
+        const identity = identities[code];
+        const image = identity?.image ?? (lottery ? undefined : "/assets/casper-live-casino-v1.webp");
+        return <button className={`collection-card collection-${code}`} key={code} type="button" onClick={() => onOpen(code)} aria-label={`Открыть ${name}`}>
+          <div className="collection-art" aria-hidden="true">
+            {image ? <img className="collection-scene" src={image} alt="" width="600" height="400" loading={index < 4 ? "eager" : "lazy"} decoding="async" /> : <span className="collection-art-fallback">✦</span>}
+            <span className="collection-tag">{identity?.label ?? (lottery ? "Тиражная" : "Сотрите билет")}</span><span className="collection-art-arrow">↗</span>
+          </div>
           <div className="collection-card-content">
-            <div className="collection-card-meta"><span>{lottery.kind === "WEEKLY" ? "Еженедельная" : "Ежедневная"}</span>{lottery.jackpot > 0 && lottery.jackpot === largest && <span className="collection-highlight">Главный джекпот</span>}</div>
-            <div className="collection-identity"><h2>{lottery.name}</h2>{identity && <p>{identity.caption}</p>}</div>
-            <div className="collection-prize"><small>Джекпот</small><strong title={formatCas(lottery.jackpot)}><Money value={lottery.jackpot} compact /></strong></div>
-            <div className="collection-card-footer"><div className="collection-details"><time dateTime={lottery.scheduled_at ?? undefined}>{lottery.scheduled_at ? `${formatMoscow(lottery.scheduled_at)} МСК` : "Расписание внутри"}</time><span>{lottery.ticket_price === null ? "Цена скоро" : <>Билет <Money value={lottery.ticket_price} /></>}</span></div><span className="collection-open">Открыть <span aria-hidden="true">↗</span></span></div>
+            <h2>{name}</h2>
+            <div className="collection-prize">{lottery ? <><small>Джекпот</small><strong title={formatCas(lottery.jackpot)}><Money value={lottery.jackpot} compact /></strong></> : <><small>Моментальная игра</small><strong className="collection-instant-prize">Выигрыш по символам</strong></>}</div>
+            <div className="collection-price">{lottery?.ticket_price === null ? "Цена скоро" : <>Билет <Money value={lottery?.ticket_price ?? 2_000} compact /></>}</div>
+            <div className="collection-time"><span aria-hidden="true">{lottery ? "◷" : "ϟ"}</span>{lottery ? <time dateTime={lottery.scheduled_at ?? undefined} title={lottery.scheduled_at ? `${formatMoscow(lottery.scheduled_at)} МСК` : undefined}>{drawTime(lottery, now)}</time> : <span>Результат сразу</span>}</div>
           </div>
         </button>;
       })}
-      {visible.length === 0 && <p className="collection-empty">В этой категории пока нет лотерей.</p>}
+      {entries.length === 0 && <p className="collection-empty">В этой категории пока нет лотерей.</p>}
     </div>
-    {filter === "all" && <button className="collection-instant" type="button" onClick={() => onOpen("kasper-live")} aria-label="Открыть Casper LIVE"><span className="collection-live-mark" aria-hidden="true">LIVE</span><span><strong>Casper LIVE</strong><small>Мгновенный результат · билет <Money value={2_000} /></small></span><span aria-hidden="true">↗</span></button>}
+    <p className="collection-footnote">{filter === "holiday" ? "Праздничное настроение — круглый год" : "Время розыгрышей указано по Москве"}</p>
   </section>;
 }

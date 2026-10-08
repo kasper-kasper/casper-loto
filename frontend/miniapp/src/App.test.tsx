@@ -253,7 +253,7 @@ it("shows the personal home dashboard while keeping Fast separate", async () => 
   fireEvent.click(screen.getByRole("button", { name: "Лотереи" }));
   const storefront = await screen.findByLabelText("Витрина лотерей");
   expect(within(storefront).getAllByRole("heading").map((heading) => heading.textContent)).toEqual([
-    "Casper Bingo", "Weekly 5/20", "ПСС-Лото", "ХАН-Лото", "ГРОБ", "3 сентября", "ПЛЛ-лото",
+    "Casper LIVE", "ХАН-Лото", "Casper Bingo", "Weekly 5/20", "ПЛЛ-лото", "ПСС-Лото", "3 сентября", "ГРОБ", "FLASH", "PULSE", "SHADOW",
   ]);
   expect(screen.queryByText("Каспер выплатил игрокам за месяц")).not.toBeInTheDocument();
   expect(screen.queryByText("Случайная комбинация")).not.toBeInTheDocument();
@@ -668,7 +668,7 @@ it("keeps Casper Dual as one 2+2 ticket with no favorites or five-draw repeat", 
   expect(screen.getByRole("button", { name: "DAWN 12" })).toHaveAttribute("aria-pressed", "false");
   expect(screen.getByRole("button", { name: "NIGHT 3" })).toHaveAttribute("aria-pressed", "true");
   expect(screen.getByRole("button", { name: "DAWN 5" })).toHaveAttribute("aria-pressed", "true");
-  expect(screen.getAllByText("2 из 2")).toHaveLength(2);
+  expect(screen.getAllByText("2 / 2")).toHaveLength(2);
   expect(screen.getByRole("button", { name: "Купить билет" })).toBeEnabled();
   expect(screen.queryByText("Избранные комбинации")).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "5 тиражей" })).not.toBeInTheDocument();
@@ -724,4 +724,22 @@ it("opens active regular tickets from home after previously viewing winning hist
   fireEvent.click(await screen.findByRole("button", { name: /Мои билеты/ }));
   await waitFor(() => expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "active", "scope:standard", false));
   expect(miniAppApi.purchase).not.toHaveBeenCalled();
+});
+
+
+it("keeps festive selection on return and opens Fast directly from the unified catalog", async () => {
+  vi.mocked(miniAppApi.dashboard).mockResolvedValue({ ...dashboard, lotteries: [...dashboard.lotteries, { ...dashboard.lotteries[0], code: "grob", name: "ГРОБ" }] });
+  render(<App initData="signed" />);
+  await screen.findByRole("heading", { name: "Сегодня" });
+  fireEvent.click(screen.getByRole("button", { name: "Лотереи" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Праздничные" }));
+  fireEvent.click(screen.getByRole("button", { name: "Открыть ГРОБ" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Вернуться к лотереям" }));
+  expect(await screen.findByRole("button", { name: "Праздничные" })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getAllByRole("button", { name: /^Открыть / })).toHaveLength(1);
+  fireEvent.click(screen.getByRole("button", { name: "Тиражные" }));
+  fireEvent.click(screen.getByRole("button", { name: "Открыть FLASH" }));
+  const close = await screen.findByRole("button", { name: /Вернуться|Закрыть|Назад/ });
+  fireEvent.click(close);
+  expect(await screen.findByRole("button", { name: "Тиражные" })).toHaveAttribute("aria-pressed", "true");
 });
