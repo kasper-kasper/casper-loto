@@ -1,3 +1,9 @@
+## Halloween production grid cascade regression — 2026-10-09
+
+- Owner screenshot exposed one-column stretched number controls despite the deployed 1.61.1 assets. Vite production CSS ordering let the equal-specificity generic `.ticket-number-grid` rule override Halloween's seven columns with an unset `--columns`. Development screenshots missed this cascade.
+- Raised the Halloween field selector specificity, made its grid display explicit and supplied `--columns:7` defensively. Verification uses the built production preview, including a late generic stylesheet injection to reproduce the original cascade, at 320/390/430 px.
+- Mini App 1.61.2 / Web 1.55.2 lint/typecheck/build and scoped browser regression precede gateway-only publication.
+
 ## Halloween pumpkin number field correction — 2026-10-09
 
 - Replaced the selected-circle CSS approximation with decorative SVG pumpkin bodies: sculpted ribs, curved stems, warm highlights and glow. Shared ticket component updates Mini App and Web; added an inset field matching the approved first concept. Number text, accessible button state, keyboard operation and selection/purchase services remain unchanged.

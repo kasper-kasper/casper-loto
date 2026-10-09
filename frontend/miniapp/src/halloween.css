@@ -21,7 +21,7 @@
 .halloween-ticket header span{font-size:8px;letter-spacing:.12em;color:#d1ac88}
 .halloween-ticket h2{margin:6px 0 0;color:#ffda90;font:normal clamp(17px,5vw,23px)/1.15 Georgia,serif;letter-spacing:-.03em}
 .halloween-ticket header button{flex-shrink:0;display:grid;place-items:center;min-width:36px;min-height:40px;padding:0;border:1px solid #caa56366;border-radius:9px;color:#ffda90;background:#38203b}
-.halloween-number-grid{grid-template-columns:repeat(7,minmax(0,1fr));gap:11px 5px;padding:12px 5px 10px;border:1px solid #986f9e26;border-radius:13px;background:radial-gradient(ellipse at 50% 0,#59244942,transparent 75%),#160d21;box-shadow:inset 0 2px 14px #0005}
+.halloween-ticket .halloween-number-grid{--columns:7;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:11px 5px;padding:12px 5px 10px;border:1px solid #986f9e26;border-radius:13px;background:radial-gradient(ellipse at 50% 0,#59244942,transparent 75%),#160d21;box-shadow:inset 0 2px 14px #0005}
 .halloween-number{position:relative;isolation:isolate;min-width:0;min-height:44px;padding:0;border:1px solid #d9a45f8a;border-radius:50%;color:#fbe4ba;background:radial-gradient(circle at 35% 23%,#604332,#26162c 48%,#110e1a 80%);box-shadow:inset 0 0 0 2px #180f25,inset 0 0 0 3px #f2c47d36,0 3px 7px #0006;font:normal clamp(15px,4.2vw,20px)/1 Georgia,serif;touch-action:manipulation;transition:background .18s,box-shadow .18s,color .18s}
 .halloween-pumpkin{position:absolute;inset:-9px -3px -4px;width:calc(100% + 6px);height:calc(100% + 13px);overflow:visible;pointer-events:none;filter:drop-shadow(0 0 4px #ffb135b3) drop-shadow(0 0 9px #f476163d)}
 .halloween-number>span,.halloween-lantern>span{position:relative;z-index:1}
