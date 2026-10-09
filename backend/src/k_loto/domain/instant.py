@@ -49,3 +49,58 @@ def symbols_for_prize(prize: int) -> tuple[int, ...]:
         return PRIZE_SYMBOLS[prize]
     except KeyError as error:
         raise ValueError("Unknown Kasper LIVE prize category.") from error
+
+
+@dataclass(frozen=True, slots=True)
+class InstantRules:
+    code: str
+    name: str
+    price: int
+    version: str
+    bands: tuple[PrizeBand, ...]
+
+    def prize(self, roll: int) -> int:
+        if not 1 <= roll <= 10_000:
+            raise ValueError("Instant roll must be between 1 and 10,000.")
+        return next(band.prize for band in self.bands if roll <= band.upper_roll)
+
+    def symbols(self, prize: int) -> tuple[int, ...]:
+        for index, band in enumerate(self.bands):
+            if band.prize == prize:
+                return (1, 2, 3) if prize == 0 else (index + 1,) * 3
+        raise ValueError("Unknown instant prize category.")
+
+
+LIVE_RULES = InstantRules(
+    "kasper-live", "Casper LIVE", TICKET_PRICE, ODDS_VERSION, PRIZE_BANDS
+)
+AURORA_RULES = InstantRules(
+    "aurora",
+    "Casper Aurora",
+    3_000,
+    "casper-aurora-v1",
+    (
+        PrizeBand(6_000, 0),
+        PrizeBand(8_000, 2_000),
+        PrizeBand(9_000, 3_000),
+        PrizeBand(9_700, 6_000),
+        PrizeBand(9_980, 25_000),
+        PrizeBand(9_999, 200_000),
+        PrizeBand(10_000, 1_000_000),
+    ),
+)
+INSTANT_GAMES = {rules.code: rules for rules in (LIVE_RULES, AURORA_RULES)}
+
+
+def instant_rules(code: str) -> InstantRules:
+    try:
+        return INSTANT_GAMES[code]
+    except KeyError as error:
+        raise ValueError("Unknown instant game.") from error
+
+
+def instant_rules_for_version(version: str) -> InstantRules:
+    for rules in INSTANT_GAMES.values():
+        if rules.version == version:
+            return rules
+    raise ValueError("Unknown instant odds version.")

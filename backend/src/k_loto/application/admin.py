@@ -9,6 +9,7 @@ from sqlalchemy import (
     BigInteger,
     Integer,
     String,
+    case,
     cast,
     exists,
     func,
@@ -31,6 +32,7 @@ from k_loto.domain.enums import (
     TicketStatus,
     TransactionType,
 )
+from k_loto.domain.instant import AURORA_RULES, LIVE_RULES
 from k_loto.domain.lotteries import MOSCOW, draw_display_name, is_fast_lottery
 from k_loto.domain.lottery_rules import get_lottery_rules
 from k_loto.domain.schedules import next_draw_at
@@ -687,8 +689,7 @@ class AdminQueryService:
 
     def _current_fast_format(self) -> Any:
         current = (
-            Draw.configuration_snapshot["ruleset_code"].astext
-            == Lottery.ruleset_code
+            Draw.configuration_snapshot["ruleset_code"].astext == Lottery.ruleset_code
         )
         if self._scope == "fast":
             return current
@@ -864,8 +865,14 @@ class AdminQueryService:
             literal("INSTANT").label("ticket_kind"),
             InstantTicket.purchased_at.label("purchased_at"),
             cast(literal(None), Lottery.id.type).label("lottery_id"),
-            literal("kasper-live").label("lottery_code"),
-            literal("Kasper LIVE").label("lottery_name"),
+            case(
+                (InstantTicket.odds_version == AURORA_RULES.version, "aurora"),
+                else_="kasper-live",
+            ).label("lottery_code"),
+            case(
+                (InstantTicket.odds_version == AURORA_RULES.version, "Casper Aurora"),
+                else_="Kasper LIVE",
+            ).label("lottery_name"),
             cast(literal(None), BigInteger).label("draw_number"),
             InstantTicket.public_number.label("public_number"),
             InstantTicket.symbols.label("numbers"),
@@ -964,28 +971,34 @@ class AdminQueryService:
             )
             for lottery_id, code, name, count, active, wins, spent, won in grouped
         ]
-        instant_stats = (
-            await self._session.execute(
-                select(
-                    func.count(InstantTicket.id),
-                    func.count(InstantTicket.id).filter(InstantTicket.prize_amount > 0),
-                    func.coalesce(func.sum(InstantTicket.purchase_price), 0),
-                    func.coalesce(func.sum(InstantTicket.prize_amount), 0),
-                ).where(InstantTicket.user_id == user_id)
+        for rules in (LIVE_RULES, AURORA_RULES):
+            instant_stats = (
+                await self._session.execute(
+                    select(
+                        func.count(InstantTicket.id),
+                        func.count(InstantTicket.id).filter(
+                            InstantTicket.prize_amount > 0
+                        ),
+                        func.coalesce(func.sum(InstantTicket.purchase_price), 0),
+                        func.coalesce(func.sum(InstantTicket.prize_amount), 0),
+                    ).where(
+                        InstantTicket.user_id == user_id,
+                        InstantTicket.odds_version == rules.version,
+                    )
+                )
+            ).one()
+            stats.append(
+                AdminPlayerLotteryStats(
+                    None,
+                    rules.code,
+                    rules.name,
+                    int(instant_stats[0]),
+                    0,
+                    int(instant_stats[1]),
+                    int(instant_stats[2]),
+                    int(instant_stats[3]),
+                )
             )
-        ).one()
-        stats.append(
-            AdminPlayerLotteryStats(
-                None,
-                "kasper-live",
-                "Kasper LIVE",
-                int(instant_stats[0]),
-                0,
-                int(instant_stats[1]),
-                int(instant_stats[2]),
-                int(instant_stats[3]),
-            )
-        )
         return history, total, tuple(stats)
 
     async def _player(self, user: User, balance: int, ticket_count: int) -> AdminPlayer:

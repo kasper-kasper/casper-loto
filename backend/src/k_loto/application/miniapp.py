@@ -25,6 +25,11 @@ from k_loto.domain.enums import (
     TicketStatus,
     TransactionType,
 )
+from k_loto.domain.instant import (
+    INSTANT_GAMES,
+    instant_rules,
+    instant_rules_for_version,
+)
 from k_loto.domain.live_timeline import (
     draw_timeline,
     fast_presentation_timeline,
@@ -679,8 +684,10 @@ class MiniAppQueryService:
         wins_only: bool = False,
         scope: LotteryScope = "all",
     ) -> tuple[MiniAppTicket, ...]:
-        only_instant = lottery_code == "kasper-live"
-        include_instant = not active and (scope == "all" or only_instant)
+        only_instant = lottery_code in INSTANT_GAMES
+        include_instant = not active and (
+            (not lottery_code and scope == "all") or only_instant
+        )
         filters = [Ticket.user_id == user_id, lottery_scope(scope)]
         if active:
             filters.append(Ticket.status == TicketStatus.PURCHASED)
@@ -788,6 +795,10 @@ class MiniAppQueryService:
         if not include_instant:
             return tuple(regular)
         instant_filters = [InstantTicket.user_id == user_id]
+        if only_instant and lottery_code:
+            instant_filters.append(
+                InstantTicket.odds_version == instant_rules(lottery_code).version
+            )
         if wins_only:
             instant_filters.append(InstantTicket.prize_amount > 0)
         instant_rows = (
@@ -805,8 +816,8 @@ class MiniAppQueryService:
             MiniAppTicket(
                 id=item.id,
                 public_number=item.public_number,
-                lottery_code="kasper-live",
-                lottery_name="Kasper LIVE",
+                lottery_code=instant_rules_for_version(item.odds_version).code,
+                lottery_name=instant_rules_for_version(item.odds_version).name,
                 draw_number=0,
                 scheduled_at=item.purchased_at,
                 numbers=(),
@@ -837,7 +848,7 @@ class MiniAppQueryService:
         wins_only: bool = False,
         scope: LotteryScope = "all",
     ) -> int:
-        only_instant = lottery_code == "kasper-live"
+        only_instant = lottery_code in INSTANT_GAMES
         filters = [Ticket.user_id == user_id, lottery_scope(scope)]
         if active:
             filters.append(Ticket.status == TicketStatus.PURCHASED)
@@ -862,8 +873,12 @@ class MiniAppQueryService:
             )
         )
         instant_count = 0
-        if not active and (scope == "all" or only_instant):
+        if not active and ((not lottery_code and scope == "all") or only_instant):
             instant_filters = [InstantTicket.user_id == user_id]
+            if only_instant and lottery_code:
+                instant_filters.append(
+                    InstantTicket.odds_version == instant_rules(lottery_code).version
+                )
             if wins_only:
                 instant_filters.append(InstantTicket.prize_amount > 0)
             instant_count = int(

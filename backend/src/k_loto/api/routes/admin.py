@@ -569,6 +569,20 @@ async def kasper_live_summary(
     )
 
 
+@router.get("/aurora", response_model=KasperLiveSummaryResponse)
+async def aurora_summary(
+    _admin: Annotated[CurrentAdmin, Depends(get_current_admin)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> KasperLiveSummaryResponse:
+    item = await InstantTicketQueryService(session).summary("aurora")
+    return KasperLiveSummaryResponse(
+        ticket_count=item.ticket_count,
+        winning_tickets=item.winning_tickets,
+        losing_tickets=item.losing_tickets,
+        result=item.result,
+    )
+
+
 @router.get("/notifications", response_model=list[NotificationResponse])
 async def notifications(
     _admin: Annotated[CurrentAdmin, Depends(get_current_admin)],

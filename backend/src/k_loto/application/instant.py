@@ -11,12 +11,7 @@ from k_loto.application.ports import SecureNumberGenerator
 from k_loto.application.weekly import KASPER_FUND_ID, _ledger_entry
 from k_loto.domain.enums import LedgerAccountKind, TransactionType
 from k_loto.domain.errors import ConfigurationError, InsufficientBalance, InvalidTicket
-from k_loto.domain.instant import (
-    ODDS_VERSION,
-    TICKET_PRICE,
-    prize_for_roll,
-    symbols_for_prize,
-)
+from k_loto.domain.instant import instant_rules
 from k_loto.domain.weekly import SystemRandomNumberGenerator
 from k_loto.infrastructure.database.models import (
     Balance,
@@ -59,12 +54,15 @@ class InstantTicketQueryService:
         self._session = session
 
     async def history(
-        self, user_id: UUID, *, limit: int = 30
+        self, user_id: UUID, *, limit: int = 30, game_code: str = "kasper-live"
     ) -> tuple[InstantTicketResult, ...]:
         rows = (
             await self._session.scalars(
                 select(InstantTicket)
-                .where(InstantTicket.user_id == user_id)
+                .where(
+                    InstantTicket.user_id == user_id,
+                    InstantTicket.odds_version == instant_rules(game_code).version,
+                )
                 .order_by(
                     InstantTicket.purchased_at.desc(),
                     InstantTicket.public_number.desc(),
@@ -82,7 +80,7 @@ class InstantTicketQueryService:
             for item in rows
         )
 
-    async def summary(self) -> InstantSummary:
+    async def summary(self, game_code: str = "kasper-live") -> InstantSummary:
         row = (
             await self._session.execute(
                 select(
@@ -93,7 +91,7 @@ class InstantTicketQueryService:
                     ),
                     func.coalesce(func.sum(InstantTicket.purchase_price), 0)
                     - func.coalesce(func.sum(InstantTicket.prize_amount), 0),
-                )
+                ).where(InstantTicket.odds_version == instant_rules(game_code).version)
             )
         ).one()
         return InstantSummary(*(int(value) for value in row))
@@ -104,8 +102,11 @@ class InstantTicketPurchaseService:
         self,
         session: AsyncSession,
         number_generator: SecureNumberGenerator | None = None,
+        *,
+        game_code: str = "kasper-live",
     ) -> None:
         self._session = session
+        self._rules = instant_rules(game_code)
         self._number_generator = number_generator or SystemRandomNumberGenerator()
 
     async def _existing_result(
@@ -153,7 +154,8 @@ class InstantTicketPurchaseService:
             raise ValueError("idempotency_key must contain 1 to 100 characters.")
 
         timestamp = now or datetime.now(UTC)
-        user_key = f"instant:{idempotency_key}:user:purchase"
+        namespace = "instant" if self._rules.code == "kasper-live" else "instant-aurora"
+        user_key = f"{namespace}:{idempotency_key}:user:purchase"
         async with self._session.begin():
             existing = await self._session.scalar(
                 select(LedgerTransaction).where(
@@ -161,6 +163,11 @@ class InstantTicketPurchaseService:
                 )
             )
             if existing is not None:
+                if (
+                    existing.user_id != user_id
+                    or existing.details.get("ticket_count") != quantity
+                ):
+                    raise InvalidTicket("Purchase key belongs to another request.")
                 return await self._existing_result(existing)
 
             fund = await self._session.scalar(
@@ -180,17 +187,22 @@ class InstantTicketPurchaseService:
                 )
             )
             if existing is not None:
+                if (
+                    existing.user_id != user_id
+                    or existing.details.get("ticket_count") != quantity
+                ):
+                    raise InvalidTicket("Purchase key belongs to another request.")
                 return await self._existing_result(existing)
 
-            total_cost = quantity * TICKET_PRICE
+            total_cost = quantity * self._rules.price
             if balance.amount < total_cost:
                 raise InsufficientBalance("Insufficient CAS balance.")
 
             prizes = tuple(
-                prize_for_roll(self._number_generator.draw_sequence(1, 10_000, 1)[0])
+                self._rules.prize(self._number_generator.draw_sequence(1, 10_000, 1)[0])
                 for _ in range(quantity)
             )
-            symbols = tuple(symbols_for_prize(prize) for prize in prizes)
+            symbols = tuple(self._rules.symbols(prize) for prize in prizes)
             total_prize = sum(prizes)
             if fund.balance < total_prize:
                 raise ConfigurationError("Kasper fund cannot cover this prize.")
@@ -201,9 +213,9 @@ class InstantTicketPurchaseService:
                     id=uuid4(),
                     user_id=user_id,
                     symbols=list(ticket_symbols),
-                    purchase_price=TICKET_PRICE,
+                    purchase_price=self._rules.price,
                     prize_amount=prize,
-                    odds_version=ODDS_VERSION,
+                    odds_version=self._rules.version,
                     purchased_at=timestamp,
                     settled_at=timestamp,
                 )
@@ -225,12 +237,12 @@ class InstantTicketPurchaseService:
 
             ticket_ids = [str(item.id) for item in tickets]
             details = {
-                "game": "kasper-live",
+                "game": self._rules.code,
                 "ticket_ids": ticket_ids,
                 "ticket_count": quantity,
                 "prizes": list(prizes),
                 "total_prize": total_prize,
-                "odds_version": ODDS_VERSION,
+                "odds_version": self._rules.version,
                 "final_balance": final_balance,
             }
             entries = [
@@ -251,7 +263,7 @@ class InstantTicketPurchaseService:
                     (
                         _ledger_entry(
                             operation_id=operation_id,
-                            idempotency_key=f"instant:{idempotency_key}:fund:prize",
+                            idempotency_key=f"{namespace}:{idempotency_key}:fund:prize",
                             account_kind=LedgerAccountKind.KASPER_FUND,
                             account_id=fund.id,
                             transaction_type=TransactionType.PRIZE_PAYOUT,
@@ -262,7 +274,7 @@ class InstantTicketPurchaseService:
                         ),
                         _ledger_entry(
                             operation_id=operation_id,
-                            idempotency_key=f"instant:{idempotency_key}:user:prize",
+                            idempotency_key=f"{namespace}:{idempotency_key}:user:prize",
                             account_kind=LedgerAccountKind.USER_BALANCE,
                             account_id=user_id,
                             transaction_type=TransactionType.PRIZE_PAYOUT,
