@@ -1,3 +1,10 @@
+## Casper Grand flagship implementation - 2026-10-09
+
+- OD-047 approved: versioned grand_fixed_5_35_2_5 with ten fixed per-ticket prizes, shared 5+2 jackpot, unchanged price/schedule/funding. Legacy percentage rules remain available for historical snapshots. No schema change.
+- Generalized the audited Halloween transition service, preserving its defaults. Grand activation requires the configured admin audit identity, chronological recovery, transactional locks, original-price paired refunds and per-ticket audit; repeat activation is a no-op. Owner approves 145 future tickets / 4,865,000 CAS.
+- Brighter generated Grand Hall artwork, tactile medallions, removable racks, accessible pressed states and reduced-motion support. Shared pure controls avoid duplicate React hook dispatchers. Explicit seven-column specificity survives production CSS order. Perspective animated draw uses server-revealed numbers. Catalogue footprint unchanged.
+- Checks: backend 441 passed / 1 platform skip; mypy 75 files; scoped Ruff passes (759 existing repository findings outside scope). Mini App full run plus corrected focused rerun covers 137 tests; Web 35 / Admin 38 pass. Frontends lint/typecheck/build pass. Built Mini App smoke at 320/390/430 confirms seven columns, field limits and removal. Release checks PostgreSQL rollback/concurrency/history/refunds against a disposable backup clone.
+
 ## Casper Grand concept study — 2026-10-09
 
 - Discussion only at the owner's request: recorded lower payout preferences and unresolved senior tiers in OD-047 and `docs/CASPER_GRAND_CONCEPTS.md`. Evaluated the proposed fixed table's ordinary payout expectation (7,320.60 CAS / 14.64% of a 50k ticket), excluding jackpot and refill; fund coverage is not approved by this calculation.

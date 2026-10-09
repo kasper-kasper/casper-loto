@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Money } from "./components";
 import { countdown, formatDrawLabel, formatMoscow } from "./format";
 import type { Lottery } from "./types";
-import grand from "./assets/lotteries/kasper-grand-scene.webp";
+import grand from "./assets/lotteries/grand-hall-v1.webp";
 import classic from "./assets/lotteries/khan-scene.webp";
 import september from "./assets/lotteries/september-embankment.jpg";
 import portal from "./assets/lotteries/pll-portal.jpg";

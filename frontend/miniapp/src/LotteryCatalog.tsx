@@ -2,7 +2,7 @@ import { useLayoutEffect, useState } from "react";
 import { Money } from "./components";
 import { formatCas, formatMoscow, formatMoscowTime } from "./format";
 import type { Lottery } from "./types";
-import grand from "./assets/lotteries/kasper-grand-scene.webp";
+import grand from "./assets/lotteries/grand-hall-v1.webp";
 import classic from "./assets/lotteries/classic-drum-v1.webp";
 import september from "./assets/lotteries/september-embankment.jpg";
 import portal from "./assets/lotteries/pll-portal.jpg";

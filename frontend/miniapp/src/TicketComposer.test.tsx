@@ -13,6 +13,25 @@ function setup(lottery = base, purchasing = false) {
 }
 
 describe("ticket selection presentation", () => {
+  it("caps Grand fields independently, removes chosen balls and buys an encoded 5+2 ticket", () => {
+    const { onBuy, onBuyMany } = setup({ ...base, code: "weekly", name: "Casper Grand", numbers_to_pick: 7, max_number: 40, primary_numbers_to_pick: 5, primary_max_number: 35, secondary_numbers_to_pick: 2, secondary_max_number: 5, secondary_storage_offset: 35, ticket_price: 50000, fixed_payouts: {21:50000,51:20000000} });
+    for (const n of [1,4,13,21,28,35]) fireEvent.click(screen.getByRole("button", { name: `Основные числа ${n}` }));
+    for (const n of [2,5,1]) fireEvent.click(screen.getByRole("button", { name: `Золотые шары ${n}` }));
+    expect(screen.getByRole("button", { name: "Основные числа 35" })).toHaveAttribute("aria-pressed","false");
+    expect(screen.getByRole("button", { name: "Золотые шары 1" })).toHaveAttribute("aria-pressed","false");
+    fireEvent.click(screen.getByRole("button", { name: "Убрать основные числа 1" }));
+    expect(screen.getByRole("button", { name: "Купить билет" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Основные числа 35" }));
+    fireEvent.click(screen.getByRole("button", { name: "Купить билет" }));
+    expect(onBuy).toHaveBeenCalledWith([4,13,21,28,35,37,40],1);
+    fireEvent.click(screen.getByRole("button", { name: "Купить 25 случайных билетов" }));
+    expect(onBuyMany.mock.calls[0][0]).toHaveLength(25);
+    for (const numbers of onBuyMany.mock.calls[0][0] as number[][]) {
+      expect(numbers.filter(n => n <= 35)).toHaveLength(5);
+      expect(numbers.filter(n => n > 35)).toHaveLength(2);
+      expect(new Set(numbers).size).toBe(7);
+    }
+  });
   it("keeps Halloween selection, removable lanterns and ×25 purchases on server rules", () => {
     const lottery = { ...base, code: "grob", name: "Casper Halloween", numbers_to_pick: 3, max_number: 28, ticket_price: 6666, fixed_payouts: { "2": 28_000 } };
     const { onBuyMany } = setup(lottery);
@@ -54,9 +73,9 @@ describe("ticket selection presentation", () => {
   ])("keeps %s main and special selection limits independent", (code, max, mainCount, specialMax, specialCount) => {
     setup({ ...base, code, numbers_to_pick: mainCount + specialCount, max_number: max + specialMax, primary_max_number: max, primary_numbers_to_pick: mainCount, secondary_max_number: specialMax, secondary_numbers_to_pick: specialCount, secondary_storage_offset: max });
     const main = screen.getByLabelText("Основные числа");
-    const special = screen.getByLabelText(code === "pss" ? "Casper Ball" : "Звёзды");
-    for (let n = 1; n <= mainCount + 1; n++) fireEvent.click(within(main).getByRole("button", { name: String(n) }));
-    for (let n = 1; n <= specialCount + 1; n++) fireEvent.click(within(special).getByRole("button", { name: String(n) }));
+    const special = screen.getByLabelText(code === "pss" ? "Casper Ball" : "Золотые шары");
+    for (let n = 1; n <= mainCount + 1; n++) fireEvent.click(within(main).getByRole("button", { name: code === "weekly" ? `Основные числа ${n}` : String(n) }));
+    for (let n = 1; n <= specialCount + 1; n++) fireEvent.click(within(special).getByRole("button", { name: code === "weekly" ? `Золотые шары ${n}` : String(n) }));
     expect(within(main).getAllByRole("button", { pressed: true })).toHaveLength(mainCount);
     expect(within(special).getAllByRole("button", { pressed: true })).toHaveLength(specialCount);
     expect(screen.getByRole("button", { name: "Купить билет" })).toBeEnabled();

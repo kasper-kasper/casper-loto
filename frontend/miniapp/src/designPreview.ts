@@ -33,7 +33,7 @@ const lotterySeed = [
   { code: "pll", name: "2:22", kind: "DAILY" as const, numbers_to_pick: 4, max_number: 15, ticket_price: 24_000, jackpot: 18_640_000, draw_number: 418, scheduled_at: future(145) },
   { code: "pss", name: "Casper Ball", kind: "DAILY" as const, numbers_to_pick: 6, max_number: 44, primary_numbers_to_pick: 5, primary_max_number: 36, secondary_numbers_to_pick: 1, secondary_max_number: 8, secondary_storage_offset: 36, ticket_price: 24_000, jackpot: 24_000_000, draw_number: 219, scheduled_at: future(230) },
   { code: "khan", name: "6 из 36", kind: "DAILY" as const, numbers_to_pick: 6, max_number: 36, ticket_price: 48_000, jackpot: 33_456_000, draw_number: 174, scheduled_at: future(310) },
-  { code: "weekly", name: "Casper Grand", kind: "WEEKLY" as const, numbers_to_pick: 7, max_number: 40, primary_numbers_to_pick: 5, primary_max_number: 35, secondary_numbers_to_pick: 2, secondary_max_number: 5, secondary_storage_offset: 35, ticket_price: 50_000, jackpot: 5_000_182_500, draw_number: 4, scheduled_at: future(1_420) },
+  { code: "weekly", fixed_payouts: {21:50000,22:50000,30:100000,31:200000,32:300000,40:500000,41:1000000,42:3000000,50:10000000,51:20000000} as Record<string, number>, name: "Casper Grand", kind: "WEEKLY" as const, numbers_to_pick: 7, max_number: 40, primary_numbers_to_pick: 5, primary_max_number: 35, secondary_numbers_to_pick: 2, secondary_max_number: 5, secondary_storage_offset: 35, ticket_price: 50_000, jackpot: 5_000_182_500, draw_number: 4, scheduled_at: future(1_420) },
 ];
 
 let balance = 100_000_000_000;

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { miniAppApi } from "./api";
 import { GameHeader } from "./GameHeader";
 import { ClassicHeader } from "./ClassicHeader";
+import { GrandHeader } from "./GrandHeader";
 import { HalloweenHeader } from "./HalloweenHeader";
 import { LiveView } from "./LiveView";
 import type { LiveFeed, Lottery } from "./types";
@@ -30,7 +31,7 @@ export function LotteryRoom({ lottery, initData, now, children, onClose, onTicke
     return () => { active = false; clearTimeout(timer); };
   }, [initData, lottery.code, tab]);
   const classicTicket = lottery.code === "khan" && tab === "tickets";
-  const Header = classicTicket ? ClassicHeader : lottery.code === "grob" ? HalloweenHeader : GameHeader;
+  const Header = classicTicket ? ClassicHeader : lottery.code === "grob" ? HalloweenHeader : lottery.code === "weekly" && (lottery.secondary_numbers_to_pick ?? 0) > 0 ? GrandHeader : GameHeader;
   return <div className={`play-room game-${lottery.code}${classicTicket ? " classic-room" : ""}`}>
     <Header lottery={lottery} balance={balance} now={now} onClose={onClose}>
       {tab === "live" && <button type="button" onClick={() => setTab("tickets")}>К билетам</button>}

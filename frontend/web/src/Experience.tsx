@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { webApi } from "./api";
 import type { Lottery, WebSession } from "./types";
 import logoHorizontal from "../../shared/assets/brand/logo-horizontal.png";
-import grand from "../../miniapp/src/assets/lotteries/kasper-grand-scene.webp";
+import grand from "../../miniapp/src/assets/lotteries/grand-hall-v1.webp";
 import khan from "./khan/assets/core/khan-studio-v1.webp";
 import grob from "../../miniapp/src/assets/lotteries/halloween-pumpkins-v1.webp";
 import pll from "../../miniapp/src/assets/lotteries/pll-scene.webp";

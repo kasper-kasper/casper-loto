@@ -416,9 +416,9 @@ it("keeps Casper Grand main and special number fields independent", async () => 
 
   fireEvent.click(await screen.findByRole("button", { name: "Моя лотерея" }));
   const main = (await screen.findByText("Основные числа")).closest("section") as HTMLElement;
-  const special = screen.getByText("Звёзды").closest("section") as HTMLElement;
-  for (const number of [1, 2, 3, 4, 5]) fireEvent.click(within(main).getByRole("button", { name: String(number) }));
-  for (const number of [1, 2]) fireEvent.click(within(special).getByRole("button", { name: String(number) }));
+  const special = screen.getByText("Золотые шары").closest("section") as HTMLElement;
+  for (const number of [1, 2, 3, 4, 5]) fireEvent.click(within(main).getByRole("button", { name: `Основные числа ${number}` }));
+  for (const number of [1, 2]) fireEvent.click(within(special).getByRole("button", { name: `Золотые шары ${number}` }));
   fireEvent.click(screen.getByRole("button", { name: "Купить билет" }));
 
   await waitFor(() => expect(miniAppApi.purchase).toHaveBeenCalledWith(

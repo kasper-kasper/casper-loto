@@ -6,6 +6,7 @@ import { MINIAPP_TEXTS as copy } from "./content";
 import { countdown, formatCas, formatDrawLabel, formatMoscow, formatTicketLabel } from "./format";
 import { livePresentation, replayPresentation } from "./live";
 import { LotteryVisual } from "./LotteryVisuals";
+import { GrandDrawScene } from "./GrandDrawScene";
 import { isGrandLottery, matchLabel, splitGrandNumbers } from "./grand";
 import { liveStartHaptic, selectionHaptic } from "./telegram";
 import type { LiveDraw, LiveFeed, LiveTicket } from "./types";
@@ -107,6 +108,7 @@ export function LiveView({ feed, now, loading, onPlay, onTickets }: LiveViewProp
       </header>
       <div className="live-identity"><span>{lotteryFormat(draw)}</span><h1>{draw.lottery_name}</h1><time>{formatMoscow(draw.scheduled_at)} МСК · {formatDrawLabel(draw.lottery_code, draw.draw_number)}</time></div>
 
+      {draw.lottery_code === "weekly" && <GrandDrawScene active={state.phase === "starting" || state.phase === "revealing"} revealed={state.revealedNumbers} />}
       {state.phase === "waiting" && <>
         <div className="live-countdown"><span>{finalMinute ? "Тираж начнётся через" : "До начала тиража"}</span><strong>{countdown(draw.scheduled_at, now)}</strong><small><i /> Синхронизировано с сервером</small><div className="live-signal" aria-hidden="true"><i /><span /></div>{finalMinute && <div className="last-minute-progress"><span style={{ width: `${finalMinuteProgress}%` }} /></div>}</div>
         <div className="live-timeline" aria-label="Этапы тиража"><div className="active"><i /><span>Ожидание</span></div><b /><div><i /><span>Выбор чисел</span></div><b /><div><i /><span>Результат</span></div></div>

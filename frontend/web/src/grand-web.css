@@ -1,0 +1,3 @@
+.grand-web.picker-panel{width:min(460px,calc(100vw - 24px));max-height:94vh;overflow:auto;padding:18px;background:#0a1328;border-color:#d4a96280;color:#f6edd7}
+.grand-web .play-checkout{position:sticky;bottom:-18px;left:auto;right:auto;width:100%;max-width:none;transform:none;margin-top:14px;padding:14px 8px;background:#10182bef;border:1px solid #d4a96266;border-radius:12px}
+.grand-web .icon{width:18px;height:18px}.grand-web .play-quick{margin-top:15px}.grand-web .grand-header{margin-bottom:10px}.grand-web .play-topbar h1{font-size:25px}.grand-web .play-back{min-width:34px}.grand-web .play-topbar{margin-bottom:12px}
