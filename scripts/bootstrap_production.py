@@ -74,7 +74,9 @@ async def ensure_lottery(
         lottery.sales_cutoff_minutes = cutoff
         lottery.name = name
         lottery.schedule = schedule
-        lottery.ruleset_code = ruleset_code
+        # Existing Grand terms change only through the explicit audited transition.
+        if created or code != "weekly":
+            lottery.ruleset_code = ruleset_code
         lottery.numbers_to_pick = pick
         lottery.max_number = maximum
         if created:
@@ -106,7 +108,7 @@ async def main() -> None:
         40,
         5,
         {"weekday": "sunday", "draw_time": "20:00"},
-        "weekly_grand_5_35_2_5",
+        "grand_fixed_5_35_2_5",
     )
     for code, name, slots, pick, maximum, ruleset_code in (
         ("pll", "ПЛЛ-лото", ["02:22", "13:45"], 4, 15, "daily_4_15"),

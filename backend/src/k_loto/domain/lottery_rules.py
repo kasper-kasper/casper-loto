@@ -2,7 +2,7 @@
 
 import secrets
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from types import MappingProxyType
 from typing import Protocol
 from uuid import UUID
@@ -506,6 +506,26 @@ KASPER_GRAND_RULES = LotteryRuleStrategy(
         }
     ),
 )
+GRAND_FIXED_RULES = replace(
+    KASPER_GRAND_RULES,
+    code="grand_fixed_5_35_2_5",
+    label="Casper Grand",
+    fixed_payouts=MappingProxyType(
+        {
+            21: 50_000,
+            22: 50_000,
+            30: 100_000,
+            31: 200_000,
+            32: 300_000,
+            40: 500_000,
+            41: 1_000_000,
+            42: 3_000_000,
+            50: 10_000_000,
+            51: 20_000_000,
+        }
+    ),
+    tier_pool_payouts=MappingProxyType({}),
+)
 DAILY_RULES = LotteryRuleStrategy(
     "daily_4_15",
     "Daily",
@@ -796,6 +816,7 @@ LOTTERY_RULES: Mapping[str, LotteryRuleStrategy] = MappingProxyType(
             BINGO_RULES,
             WEEKLY_RULES,
             KASPER_GRAND_RULES,
+            GRAND_FIXED_RULES,
             DAILY_RULES,
             PSS_CASPER_BALL_RULES,
             CLASSIC_6_36_RULES,
