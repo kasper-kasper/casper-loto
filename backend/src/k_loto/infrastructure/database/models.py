@@ -16,6 +16,7 @@ from sqlalchemy import (
     Index,
     Integer,
     String,
+    Text,
     UniqueConstraint,
     func,
 )
@@ -209,6 +210,9 @@ class Draw(TimestampMixin, Base):
         CheckConstraint("ticket_count >= 0", name="ticket_count_nonnegative"),
         CheckConstraint("total_sales >= 0", name="total_sales_nonnegative"),
         CheckConstraint("total_payout >= 0", name="total_payout_nonnegative"),
+        CheckConstraint(
+            "distributed_amount >= 0", name="distributed_amount_nonnegative"
+        ),
         CheckConstraint("kasper_fund_used >= 0", name="kasper_fund_used_nonnegative"),
         Index("ix_draw_due", "status", "scheduled_at"),
     )
@@ -246,6 +250,41 @@ class Draw(TimestampMixin, Base):
     configuration_snapshot: Mapped[dict[str, Any]] = mapped_column(
         JSONB, default=dict, server_default="{}"
     )
+
+    is_distribution: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false"
+    )
+    distribution_category: Mapped[str | None] = mapped_column(String(32))
+    distributed_amount: Mapped[int] = mapped_column(
+        BigInteger, default=0, server_default="0"
+    )
+
+
+class DistributionAnnouncement(Base):
+    __tablename__ = "distribution_announcements"
+    __table_args__ = (
+        CheckConstraint(
+            "state IN ('queued','sending','sent','uncertain','failed','expired')",
+            name="ck_distribution_announcement_state",
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), primary_key=True, default=uuid4
+    )
+    draw_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("draws.id", ondelete="RESTRICT"), unique=True
+    )
+    text: Mapped[str] = mapped_column(Text)
+    state: Mapped[str] = mapped_column(
+        String(16), default="queued", server_default="queued"
+    )
+    retry_after: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    message_id: Mapped[int | None] = mapped_column(BigInteger)
+    error_type: Mapped[str | None] = mapped_column(String(100))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class Ticket(Base):

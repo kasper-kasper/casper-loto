@@ -55,9 +55,13 @@ class SettlementPlan:
     jackpot_reset_credit: int
     total_payout: int
     jackpot_match_count: int
+    jackpot_distributed: bool = False
+    distribution_category: str | None = None
 
     @property
     def jackpot_won(self) -> bool:
+        if self.jackpot_distributed:
+            return False
         return any(
             (
                 item.jackpot_amount > 0

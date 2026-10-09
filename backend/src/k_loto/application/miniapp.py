@@ -84,6 +84,7 @@ class MiniAppLottery:
     max_tickets_per_purchase: int
     max_tickets_per_user_per_draw: int
     fixed_payouts: dict[int, int] | None = None
+    is_distribution: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -169,6 +170,7 @@ class MiniAppLiveDraw:
     primary_numbers_to_pick: int = 0
     secondary_storage_offset: int = 0
     primary_max_number: int = 0
+    is_distribution: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -620,6 +622,7 @@ class MiniAppQueryService:
                     max_tickets_per_purchase=lottery.max_tickets_per_purchase,
                     max_tickets_per_user_per_draw=lottery.max_tickets_per_user_per_draw,
                     fixed_payouts=dict(rules.fixed_payouts),
+                    is_distribution=bool(draw and draw.is_distribution),
                 )
             )
         recent_results = await self.tickets(user_id, active=False, limit=3)
@@ -1125,6 +1128,7 @@ class MiniAppQueryService:
             primary_numbers_to_pick=rules.display_primary_numbers_to_pick,
             secondary_storage_offset=rules.secondary_storage_offset,
             primary_max_number=rules.display_primary_max_number,
+            is_distribution=bool(draw.is_distribution),
         )
 
     async def activity(

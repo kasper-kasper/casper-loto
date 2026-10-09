@@ -9,6 +9,7 @@ from uuid import UUID
 
 from fastapi import (
     APIRouter,
+    BackgroundTasks,
     Cookie,
     Depends,
     Header,
@@ -1029,3 +1030,52 @@ async def release_notes(
         ReleaseNoteResponse.model_validate(item, from_attributes=True)
         for item in load_release_notes(kind)
     ]
+
+
+@router.get("/distribution-draws")
+async def distribution_draws(
+    lottery_id: UUID,
+    day: date,
+    _admin: Annotated[CurrentAdmin, Depends(get_current_admin)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> list[dict[str, Any]]:
+    from k_loto.application.distribution import DistributionDrawService
+
+    return await DistributionDrawService(session).list(lottery_id, day)
+
+
+class DistributionDrawInput(BaseModel):
+    lottery_id: UUID
+    scheduled_at: datetime
+
+
+@router.post("/distribution-draws/{draw_id}")
+async def assign_distribution_draw(
+    draw_id: UUID,
+    payload: DistributionDrawInput,
+    background: BackgroundTasks,
+    admin: Annotated[CurrentAdmin, Depends(require_admin_csrf)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> dict[str, Any]:
+    from k_loto.application.distribution import (
+        DistributionDrawService,
+        drain_distribution,
+        projected_id,
+    )
+    from k_loto.infrastructure.database.session import session_factory
+
+    try:
+        service = DistributionDrawService(session)
+        if payload.scheduled_at.tzinfo is None:
+            raise ValueError("Дата должна содержать часовой пояс.")
+        if draw_id == projected_id(payload.lottery_id, payload.scheduled_at):
+            draw_id = await service.prepare(
+                payload.lottery_id, payload.scheduled_at, draw_id
+            )
+        result = await service.assign(draw_id, admin.user_id)
+    except LookupError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    background.add_task(drain_distribution, session_factory)
+    return result

@@ -118,6 +118,9 @@ class SchedulerRuntime:
 
     async def _run_publication_delivery(self) -> None:
         try:
+            from k_loto.application.distribution import drain_distribution
+
+            await drain_distribution(session_factory)
             await drain(session_factory)
         except Exception as error:
             # No exception text: HTTP errors can embed bot credentials.

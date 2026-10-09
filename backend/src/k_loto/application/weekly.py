@@ -848,6 +848,27 @@ class WeeklySettlementService:
                 ),
             )
 
+            if draw.is_distribution:
+                from k_loto.domain.distribution import distribute_jackpot
+
+                plan = distribute_jackpot(
+                    plan,
+                    [
+                        SettlementTicket(
+                            t.id,
+                            t.public_number,
+                            t.user_id,
+                            tuple(t.numbers),
+                            t.purchase_price,
+                        )
+                        for t in ticket_models
+                    ],
+                    rules,
+                    base_jackpot=int(
+                        _snapshot_value(draw, "base_jackpot", jackpot.base_amount)
+                    ),
+                    fund_balance=fund.balance,
+                )
             retained_jackpot = (
                 max(jackpot.balance - plan.jackpot_opening, 0)
                 if lottery.code == "bingo"
@@ -929,7 +950,12 @@ class WeeklySettlementService:
                         lottery_id=lottery.id,
                         draw_id=draw.id,
                         ticket_id=ticket.id,
-                        details={"matches": payout.matches},
+                        details={
+                            "matches": payout.matches,
+                            "distribution_amount": (payout.jackpot_amount or 0)
+                            if plan.jackpot_distributed
+                            else 0,
+                        },
                     )
                 )
 
@@ -956,7 +982,7 @@ class WeeklySettlementService:
                     )
                 )
             jackpot_before = jackpot.balance
-            if plan.jackpot_won:
+            if plan.jackpot_won or plan.jackpot_distributed:
                 if jackpot_before:
                     ledger_entries.append(
                         _ledger_entry(
@@ -969,6 +995,10 @@ class WeeklySettlementService:
                             after=retained_jackpot,
                             lottery_id=lottery.id,
                             draw_id=draw.id,
+                            details={
+                                "distributed": plan.jackpot_distributed,
+                                "category": plan.distribution_category,
+                            },
                         )
                     )
                 if plan.jackpot_reset_credit:
@@ -1004,6 +1034,10 @@ class WeeklySettlementService:
             draw.distribution_closing = plan.distribution_closing
             draw.reserve_used = 0
             draw.kasper_fund_used = plan.reserve_used
+            draw.distribution_category = plan.distribution_category
+            draw.distributed_amount = (
+                plan.jackpot_opening if plan.jackpot_distributed else 0
+            )
             self._session.add_all(ledger_entries)
             fast_lottery = is_fast_lottery(lottery.code)
             preferences = {
@@ -1022,13 +1056,17 @@ class WeeklySettlementService:
                 ]
                 user_payouts = [payout_by_ticket[ticket.id] for ticket in user_tickets]
                 total_prize = sum(item.amount for item in user_payouts)
-                jackpot_prize = sum(
-                    item.jackpot_amount
-                    if item.jackpot_amount is not None
-                    else item.amount
-                    if item.matches == rules.jackpot_match
-                    else 0
-                    for item in user_payouts
+                jackpot_prize = (
+                    0
+                    if plan.jackpot_distributed
+                    else sum(
+                        item.jackpot_amount
+                        if item.jackpot_amount is not None
+                        else item.amount
+                        if item.matches == rules.jackpot_match
+                        else 0
+                        for item in user_payouts
+                    )
                 )
                 payload = {
                     "lottery_code": lottery.code,
@@ -1075,7 +1113,9 @@ class WeeklySettlementService:
                             available_at=timestamp,
                         )
                     )
-                if total_prize > 0 and (not fast_lottery or jackpot_prize > 0):
+                if total_prize > 0 and (
+                    not fast_lottery or jackpot_prize > 0 or plan.jackpot_distributed
+                ):
                     self._session.add(
                         UserNotification(
                             id=uuid4(),

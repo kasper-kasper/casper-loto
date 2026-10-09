@@ -111,6 +111,7 @@ class LotteryResponse(BaseModel):
     max_tickets_per_purchase: int
     max_tickets_per_user_per_draw: int
     fixed_payouts: dict[int, int] | None = None
+    is_distribution: bool = False
 
 
 class TicketResponse(BaseModel):
@@ -236,6 +237,7 @@ class LiveDrawResponse(BaseModel):
     primary_numbers_to_pick: int = 0
     secondary_storage_offset: int = 0
     primary_max_number: int = 0
+    is_distribution: bool = False
 
 
 class LiveFeedResponse(BaseModel):
@@ -384,6 +386,7 @@ def _lottery_response(item: MiniAppLottery) -> LotteryResponse:
         max_tickets_per_purchase=item.max_tickets_per_purchase,
         max_tickets_per_user_per_draw=item.max_tickets_per_user_per_draw,
         fixed_payouts=item.fixed_payouts,
+        is_distribution=item.is_distribution,
     )
 
 
@@ -465,6 +468,7 @@ def _live_draw_response(item: MiniAppLiveDraw) -> LiveDrawResponse:
         primary_numbers_to_pick=item.primary_numbers_to_pick,
         secondary_storage_offset=item.secondary_storage_offset,
         primary_max_number=item.primary_max_number,
+        is_distribution=item.is_distribution,
     )
 
 
