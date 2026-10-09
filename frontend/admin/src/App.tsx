@@ -28,13 +28,14 @@ import type {
   Transaction,
 } from "./types";
 
-type View = "dashboard" | "fast" | "aurora" | "kasper-live" | "lotteries" | "schedule" | "draws" | "jackpots" | "archive" | "players" | "analytics" | "facts" | "broadcast" | "system" | "publications";
+type View = "dashboard" | "fast" | "vault" | "aurora" | "kasper-live" | "lotteries" | "schedule" | "draws" | "jackpots" | "archive" | "players" | "analytics" | "facts" | "broadcast" | "system" | "publications";
 type AnalyticsTab = "lotteries" | "tickets" | "numbers" | "finances";
 type SystemTab = "events" | "health" | "ledger" | "notifications" | "audit" | "development";
 
 const navigation: { id: View; label: string; code: string }[] = [
   { id: "dashboard", label: "Сегодня", code: "01" },
   { id: "fast", label: "Fast", code: "02" },
+  { id: "vault", label: "Casper Vault", code: "VAULT" },
   { id: "aurora", label: "Casper Aurora", code: "AURORA" },
   { id: "kasper-live", label: "Casper LIVE", code: "LIVE" },
   { id: "lotteries", label: "Лотереи", code: "03" },
@@ -765,9 +766,9 @@ function InterestingFactsView({ facts, lotteries, onStatus }: { facts: Interesti
   </>;
 }
 
-function KasperLiveAdmin({ data, aurora = false }: { data: KasperLiveSummary; aurora?: boolean }) {
+function KasperLiveAdmin({ data, game = "kasper-live" }: { data: KasperLiveSummary; game?: string }) {
   return <section className="kasper-live-admin">
-    <header><small>МГНОВЕННАЯ ЛОТЕРЕЯ</small><h2>{aurora ? "Casper Aurora" : "Casper LIVE"}</h2><p>Только общий итог. Данные игроков в этом разделе не показываются.</p></header>
+    <header><small>МГНОВЕННАЯ ЛОТЕРЕЯ</small><h2>{game === "vault" ? "Casper Vault" : game === "aurora" ? "Casper Aurora" : "Casper LIVE"}</h2><p>Только общий итог. Данные игроков в этом разделе не показываются.</p></header>
     <div className="kasper-live-admin-grid">
       <article><span>КОЛИЧЕСТВО БИЛЕТОВ</span><strong>{data.ticket_count.toLocaleString("ru-RU")}</strong></article>
       <article><span>ВЫИГРЫШИ</span><strong>{data.winning_tickets.toLocaleString("ru-RU")}</strong></article>
@@ -840,6 +841,7 @@ export default function App() {
         apply(() => { setDashboard(dashboardData); setTicketAnalytics(analyticsData); });
       }
       if (target === "aurora") { const data = await adminApi.aurora(); apply(() => setKasperLive(data)); }
+      if (target === "vault") { const data = await adminApi.vault(); apply(() => setKasperLive(data)); }
       if (target === "kasper-live") { const data = await adminApi.kasperLive(); apply(() => setKasperLive(data)); }
       if (target === "players") { const rows = await adminApi.players(); apply(() => setPlayers(rows)); }
       if (target === "lotteries") { const rows = await adminApi.lotteries(); apply(() => setLotteries(rows)); }
@@ -914,7 +916,7 @@ export default function App() {
       {!loading && view === "fast" && dashboard && ticketAnalytics && <FastDashboard data={dashboard} analytics={ticketAnalytics} refreshedAt={loadedAt} onOpen={openDraw} />}
       {!loading && view === "jackpots" && <JackpotHistoryView scope={scope} onOpen={openDraw} />}
       {!loading && view === "archive" && <DrawsView key={`archive-${archiveScope}`} archivedOnly lotteries={lotteries} onOpen={openDraw} scope={archiveScope} onScope={setArchiveScope} />}
-      {!loading && (view === "kasper-live" || view === "aurora") && kasperLive && <KasperLiveAdmin data={kasperLive} aurora={view === "aurora"} />}
+      {!loading && (view === "kasper-live" || view === "aurora" || view === "vault") && kasperLive && <KasperLiveAdmin data={kasperLive} game={view} />}
       {!loading && view === "players" && <PlayersView players={players} search={playerSearch} onSearch={setPlayerSearch} onResults={applyPlayerResults} onReload={() => load("players")} />}
       {!loading && view === "lotteries" && <section className="stack">{visibleLotteries.filter((lottery) => lottery.is_active).map((lottery) => <LotteryCard key={lottery.id} lottery={lottery} onSaved={() => load("lotteries")} />)}</section>}
       {!loading && view === "schedule" && <ScheduleView key={scope} entries={scheduleEntries} lotteries={visibleLotteries} loadedAt={scheduleLoadedAt} />}

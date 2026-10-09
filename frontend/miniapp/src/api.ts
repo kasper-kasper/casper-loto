@@ -82,6 +82,13 @@ export const miniAppApi = {
       method: "POST",
       body: JSON.stringify({ quantity, idempotency_key: idempotencyKey }),
     }),
+  vaultHistory: (initData: string) =>
+    request<InstantTicket[]>("/api/v1/miniapp/vault/tickets", initData),
+  vaultPurchase: (initData: string, quantity: 1 | 3, idempotencyKey: string) =>
+    request<InstantPurchaseResult>("/api/v1/miniapp/vault/purchases", initData, {
+      method: "POST",
+      body: JSON.stringify({ quantity, idempotency_key: idempotencyKey }),
+    }),
   account: (initData: string) =>
     request<Account>("/api/v1/miniapp/account", initData),
   notifications: (initData: string) =>

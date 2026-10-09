@@ -8,7 +8,7 @@ import type { Dashboard, Lottery, NumberStatisticsReport, Player, PlayerHistoryP
 vi.mock("./api", () => ({
   ApiError: class ApiError extends Error { status = 500; },
   adminApi: {
-    login: vi.fn(), session: vi.fn(), logout: vi.fn(), dashboard: vi.fn(), kasperLive: vi.fn(),
+    login: vi.fn(), session: vi.fn(), logout: vi.fn(), dashboard: vi.fn(), kasperLive: vi.fn(), vault: vi.fn(),
     players: vi.fn(), playerTicketHistory: vi.fn(), lotteries: vi.fn(), schedule: vi.fn(), draws: vi.fn(), draw: vi.fn(), jackpotEvents: vi.fn(),
     transactions: vi.fn(), playerTransactions: vi.fn(), statistics: vi.fn(), ticketAnalytics: vi.fn(), activity: vi.fn(), audit: vi.fn(),
     notifications: vi.fn(), releaseNotes: vi.fn(), interestingFacts: vi.fn(), setInterestingFactStatus: vi.fn(),
@@ -36,6 +36,7 @@ beforeEach(() => {
   vi.mocked(adminApi.login).mockResolvedValue(session);
   vi.mocked(adminApi.logout).mockResolvedValue();
   vi.mocked(adminApi.dashboard).mockResolvedValue(dashboard);
+  vi.mocked(adminApi.vault).mockResolvedValue({ ticket_count: 100, winning_tickets: 30, losing_tickets: 70, result: 79_000 });
   vi.mocked(adminApi.kasperLive).mockResolvedValue({ ticket_count: 100, winning_tickets: 30, losing_tickets: 70, result: 79_000 });
   vi.mocked(adminApi.players).mockResolvedValue([player]);
   vi.mocked(adminApi.playerTicketHistory).mockResolvedValue(playerHistory);
@@ -484,4 +485,16 @@ it("opens the separate archive on historical completed formats", async () => {
   fireEvent.click(await screen.findByRole("button", { name: /Архив/ }));
   await waitFor(() => expect(adminApi.draws).toHaveBeenCalledWith("scope=all&period=archived&limit=100&offset=0"));
   expect(await screen.findByText("Архив завершённых лотерей")).toBeInTheDocument();
+});
+
+it("shows only the four agreed Casper Vault aggregates", async () => {
+  render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /Casper Vault/ }));
+
+  expect(await screen.findByText("КОЛИЧЕСТВО БИЛЕТОВ")).toBeInTheDocument();
+  expect(screen.getByText("ВЫИГРЫШИ")).toBeInTheDocument();
+  expect(screen.getByText("ПРОИГРЫШИ")).toBeInTheDocument();
+  expect(screen.getByText("РЕЗУЛЬТАТ")).toBeInTheDocument();
+  expect(screen.getByText("+79 000 CAS")).toBeInTheDocument();
+  expect(adminApi.vault).toHaveBeenCalledTimes(1);
 });

@@ -51,3 +51,5 @@
 @media(min-width:600px){.collection-list{grid-template-columns:repeat(3,minmax(0,1fr))}.collection-art{height:112px}.collection-filters button{font-size:12px}.collection-card h2{font-size:16px}}
 @media(max-width:359px){.collection-list{gap:10px}.collection-art{height:82px}.collection-card-content{padding:0 8px 9px}.collection-card h2{font-size:12px}.collection-prize strong{font-size:15px}.collection-filters{gap:2px;padding:3px}.collection-filters button{font-size:9px}.collection-tag{font-size:7px;left:6px;top:6px}.collection-time{font-size:8px;padding:5px}.collection-price{font-size:9px}}
 @media(prefers-reduced-motion:reduce){.collection-card,.collection-scene{transition:none}.collection-card:hover .collection-scene{transform:scale(1.04)}}
+
+.collection-card.collection-vault { --collection-accent: #efcf87; --collection-glow: #b78a42; }
