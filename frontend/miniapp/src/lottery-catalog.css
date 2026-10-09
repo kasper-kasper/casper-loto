@@ -1,4 +1,5 @@
 /* The catalogue is a compact display case; artwork has depth, details stay still. */
+.collection-card.collection-aurora{--collection-accent:#a4f8eb;--collection-glow:#67bfbf}
 .lottery-collection{padding-top:5px;--collection-gold:#efc76e}
 .collection-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .collection-heading h1{margin:0;color:#f9f1e1;font:500 30px/1.15 Georgia,serif;letter-spacing:-.04em}

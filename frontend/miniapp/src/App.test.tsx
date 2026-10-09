@@ -253,7 +253,7 @@ it("shows the personal home dashboard while keeping Fast separate", async () => 
   fireEvent.click(screen.getByRole("button", { name: "Лотереи" }));
   const storefront = await screen.findByLabelText("Витрина лотерей");
   expect(within(storefront).getAllByRole("heading").map((heading) => heading.textContent)).toEqual([
-    "Casper LIVE", "ХАН-Лото", "Casper Bingo", "Weekly 5/20", "ПЛЛ-лото", "ПСС-Лото", "3 сентября", "Casper Halloween", "FLASH", "PULSE", "SHADOW",
+    "Casper LIVE", "Casper Aurora", "ХАН-Лото", "Casper Bingo", "Weekly 5/20", "ПЛЛ-лото", "ПСС-Лото", "3 сентября", "Casper Halloween", "FLASH", "PULSE", "SHADOW",
   ]);
   expect(screen.queryByText("Каспер выплатил игрокам за месяц")).not.toBeInTheDocument();
   expect(screen.queryByText("Случайная комбинация")).not.toBeInTheDocument();

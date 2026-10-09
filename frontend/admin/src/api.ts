@@ -119,6 +119,7 @@ export const adminApi = {
   session: () => request<AdminSession>("/auth/session").then(rememberSession),
   logout: () => request<void>("/auth/logout", { method: "POST" }),
   dashboard: (scope: LotteryScope = "all") => request<Dashboard>(`/dashboard?scope=${scope}`),
+  aurora: () => request<KasperLiveSummary>("/aurora"),
   kasperLive: () => request<KasperLiveSummary>("/kasper-live"),
   players: (query = "") => request<Player[]>(`/players?limit=500${query ? `&q=${encodeURIComponent(query)}` : ""}`),
   playerTicketHistory: (userId: string, filter = "all", lotteryCode = "", offset = 0) => {

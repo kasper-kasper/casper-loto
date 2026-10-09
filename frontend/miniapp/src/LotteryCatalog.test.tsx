@@ -20,13 +20,13 @@ describe("lottery catalog", () => {
   it("shows one stable grid including LIVE and keeps server prices and jackpots", () => {
     const { rerender } = render(<LotteryCatalog lotteries={[weekly, fast, holiday, daily]} now={now} onOpen={vi.fn()} />);
     const order = () => screen.getAllByRole("button", { name: /^Открыть / }).map(button => button.getAttribute("aria-label"));
-    expect(order()).toEqual(["Открыть Casper LIVE", "Открыть 6 из 36", "Открыть Casper Grand", "Открыть ГРОБ", "Открыть Casper PULSE"]);
+    expect(order()).toEqual(["Открыть Casper LIVE", "Открыть Casper Aurora", "Открыть 6 из 36", "Открыть Casper Grand", "Открыть ГРОБ", "Открыть Casper PULSE"]);
     expect(screen.getAllByLabelText("48 000 CAS")).toHaveLength(3);
     expect(screen.getByText("Цена скоро")).toBeInTheDocument();
     expect(screen.getByLabelText("5 000 000 000 CAS")).toBeInTheDocument();
     expect(screen.getAllByText("Через 30 мин")).toHaveLength(4);
     rerender(<LotteryCatalog lotteries={[{ ...fast, jackpot: 10_000_000_000 }, holiday, daily, weekly]} now={now} onOpen={vi.fn()} />);
-    expect(order()).toEqual(["Открыть Casper LIVE", "Открыть 6 из 36", "Открыть Casper Grand", "Открыть ГРОБ", "Открыть Casper PULSE"]);
+    expect(order()).toEqual(["Открыть Casper LIVE", "Открыть Casper Aurora", "Открыть 6 из 36", "Открыть Casper Grand", "Открыть ГРОБ", "Открыть Casper PULSE"]);
   });
 
   it("filters overlapping festive and draw games without a separate weekly section", () => {
@@ -37,7 +37,7 @@ describe("lottery catalog", () => {
     expect(screen.getAllByRole("button", { name: /^Открыть / })).toHaveLength(1);
     expect(screen.getByRole("button", { name: "Открыть ГРОБ" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Моментальные" }));
-    expect(screen.getAllByRole("button", { name: /^Открыть / })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: /^Открыть / })).toHaveLength(2);
     expect(screen.getByRole("button", { name: "Открыть Casper LIVE" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Тиражные" }));
     expect(screen.getAllByRole("button", { name: /^Открыть / })).toHaveLength(4);

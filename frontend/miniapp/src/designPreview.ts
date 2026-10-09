@@ -39,6 +39,7 @@ const lotterySeed = [
 let balance = 100_000_000_000;
 let purchasedTickets: Ticket[] = [];
 let favoriteRows: Favorite[] = [];
+let auroraTickets: InstantTicket[] = [];
 let instantTickets: InstantTicket[] = [
   { id: "instant-preview-1", public_number: 10_042, symbols: [5, 5, 5], prize_amount: 20_000 },
   { id: "instant-preview-2", public_number: 10_041, symbols: [1, 2, 3], prize_amount: 0 },
@@ -116,6 +117,16 @@ export function installDesignPreview(): void {
       const totalPrize = created.reduce((sum, ticket) => sum + ticket.prize_amount, 0);
       balance = balance - totalCost + totalPrize;
       instantTickets = [...created, ...instantTickets];
+      return json({ operation_id: crypto.randomUUID(), tickets: created, total_cost: totalCost, total_prize: totalPrize, balance_after: balance, already_processed: false }, 201);
+    }
+    if (path.endsWith("/aurora/tickets")) return json(auroraTickets);
+    if (path.endsWith("/aurora/purchases") && init?.method === "POST") {
+      const quantity = (JSON.parse(String(init.body)) as { quantity: 1 | 3 }).quantity;
+      const created = Array.from({ length: quantity }, (_, index): InstantTicket => ({ id: crypto.randomUUID(), public_number: 10_043 + index, symbols: index === 0 ? [4, 4, 4] : [1, 2, 3], prize_amount: index === 0 ? 6_000 : 0 }));
+      const totalCost = quantity * 3_000;
+      const totalPrize = created.reduce((sum, ticket) => sum + ticket.prize_amount, 0);
+      balance = balance - totalCost + totalPrize;
+      auroraTickets = [...created, ...auroraTickets];
       return json({ operation_id: crypto.randomUUID(), tickets: created, total_cost: totalCost, total_prize: totalPrize, balance_after: balance, already_processed: false }, 201);
     }
     if (path.endsWith("/account")) return json(account());
