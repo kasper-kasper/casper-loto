@@ -1,3 +1,8 @@
+## Casper Grand concept study — 2026-10-09
+
+- Discussion only at the owner's request: recorded lower payout preferences and unresolved senior tiers in OD-047 and `docs/CASPER_GRAND_CONCEPTS.md`. Evaluated the proposed fixed table's ordinary payout expectation (7,320.60 CAS / 14.64% of a 50k ticket), excluding jackpot and refill; fund coverage is not approved by this calculation.
+- Generated three full number-selection screen concepts with imagegen: Grand Hall, official Casper Loto brand reference, Golden Orbit. Saved previews in `design/grand-concepts-2026-10-09/`; inspected all main grids (1–35) and secondary fields (1–5). These are nonfunctional design studies. The production logo asset remains unchanged. Owner requests a 3D animated draw with no video inserts; no implementation or production release is authorized in this study.
+
 ## Halloween production grid cascade regression — 2026-10-09
 
 - Owner screenshot exposed one-column stretched number controls despite the deployed 1.61.1 assets. Vite production CSS ordering let the equal-specificity generic `.ticket-number-grid` rule override Halloween's seven columns with an unset `--columns`. Development screenshots missed this cascade.
