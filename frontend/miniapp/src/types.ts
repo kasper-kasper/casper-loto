@@ -39,6 +39,7 @@ export interface Lottery {
   sales_open: boolean;
   purchase_available: boolean;
   player_ticket_count: number;
+  is_distribution?: boolean;
   sales_status: "OPEN" | "CLOSING_SOON" | "CLOSED" | "DRAWING" | "COMPLETED";
   max_tickets_per_purchase: number;
   max_tickets_per_user_per_draw: number;
@@ -107,6 +108,7 @@ export interface LiveDraw {
   player_total_prize: number;
   highlighted_tickets: LiveTicket[];
   sales_close_at: string;
+  is_distribution?: boolean;
   sales_status: "OPEN" | "CLOSING_SOON" | "CLOSED" | "DRAWING" | "COMPLETED";
   live_starts_at: string;
   reveal_at: string[];

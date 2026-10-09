@@ -1,3 +1,4 @@
+import { DistributionBadge } from "./DistributionBadge";
 import type { ReactNode } from "react";
 import { Money } from "./components";
 import { countdown, formatDrawLabel, formatMoscow } from "./format";
@@ -22,6 +23,6 @@ export function GameHeader({ lottery, balance, now, onClose, children, artworkOv
       <div><small>Джекпот</small><strong><Money value={lottery.jackpot} compact /></strong></div>
       <div className="play-countdown"><small>До тиража</small><time>{countdown(lottery.scheduled_at, now)}</time></div>
     </div>
-    <div className="play-context"><time dateTime={lottery.scheduled_at ?? undefined}>{lottery.scheduled_at ? `${formatMoscow(lottery.scheduled_at)} МСК` : "Расписание готовится"}</time><div className="play-links">{children}</div></div>
+    <DistributionBadge active={lottery.is_distribution} /><div className="play-context"><time dateTime={lottery.scheduled_at ?? undefined}>{lottery.scheduled_at ? `${formatMoscow(lottery.scheduled_at)} МСК` : "Расписание готовится"}</time><div className="play-links">{children}</div></div>
   </header>;
 }

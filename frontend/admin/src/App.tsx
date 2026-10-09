@@ -3,6 +3,7 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
 import { ApiError, adminApi } from "./api";
+import { DistributionDraws } from "./DistributionDraws";
 import { Publications } from "./Publications";
 import logoHorizontal from "../../shared/assets/brand/logo-horizontal.png";
 import "./owner-catalog.css";
@@ -28,7 +29,7 @@ import type {
   Transaction,
 } from "./types";
 
-type View = "dashboard" | "fast" | "vault" | "aurora" | "kasper-live" | "lotteries" | "schedule" | "draws" | "jackpots" | "archive" | "players" | "analytics" | "facts" | "broadcast" | "system" | "publications";
+type View = "distribution" | "dashboard" | "fast" | "vault" | "aurora" | "kasper-live" | "lotteries" | "schedule" | "draws" | "jackpots" | "archive" | "players" | "analytics" | "facts" | "broadcast" | "system" | "publications";
 type AnalyticsTab = "lotteries" | "tickets" | "numbers" | "finances";
 type SystemTab = "events" | "health" | "ledger" | "notifications" | "audit" | "development";
 
@@ -39,6 +40,7 @@ const navigation: { id: View; label: string; code: string }[] = [
   { id: "aurora", label: "Casper Aurora", code: "AURORA" },
   { id: "kasper-live", label: "Casper LIVE", code: "LIVE" },
   { id: "lotteries", label: "Лотереи", code: "03" },
+  { id: "distribution", label: "Распределительные", code: "DIST" },
   { id: "schedule", label: "Расписание", code: "04" },
   { id: "draws", label: "Тиражи", code: "05" },
   { id: "players", label: "Игроки", code: "06" },
@@ -916,6 +918,7 @@ export default function App() {
       {!loading && view === "fast" && dashboard && ticketAnalytics && <FastDashboard data={dashboard} analytics={ticketAnalytics} refreshedAt={loadedAt} onOpen={openDraw} />}
       {!loading && view === "jackpots" && <JackpotHistoryView scope={scope} onOpen={openDraw} />}
       {!loading && view === "archive" && <DrawsView key={`archive-${archiveScope}`} archivedOnly lotteries={lotteries} onOpen={openDraw} scope={archiveScope} onScope={setArchiveScope} />}
+      {view === "distribution" && <DistributionDraws />}
       {!loading && (view === "kasper-live" || view === "aurora" || view === "vault") && kasperLive && <KasperLiveAdmin data={kasperLive} game={view} />}
       {!loading && view === "players" && <PlayersView players={players} search={playerSearch} onSearch={setPlayerSearch} onResults={applyPlayerResults} onReload={() => load("players")} />}
       {!loading && view === "lotteries" && <section className="stack">{visibleLotteries.filter((lottery) => lottery.is_active).map((lottery) => <LotteryCard key={lottery.id} lottery={lottery} onSaved={() => load("lotteries")} />)}</section>}

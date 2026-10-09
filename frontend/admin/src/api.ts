@@ -33,6 +33,11 @@ export class ApiError extends Error {
 let csrfToken = "";
 
 const errorMessages: Record<string, string> = {
+  "Эта лотерея не участвует в распределительных тиражах.": "Эта лотерея не участвует в распределительных тиражах.",
+  "Назначение возможно только до окончания продаж.": "Продажи уже закрыты — распределение назначить нельзя.",
+  "Для назначения настройте бота и канал публикаций.": "Настройте бота и канал публикаций перед назначением.",
+  "Обновите календарь тиражей.": "Расписание обновилось. Выберите дату и тираж заново.",
+  "В это время по расписанию нет тиража.": "В это время по расписанию нет тиража.",
   "Publication changed; reload it.": "Публикация изменена в другой вкладке. Откройте её заново.",
   "Only drafts can be edited; duplicate a published story first.": "Опубликованную историю можно изменить через создание копии.",
   "Publication identifier already used.": "Этот черновик уже сохранён. Откройте запись из списка или создайте новую.",
@@ -103,7 +108,14 @@ async function drawPage(query = ""): Promise<Draw[]> {
   return request<Draw[]>(`/draws?${params.toString()}`);
 }
 
+export interface DistributionDraw {
+  id: string; lottery_id: string; lottery_name: string; number: number; scheduled_at: string; sales_close_at: string;
+  jackpot: number; ticket_count: number; is_distribution: boolean; status: string; announcement_state: string | null; post: string;
+}
+
 export const adminApi = {
+  distributionDraws: (lotteryId: string, day: string) => request<DistributionDraw[]>(`/distribution-draws?lottery_id=${encodeURIComponent(lotteryId)}&day=${encodeURIComponent(day)}`),
+  assignDistribution: (draw: DistributionDraw) => request<DistributionDraw>(`/distribution-draws/${draw.id}`, { method: "POST", body: JSON.stringify({ lottery_id: draw.lottery_id, scheduled_at: draw.scheduled_at }) }),
   publicationTemplates: () => request<PublicationTemplate[]>("/publications/templates"),
   publicationChannel: (check = false) => request<{ channel: string | null; delivery_enabled: boolean; checked: boolean; can_post: boolean; bot_username?: string; error?: string }>(`/publications/channel?check=${check}`),
   preparePublicationSuggestions: () => request<{ prepared: boolean }>("/publications/suggestions/prepare", { method: "POST" }),

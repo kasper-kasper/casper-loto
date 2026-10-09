@@ -1,3 +1,4 @@
+import { DistributionBadge } from "./DistributionBadge";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 
@@ -97,6 +98,7 @@ export function LiveView({ feed, now, loading, onPlay, onTickets }: LiveViewProp
   const khanShownNumbers = state.currentNumber === null ? state.revealedNumbers : [...state.revealedNumbers, state.currentNumber];
 
   return <div className="live-experience">
+    <DistributionBadge active={draw.is_distribution} />
     <section className={`live-stage lottery-${draw.lottery_code} phase-${state.phase} ${finalMinute ? "final-minute" : ""} ${isReplay ? "is-replay" : "is-live"}`}>
       <div className="live-grid" aria-hidden="true" />
       <div className="live-ambient" aria-hidden="true" />
