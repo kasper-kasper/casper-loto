@@ -202,6 +202,7 @@ async def test_player_ticket_history_combines_draw_and_instant_ticket_pages() ->
             [(lottery_id, "weekly", "Weekly 5/20", 1, 0, 1, 100, 250)],
             (0, 0, 0, 0),
             (0, 0, 0, 0),
+            (0, 0, 0, 0),
         ],
     )
 
@@ -215,8 +216,9 @@ async def test_player_ticket_history_combines_draw_and_instant_ticket_pages() ->
     assert history[0].prize_amount == 250
     assert stats[0].lottery_code == "weekly"
     assert stats[0].ticket_count == 1
-    assert stats[-2].lottery_code == "kasper-live"
-    assert stats[-1].lottery_code == "aurora"
+    assert stats[-3].lottery_code == "kasper-live"
+    assert stats[-2].lottery_code == "aurora"
+    assert stats[-1].lottery_code == "vault"
 
 
 def test_admin_session_is_signed_expiring_and_contains_csrf() -> None:

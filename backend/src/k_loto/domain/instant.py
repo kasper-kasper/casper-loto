@@ -89,7 +89,23 @@ AURORA_RULES = InstantRules(
         PrizeBand(10_000, 1_000_000),
     ),
 )
-INSTANT_GAMES = {rules.code: rules for rules in (LIVE_RULES, AURORA_RULES)}
+VAULT_RULES = InstantRules(
+    "vault",
+    "Casper Vault",
+    5_000,
+    "casper-vault-v1",
+    (
+        PrizeBand(2_199, 0),
+        PrizeBand(5_699, 3_000),
+        PrizeBand(8_199, 5_000),
+        PrizeBand(9_199, 10_000),
+        PrizeBand(9_699, 50_000),
+        PrizeBand(9_899, 300_000),
+        PrizeBand(9_999, 1_000_000),
+        PrizeBand(10_000, 5_000_000),
+    ),
+)
+INSTANT_GAMES = {rules.code: rules for rules in (LIVE_RULES, AURORA_RULES, VAULT_RULES)}
 
 
 def instant_rules(code: str) -> InstantRules:

@@ -154,7 +154,11 @@ class InstantTicketPurchaseService:
             raise ValueError("idempotency_key must contain 1 to 100 characters.")
 
         timestamp = now or datetime.now(UTC)
-        namespace = "instant" if self._rules.code == "kasper-live" else "instant-aurora"
+        namespace = (
+            "instant"
+            if self._rules.code == "kasper-live"
+            else f"instant-{self._rules.code}"
+        )
         user_key = f"{namespace}:{idempotency_key}:user:purchase"
         async with self._session.begin():
             existing = await self._session.scalar(

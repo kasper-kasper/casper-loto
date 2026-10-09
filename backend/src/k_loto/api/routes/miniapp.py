@@ -884,6 +884,80 @@ async def purchase_aurora(
     )
 
 
+@router.get("/vault/tickets", response_model=list[InstantTicketResponse])
+async def vault_history(
+    user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    limit: Annotated[int, Query(ge=1, le=100)] = 30,
+) -> list[InstantTicketResponse]:
+    return [
+        InstantTicketResponse(
+            id=item.id,
+            public_number=item.public_number,
+            symbols=list(item.symbols),
+            prize_amount=item.prize_amount,
+        )
+        for item in await InstantTicketQueryService(session).history(
+            user.id, limit=limit, game_code="vault"
+        )
+    ]
+
+
+@router.post(
+    "/vault/purchases",
+    response_model=InstantPurchaseResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def purchase_vault(
+    request: InstantPurchaseRequest,
+    user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> InstantPurchaseResponse:
+    if not purchase_rate_limiter.allow(
+        user.id, limit=settings.miniapp_purchase_requests_per_minute
+    ):
+        raise HTTPException(
+            status_code=429,
+            detail="Too many purchase requests. Try again in a few seconds.",
+            headers={"Retry-After": "5"},
+        )
+    try:
+        result = await InstantTicketPurchaseService(
+            session, game_code="vault"
+        ).purchase(
+            user_id=user.id,
+            quantity=request.quantity,
+            idempotency_key=request.idempotency_key,
+        )
+    except InsufficientBalance as error:
+        raise HTTPException(
+            status_code=402, detail="Insufficient CAS balance."
+        ) from error
+    except InvalidTicket as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    except ConfigurationError as error:
+        raise HTTPException(
+            status_code=503, detail="Casper Vault is temporarily unavailable."
+        ) from error
+    return InstantPurchaseResponse(
+        operation_id=result.operation_id,
+        tickets=[
+            InstantTicketResponse(
+                id=item.id,
+                public_number=item.public_number,
+                symbols=list(item.symbols),
+                prize_amount=item.prize_amount,
+            )
+            for item in result.tickets
+        ],
+        total_cost=result.total_cost,
+        total_prize=result.total_prize,
+        balance_after=result.balance_after,
+        already_processed=result.already_processed,
+    )
+
+
 @router.post(
     "/weekly/purchases",
     response_model=PurchaseResponse,

@@ -32,7 +32,7 @@ from k_loto.domain.enums import (
     TicketStatus,
     TransactionType,
 )
-from k_loto.domain.instant import AURORA_RULES, LIVE_RULES
+from k_loto.domain.instant import INSTANT_GAMES
 from k_loto.domain.lotteries import MOSCOW, draw_display_name, is_fast_lottery
 from k_loto.domain.lottery_rules import get_lottery_rules
 from k_loto.domain.schedules import next_draw_at
@@ -866,11 +866,17 @@ class AdminQueryService:
             InstantTicket.purchased_at.label("purchased_at"),
             cast(literal(None), Lottery.id.type).label("lottery_id"),
             case(
-                (InstantTicket.odds_version == AURORA_RULES.version, "aurora"),
+                *[
+                    (InstantTicket.odds_version == r.version, r.code)
+                    for r in INSTANT_GAMES.values()
+                ],
                 else_="kasper-live",
             ).label("lottery_code"),
             case(
-                (InstantTicket.odds_version == AURORA_RULES.version, "Casper Aurora"),
+                *[
+                    (InstantTicket.odds_version == r.version, r.name)
+                    for r in INSTANT_GAMES.values()
+                ],
                 else_="Kasper LIVE",
             ).label("lottery_name"),
             cast(literal(None), BigInteger).label("draw_number"),
@@ -971,7 +977,7 @@ class AdminQueryService:
             )
             for lottery_id, code, name, count, active, wins, spent, won in grouped
         ]
-        for rules in (LIVE_RULES, AURORA_RULES):
+        for rules in INSTANT_GAMES.values():
             instant_stats = (
                 await self._session.execute(
                     select(

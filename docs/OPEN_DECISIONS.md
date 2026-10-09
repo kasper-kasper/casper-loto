@@ -75,3 +75,8 @@ Owner retires unique-participant records everywhere: A4.3/A5.2 are removed from 
 ## Publication editorial rules — 2026-10-06
 
 Owner explicitly selects a minimum increase of 100,000,000 CAS from the last announced jackpot record for A1.3, A1.4 and B2.1. Small intervening increases update factual maxima without advancing the editorial checkpoint. Existing queued notices must pass the same gap. Remove automatic event/date/time/MSK footers; contextual jackpot dates remain permitted. Non-jackpot copy and artwork omit dates. Remove original Fast templates for flash/shadow/pulse; only fast-owner-v1 is selectable. Preserve published receipts and financial history.
+
+
+## OD-049 — Casper Vault — Resolved 2026-10-09
+
+Owner explicitly approved ticket price 5,000 CAS and changed the proposed odds to: 3,000 at 35%; 5,000 at 25%; 10,000 at 10%; 50,000 at 5%; 300,000 at 2%; new 1,000,000 at 1%; 5,000,000 unchanged at 0.01%. Remaining no-prize probability is 21.99%. Expected payout 22,300 CAS / RTP 446% was stated to the owner; implement the approved values without choosing alternative monetary requirements. Golden vault artwork, finger-operated wheel, one/three tickets and reveal-all reuse the approved instant purchase system. No refunds or modifications of previous games.
