@@ -2,7 +2,7 @@
 
 - Owner screenshot exposed one-column stretched number controls despite the deployed 1.61.1 assets. Vite production CSS ordering let the equal-specificity generic `.ticket-number-grid` rule override Halloween's seven columns with an unset `--columns`. Development screenshots missed this cascade.
 - Raised the Halloween field selector specificity, made its grid display explicit and supplied `--columns:7` defensively. Verification uses the built production preview, including a late generic stylesheet injection to reproduce the original cascade, at 320/390/430 px.
-- Mini App 1.61.2 / Web 1.55.2 lint/typecheck/build and scoped browser regression precede gateway-only publication.
+- Mini App 1.61.2 / Web 1.55.2 lint/typecheck/build passed. Published implementation 7f58680 with gateway-only restart, operations lock and database/source/image backups; API/bot/database identities and Admin assets are unchanged. Browser verified the actual public 1.61.2 build at 320/390/430 px with a late generic grid rule: all 28 buttons occupy seven columns without overflow, and three selections render as pumpkins. Screenshot `.tools/halloween-production-1612-confirmed.png` comes from production in the isolated broadcast preview (no real purchase). Internal health passed; release helper additionally verifies public HTML, bundles, version and HTTPS health.
 
 ## Halloween pumpkin number field correction — 2026-10-09
 
