@@ -39,8 +39,9 @@ it("settles one purchase immediately, opens a single ticket then the remainder w
   expect(screen.getByRole("status")).toHaveTextContent("Общий выигрыш");
   expect(screen.queryByRole("button", { name: /^Открыть билет №/ })).not.toBeInTheDocument();
   expect(miniAppApi.kasperLivePurchase).toHaveBeenCalledTimes(1);
-  fireEvent.click(screen.getByRole("button", { name: /Купить ещё/ }));
-  expect(screen.getByRole("button", { name: /Купить 3 билета/ })).toBeInTheDocument();
+  await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Купить ещё/ })); });
+  expect(miniAppApi.kasperLivePurchase).toHaveBeenCalledTimes(2);
+  expect(screen.getAllByRole("button", { name: /^Открыть билет №/ })).toHaveLength(3);
 });
 it("supports a single losing ticket and guards insufficient balance", async () => {
   vi.mocked(miniAppApi.kasperLivePurchase).mockResolvedValue({ ...purchase, tickets: [purchase.tickets[1]], total_cost: 2_000, total_prize: 0 });
@@ -57,7 +58,7 @@ it("shows errors without inventing tickets or a settlement", async () => {
   vi.mocked(miniAppApi.kasperLivePurchase).mockRejectedValue(new Error("offline"));
   render(<KasperLiveView initData="signed" balance={30_000} onClose={vi.fn()} onSettled={settled} />);
   await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Купить билет/ })); });
-  expect(screen.getByRole("alert")).toHaveTextContent("Проверьте историю");
+  expect(screen.getByRole("alert")).toHaveTextContent("Повторите запрос");
   expect(settled).not.toHaveBeenCalled();
   expect(screen.queryByRole("article")).not.toBeInTheDocument();
 });

@@ -25,3 +25,8 @@
 .vault-wheel-control>strong{font-size:13px}.vault-wheel-control>small{font-size:10px;color:#d1bc91;margin-top:6px}.vault-locks{display:flex;gap:6px;margin-top:10px}.vault-locks>i{width:7px;height:7px;border-radius:50%;background:#78653a;box-shadow:inset 0 1px 2px #0006}.vault-locks>i.unlocked{background:#ffe1a2;box-shadow:0 0 7px #ffd57b}
 .vault-page .vault-reveal{position:relative;overflow:hidden;min-height:220px;background:radial-gradient(ellipse,#a87a2526,transparent 70%);isolation:isolate}.vault-page .vault-reveal:before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,#e4c57a,#6b4e2e);border:5px double #ffe2a477;border-radius:9px;transform-origin:left;animation:vaultDoorOpen .7s ease-in forwards;pointer-events:none;z-index:3}.vault-page .vault-reveal>span{color:#ffdfa2;text-shadow:0 0 25px #ffce70}.vault-page .vault-ticket.winner{border-color:#e7c37b88;box-shadow:inset 0 0 30px #e8bd5815,0 0 25px #eebd5a18}
 @keyframes vaultDoorOpen{from{transform:perspective(700px) rotateY(0);opacity:1}to{transform:perspective(700px) rotateY(-105deg);opacity:0}}@media(prefers-reduced-motion:reduce){.vault-page .vault-reveal:before{display:none}.vault-page *{animation:none!important;transition:none!important}}
+
+/* The standalone game bypasses app-shell, so respect Telegram chrome here too. */
+.vault-page { padding-top:max(22px,var(--app-safe-top,0px)); padding-bottom:max(32px,var(--app-safe-bottom,0px)); padding-left:max(18px,var(--app-safe-left,0px)); padding-right:max(18px,var(--app-safe-right,0px)); }
+@media(min-width:650px){ .vault-page { padding-top:max(35px,var(--app-safe-top,0px)); } }
+@media(max-width:350px){ .vault-page { padding-left:max(12px,var(--app-safe-left,0px)); padding-right:max(12px,var(--app-safe-right,0px)); } }

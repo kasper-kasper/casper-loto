@@ -15,3 +15,8 @@
 .aurora-page .aurora-hero h1{font-size:32px}
 .aurora-page .aurora-hero p{margin:10px 0 0;color:#cbddec}
 @media(min-width:650px){.aurora-page .aurora-hero h1{font-size:40px}}
+
+/* The standalone game bypasses app-shell, so respect Telegram chrome here too. */
+.aurora-page { padding-top:max(22px,var(--app-safe-top,0px)); padding-bottom:max(32px,var(--app-safe-bottom,0px)); padding-left:max(18px,var(--app-safe-left,0px)); padding-right:max(18px,var(--app-safe-right,0px)); }
+@media(min-width:650px){ .aurora-page { padding-top:max(35px,var(--app-safe-top,0px)); } }
+@media(max-width:350px){ .aurora-page { padding-left:max(12px,var(--app-safe-left,0px)); padding-right:max(12px,var(--app-safe-right,0px)); } }
