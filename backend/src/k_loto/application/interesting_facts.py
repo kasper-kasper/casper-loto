@@ -20,7 +20,6 @@ from k_loto.infrastructure.database.models import (
     InterestingFact,
     InterestingFactBatch,
     JackpotAccount,
-    JackpotWinEvent,
     Lottery,
     Ticket,
 )
@@ -457,21 +456,18 @@ class InterestingFactService:
             .group_by(Draw.lottery_id)
             .subquery()
         )
-        last_wins = (
-            select(
-                JackpotWinEvent.lottery_id,
-                func.max(JackpotWinEvent.occurred_at).label("last_win"),
-            )
-            .group_by(JackpotWinEvent.lottery_id)
-            .subquery()
-        )
+        from k_loto.application.jackpot_cycles import last_cycle_ends
+
+        last_wins = last_cycle_ends()
         droughts = (
             select(Draw.lottery_id, func.count(Draw.id).label("drought"))
             .outerjoin(last_wins, last_wins.c.lottery_id == Draw.lottery_id)
             .where(
                 Draw.status == DrawStatus.COMPLETED,
                 Draw.scheduled_at
-                > func.coalesce(last_wins.c.last_win, datetime(1970, 1, 1, tzinfo=UTC)),
+                > func.coalesce(
+                    last_wins.c.last_reset, datetime(1970, 1, 1, tzinfo=UTC)
+                ),
             )
             .group_by(Draw.lottery_id)
             .subquery()

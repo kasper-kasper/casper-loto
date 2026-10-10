@@ -1038,6 +1038,21 @@ class WeeklySettlementService:
             draw.distributed_amount = (
                 plan.jackpot_opening if plan.jackpot_distributed else 0
             )
+            if draw.is_distribution:
+                from collections import Counter
+
+                from k_loto.application.distribution import queue_result
+
+                queue_result(
+                    self._session,
+                    lottery,
+                    draw,
+                    Counter(p.amount for p in plan.payouts),
+                    plan.jackpot_opening
+                    if (plan.jackpot_won or plan.jackpot_distributed)
+                    else 0,
+                    timestamp,
+                )
             self._session.add_all(ledger_entries)
             fast_lottery = is_fast_lottery(lottery.code)
             preferences = {

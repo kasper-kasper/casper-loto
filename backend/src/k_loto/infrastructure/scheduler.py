@@ -118,6 +118,12 @@ class SchedulerRuntime:
 
     async def _run_publication_delivery(self) -> None:
         try:
+            from k_loto.application.publication_retention import expire_proposals
+
+            await expire_proposals(session_factory, now=datetime.now(UTC))
+        except Exception as error:
+            logger.error("proposal_expiration_failed", error_type=type(error).__name__)
+        try:
             from k_loto.application.distribution import drain_distribution
 
             await drain_distribution(session_factory)

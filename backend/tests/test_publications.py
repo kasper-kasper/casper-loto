@@ -31,7 +31,7 @@ def payload() -> PublicationInput:
 
 
 def stored(status: str = "draft", revision: int = 1) -> Publication:
-    now = datetime(2026, 10, 5, tzinfo=UTC)
+    now = datetime.now(UTC)
     return Publication(
         id=UUID(int=1),
         author_id=UUID(int=2),

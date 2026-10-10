@@ -91,3 +91,15 @@ async def test_expired_announcement_never_posts():
     )
     bot.send_message.assert_not_awaited()
     assert row.state == "expired"
+
+
+async def test_result_posts_after_draw_and_survives_long_delivery_outage():
+    row, bot, factory = setup()
+    row.kind, row.created_at = "result", NOW
+    assert (
+        await deliver_distribution(factory, bot, now=NOW + timedelta(days=3)) == "sent"
+    )
+    assert (
+        await deliver_distribution(factory, bot, now=NOW + timedelta(days=3)) == "empty"
+    )
+    bot.send_message.assert_awaited_once()

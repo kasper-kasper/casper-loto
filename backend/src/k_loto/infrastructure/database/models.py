@@ -263,6 +263,13 @@ class Draw(TimestampMixin, Base):
 class DistributionAnnouncement(Base):
     __tablename__ = "distribution_announcements"
     __table_args__ = (
+        UniqueConstraint(
+            "draw_id", "kind", name="uq_distribution_announcement_draw_kind"
+        ),
+        CheckConstraint(
+            "kind IN ('schedule','result')", name="distribution_announcement_kind"
+        ),
+        Index("ix_distribution_announcement_delivery", "state", "retry_after"),
         CheckConstraint(
             "state IN ('queued','sending','sent','uncertain','failed','expired')",
             name="ck_distribution_announcement_state",
@@ -272,7 +279,10 @@ class DistributionAnnouncement(Base):
         PGUUID(as_uuid=True), primary_key=True, default=uuid4
     )
     draw_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("draws.id", ondelete="RESTRICT"), unique=True
+        PGUUID(as_uuid=True), ForeignKey("draws.id", ondelete="RESTRICT")
+    )
+    kind: Mapped[str] = mapped_column(
+        String(16), default="schedule", server_default="schedule"
     )
     text: Mapped[str] = mapped_column(Text)
     state: Mapped[str] = mapped_column(

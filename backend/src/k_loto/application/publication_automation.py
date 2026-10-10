@@ -467,7 +467,7 @@ class PublicationAutomation:
                 await self.session.scalars(
                     select(Draw)
                     .where(Draw.status == DrawStatus.COMPLETED, Draw.executed_at < end)
-                    .order_by(Draw.executed_at, Draw.id)
+                    .order_by(Draw.scheduled_at, Draw.public_number, Draw.id)
                 )
             )
             attachments = union_all(
@@ -545,8 +545,12 @@ class PublicationAutomation:
                 if game in excluded:
                     continue
                 assert draw.executed_at is not None
-                streaks[game] = 0 if draw.id in win_draws else streaks.get(game, 0) + 1
-                if draw.id in win_draws:
+                from k_loto.application.jackpot_cycles import cycle_ended
+
+                streaks[game] = (
+                    0 if cycle_ended(draw, win_draws) else streaks.get(game, 0) + 1
+                )
+                if cycle_ended(draw, win_draws):
                     epochs[game] = str(draw.id)
                 record_key = game + ":" + format_key(draw.configuration_snapshot)
                 old_tickets = ticket_records.get(record_key, 0)
@@ -744,6 +748,7 @@ class PublicationAutomation:
                             "topic_hashtag": "#Джекпот",
                         },
                         game=game,
+                        payload={"reset_draw_id": epochs.get(game, "origin")},
                         historical=historical,
                     )
                 for threshold in self.rules["ticket_milestones"]:
@@ -875,7 +880,9 @@ class PublicationAutomation:
                     ]
                     streak = 0
                     for draw in reversed(history):
-                        if draw.id in wins:
+                        from k_loto.application.jackpot_cycles import cycle_ended
+
+                        if cycle_ended(draw, wins):
                             break
                         streak += 1
                     metrics = {
@@ -923,7 +930,13 @@ class PublicationAutomation:
                                     ),
                                 ),
                                 game=game,
-                                payload={"value": value, "format": current},
+                                payload={
+                                    "value": value,
+                                    "format": current,
+                                    "reset_draw_id": str(history[-streak - 1].id)
+                                    if streak < len(history)
+                                    else "origin",
+                                },
                                 historical=historical,
                             )
             day += timedelta(days=1)
@@ -1352,6 +1365,8 @@ async def deliver_one(
     fonts: Path = Path("/usr/share/fonts/truetype/dejavu"),
 ) -> str:
     """Claim once; Telegram's definitive 429 is the only automatically retried send."""
+    from k_loto.application.publication_retention import stale_streak_filter
+
     async with factory() as session, session.begin():
         engine = PublicationEventService(session)
         await engine._lock()
@@ -1375,6 +1390,7 @@ async def deliver_one(
                 Publication.status == "draft",
                 Publication.content["delivery"]["state"].astext == "queued",
                 publication_eligibility_filter(),
+                ~stale_streak_filter(),
             )
             .order_by(
                 Publication.content["event"]["occurred_at"].astext, Publication.id

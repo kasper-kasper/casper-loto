@@ -2,6 +2,7 @@
 
 import asyncio
 import re
+from collections import Counter
 from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
@@ -13,18 +14,20 @@ from aiogram.exceptions import (
     TelegramForbiddenError,
     TelegramRetryAfter,
 )
-from sqlalchemy import or_, select, update
+from sqlalchemy import and_, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from k_loto.core.config import get_settings
-from k_loto.domain.enums import AuditAction, DrawStatus
+from k_loto.domain.enums import AuditAction, DrawStatus, TicketStatus
 from k_loto.domain.schedules import next_draw_at, sales_close_at
 from k_loto.infrastructure.database.models import (
     AdminAuditLog,
     DistributionAnnouncement,
     Draw,
     JackpotAccount,
+    JackpotWinEvent,
     Lottery,
+    Ticket,
 )
 
 MOSCOW = ZoneInfo("Europe/Moscow")
@@ -72,6 +75,126 @@ def validate_assignment(draw: Draw, lottery: Lottery, now: datetime) -> None:
         raise ValueError("Назначение возможно только до окончания продаж.")
 
 
+def result_text(
+    lottery: Lottery, draw: Draw, prizes: Counter[int], jackpot_paid: int
+) -> str:
+    winning = sum(count for amount, count in prizes.items() if amount > 0)
+
+    def amount(value: int) -> str:
+        return f"{value:,}".replace(",", " ")
+
+    when = draw.scheduled_at.astimezone(MOSCOW).strftime("%d.%m.%Y · %H:%M МСК")
+    lines = [
+        f"Распределительный тираж №{draw.public_number} завершён · {lottery.name}",
+        when,
+        "",
+        f"Из джекпота выплачено: {amount(jackpot_paid)} CAS.",
+        f"Выигрышных билетов: {amount(winning)}.",
+        f"Всего выигрышей: {amount(draw.total_payout)} CAS.",
+    ]
+    tiers = sorted(
+        ((value, count) for value, count in prizes.items() if value > 0), reverse=True
+    )
+    if tiers:
+        lines.extend(["", "Выплаты по билетам:"])
+        lines.extend(
+            f"• {amount(count)} шт. — по {amount(value)} CAS"
+            for value, count in tiers[:20]
+        )
+        if len(tiers) > 20:
+            lines.append(
+                f"• Остальные {amount(sum(c for _, c in tiers[20:]))} "
+                "выигрышных билетов "
+                f"— всего {amount(sum(v * c for v, c in tiers[20:]))} CAS"
+            )
+        lines.extend(["", "Все выигрыши уже зачислены."])
+    elif not draw.ticket_count:
+        lines.extend(["", "Билетов не было — джекпот переносится в следующий тираж."])
+    else:
+        lines.extend(["", "Выигрышных билетов нет."])
+    lines.extend(
+        [
+            f"Джекпот после тиража: {amount(draw.jackpot_closing or 0)} CAS.",
+            "",
+            f"#CasperLotto #{re.sub(r'\W', '', lottery.name)} "
+            "#РаспределительныйТираж #Результаты",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def queue_result(
+    session: AsyncSession,
+    lottery: Lottery,
+    draw: Draw,
+    prizes: Counter[int],
+    jackpot_paid: int,
+    now: datetime,
+) -> None:
+    session.add(
+        DistributionAnnouncement(
+            id=uuid4(),
+            draw_id=draw.id,
+            kind="result",
+            text=result_text(lottery, draw, prizes, jackpot_paid),
+            state="queued",
+            created_at=now,
+        )
+    )
+
+
+async def recover_results(
+    factory: async_sessionmaker[AsyncSession], *, now: datetime
+) -> None:
+    """Recover fresh completed receipts without editing any historical draw."""
+    async with factory() as session, session.begin():
+        rows = (
+            await session.execute(
+                select(Draw, Lottery)
+                .join(Lottery, Lottery.id == Draw.lottery_id)
+                .outerjoin(
+                    DistributionAnnouncement,
+                    and_(
+                        DistributionAnnouncement.draw_id == Draw.id,
+                        DistributionAnnouncement.kind == "result",
+                    ),
+                )
+                .where(
+                    Draw.status == DrawStatus.COMPLETED,
+                    Draw.is_distribution.is_(True),
+                    Draw.executed_at > now - timedelta(hours=24),
+                    Draw.executed_at <= now,
+                    DistributionAnnouncement.id.is_(None),
+                    Lottery.code != "dual",
+                )
+                .order_by(Draw.scheduled_at, Draw.id)
+                .limit(100)
+                .with_for_update(of=Draw, skip_locked=True)
+            )
+        ).all()
+        for draw, lottery in rows:
+            payouts = (
+                await session.scalars(
+                    select(Ticket.prize_amount).where(
+                        Ticket.draw_id == draw.id, Ticket.status == TicketStatus.SETTLED
+                    )
+                )
+            ).all()
+            won = await session.scalar(
+                select(JackpotWinEvent.jackpot_amount).where(
+                    JackpotWinEvent.draw_id == draw.id
+                )
+            )
+            queue_result(
+                session,
+                lottery,
+                draw,
+                Counter(payouts),
+                draw.distributed_amount or won or 0,
+                now,
+            )
+
+
 class DistributionDrawService:
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -85,7 +208,10 @@ class DistributionDrawService:
                 .join(JackpotAccount, JackpotAccount.lottery_id == Lottery.id)
                 .outerjoin(
                     DistributionAnnouncement,
-                    DistributionAnnouncement.draw_id == Draw.id,
+                    and_(
+                        DistributionAnnouncement.draw_id == Draw.id,
+                        DistributionAnnouncement.kind == "schedule",
+                    ),
                 )
                 .where(
                     Draw.lottery_id == lottery_id,
@@ -284,7 +410,8 @@ class DistributionDrawService:
                 raise ValueError("Счёт джекпота отсутствует.")
             announcement = await self.session.scalar(
                 select(DistributionAnnouncement).where(
-                    DistributionAnnouncement.draw_id == draw.id
+                    DistributionAnnouncement.draw_id == draw.id,
+                    DistributionAnnouncement.kind == "schedule",
                 )
             )
             if draw.is_distribution:
@@ -298,6 +425,7 @@ class DistributionDrawService:
             announcement = DistributionAnnouncement(
                 id=uuid4(),
                 draw_id=draw.id,
+                kind="schedule",
                 text=announcement_text(
                     lottery.name,
                     lottery.code,
@@ -357,7 +485,10 @@ async def deliver_distribution(
         if row is None:
             return "empty"
         draw = await session.get(Draw, row.draw_id)
-        if draw is None or draw.scheduled_at <= now:
+        if (
+            draw is None
+            or (row.kind != "result" and draw.scheduled_at <= now)
+        ):
             row.state = "expired"
             return "expired"
         row.state = "sending"
@@ -407,6 +538,7 @@ async def drain_distribution(factory: async_sessionmaker[AsyncSession]) -> None:
     settings = get_settings()
     if not settings.lottery_bot_token or not settings.publication_channel:
         return
+    await recover_results(factory, now=datetime.now(UTC))
     bot = Bot(settings.lottery_bot_token.get_secret_value())
     try:
         while await deliver_distribution(factory, bot, now=datetime.now(UTC)) in {

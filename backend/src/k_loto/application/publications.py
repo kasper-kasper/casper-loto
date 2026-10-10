@@ -141,13 +141,17 @@ class PublicationService:
             Publication.content["deleted"].as_boolean().is_distinct_from(True)
         )
         if view == "suggestions":
+            from k_loto.application.publication_retention import (
+                PROPOSAL_LIFETIME,
+                pending_proposal_filter,
+                proposal_timestamp,
+                stale_streak_filter,
+            )
+
             statement = statement.where(
-                Publication.status == "draft",
-                or_(
-                    Publication.event_type.is_(None),
-                    Publication.content["delivery"]["state"].astext
-                    == "approval_required",
-                ),
+                pending_proposal_filter(),
+                proposal_timestamp() > datetime.now(UTC) - PROPOSAL_LIFETIME,
+                ~stale_streak_filter(),
             )
         date_column: Any = (
             Publication.published_at if player else Publication.created_at
@@ -259,6 +263,19 @@ class PublicationService:
             )
             if row is None:
                 raise LookupError("Publication does not exist.")
+            from k_loto.application.publication_retention import (
+                proposal_expired,
+                stale_streak,
+            )
+
+            if action in {"edit", "publish"} and proposal_expired(
+                row, datetime.now(UTC)
+            ):
+                raise PublicationConflict(
+                    "Proposal expired after 24 hours; refresh suggestions."
+                )
+            if action in {"edit", "publish"} and await stale_streak(self.session, row):
+                raise PublicationConflict("Jackpot series ended; refresh suggestions.")
             event_code = row.event_type or row.content.get("template", {}).get(
                 "subcategory"
             )

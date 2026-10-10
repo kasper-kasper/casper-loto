@@ -11,6 +11,7 @@ from sqlalchemy import func, select, text
 from k_loto.application.distribution import (
     DistributionDrawService,
     deliver_distribution,
+    queue_result,
 )
 from k_loto.application.weekly import (
     LotterySettlementService,
@@ -169,6 +170,33 @@ async def main():
         async with session_factory() as s:
             return await LotterySettlementService(s, Fixed()).settle(did, now=stamp)
 
+    def fail_after_result(*args, **kwargs):
+        queue_result(*args, **kwargs)
+        raise RuntimeError("injected result rollback")
+
+    with patch(
+        "k_loto.application.distribution.queue_result", side_effect=fail_after_result
+    ):
+        try:
+            await settle()
+        except RuntimeError as error:
+            assert str(error) == "injected result rollback"
+        else:
+            raise AssertionError("Result outbox rollback failed")
+    async with session_factory() as s:
+        assert (
+            await s.scalar(
+                select(func.count(DistributionAnnouncement.id)).where(
+                    DistributionAnnouncement.draw_id == did
+                )
+            )
+            == 1
+        )
+        assert (
+            await s.scalar(select(Balance.amount).where(Balance.user_id == uid))
+            == before_money
+        )
+
     with patch(
         "k_loto.application.weekly._ledger_entry",
         side_effect=RuntimeError("injected rollback"),
@@ -260,12 +288,16 @@ async def main():
 
     bot = MockBot()
     assert await deliver_distribution(session_factory, bot, now=now) == "sent"
-    assert await deliver_distribution(session_factory, bot, now=now) == "empty"
-    assert bot.calls == 1
+    assert await deliver_distribution(session_factory, bot, now=stamp) == "sent"
+    assert await deliver_distribution(session_factory, bot, now=stamp) == "empty"
+    assert bot.calls == 2
+    from scripts.distribution_followup_smoke import verify_followup
+
+    await verify_followup(uid, lid, did, stamp, now)
     print(
         "Distribution clone: concurrent assignment/settlement, rollback, "
         "full jackpot, ordinary prizes, ledger zero sum, immutable history "
-        "and mocked text delivery PASS"
+        "and separate mocked schedule/result delivery PASS"
     )
     await engine.dispose()
 
