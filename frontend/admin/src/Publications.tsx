@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { adminApi } from "./api";
+import { freshProposal } from "./publicationFreshness";
 import type { Publication, PublicationFields, PublicationTemplate, TextField } from "../../shared/publications";
 import { PublicationArtwork } from "./PublicationArtwork";
 import "./publications.css";
@@ -16,12 +17,29 @@ export function Publications() {
   const [selected, setSelected] = useState<Publication | null>(null), [draftId, setDraftId] = useState(() => crypto.randomUUID());
   const [dirty, setDirty] = useState(false), [busy, setBusy] = useState(false), [loading, setLoading] = useState(true), [error, setError] = useState(""), [notice, setNotice] = useState(""), [more, setMore] = useState(false);
   const [view, setView] = useState<"suggestions" | "all" | "editor">("suggestions");
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
+  useEffect(() => {
+    if (view !== "suggestions" || busy) return;
+    let active = true, running = false;
+    const refresh = async () => {
+      if (document.hidden || running) return;
+      running = true;
+      try { await adminApi.preparePublicationSuggestions(); const page = await adminApi.publications(undefined, "suggestions"); if (active) { setRows(page); setMore(page.length === 30); } }
+      catch { /* Keep the current fresh list; explicit refresh shows errors. */ }
+      finally { running = false; }
+    };
+    const timer = setInterval(() => void refresh(), 60000);
+    return () => { active = false; clearInterval(timer); };
+  }, [view, busy]);
+  const proposals = rows.filter(row => row.status === "draft" && freshProposal(row, now));
+  const selectedFresh = !selected || selected.status !== "draft" || freshProposal(selected, now);
   const preview = useRef<HTMLDivElement>(null);
   const [channel, setChannel] = useState<{ channel: string | null; delivery_enabled: boolean; checked: boolean; can_post: boolean; bot_username?: string; error?: string } | null>(null);
   useEffect(() => { let active = true;void adminApi.publicationChannel().then(value => { if (active) setChannel(value); }).catch(() => undefined);return () => { active = false; }; }, []);
   useEffect(() => { let active = true;Promise.all([adminApi.publicationTemplates(), adminApi.preparePublicationSuggestions().then(() => adminApi.publications(undefined, "suggestions"))]).then(([library, publications]) => { if (!active) return;setTemplates(library);setTemplateId(library[0]?.id ?? "");setGame(library[0]?.lottery ?? "pulse");setRows(publications);setMore(publications.length === 30); }).catch(reason => { if (active) setError(reason instanceof Error ? reason.message : "Не удалось загрузить публикации."); }).finally(() => { if (active) setLoading(false); });return () => { active = false; }; }, []);
   const template = selected && selected.status !== "draft" ? selected.content.template : templates.find(item => item.id === templateId);
-  const editable = !selected || (selected.status === "draft" && (!selected.event_type || selected.content.delivery?.state === "approval_required"));
+  const editable = !selected || (selectedFresh && selected.status === "draft" && (!selected.event_type || selected.content.delivery?.state === "approval_required"));
   const games = [...new Map(templates.map(item => [item.lottery, item.lotteryLabel])).entries()];
   const available = templates.filter(item => item.lottery === game);
   const events = [...new Map(available.map(item => [item.subcategory, item.subcategoryLabel])).entries()];
@@ -41,11 +59,11 @@ export function Publications() {
     const blob = await response.blob();const data = await new Promise<string>((resolve, reject) => { const reader = new FileReader();reader.onload = () => resolve(String(reader.result));reader.onerror = reject;reader.readAsDataURL(blob); });background.setAttribute('href', data);clone.setAttribute('width', '1200');clone.setAttribute('height', '900');
     const source = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(clone)], { type: 'image/svg+xml' }));try { const img = new Image();img.src = source;await img.decode();const canvas = document.createElement('canvas');canvas.width = 1200;canvas.height = 900;canvas.getContext('2d')!.drawImage(img, 0, 0);const output = await new Promise<Blob>((resolve, reject) => canvas.toBlob(result => result ? resolve(result) : reject(new Error('Не удалось экспортировать пост.')), 'image/png'));const url = URL.createObjectURL(output);const a = document.createElement('a');a.href = url;a.download = `${selected?.id ?? draftId}-post.png`;a.click();window.setTimeout(() => URL.revokeObjectURL(url), 1000); } finally { URL.revokeObjectURL(source); }
   }); }
-  return <section className="publication-editor"><header><div><h2>Предложка · Stories и посты</h2><p>События A и B поступают в общую очередь. Рассчитанные черновики принимаются отдельно.</p></div><button type="button" onClick={() => fresh()} disabled={busy}>Новая публикация</button></header>
+  return <section className="publication-editor"><header><div><h2>Предложка · Stories и посты</h2><p>Предложения актуальны 24 часа. Просроченные снимаются автоматически, новые появляются в списке.</p></div><button type="button" onClick={() => fresh()} disabled={busy}>Новая публикация</button></header>
     <nav className="publication-tabs" aria-label="Публикации"><button type="button" disabled={busy} aria-pressed={view === "suggestions"} onClick={() => void showList("suggestions")}>Предложка</button><button type="button" disabled={busy} aria-pressed={view === "all"} onClick={() => void showList("all")}>Очередь и история</button>{view === "suggestions" && <button type="button" disabled={busy || loading} onClick={() => void showList("suggestions", true)}>Обновить предложку</button>}</nav>
     <div className="publication-channel"><p>Канал: {channel?.channel ?? "проверка подключения"}. {channel?.delivery_enabled ? "Автопубликация включена." : "Автопубликация выключена."}</p><button type="button" disabled={busy} onClick={() => void perform(async () => setChannel(await adminApi.publicationChannel(true)))}>Проверить права бота</button>{channel?.checked && <p role="status">{channel.error ?? (channel.can_post ? `Бот @${channel.bot_username} может публиковать.` : "Боту нужно право публикации сообщений в канале.")}</p>}</div>
     {error && <p role="alert" className="error">{error}</p>}{notice && <p role="status">{notice}</p>}{loading ? <p>Загружаем библиотеку…</p> : <>
-    {view === "suggestions" && <section className="publication-suggestions" aria-label="Готовые черновики">{rows.length ? rows.map(row => <article key={row.id}><PublicationArtwork template={row.content.template} fields={row.content.fields} format="post" /><h3>{row.content.fields.title}</h3><p>{row.content.channel_caption}</p><div><button type="button" disabled={busy} onClick={() => void decide(row, "publish")}>Опубликовать</button><button type="button" disabled={busy} onClick={() => open(row)}>Отредактировать</button><button type="button" disabled={busy} onClick={() => void decide(row, "delete")}>Удалить</button></div></article>) : <p>Нет черновиков, ожидающих решения. Автоматические события публикуются самостоятельно.</p>}</section>}
+    {view === "suggestions" && <section className="publication-suggestions" aria-label="Готовые черновики">{proposals.length ? proposals.map(row => <article key={row.id}><PublicationArtwork template={row.content.template} fields={row.content.fields} format="post" /><h3>{row.content.fields.title}</h3><p>{row.content.channel_caption}</p><div><button type="button" disabled={busy} onClick={() => void decide(row, "publish")}>Опубликовать</button><button type="button" disabled={busy} onClick={() => open(row)}>Отредактировать</button><button type="button" disabled={busy} onClick={() => void decide(row, "delete")}>Удалить</button></div></article>) : <p>Нет черновиков, ожидающих решения. Автоматические события публикуются самостоятельно.</p>}</section>}
     {view === "suggestions" && more && <button type="button" disabled={busy} onClick={() => void perform(async () => { const page = await adminApi.publications(rows.at(-1)?.id, "suggestions");setRows(current => [...current, ...page]);setMore(page.length === 30); })}>Ещё черновики</button>}
     {view === "editor" && <><div className="publication-editor-grid"><form onSubmit={event => { event.preventDefault();void save(); }}><fieldset disabled={busy || !editable}>
       <label>Лотерея<select disabled={Boolean(selected?.event_type)} value={game} onChange={e => changeSelection(e.target.value)}>{games.map(([code, name]) => <option key={code} value={code}>{name}</option>)}</select></label>
@@ -58,7 +76,7 @@ export function Publications() {
       <button type="submit" disabled={!template || !fields.title.trim() || !cta.trim()}>Сохранить черновик</button>
     </fieldset></form>
     <div className="publication-previews" ref={preview}>{template && <><div><h3>Stories · 9:16</h3><PublicationArtwork template={template} fields={fields} ctaLabel={cta} /><p>Переход: {template.lotteryLabel}</p></div><div data-post-preview><h3>Пост · 4:3</h3><PublicationArtwork template={template} fields={fields} format="post" /><button type="button" disabled={busy || !fields.title.trim()} onClick={() => void downloadPost()}>Скачать пост PNG</button></div></>}</div></div>
-    <div className="publication-actions">{selected && <><b>{statusLabels[selected.status]}</b>{selected.status === "draft" && <button type="button" disabled={busy || dirty} onClick={() => void transition("publish")}>{selected.event_type ? "Принять и отправить в канал" : "Опубликовать в Mini App"}</button>}{selected.status !== "archived" && <button type="button" disabled={busy} onClick={() => void transition("archive")}>Снять с показа</button>}<button type="button" disabled={busy} onClick={() => fresh(true)}>Создать копию</button></>}{dirty && selected?.status === "draft" && <small>Сохраните изменения перед публикацией.</small>}</div></>}
+    <div className="publication-actions">{selected && <><b>{statusLabels[selected.status]}</b>{selected.status === "draft" && <button type="button" disabled={busy || dirty || !selectedFresh} onClick={() => void transition("publish")}>{selected.event_type ? "Принять и отправить в канал" : "Опубликовать в Mini App"}</button>}{selected.status !== "archived" && <button type="button" disabled={busy} onClick={() => void transition("archive")}>Снять с показа</button>}<button type="button" disabled={busy} onClick={() => fresh(true)}>Создать копию</button></>}{!selectedFresh && <small>Предложение устарело. Вернитесь в предложку за новыми записями.</small>}{dirty && selected?.status === "draft" && <small>Сохраните изменения перед публикацией.</small>}</div></>}
     {view !== "suggestions" && <section className="publication-history"><h3>Публикации</h3>{rows.length ? rows.map(row => <button type="button" className={selected?.id === row.id ? "selected" : ""} key={row.id} disabled={busy} onClick={() => open(row)}><span>{row.content.template.lotteryLabel}</span><strong>{row.content.fields.title}</strong><small>{statusLabels[row.status]}</small></button>) : <p>Создайте первую публикацию. Черновики видны только вам.</p>}{more && <button type="button" disabled={busy} onClick={() => void perform(async () => { const page = await adminApi.publications(rows.at(-1)?.id, "all");setRows(current => [...current, ...page.filter(row => !current.some(item => item.id === row.id))]);setMore(page.length === 30); })}>Показать ещё</button>}</section>}
     </>}
   </section>;

@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, expect, it, vi } from "vitest";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { Publications } from "./Publications";
 import { adminApi } from "./api";
 import type { Publication, PublicationTemplate } from "../../shared/publications";
@@ -7,8 +7,9 @@ import fixture from "../../shared/publication-template.fixture.json";
 
 vi.mock("./api", () => ({ adminApi: { preparePublicationSuggestions: vi.fn().mockResolvedValue({ prepared: true }), publicationTemplates: vi.fn(), publicationChannel: vi.fn().mockResolvedValue({ channel: "@casper_loto", checked: false, can_post: false, delivery_enabled: false }), publications: vi.fn(), savePublication: vi.fn(), editPublication: vi.fn(), publicationAction: vi.fn() } }));
 const template = fixture as unknown as PublicationTemplate;
-const row: Publication = { id: "1", lottery_code: "pulse", status: "draft", revision: 1, content: { template, fields: { kicker: "", title: "Ручная новость", description: "", value: "", fact: "" }, cta_label: "Открыть лотерею", channel_caption: "#PULSE" }, published_at: null, created_at: "2026-10-05T00:00:00Z", updated_at: "2026-10-05T00:00:00Z" };
+const row: Publication = { id: "1", lottery_code: "pulse", status: "draft", revision: 1, content: { template, fields: { kicker: "", title: "Ручная новость", description: "", value: "", fact: "" }, cta_label: "Открыть лотерею", channel_caption: "#PULSE" }, published_at: null, created_at: new Date().toISOString(), updated_at: "2026-10-05T00:00:00Z" };
 beforeEach(() => { vi.mocked(adminApi.publicationTemplates).mockResolvedValue([template]);vi.mocked(adminApi.publications).mockResolvedValue([]);vi.mocked(adminApi.savePublication).mockResolvedValue(row);vi.mocked(adminApi.publicationAction).mockResolvedValue({ ...row, status: "published", revision: 2 }); });
+afterEach(() => { cleanup(); vi.useRealTimers(); });
 
 it("saves a private draft before explicit publication and blocks publishing unsaved edits", async () => {
   render(<Publications />);
@@ -56,4 +57,37 @@ it("edits ready event copy while keeping calculated values read only", async () 
   expect(screen.getByLabelText("Заголовок")).toBeEnabled();
   expect(screen.getByLabelText("Сумма / число / результат")).toHaveAttribute("readonly");
   expect(screen.getByLabelText("Событие")).toBeDisabled();
+});
+
+it("hides old proposals and removes an expiring one in an open tab", async () => {
+  const now = Date.now();
+  vi.useFakeTimers(); vi.setSystemTime(now);
+  vi.mocked(adminApi.publications).mockResolvedValue([
+    { ...row, id: "old", content: { ...row.content, fields: { ...row.content.fields, title: "Старая запись" } }, created_at: new Date(now-86400000).toISOString() },
+    { ...row, created_at: new Date(now-86400000+5000).toISOString() },
+  ]);
+  await act(async () => { render(<Publications />); });
+  expect(screen.getByRole("button", { name: "Отредактировать" })).toBeEnabled();
+  expect(screen.queryByText("Старая запись")).not.toBeInTheDocument();
+  vi.setSystemTime(now+6000);
+  await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+  expect(screen.queryByRole("button", { name: "Опубликовать" })).not.toBeInTheDocument();
+});
+
+it("refreshes proposals automatically while preserving an open editor", async () => {
+  vi.mocked(adminApi.publications).mockResolvedValue([row]);
+  vi.useFakeTimers();
+  vi.spyOn(document, "hidden", "get").mockReturnValue(false);
+  await act(async () => { render(<Publications />); });
+  expect(screen.getByRole("button", { name: "Отредактировать" })).toBeEnabled();
+  const fresh = { ...row, id: "new", content: { ...row.content, fields: { ...row.content.fields, title: "Новая запись" } } };
+  vi.mocked(adminApi.publications).mockResolvedValue([fresh]);
+  await act(async () => { await vi.advanceTimersByTimeAsync(60000); });
+  expect(screen.getByRole("heading", { name: "Новая запись" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Отредактировать" }));
+  fireEvent.change(screen.getByLabelText("Заголовок"), { target: { value: "Мой незаконченный текст" } });
+  const count = vi.mocked(adminApi.publications).mock.calls.length;
+  await act(async () => { await vi.advanceTimersByTimeAsync(60000); });
+  expect(screen.getByLabelText("Заголовок")).toHaveValue("Мой незаконченный текст");
+  expect(vi.mocked(adminApi.publications).mock.calls.length).toBe(count);
 });
