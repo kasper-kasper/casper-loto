@@ -2,11 +2,25 @@ import { displayBrandName } from "../../shared/brandNames";
 import type { CartTicket } from "./types";
 
 const STORAGE_KEY = "k-loto:cart:v2";
+const PURCHASED_KEY = "k-loto:cart:purchased:v1";
 export const CART_MAX_TICKETS = 1_000;
 
 interface StoredCart {
   expiresAt: number;
   tickets: CartTicket[];
+}
+
+function purchasedIds(ttlSeconds: number | null, now: number): Record<string, number> {
+  const storage = ttlSeconds === null ? sessionStorage : localStorage;
+  const entries = JSON.parse(storage.getItem(PURCHASED_KEY) ?? "{}") as Record<string, number>;
+  return Object.fromEntries(Object.entries(entries).filter(([, expiry]) => Number.isFinite(expiry) && expiry > now));
+}
+
+export function markCartPurchased(ids: string[], ttlSeconds: number | null, now = Date.now()): void {
+  const storage = ttlSeconds === null ? sessionStorage : localStorage;
+  const entries = purchasedIds(ttlSeconds, now);
+  for (const id of ids) entries[id] = ttlSeconds === null ? Number.MAX_SAFE_INTEGER : now + ttlSeconds * 1000;
+  storage.setItem(PURCHASED_KEY, JSON.stringify(entries));
 }
 
 export function configuredCartTtl(): number | null {
@@ -24,7 +38,8 @@ export function loadCart(ttlSeconds: number | null, now = Date.now()): CartTicke
       storage.removeItem(STORAGE_KEY);
       return [];
     }
-    return value.tickets.slice(0, CART_MAX_TICKETS).map((ticket) => ({
+    const consumed = purchasedIds(ttlSeconds, now);
+    return value.tickets.filter(ticket => !consumed[ticket.id]).slice(0, CART_MAX_TICKETS).map((ticket) => ({
       ...ticket,
       lotteryName: typeof ticket.lotteryName === "string" ? displayBrandName(ticket.lotteryName) : ticket.lotteryName,
       drawCount: ticket.drawCount === 5 ? 5 : 1,
@@ -41,6 +56,8 @@ export function saveCart(
   now = Date.now(),
 ): void {
   const storage = ttlSeconds === null ? sessionStorage : localStorage;
+  const consumed = purchasedIds(ttlSeconds, now);
+  tickets = tickets.filter(ticket => !consumed[ticket.id]);
   if (tickets.length === 0) {
     storage.removeItem(STORAGE_KEY);
     return;

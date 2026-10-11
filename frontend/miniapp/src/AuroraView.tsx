@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ApiError, miniAppApi } from "./api";
+import { recoveredEvent } from "./purchaseJournal";
+import type { PurchaseResolution } from "./purchaseJournal";
 import { Money } from "./components";
 import { disableTelegramVerticalSwipes, lockInteractionViewport } from "./interactionLock";
 import { errorHaptic, selectionHaptic, successHaptic } from "./telegram";
@@ -50,6 +52,20 @@ export function AuroraView({ initData, balance, onClose, onSettled }: { initData
   const buying = useRef(false);
   const pending = useRef<{ key: string; quantity: 1 | 3 } | null>(null);
   const historyRequest = useRef(0);
+  useEffect(() => {
+    const resolved = (event: Event) => {
+      const detail = (event as CustomEvent<PurchaseResolution>).detail;
+      if (!detail.path.endsWith("/aurora/purchases")) return;
+      pending.current = null; setRetryQuantity(null); setError("");
+      if (detail.receipt && "tickets" in detail.receipt) {
+        const receipt = detail.receipt;
+        historyRequest.current += 1; setResult(receipt); setOpened([]);
+        setHistory(current => [...receipt.tickets, ...current.filter(item => !receipt.tickets.some(ticket => ticket.id === item.id))].slice(0, 30));
+      }
+    };
+    window.addEventListener(recoveredEvent, resolved);
+    return () => window.removeEventListener(recoveredEvent, resolved);
+  }, []);
   const root = useRef<HTMLElement>(null);
   useEffect(() => disableTelegramVerticalSwipes(), []);
   useEffect(() => { const version = ++historyRequest.current; let active = true; void miniAppApi.auroraHistory(initData).then(tickets => { if (active && version === historyRequest.current) setHistory(tickets); }).catch(() => undefined); return () => { active = false; }; }, [initData]);

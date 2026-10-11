@@ -1,4 +1,5 @@
 import { brandViewData } from "../../shared/brandNames";
+import type { MonitoringSnapshot } from "./OperationalMonitor";
 import type { Publication, PublicationInput, PublicationTemplate } from "../../shared/publications";
 import type {
   AdminSession,
@@ -116,6 +117,7 @@ export interface DistributionDraw {
 }
 
 export const adminApi = {
+  monitoring: () => request<MonitoringSnapshot>("/api/v1/admin/monitoring"),
   distributionDraws: (lotteryId: string, day: string) => request<DistributionDraw[]>(`/distribution-draws?lottery_id=${encodeURIComponent(lotteryId)}&day=${encodeURIComponent(day)}`),
   assignDistribution: (draw: DistributionDraw) => request<DistributionDraw>(`/distribution-draws/${draw.id}`, { method: "POST", body: JSON.stringify({ lottery_id: draw.lottery_id, scheduled_at: draw.scheduled_at }) }),
   publicationTemplates: () => request<PublicationTemplate[]>("/publications/templates"),

@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import App from "./App";
+import { PurchaseRecovery } from "./PurchaseRecovery";
 import { broadcastPreviewConfig } from "./broadcastPreview";
 import { BroadcastPreviewBanner } from "./BroadcastPreviewBanner";
 import { installMotionBudget } from "./performance";
@@ -19,10 +20,12 @@ async function start(): Promise<void> {
     const { installDesignPreview } = await import("./designPreview");
     installDesignPreview();
   }
+  const initData = initializeTelegram();
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
       <BroadcastPreviewBanner />
-      <App initData={initializeTelegram()} localDev={isLocalDevMode() || Boolean(broadcastPreview)} />
+      <App initData={initData} localDev={isLocalDevMode() || Boolean(broadcastPreview)} />
+      <PurchaseRecovery initData={initData} />
     </StrictMode>,
   );
 }

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { PointerEvent } from "react";
 import { ApiError, miniAppApi } from "./api";
+import { recoveredEvent } from "./purchaseJournal";
+import type { PurchaseResolution } from "./purchaseJournal";
 import { logoSymbol } from "./brand";
 import { Money } from "./components";
 import { LiveSymbol } from "./LiveSymbol";
@@ -72,6 +74,20 @@ export function KasperLiveView({ initData, balance, onClose, onSettled }: { init
   const [error, setError] = useState("");
   const [retryQuantity, setRetryQuantity] = useState<1 | 3 | null>(null);
   const pending = useRef<{ key: string; quantity: 1 | 3 } | null>(null);
+  useEffect(() => {
+    const resolved = (event: Event) => {
+      const detail = (event as CustomEvent<PurchaseResolution>).detail;
+      if (!detail.path.endsWith("/kasper-live/purchases")) return;
+      pending.current = null; setRetryQuantity(null); setError("");
+      if (detail.receipt && "tickets" in detail.receipt) {
+        const receipt = detail.receipt;
+        historyRequest.current += 1; setResult(receipt); setOpened([]);
+        setHistory(current => [...receipt.tickets, ...current.filter(item => !receipt.tickets.some(ticket => ticket.id === item.id))].slice(0, 30));
+      }
+    };
+    window.addEventListener(recoveredEvent, resolved);
+    return () => window.removeEventListener(recoveredEvent, resolved);
+  }, []);
   const buying = useRef(false);
   const root = useRef<HTMLElement>(null);
   const historyRequest = useRef(0);

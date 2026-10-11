@@ -3,13 +3,14 @@
 import asyncio
 import hashlib
 from collections.abc import AsyncIterator
+from dataclasses import asdict
 from datetime import datetime
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import AwareDatetime, BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -35,7 +36,9 @@ from k_loto.application.miniapp import (
     MiniAppQueryService,
     MiniAppTicket,
 )
+from k_loto.application.purchase_receipts import PurchaseReceiptService
 from k_loto.application.query_scope import LotteryScope
+from k_loto.application.runtime_monitoring import runtime_monitoring
 from k_loto.application.weekly import (
     MAX_TICKETS_PER_PURCHASE,
     LotteryTicketPurchaseService,
@@ -62,9 +65,59 @@ from k_loto.infrastructure.local_dev_auth import (
     is_loopback_origin,
     issue_local_dev_session,
 )
-from k_loto.infrastructure.rate_limit import purchase_rate_limiter
+from k_loto.infrastructure.rate_limit import PurchaseRateLimiter, purchase_rate_limiter
 
 router = APIRouter(prefix="/api/v1/miniapp", tags=["miniapp"])
+telemetry_limiter = PurchaseRateLimiter()
+
+
+class TimingSample(BaseModel):
+    metric: Literal["startup_client", "dashboard_client", "purchase_client"]
+    duration_ms: float = Field(ge=0, le=120_000, allow_inf_nan=False)
+    status: int = Field(ge=0, le=599)
+
+
+@router.post("/telemetry", status_code=204)
+async def timing_sample(
+    sample: TimingSample,
+    user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
+) -> Response:
+    if telemetry_limiter.allow(user.id, limit=20, window_seconds=60):
+        runtime_monitoring.record(sample.metric, sample.duration_ms, sample.status)
+    return Response(status_code=204)
+
+
+@router.get("/purchase-receipts/{key}")
+async def purchase_receipt(
+    key: str,
+    user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    game: Literal["scheduled", "kasper-live", "aurora", "vault"] = "scheduled",
+) -> dict[str, Any]:
+    if not 1 <= len(key) <= 100:
+        raise HTTPException(status_code=422, detail="Invalid purchase key.")
+    result = await PurchaseReceiptService(session).find(user.id, key, game)
+    # Absence is not proof of failure: the original transaction may still run.
+    return {"receipt": asdict(result) if result is not None else None}
+
+
+@router.post("/purchase-receipts/{key}/cancel")
+async def cancel_purchase_attempt(
+    key: str,
+    user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    game: Literal["scheduled", "kasper-live", "aurora", "vault"] = "scheduled",
+) -> dict[str, Any]:
+    try:
+        result = await PurchaseReceiptService(session).cancel_uncommitted(
+            user.id, key, game
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    return {
+        "cancelled": result is None,
+        "receipt": asdict(result) if result is not None else None,
+    }
 
 
 @router.get("/draw-archive", response_model=ArchivePage)
@@ -142,6 +195,7 @@ class TicketResponse(BaseModel):
 
 
 class DashboardResponse(BaseModel):
+    owner_user_id: UUID | None = None
     app_version: str
     server_time: datetime
     balance: int
@@ -248,6 +302,7 @@ class LiveFeedResponse(BaseModel):
 
 
 class PurchaseRequest(BaseModel):
+    expected_scheduled_at: AwareDatetime | None = None
     combinations: list[list[int]] = Field(
         min_length=1, max_length=MAX_TICKETS_PER_PURCHASE
     )
@@ -492,11 +547,13 @@ async def dashboard(
     user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> DashboardResponse:
-    return _dashboard_response(
+    result = _dashboard_response(
         await MiniAppQueryService(session).dashboard(
             user.id, include_recent_results=False
         )
     )
+    result.owner_user_id = user.id
+    return result
 
 
 @router.get("/account", response_model=AccountResponse)
@@ -1085,6 +1142,7 @@ async def purchase_lottery_tickets(
             combinations=[list(value) for value in request.combinations],
             idempotency_key=request.idempotency_key,
             draw_count=request.draw_count,
+            expected_scheduled_at=request.expected_scheduled_at,
         )
     except InsufficientBalance as error:
         raise HTTPException(

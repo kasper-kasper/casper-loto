@@ -4,6 +4,7 @@ import type { CatalogFilter } from "./LotteryCatalog";
 import { motion } from "motion/react";
 
 import { ApiError, miniAppApi } from "./api";
+import { recoveredEvent } from "./purchaseJournal";
 import { Today } from "./Today";
 import { Stories } from "./Stories";
 import { MobileNavigation } from "./MobileNavigation";
@@ -297,6 +298,19 @@ export default function App({ initData, localDev = false }: AppProps) {
     return value;
   }, [authenticated, initData]);
 
+  useEffect(() => {
+    const recovered = (event: Event) => {
+      setError(null);
+      const ids = new Set((event as CustomEvent<{ cartIds: string[] }>).detail.cartIds);
+      setCart(current => current.filter(ticket => !ids.has(ticket.id)));
+      snapshotEpoch.current += 1;
+      void refreshDashboard().catch(() => undefined);
+      void refreshAccount().catch(() => undefined);
+    };
+    window.addEventListener(recoveredEvent, recovered);
+    return () => window.removeEventListener(recoveredEvent, recovered);
+  }, [refreshDashboard, refreshAccount]);
+
   const applyPurchaseSnapshot = useCallback((lotteryCode: string, result: PurchaseResult, currentDrawTickets: number) => {
     snapshotEpoch.current += 1;
     setDashboard((current) => current ? {
@@ -387,7 +401,18 @@ export default function App({ initData, localDev = false }: AppProps) {
       });
     });
     return () => { cancelAnimationFrame(firstFrame); cancelAnimationFrame(secondFrame); };
-  }, [dashboard, loading, view]);
+  }, [dashboard, loading, view, initData]);
+  useEffect(() => {
+    if (loading || !dashboard || performance.getEntriesByName("miniapp:startup-painted").length) return;
+    let second = 0;
+    const first = requestAnimationFrame(() => {
+      second = requestAnimationFrame(() => {
+        performance.mark("miniapp:startup-painted");
+        miniAppApi.startupTiming?.(initData, performance.now());
+      });
+    });
+    return () => { cancelAnimationFrame(first); cancelAnimationFrame(second); };
+  }, [dashboard, loading, initData]);
   useEffect(() => {
     if (!authenticated) return;
     const timer = window.setInterval(() => {
@@ -514,14 +539,15 @@ export default function App({ initData, localDev = false }: AppProps) {
     }
   };
 
-  const requestPurchase = async (lotteryCode: string, combinations: number[][], drawCount: 1 | 5) => {
+  const requestPurchase = async (lotteryCode: string, combinations: number[][], drawCount: 1 | 5, cartIds: string[] = []) => {
     const idempotencyKey = crypto.randomUUID();
+    const scheduledAt = dashboard?.lotteries.find(lottery => lottery.code === lotteryCode)?.scheduled_at;
     try {
-      return await miniAppApi.purchase(initData, lotteryCode, combinations, idempotencyKey, drawCount);
+      return await miniAppApi.purchase(initData, lotteryCode, combinations, idempotencyKey, drawCount, scheduledAt, cartIds);
     } catch (reason) {
       if (reason instanceof ApiError && reason.status < 500) throw reason;
       await new Promise((resolve) => window.setTimeout(resolve, 500));
-      return miniAppApi.purchase(initData, lotteryCode, combinations, idempotencyKey, drawCount);
+      return miniAppApi.purchase(initData, lotteryCode, combinations, idempotencyKey, drawCount, scheduledAt, cartIds);
     }
   };
 
@@ -543,7 +569,7 @@ export default function App({ initData, localDev = false }: AppProps) {
       return true;
     } catch (reason) {
       errorHaptic();
-      setError(reason instanceof ApiError ? reason.message : "Покупка не выполнена.");
+      setError(reason instanceof Error ? reason.message : "Ответ о покупке потерян. Проверяем её результат.");
       return false;
     } finally {
       purchaseInFlight.current = false;
@@ -567,7 +593,7 @@ export default function App({ initData, localDev = false }: AppProps) {
     try {
       for (const ticketsForLottery of groups.values()) {
         const sample = ticketsForLottery[0];
-        const result = await requestPurchase(sample.lotteryCode, ticketsForLottery.map((ticket) => ticket.numbers), sample.drawCount);
+        const result = await requestPurchase(sample.lotteryCode, ticketsForLottery.map((ticket) => ticket.numbers), sample.drawCount, ticketsForLottery.map(ticket => ticket.id));
         const purchasedIds = new Set(ticketsForLottery.map((ticket) => ticket.id));
         setCart((current) => current.filter((ticket) => !purchasedIds.has(ticket.id)));
         done += ticketsForLottery.length;

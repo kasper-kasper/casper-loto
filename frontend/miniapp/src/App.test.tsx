@@ -369,6 +369,8 @@ it("allows a previously saved cart to be completed atomically", async () => {
       [[1, 2, 3, 4, 5]],
       "00000000-0000-4000-8000-000000000001",
       1,
+      "2026-08-16T17:00:00Z",
+      [expect.any(String)],
     ),
   );
   expect(await screen.findByText("1 билет куплен · списано 100 CAS")).toBeInTheDocument();
@@ -424,6 +426,7 @@ it("keeps Casper Grand main and special number fields independent", async () => 
   await waitFor(() => expect(miniAppApi.purchase).toHaveBeenCalledWith(
     "signed", "weekly", [[1, 2, 3, 4, 5, 36, 37]],
     "00000000-0000-4000-8000-000000000001", 1,
+    "2026-08-16T17:00:00Z", [],
   ));
   expect(screen.getByRole("heading", { name: "Casper Grand" })).toBeInTheDocument();
   await waitFor(() => {
@@ -456,6 +459,7 @@ it("offers an explicit prepaid five-draw purchase without enabling it by default
   await waitFor(() => expect(miniAppApi.purchase).toHaveBeenCalledWith(
     "signed", "weekly", [[1, 2, 3, 4, 5]],
     "00000000-0000-4000-8000-000000000001", 5,
+    "2026-08-16T17:00:00Z", [],
   ));
 });
 
@@ -677,6 +681,7 @@ it("keeps Casper Dual as one 2+2 ticket with no favorites or five-draw repeat", 
   fireEvent.click(screen.getByRole("button", { name: "Купить билет" }));
   await waitFor(() => expect(miniAppApi.purchase).toHaveBeenCalledWith(
     "test", "dual", [[3, 10, 17, 23]], expect.any(String), 1,
+    expect.any(String), [],
   ));
 });
 

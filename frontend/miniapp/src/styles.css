@@ -2141,3 +2141,9 @@ html { overflow-x: clip; scrollbar-gutter: stable; }
 
 /* Telegram fullscreen overlays and phone cutouts are independent safe insets. */
 .app-shell { padding-left:max(var(--space),var(--app-safe-left)); padding-right:max(var(--space),var(--app-safe-right)); }
+/* Recovery stays below Telegram controls and above any lottery screen. */
+.purchase-recovery { position: fixed; z-index: 500; inset: auto 12px calc(16px + env(safe-area-inset-bottom)); max-height: 55dvh; overflow: auto; padding: 18px; border: 1px solid #cda55f; border-radius: 20px; background: #17142af5; box-shadow: 0 10px 40px #0009; color: #fff; font-size: 14px; }
+.purchase-recovery p { line-height: 1.5; margin: 10px 0; }
+.purchase-recovery div { display: flex; flex-wrap: wrap; gap: 8px; }
+.purchase-recovery button { padding: 12px 14px; border: 1px solid #ae955b; border-radius: 12px; background: #302847; color: #fff; cursor: pointer; }
+.purchase-recovery button:disabled { opacity: .5; }

@@ -74,6 +74,7 @@ export interface Ticket {
 }
 
 export interface Dashboard {
+  owner_user_id?: string;
   app_version?: string;
   server_time: string;
   balance: number;

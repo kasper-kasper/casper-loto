@@ -86,6 +86,17 @@ export function BingoView({ lottery, initData, now, balance, onClose, onPurchase
   const pending = useRef<{ key: string; selection: { ticketIds?: string[]; quantity?: number; requiredNumbers?: number[] }; draw: string } | null>(null);
   const refreshMine = useCallback(async () => { const page = await miniAppApi.tickets(initData, "active", "bingo"); setMine(page.tickets); }, [initData]);
   useEffect(() => {
+    const resolved = (event: Event) => {
+      const detail = (event as CustomEvent<{ path: string }>).detail;
+      if (!detail.path.endsWith("/bingo/purchases")) return;
+      pending.current = null; setRetry(false); setRetrySelection(null); setSelected([]); setError("");
+      setRevision(value => value + 1);
+      void refreshMine().catch(() => undefined);
+    };
+    window.addEventListener(recoveredEvent, resolved);
+    return () => window.removeEventListener(recoveredEvent, resolved);
+  }, [refreshMine]);
+  useEffect(() => {
     let active = true;
     void miniAppApi.bingoInventory(initData, offset, favoriteNumbers).then(data => { if (active) { setInventory(data); setFavoriteError(""); if (inventoryDraw.current && inventoryDraw.current !== data.draw_id) setSelected([]); inventoryDraw.current = data.draw_id; } }).catch((reason: unknown) => { if (active) { if (favoriteNumbers.length > 0) setFavoriteError("Поиск не сработал. Попробуйте ещё раз."); else setError(reason instanceof Error ? reason.message : "Не удалось загрузить билеты"); } }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -205,3 +216,4 @@ export function BingoView({ lottery, initData, now, balance, onClose, onPurchase
     {opened && <PaperDialog onClose={() => setOpened(null)}><BingoEdition ticket={opened} draw={mine.find(t => t.id === opened.id)?.draw_number ?? inventory?.draw_number ?? lottery.draw_number ?? 0} date={mine.find(t => t.id === opened.id)?.scheduled_at ?? inventory?.scheduled_at ?? lottery.scheduled_at ?? new Date().toISOString()} price={opened.price ?? price} /></PaperDialog>}
   </main>;
 }
+import { recoveredEvent } from "./purchaseJournal";

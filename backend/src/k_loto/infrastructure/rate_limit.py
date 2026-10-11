@@ -19,7 +19,12 @@ class PurchaseRateLimiter:
         events.append(now)
         if len(self._events) > 10_000:
             self._events = defaultdict(
-                deque, {key: value for key, value in self._events.items() if value}
+                deque,
+                {
+                    key: value
+                    for key, value in self._events.items()
+                    if value and value[-1] > now - window_seconds
+                },
             )
         return True
 

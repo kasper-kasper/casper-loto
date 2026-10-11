@@ -1,4 +1,6 @@
 import { brandViewData } from "../../shared/brandNames";
+import { durablePurchase, setPurchaseOwner } from "./purchaseJournal";
+import type { Receipt } from "./purchaseJournal";
 import type { Publication } from "../../shared/publications";
 import type { Highlights } from "./Today";
 import type { ArchivePage } from "./types";
@@ -6,6 +8,17 @@ import type { BingoFeed, BingoInventory } from "./BingoView";
 import type { Account, Dashboard, Favorite, InstantPurchaseResult, InstantTicket, LiveFeed, NotificationPreferences, PurchaseResult, TicketPage, UserNotification } from "./types";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "";
+
+export function sendTiming(initData: string, metric: "startup_client" | "dashboard_client" | "purchase_client", duration: number, status = 200): void {
+  if (!Number.isFinite(duration) || duration < 0 || duration > 120_000) return;
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (initData) headers["X-Telegram-Init-Data"] = initData;
+  void fetch(`${API_BASE}/api/v1/miniapp/telemetry`, {
+    method: "POST", credentials: "include", headers, keepalive: true,
+    signal: typeof AbortSignal.timeout === "function" ? AbortSignal.timeout(5_000) : undefined,
+    body: JSON.stringify({ metric, duration_ms: Math.round(duration), status }),
+  }).catch(() => undefined);
+}
 
 export class ApiError extends Error {
   constructor(
@@ -16,7 +29,12 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, initData: string, init?: RequestInit): Promise<T> {
+export async function rawRequest<T>(path: string, initData: string, init?: RequestInit): Promise<T> {
+  const started = performance.now();
+  let observedStatus = 0;
+  const controller = init?.signal ? null : new AbortController();
+  const timeout = controller ? window.setTimeout(() => controller.abort(), 20_000) : null;
+  try {
   const headers = new Headers(init?.headers);
   headers.set("Content-Type", "application/json");
   if (initData) headers.set("X-Telegram-Init-Data", initData);
@@ -25,7 +43,9 @@ async function request<T>(path: string, initData: string, init?: RequestInit): P
     cache: init?.method && init.method !== "GET" ? init.cache : "no-store",
     credentials: "include",
     headers,
+    signal: init?.signal ?? controller?.signal,
   });
+  observedStatus = response.status;
   if (!response.ok) {
     const payload = (await response.json().catch(() => ({}))) as { detail?: string };
     const translated: Record<number, string> = {
@@ -39,9 +59,37 @@ async function request<T>(path: string, initData: string, init?: RequestInit): P
   }
   if (response.status === 204) return undefined as T;
   return brandViewData(await response.json()) as T;
+  } catch (reason) {
+    if (reason instanceof ApiError) throw reason;
+    observedStatus = 0;
+    throw new Error(path.endsWith("/purchases")
+      ? "Связь прервалась. Проверяем результат покупки — пока не покупайте заново."
+      : "Не удалось получить ответ сервера. Проверьте интернет и попробуйте снова.");
+  } finally {
+    if (timeout !== null) window.clearTimeout(timeout);
+    const metric = path.endsWith("/purchases") ? "purchase_client" : path === "/api/v1/miniapp/dashboard" ? "dashboard_client" : null;
+    if (metric) sendTiming(initData, metric, performance.now() - started, observedStatus);
+  }
+}
+
+async function request<T>(path: string, initData: string, init?: RequestInit, cartIds: string[] = []): Promise<T> {
+  if (init?.method === "POST" && path.endsWith("/purchases")) {
+    const payload = JSON.parse(String(init.body)) as { idempotency_key: string };
+    if (!payload.idempotency_key.startsWith("m1-")) payload.idempotency_key = `m1-${payload.idempotency_key}`;
+    const body = JSON.stringify(payload);
+    return durablePurchase(path, body, () => rawRequest<Receipt>(path, initData, { ...init, body }),
+      reason => reason instanceof ApiError && [402, 409, 422].includes(reason.status), cartIds) as Promise<T>;
+  }
+  const value = await rawRequest<T>(path, initData, init);
+  if (path === "/api/v1/miniapp/dashboard") {
+    const id = (value as Dashboard).owner_user_id;
+    if (id) setPurchaseOwner(id);
+  }
+  return value;
 }
 
 export const miniAppApi = {
+  startupTiming: (initData: string, duration: number) => sendTiming(initData, "startup_client", duration),
   publications: (initData: string, before?: string, signal?: AbortSignal) => request<Publication[]>(`/api/v1/miniapp/publications${before ? `?before=${encodeURIComponent(before)}` : ""}`, initData, { signal }),
   drawArchive: (initData: string, lotteryCode: string, jackpotsOnly: boolean, before: string | null = null, signal?: AbortSignal) => {
     const query = new URLSearchParams({ lottery_code: lotteryCode, jackpots_only: String(jackpotsOnly) });
@@ -139,14 +187,17 @@ export const miniAppApi = {
     combinations: number[][],
     idempotencyKey: string,
     drawCount: 1 | 5 = 1,
+    expectedScheduledAt?: string | null,
+    cartIds: string[] = [],
   ) =>
     request<PurchaseResult>(
       `/api/v1/miniapp/lotteries/${encodeURIComponent(lotteryCode)}/purchases`,
       initData,
       {
       method: "POST",
-      body: JSON.stringify({ combinations, idempotency_key: idempotencyKey, draw_count: drawCount }),
+      body: JSON.stringify({ combinations, idempotency_key: idempotencyKey, draw_count: drawCount, expected_scheduled_at: expectedScheduledAt }),
       },
+      cartIds,
     ),
   favorites: (initData: string, lotteryCode: string) =>
     request<Favorite[]>(`/api/v1/miniapp/lotteries/${encodeURIComponent(lotteryCode)}/favorites`, initData),

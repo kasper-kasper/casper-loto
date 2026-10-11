@@ -9,6 +9,7 @@ vi.mock("./api", () => ({
   ApiError: class ApiError extends Error { status = 500; },
   adminApi: {
     login: vi.fn(), session: vi.fn(), logout: vi.fn(), dashboard: vi.fn(), kasperLive: vi.fn(), vault: vi.fn(),
+    monitoring: vi.fn(),
     players: vi.fn(), playerTicketHistory: vi.fn(), lotteries: vi.fn(), schedule: vi.fn(), draws: vi.fn(), draw: vi.fn(), jackpotEvents: vi.fn(),
     transactions: vi.fn(), playerTransactions: vi.fn(), statistics: vi.fn(), ticketAnalytics: vi.fn(), activity: vi.fn(), audit: vi.fn(),
     notifications: vi.fn(), releaseNotes: vi.fn(), interestingFacts: vi.fn(), setInterestingFactStatus: vi.fn(),
@@ -36,6 +37,7 @@ beforeEach(() => {
   vi.mocked(adminApi.login).mockResolvedValue(session);
   vi.mocked(adminApi.logout).mockResolvedValue();
   vi.mocked(adminApi.dashboard).mockResolvedValue(dashboard);
+  vi.mocked(adminApi.monitoring).mockResolvedValue({ metrics: {}, operations: { checked_at: null, warnings: [] } });
   vi.mocked(adminApi.vault).mockResolvedValue({ ticket_count: 100, winning_tickets: 30, losing_tickets: 70, result: 79_000 });
   vi.mocked(adminApi.kasperLive).mockResolvedValue({ ticket_count: 100, winning_tickets: 30, losing_tickets: 70, result: 79_000 });
   vi.mocked(adminApi.players).mockResolvedValue([player]);

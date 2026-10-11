@@ -32,6 +32,7 @@ from k_loto.application.instant import InstantTicketQueryService
 from k_loto.application.interesting_facts import InterestingFactAdminService
 from k_loto.application.query_scope import LotteryScope
 from k_loto.application.release_notes import ReleaseNoteKind, load_release_notes
+from k_loto.application.runtime_monitoring import runtime_monitoring
 from k_loto.core.config import Settings, get_settings
 from k_loto.domain.enums import (
     AuditAction,
@@ -429,6 +430,13 @@ async def require_admin_csrf(
             detail="Administrator CSRF token is missing or invalid.",
         )
     return admin
+
+
+@router.get("/monitoring")
+async def operational_snapshot(
+    _admin: Annotated[CurrentAdmin, Depends(get_current_admin)],
+) -> dict[str, Any]:
+    return runtime_monitoring.snapshot()
 
 
 @router.post("/auth/login", response_model=SessionResponse)

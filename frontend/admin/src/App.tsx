@@ -3,6 +3,7 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
 import { ApiError, adminApi } from "./api";
+import { OperationalMonitor } from "./OperationalMonitor";
 import { DistributionDraws } from "./DistributionDraws";
 import { Publications } from "./Publications";
 import logoHorizontal from "../../shared/assets/brand/logo-horizontal.png";
@@ -699,7 +700,7 @@ function SystemView({ tab, onTab, transactions, notifications, audit, onTransact
   return <>
     <SectionTabs value={tab} label="Системные журналы" items={[{ id: "events", label: "Лента событий" }, { id: "health", label: "Состояние" }, { id: "ledger", label: "Журнал CAS" }, { id: "notifications", label: "Уведомления" }, { id: "audit", label: "Аудит действий" }, { id: "development", label: "Разработка" }]} onChange={onTab} />
     {tab === "events" && <OperationalLog transactions={transactions} notifications={notifications} audit={audit} dashboard={dashboard} onOpenPlayer={onOpenPlayer} />}
-    {tab === "health" && dashboard && <SystemHealth data={dashboard} />}
+    {tab === "health" && dashboard && <><SystemHealth data={dashboard} /><OperationalMonitor /></>}
     {tab === "development" && <DevelopmentView changelog={releaseNotes.changelog} devlog={releaseNotes.devlog} />}
     {tab === "ledger" && <><TransactionFilters onApply={onTransactions} /><section className="panel"><header><div><h2>Неизменяемый журнал CAS</h2><small>Нажмите ID игрока, чтобы открыть его историю</small></div><span>ЗАПИСЕЙ: {transactions.length}</span></header><TransactionTable rows={transactions} onOpenPlayer={onOpenPlayer} /></section></>}
     {tab === "notifications" && <section className="panel"><header><h2>Очередь уведомлений</h2><span>ДОСТАВЛЕНО · ОШИБКА · ОЖИДАЕТ</span></header><div className="table-wrap"><table><thead><tr><th>Создано</th><th>Тип и что произошло</th><th>Игрок</th><th>Статус</th><th>Попытки</th><th>Ключ события</th></tr></thead><tbody>{notifications.map((item) => <tr key={item.id}><td>{date(item.created_at)}</td><td><b>{translated(item.type, notificationTypes)}</b><small>{notificationDetail(item)}</small></td><td><code>{item.user_id.slice(0, 8)}</code></td><td><span className={`tag ${item.status.toLowerCase()}`}>{translated(item.status, { PENDING: "ожидает", PROCESSING: "отправляется", SENT: "доставлено", FAILED: "ошибка", CANCELLED: "отменено" })}</span></td><td>{item.attempts}</td><td><code>{item.event_key}</code></td></tr>)}</tbody></table></div></section>}

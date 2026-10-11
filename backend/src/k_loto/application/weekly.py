@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from k_loto.application.ports import SecureNumberGenerator
+from k_loto.application.purchase_guard import guard_attempt
 from k_loto.domain.draw_state import ensure_draw_transition
 from k_loto.domain.dual import DUAL_PRICE, DUAL_PURCHASE_DRAW_WINDOW, dual_phase
 from k_loto.domain.enums import (
@@ -214,6 +215,7 @@ class WeeklyTicketPurchaseService:
         combinations: list[list[int] | tuple[int, ...]],
         idempotency_key: str,
         draw_count: int = 1,
+        expected_scheduled_at: datetime | None = None,
         source: TicketSource = TicketSource.MANUAL,
         pool_ticket_ids: list[UUID] | None = None,
         pool_required_numbers: tuple[int, ...] = (),
@@ -236,6 +238,7 @@ class WeeklyTicketPurchaseService:
         user_ledger_key = f"purchase:{idempotency_key}:user"
 
         async with self._session.begin():
+            await guard_attempt(self._session, user_id, idempotency_key, "scheduled")
             existing = await self._session.scalar(
                 select(LedgerTransaction).where(
                     LedgerTransaction.idempotency_key == user_ledger_key
@@ -383,6 +386,13 @@ class WeeklyTicketPurchaseService:
                 lottery.next_draw_number += 1
                 self._session.add(draw)
                 draws.append(draw)
+
+            if expected_scheduled_at is not None:
+                actual_at = draw.scheduled_at
+                if actual_at.tzinfo is None:
+                    actual_at = actual_at.replace(tzinfo=UTC)
+                if actual_at != expected_scheduled_at:
+                    raise NoAvailableDraw("The originally selected draw has changed.")
 
             if draw_count > 1:
                 latest = await self._session.scalar(
