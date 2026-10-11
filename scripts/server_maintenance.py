@@ -30,12 +30,25 @@ ARCHIVES = {
     "miniapp": re.compile(r"miniapp-before-\d+\.\d+\.\d+-\d+\.tar\.gz"),
     "branding": re.compile(r"before-branding-\d+\.\d+\.\d+-\d+\.tar\.gz"),
     "maintenance": re.compile(r"maintenance-before-\d+\.tar\.gz"),
+    "release": re.compile(
+        r"(?:halloween|grand|aurora|vault|distribution(?:-followup)?|performance)-before-\d+\.tar\.gz"
+    ),
+    "audit": re.compile(
+        r"(?:grand|aurora|vault|performance)-audit-before-\d+\.tar\.gz"
+    ),
+    "archive": re.compile(r"before-archive-\d+\.tar\.gz"),
+    "devlog": re.compile(
+        r"(?:distribution-devlog-before|DEVLOG-(?:halloween(?:-grid)?|pumpkin-field))-\d+\.md"
+    ),
 }
 UPLOADS = {
     "release": re.compile(r"k-loto-release-[a-f0-9]{32}\.tar\.gz"),
     "miniapp": re.compile(r"miniapp-\d+\.\d+\.\d+-\d+\.tar\.gz"),
     "branding": re.compile(r"branding-\d+\.\d+\.\d+-\d+\.tar\.gz"),
     "maintenance": re.compile(r"maintenance-\d+\.tar\.gz"),
+    "feature": re.compile(
+        r"(?:halloween|grand|aurora|vault|distribution|performance)-\d+\.tar\.gz"
+    ),
 }
 DIAGNOSTIC_LOGS = {
     service: re.compile(service + r"-\d{8}T\d{12}Z-[a-f0-9]{12}\.log\.gz")
@@ -228,7 +241,7 @@ def scoped_image(image: dict[str, Any]) -> bool:
     labels = image.get("Config", {}).get("Labels") or {}
     return labels.get("com.docker.compose.project") == "k-loto" and labels.get(
         "com.docker.compose.service"
-    ) in {"api", "bot", "gateway"}
+    ) in {None, "api", "bot", "gateway"}
 
 
 def image_candidates(
@@ -254,9 +267,7 @@ def image_candidates(
             stamps = [
                 int(tag.rsplit("-", 1)[1])
                 for tag in tags
-                if re.fullmatch(
-                    repository + r":before-(?:miniapp|branding|release)-\d+", tag
-                )
+                if re.fullmatch(repository + r":before-[a-z][a-z-]*-\d+", tag)
             ]
             if stamps and image["Id"] not in referenced:
                 previous.append((max(stamps), image["Id"]))
@@ -397,6 +408,13 @@ def maintain(*, apply: bool) -> dict[str, Any]:
         return {"status": "skipped", "reason": "publication_or_backup_in_progress"}
     files = select_files(
         ROOT / "backups",
+        ARCHIVES,
+        now=now,
+        age_seconds=values["archive_min_age_days"] * 86400,
+        keep=values["archive_keep_per_category"],
+    )
+    files += select_files(
+        Path("/opt/k-loto-backups"),
         ARCHIVES,
         now=now,
         age_seconds=values["archive_min_age_days"] * 86400,

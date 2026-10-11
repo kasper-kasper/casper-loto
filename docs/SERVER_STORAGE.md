@@ -64,3 +64,21 @@ financial history or delete volumes. Player count alone is not a tuning signal.
 Initial read-only audit (2026-10-04): 40 GB filesystem, about 14 GB used,
 24–25 GB available. Build cache was about 2 GB; Docker logs had no explicit
 limits. This is a historical measurement, not a guaranteed current value.
+
+
+## Audit correction, 2026-10-11
+
+The same rollback archive policy now covers both `/opt/k-loto/backups` and
+`/opt/k-loto-backups`, including the known Halloween/Grand/Aurora/Vault/
+distribution/performance release families and their documented audit copies.
+The source-release family retains three newest archives together; younger than
+14 days always survives. Unknown names remain untouched. All `before-<feature>`
+image tags participate in protection of the two newest rollback versions.
+Legacy untagged images explicitly labelled `com.docker.compose.project=k-loto`
+are eligible after seven days even when the old gateway build omitted its
+service label. New prebuilt gateway images include the service label.
+
+At audit time the 40 GB filesystem was 89% full, with 4.2 GB available.
+Most release copies were younger than seven days; retention is deliberately not
+shortened to reclaim those. If growth continues after normal expiry, increase
+VPS disk capacity. Financial history is never a storage-cleanup target.

@@ -120,6 +120,25 @@ class MaintenanceTests(unittest.TestCase):
             [],
         )
 
+    def test_legacy_project_label_and_feature_rollback_protection(self):
+        images = [
+            self.image(str(i), [f"k-loto-gateway:before-distribution-{i}"])
+            for i in range(1, 5)
+        ]
+        legacy = self.image("legacy", [])
+        legacy["Config"]["Labels"] = {"com.docker.compose.project": "k-loto"}
+        images.append(legacy)
+        plan = image_candidates(
+            images, set(), now=self.now, keep=3, age_seconds=7 * 86400
+        )
+        self.assertEqual({row["Id"] for row in plan}, {"1", "2", "legacy"})
+
+    def test_feature_archives_keep_recent_and_last_three(self):
+        for index in range(5):
+            self.file(f"distribution-followup-before-{index}.tar.gz", 20 + index)
+        self.file("performance-before-99.tar.gz", 1)
+        self.assertEqual(len(self.candidates(3)), 3)
+
     def test_busy_operation_detection_excludes_own_read_only_commands(self) -> None:
         self.assertTrue(
             active_operation(["/usr/bin/docker", "compose", "build", "bot"])

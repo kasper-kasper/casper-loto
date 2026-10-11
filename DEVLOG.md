@@ -3405,3 +3405,14 @@ Known limitations:
 - Local validation: backend full suite 505 passed / 1 Windows symlink skip; mypy 77 source files and scoped Ruff clean. Admin lint/typecheck/build and all 45 tests passed, including focused open-tab expiry/refresh/editor smoke. Shared optional event typing also passes Mini App/Web typecheck; their assets remain at existing versions and are not rebuilt. PostgreSQL migration/transaction checks and production verification follow under the release lock.
 - Published commits 6607e60 / cb2c659 under the complete VPS operations lock, with database/source/assets/image backups and API/bot diagnostic archives before recreation. Disposable PostgreSQL clone passed migration 0051/Alembic drift check, concurrent assignment and settlement, financial/result-outbox rollback, zero-sum ledger, unchanged purchased/completed history, schedule/result uniqueness and mocked delivery, plus SQL freshness/epoch filtering, rejected expired publication and audited idempotent archival. Clone removed by exact database name.
 - API/bot/gateway updated; production health HTTP 200 and Alembic check clean. Exact Admin entry HTML/JS/CSS verified over HTTPS; Mini App 1.65.0 and Web assets/fingerprints, database container identity unchanged. Read-only production audit confirms API 1.55.1/schema 0051, three fresh suggestions, zero pending obsolete series claims, and PULSE drought 200 matching exactly the 200 completed draws after paid distribution #5649. Its 168,341,840 CAS distribution, payout and 2,555,555 closing jackpot are unchanged; its old result was not retrospectively posted. Linux container runs the locally unavailable symlink regression successfully on temporary fixtures. No production test purchase, designation or test channel message.
+
+
+## 2026-10-11 — Storage audit and retention coverage
+
+Read-only production inspection found 89% filesystem usage and a second source
+backup directory outside existing maintenance coverage. Extended only known
+archive/upload filename families, recognized feature rollback tags, and restored
+seven-day cleanup eligibility for project-labelled legacy gateway images.
+Retention windows, business data, volumes and database backups are unchanged.
+Full backend suite: 512 passed, one Windows symlink skip; the Linux-only check
+will run on production with disposable filesystem fixtures before cleanup.
