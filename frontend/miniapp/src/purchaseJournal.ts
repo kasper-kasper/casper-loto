@@ -1,4 +1,4 @@
-import { configuredCartTtl, loadCart, markCartPurchased, saveCart } from "./cart";
+import { configuredCartTtl, containsPurchasedCartIds, loadCart, markCartPurchased, saveCart } from "./cart";
 import type { InstantPurchaseResult, PurchaseResult } from "./types";
 
 export type Receipt = PurchaseResult | InstantPurchaseResult;
@@ -61,6 +61,9 @@ export async function durablePurchase<T extends Receipt>(
   cartIds: string[] = [],
 ): Promise<T> {
   const previous = readPurchase();
+  if (!previous && cartIds.length && containsPurchasedCartIds(cartIds, configuredCartTtl())) {
+    throw new Error("Часть позиций уже куплена. Корзина обновлена — проверьте оставшиеся билеты.");
+  }
   const key = (JSON.parse(body) as { idempotency_key: string }).idempotency_key;
   if (previous && (previous.key !== key || previous.path !== path || previous.body !== body)) {
     throw new Error("Сначала проверьте результат предыдущей покупки — она могла уже пройти.");

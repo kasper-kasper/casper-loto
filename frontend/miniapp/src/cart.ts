@@ -23,6 +23,11 @@ export function markCartPurchased(ids: string[], ttlSeconds: number | null, now 
   storage.setItem(PURCHASED_KEY, JSON.stringify(entries));
 }
 
+export function containsPurchasedCartIds(ids: string[], ttlSeconds: number | null): boolean {
+  const consumed = purchasedIds(ttlSeconds, Date.now());
+  return ids.some(id => Boolean(consumed[id]));
+}
+
 export function configuredCartTtl(): number | null {
   const raw = import.meta.env.VITE_CART_TTL_SECONDS;
   if (!raw) return null;

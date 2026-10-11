@@ -54,4 +54,7 @@ it("removes bought cart entries and prevents a stale tab from saving them again"
   completePurchase(readPurchase()!, receipt, true);
   expect(loadCart(null)).toEqual([]);
   saveCart([ticket], null); expect(loadCart(null)).toEqual([]);
+  const send = vi.fn();
+  await expect(durablePurchase(path, body.replace("m1-request", "m1-new"), send, () => false, [ticket.id])).rejects.toThrow("уже куплена");
+  expect(send).not.toHaveBeenCalled();
 });

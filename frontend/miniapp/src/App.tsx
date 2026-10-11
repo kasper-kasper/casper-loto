@@ -607,7 +607,8 @@ export default function App({ initData, localDev = false }: AppProps) {
       void refreshDashboard().catch(() => undefined);
     } catch (reason) {
       errorHaptic();
-      setError(`${done ? `Куплено ${done} из ${total}. ` : ""}${reason instanceof ApiError ? reason.message : "Покупка прервана. Непроданные билеты остались в корзине."}`);
+      setCart(loadCart(cartTtl));
+      setError(`${done ? `Куплено ${done} из ${total}. ` : ""}${reason instanceof Error ? reason.message : "Покупка прервана. Проверяем её результат."}`);
     } finally {
       purchaseInFlight.current = false;
       setPurchasing(false); setPurchaseSuccess(false); setPurchaseProgress(null);
