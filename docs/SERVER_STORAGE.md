@@ -82,3 +82,12 @@ At audit time the 40 GB filesystem was 89% full, with 4.2 GB available.
 Most release copies were younger than seven days; retention is deliberately not
 shortened to reclaim those. If growth continues after normal expiry, increase
 VPS disk capacity. Financial history is never a storage-cleanup target.
+
+
+The first extended sweep reclaimed 847,052,800 bytes (about 0.85 GB); health
+passed and free space rose from about 4.2 to 5.0 GiB before release backups.
+Its conservative per-image ownership/protection checks exceeded ten minutes.
+The service timeout is therefore 30 minutes; each Docker command still has its
+own bounded timeout and the shared operations/backup locks remain held.
+The temporary SSH observer timed out at ten minutes, but the server completed
+and persisted the successful report; no concurrent publication was allowed.

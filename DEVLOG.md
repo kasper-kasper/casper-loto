@@ -3446,3 +3446,12 @@ long lines in migration 0045; formatting preserves its exact original Python AST
 including every SQL string. No historical migration logic changed. All three
 clients pass lint/typecheck/build; Admin 45 and Web 35 tests pass. Mini App totals
 156 tests after the additional lottery-opening/purchase-response race regression.
+
+
+Storage sweep completed with health passed: 847,052,800 bytes reclaimed, around
+5.0 GiB free before the next release backup. Raised maintenance unit timeout from
+10 to 30 minutes because the first ownership-revalidated image sweep took more
+than ten minutes; no retention window or deletion scope is relaxed. Production
+read-only integrity audit found zero balance/ledger mismatches, zero scheduled
+draws overdue by ten minutes, and zero invalid indexes. Existing purchase throttle
+is ten requests per five seconds; its safety setting remains unchanged.
