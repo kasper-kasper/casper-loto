@@ -1,0 +1,9 @@
+[Unit]
+Description=Casper Loto independent service watchdog
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/k-loto
+ExecStart=/usr/bin/python3 /opt/k-loto/scripts/server_health_monitor.py
+TimeoutStartSec=45

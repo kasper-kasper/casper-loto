@@ -283,6 +283,23 @@ def main() -> None:
                     f"{compose} ps",
                     timeout=120,
                 )
+                if "api" in services:
+                    run_remote(
+                        client,
+                        "Independent host monitoring",
+                        "set -eu; cd /opt/k-loto; "
+                        "install -d -m 755 /opt/k-loto/.monitoring; "
+                        "install -m 644 "
+                        "infrastructure/systemd/k-loto-health-monitor.service "
+                        "/etc/systemd/system/k-loto-health-monitor.service; "
+                        "install -m 644 "
+                        "infrastructure/systemd/k-loto-health-monitor.timer "
+                        "/etc/systemd/system/k-loto-health-monitor.timer; "
+                        "systemctl daemon-reload; "
+                        "systemctl enable --now k-loto-health-monitor.timer; "
+                        "systemctl start k-loto-health-monitor.service",
+                        timeout=60,
+                    )
         finally:
             client.close()
 
