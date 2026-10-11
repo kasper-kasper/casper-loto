@@ -95,3 +95,16 @@ The service timeout is therefore 30 minutes; each Docker command still has its
 own bounded timeout and the shared operations/backup locks remain held.
 The temporary SSH observer timed out at ten minutes, but the server completed
 and persisted the successful report; no concurrent publication was allowed.
+
+## Count-only retention applied, 2026-10-11
+
+The approved policy was published and applied with both maintenance locks.
+Thirty surplus known archives were removed, reclaiming 2,142,216,192 bytes
+(about 2.14 GB). Filesystem usage fell from 92% to 87%; available space rose
+from 3.2 to 5.2 GiB. Each known category has at most three copies across both
+directories; retained files match the three newest copies captured before cleanup.
+All 18 files outside the known archive allowlist retained their size, timestamp
+and inode. No Docker images were removed in this sweep. Seventeen maintenance
+regressions passed on Linux, including the symlink safety case; scoped Ruff passed.
+HTTPS/API/database health passed and both maintenance timers remain active.
+The 80% disk warning remains set, so capacity should still be monitored.

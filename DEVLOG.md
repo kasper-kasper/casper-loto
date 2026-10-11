@@ -6,6 +6,7 @@
 
 - Owner approved keeping only the newest three known release archives per category, without the previous 14-day age protection. Counts are shared across `/opt/k-loto/backups` and `/opt/k-loto-backups`; unknown files, database dumps, business history and diagnostic-log retention remain independently protected.
 - Added regressions for fresh archive expiry, shared categories/directories and zero/negative policy validation. Updated storage policy and explained audit priorities in plain language. Publication uses the operations lock and the centralized maintenance script's operations/backup locks; service rebuilds are unnecessary.
+- Published bb3dab3; 17 Linux maintenance regressions and scoped Ruff passed. Cleanup removed 30 surplus archives and reclaimed 2,142,216,192 bytes: 92%/3.2 GiB available became 87%/5.2 GiB. Verified the retained newest-three identities per category and unchanged metadata for 18 unrecognized/protected files. HTTPS/API/database health and both timers passed; disk warning remains above 80%.
 
 ## Casper Aurora instant release - 2026-10-09
 
