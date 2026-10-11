@@ -156,25 +156,31 @@ def select_files(
     now: float,
     age_seconds: int,
     keep: int,
+    extra_directories: tuple[Path, ...] = (),
 ) -> list[FileCandidate]:
-    """Only direct, regular, single-link files; unknown names are never garbage."""
-    if directory.is_symlink() or not directory.is_dir():
-        return []
+    """Count across directories; select only regular files with one link."""
     groups: dict[str, list[tuple[Path, os.stat_result]]] = {}
-    for item in directory.iterdir():
-        category = next(
-            (key for key, pattern in patterns.items() if pattern.fullmatch(item.name)),
-            None,
-        )
-        if category is None:
+    for folder in dict.fromkeys((directory, *extra_directories)):
+        if folder.is_symlink() or not folder.is_dir():
             continue
-        info = item.lstat()
-        if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
-            continue
-        groups.setdefault(category, []).append((item, info))
+        for item in folder.iterdir():
+            category = next(
+                (
+                    key
+                    for key, pattern in patterns.items()
+                    if pattern.fullmatch(item.name)
+                ),
+                None,
+            )
+            if category is None:
+                continue
+            info = item.lstat()
+            if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+                continue
+            groups.setdefault(category, []).append((item, info))
     candidates = []
     for items in groups.values():
-        items.sort(key=lambda pair: (pair[1].st_mtime_ns, pair[0].name), reverse=True)
+        items.sort(key=lambda pair: (pair[1].st_mtime_ns, str(pair[0])), reverse=True)
         for item, info in items[keep:]:
             if now - info.st_mtime < age_seconds:
                 continue
@@ -381,7 +387,7 @@ def policy() -> dict[str, int]:
         "image_keep_versions": 3,
         "image_min_age_days": 7,
         "archive_keep_per_category": 3,
-        "archive_min_age_days": 7,
+        "archive_min_age_days": 0,
         "upload_min_age_hours": 24,
         "publication_grace_minutes": 15,
         "disk_warning_percent": 50,
@@ -412,13 +418,7 @@ def maintain(*, apply: bool) -> dict[str, Any]:
         now=now,
         age_seconds=values["archive_min_age_days"] * 86400,
         keep=values["archive_keep_per_category"],
-    )
-    files += select_files(
-        Path("/opt/k-loto-backups"),
-        ARCHIVES,
-        now=now,
-        age_seconds=values["archive_min_age_days"] * 86400,
-        keep=values["archive_keep_per_category"],
+        extra_directories=(Path("/opt/k-loto-backups"),),
     )
     files += select_files(
         Path("/tmp"),

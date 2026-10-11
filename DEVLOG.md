@@ -1,3 +1,8 @@
+## Count-only release archive retention - 2026-10-11
+
+- Owner approved keeping only the newest three known release archives per category, without the previous 14-day age protection. Counts are shared across `/opt/k-loto/backups` and `/opt/k-loto-backups`; unknown files, database dumps, business history and diagnostic-log retention remain independently protected.
+- Added regressions for fresh archive expiry, shared categories/directories and zero/negative policy validation. Updated storage policy and explained audit priorities in plain language. Publication uses the operations lock and the centralized maintenance script's operations/backup locks; service rebuilds are unnecessary.
+
 ## Casper Aurora instant release - 2026-10-09
 
 - Published dab17aa / 8058f6f as API 1.53.0, Mini App 1.63.0 and Admin 1.57.0 under the operations lock with database/source/image backups and archived diagnostics. Disposable PostgreSQL clone passed rollback, concurrent replay, separate game history, preservation of existing tickets and ledger settlement checks. Production confirms exact Aurora odds/price and scoped routes/history; Alembic check has no pending operations, API healthy, database container and Web assets preserved.

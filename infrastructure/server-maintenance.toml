@@ -5,7 +5,8 @@ cache_min_age_hours = 48
 image_keep_versions = 3
 image_min_age_days = 7
 archive_keep_per_category = 3
-archive_min_age_days = 14
+# Owner-approved count-only retention across both known archive directories.
+archive_min_age_days = 0
 upload_min_age_hours = 48
 publication_grace_minutes = 15
 disk_warning_percent = 80

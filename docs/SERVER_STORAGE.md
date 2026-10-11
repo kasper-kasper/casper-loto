@@ -13,7 +13,7 @@ is centralized in `scripts/server_maintenance.py`. Retention settings live in
 | Database backup dumps | Daily at 03:30 MSK; existing retention of 14 days. These are copies, not expiration of database history. |
 | Docker build cache | Target reserve 512 MB; only unused entries older than 48 hours are eligible. Recent cache can temporarily exceed the reserve. |
 | Project Docker images | Keep current/referenced images and two most recent tagged rollback versions per repository; other eligible project images expire after seven days. |
-| Known release rollback archives | Keep newest three per category and everything younger than 14 days. |
+| Known release rollback archives | Keep only the newest three per category across both archive directories combined; remove older copies regardless of age. Owner-approved 2026-10-11. |
 | Known uploaded release tarballs in `/tmp` | Delete after 48 hours. Unknown files, dumps, directories, symlinks and hardlinks are excluded. |
 | OS journal and temporary files | Existing journald 1 GB cap, logrotate and systemd-tmpfiles policies. |
 
@@ -71,17 +71,21 @@ limits. This is a historical measurement, not a guaranteed current value.
 The same rollback archive policy now covers both `/opt/k-loto/backups` and
 `/opt/k-loto-backups`, including the known Halloween/Grand/Aurora/Vault/
 distribution/performance release families and their documented audit copies.
-The source-release family retains three newest archives together; younger than
-14 days always survives. Unknown names remain untouched. All `before-<feature>`
+The source-release family retains three newest archives together. The owner's
+follow-up decision removes the former 14-day protection: `archive_min_age_days=0`,
+with three copies per category shared across both directories. The fourth and
+older copies are eligible even if created today. Unknown names remain untouched.
+All `before-<feature>`
 image tags participate in protection of the two newest rollback versions.
 Legacy untagged images explicitly labelled `com.docker.compose.project=k-loto`
 are eligible after seven days even when the old gateway build omitted its
 service label. New prebuilt gateway images include the service label.
 
 At audit time the 40 GB filesystem was 89% full, with 4.2 GB available.
-Most release copies were younger than seven days; retention is deliberately not
-shortened to reclaim those. If growth continues after normal expiry, increase
-VPS disk capacity. Financial history is never a storage-cleanup target.
+This historical measurement preceded the owner's count-only retention decision.
+If growth continues after cleanup, increase VPS disk capacity. Financial history
+is never a storage-cleanup target. Database dumps retain their separate 14-day
+policy; diagnostic logs retain their separate 90-day policy.
 
 
 The first extended sweep reclaimed 847,052,800 bytes (about 0.85 GB); health

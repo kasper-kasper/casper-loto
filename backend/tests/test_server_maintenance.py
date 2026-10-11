@@ -38,16 +38,59 @@ class MaintenanceTests(unittest.TestCase):
 
     def candidates(self, keep: int = 0):
         return select_files(
-            self.directory, ARCHIVES, now=self.now, age_seconds=14 * 86400, keep=keep
+            self.directory, ARCHIVES, now=self.now, age_seconds=0, keep=keep
         )
 
-    def test_age_and_count_both_protect_archives_per_category(self) -> None:
+    def test_only_latest_three_protected_even_when_all_archives_are_recent(
+        self,
+    ) -> None:
         for index in range(5):
-            self.file(f"miniapp-before-1.0.0-{index}.tar.gz", 20 + index)
+            self.file(f"miniapp-before-1.0.0-{index}.tar.gz", index)
         self.file("before-branding-1.0.0-1.tar.gz", 40)
         self.file("miniapp-before-1.0.0-99.tar.gz", 1)
         names = {Path(item.path).name for item in self.candidates(3)}
         self.assertEqual(names, {f"miniapp-before-1.0.0-{i}.tar.gz" for i in (2, 3, 4)})
+
+    def test_latest_three_are_shared_across_both_directories(self) -> None:
+        second = self.directory / "second"
+        second.mkdir()
+        for index in range(6):
+            item = self.file(f"miniapp-before-1.0.0-{index}.tar.gz", index)
+            if index % 2:
+                item.rename(second / item.name)
+        protected_category = self.file("before-branding-1.0.0-1.tar.gz", 40)
+        plan = select_files(
+            self.directory,
+            ARCHIVES,
+            now=self.now,
+            age_seconds=0,
+            keep=3,
+            extra_directories=(second, self.directory),
+        )
+        self.assertEqual(
+            {Path(row.path).name for row in plan},
+            {f"miniapp-before-1.0.0-{index}.tar.gz" for index in (3, 4, 5)},
+        )
+        self.assertTrue(protected_category.exists())
+
+    def test_count_only_policy_accepts_zero_age_but_not_negative_age(self) -> None:
+        config = (
+            Path(__file__).resolve().parents[2]
+            / "infrastructure/server-maintenance.toml"
+        )
+        with patch.object(server_maintenance, "CONFIG", config):
+            values = server_maintenance.policy()
+        self.assertEqual(values["archive_min_age_days"], 0)
+        self.assertEqual(values["archive_keep_per_category"], 3)
+        invalid = self.directory / "invalid.toml"
+        invalid.write_text(
+            config.read_text().replace(
+                "archive_min_age_days = 0", "archive_min_age_days = -1"
+            )
+        )
+        with patch.object(server_maintenance, "CONFIG", invalid):
+            with self.assertRaisesRegex(ValueError, "archive_min_age_days"):
+                server_maintenance.policy()
 
     def test_never_selects_dump_unknown_directory_or_hardlink(self) -> None:
         self.file("k-loto-20260101.dump", 50)
@@ -133,9 +176,9 @@ class MaintenanceTests(unittest.TestCase):
         )
         self.assertEqual({row["Id"] for row in plan}, {"1", "2", "legacy"})
 
-    def test_feature_archives_keep_recent_and_last_three(self):
+    def test_feature_release_families_share_last_three_without_age_protection(self):
         for index in range(5):
-            self.file(f"distribution-followup-before-{index}.tar.gz", 20 + index)
+            self.file(f"distribution-followup-before-{index}.tar.gz", index)
         self.file("performance-before-99.tar.gz", 1)
         self.assertEqual(len(self.candidates(3)), 3)
 
@@ -218,7 +261,7 @@ class MaintenanceTests(unittest.TestCase):
     def test_capture_failure_stops_cleanup_before_deletion(self):
         values = {
             "publication_grace_minutes": 15,
-            "archive_min_age_days": 14,
+            "archive_min_age_days": 0,
             "archive_keep_per_category": 3,
             "upload_min_age_hours": 48,
             "diagnostic_log_retention_days": 90,
