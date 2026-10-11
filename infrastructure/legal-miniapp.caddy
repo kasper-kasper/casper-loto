@@ -1,0 +1,13 @@
+# Independent legal service; never routes through the lottery API/database.
+legal.85.137.90.58.sslip.io:9443 {
+    encode zstd gzip
+    request_body {
+        max_size 32KB
+    }
+    reverse_proxy 172.18.0.1:8092 {
+        transport http {
+            dial_timeout 3s
+            response_header_timeout 30s
+        }
+    }
+}

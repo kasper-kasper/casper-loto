@@ -25,6 +25,7 @@ RUN npm run build
 
 FROM caddy:2.10-alpine
 COPY infrastructure/Caddyfile /etc/caddy/Caddyfile
+COPY infrastructure/legal-miniapp.caddy /etc/caddy/extensions/legal-miniapp.caddy
 COPY --from=admin-build /build/admin/dist /srv/admin
 COPY --from=miniapp-build /build/miniapp/dist /srv/miniapp
 COPY --from=web-build /build/web/dist /srv/web

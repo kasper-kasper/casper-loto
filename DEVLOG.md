@@ -1,3 +1,7 @@
+## Legal Mini App HTTPS integration - 2026-10-11
+
+- Added a separate legal HTTPS virtual host on the existing gateway, proxying only to the independent legal service on the private Docker bridge. Existing lottery routes, containers and database remain independent. The gateway image includes the extension so future builds retain the route. Validation uses Caddy configuration checks and both applications’ health checks; no frontend code changed.
+
 ## Count-only release archive retention - 2026-10-11
 
 - Owner approved keeping only the newest three known release archives per category, without the previous 14-day age protection. Counts are shared across `/opt/k-loto/backups` and `/opt/k-loto-backups`; unknown files, database dumps, business history and diagnostic-log retention remain independently protected.

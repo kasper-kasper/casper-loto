@@ -1,3 +1,5 @@
+import /etc/caddy/extensions/*.caddy
+
 {$WEB_HOST} {
     encode zstd gzip
     handle /health {
