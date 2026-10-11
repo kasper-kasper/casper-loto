@@ -120,3 +120,25 @@ and inode. No Docker images were removed in this sweep. Seventeen maintenance
 regressions passed on Linux, including the symlink safety case; scoped Ruff passed.
 HTTPS/API/database health passed and both maintenance timers remain active.
 The 80% disk warning remains set, so capacity should still be monitored.
+
+## Compact policy applied, 2026-10-11
+
+Owner approved server-only storage: seven newest database dumps, current plus
+two prior tagged release versions per project service, and a 512 MB unused-cache
+target without age exemptions. Backup creation and a full restore into a unique
+disposable database passed; the temporary database was removed.
+
+Cleanup reclaimed 18,223,230,976 bytes (18.22 GB). `df -h` changed from 87% used /
+5.2 GiB available to 41% used / about 23 GiB available (rounded display).
+The seven retained dumps occupy 480,327,645 bytes; nine tagged release images
+remain across API/bot/gateway. Docker's unused build cache is 382.6 MB. Required
+intermediate/base images are not additional release versions; `docker system df`
+also lists images belonging to other services. Do not equate all image metadata
+entries with standalone rollback copies or add shared layer/cache sizes together.
+
+All running container IDs/images and protected rollback IDs were preserved.
+Unknown archive files retained their metadata, project health and timers passed.
+Backend: 523 passed and one Windows-only symlink skip, subsequently passed within
+26 Linux maintenance checks; Ruff, mypy and Linux backup-shell syntax passed.
+Read-only post-cleanup checks found zero balance/ledger mismatches, zero scheduled
+draws overdue by ten minutes and zero invalid indexes. No app services restarted.
