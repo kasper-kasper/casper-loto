@@ -744,3 +744,44 @@ it("keeps festive selection on return and opens Fast directly from the unified c
   fireEvent.click(close);
   expect(await screen.findByRole("button", { name: "Тиражные" })).toHaveAttribute("aria-pressed", "true");
 });
+
+
+it("allows the next batch after confirmation while dashboard refresh is pending", async () => {
+  render(<App initData="signed" />);
+  await openWeeklyFromStorefront();
+  vi.mocked(miniAppApi.dashboard).mockImplementation(() => new Promise(() => {}));
+  const button = screen.getByRole("button", { name: "Купить 25 случайных билетов" });
+  await act(async () => { fireEvent.click(button); });
+  expect(button).toBeEnabled();
+  expect(miniAppApi.purchase).toHaveBeenCalledTimes(1);
+  fireEvent.click(button);
+  await waitFor(() => expect(miniAppApi.purchase).toHaveBeenCalledTimes(2));
+  await waitFor(() => expect(button).toBeEnabled());
+});
+
+it("does not let an older profile response overwrite a confirmed purchase", async () => {
+  let resolveAccount!: (value: Account) => void;
+  vi.mocked(miniAppApi.account).mockImplementation(() => new Promise((resolve) => { resolveAccount = resolve; }));
+  render(<App initData="signed" />);
+  await openWeeklyFromStorefront();
+  vi.mocked(miniAppApi.dashboard).mockImplementation(() => new Promise(() => {}));
+  fireEvent.click(screen.getByRole("button", { name: "Купить 25 случайных билетов" }));
+  expect(await screen.findByLabelText("4 900 CAS")).toBeInTheDocument();
+  await act(async () => resolveAccount(account));
+  expect(screen.getByLabelText("4 900 CAS")).toBeInTheDocument();
+});
+
+
+it("ignores the lottery-opening response when a purchase already superseded it", async () => {
+  render(<App initData="signed" />);
+  await screen.findByRole("button", { name: "Лотереи" });
+  let resolveOpening!: (value: Dashboard) => void;
+  vi.mocked(miniAppApi.dashboard).mockImplementationOnce(() => new Promise(resolve => { resolveOpening = resolve; }));
+  await openWeeklyFromStorefront();
+  vi.mocked(miniAppApi.dashboard).mockImplementation(() => new Promise(() => {}));
+  await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Купить 25 случайных билетов" })); });
+  await act(async () => resolveOpening(dashboard));
+  expect(screen.getByRole("heading", { name: "Weekly 5/20" })).toBeInTheDocument();
+  expect(screen.getByLabelText("4 900 CAS")).toBeInTheDocument();
+  expect(screen.queryByText(/Продажи для выбранного тиража уже завершены/)).not.toBeInTheDocument();
+});

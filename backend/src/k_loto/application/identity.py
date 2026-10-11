@@ -3,13 +3,14 @@
 from dataclasses import dataclass
 from uuid import UUID, uuid4
 
-from sqlalchemy import select
+from sqlalchemy import String, cast, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from k_loto.application.welcome import WelcomeGrantService
 from k_loto.infrastructure.database.models import (
     Balance,
+    LedgerTransaction,
     User,
     UserNotificationPreference,
 )
@@ -40,6 +41,34 @@ class TelegramIdentityService:
         new_user_id = uuid4()
 
         async with self._session.begin():
+            # Normal reads must not take the balance lock used by purchases.
+            # Only fully initialized accounts with the immutable v2 grant receipt
+            # can use this path; new/legacy accounts retain the locked setup below.
+            ready = (
+                await self._session.execute(
+                    select(User, Balance.amount)
+                    .join(Balance, Balance.user_id == User.id)
+                    .join(
+                        UserNotificationPreference,
+                        UserNotificationPreference.user_id == User.id,
+                    )
+                    .join(
+                        LedgerTransaction,
+                        LedgerTransaction.idempotency_key
+                        == func.concat(
+                            "welcome-grant:user:", cast(User.id, String), ":v2"
+                        ),
+                    )
+                    .where(User.telegram_id == telegram_id)
+                )
+            ).first()
+            if ready is not None:
+                user, current_balance = ready
+                if user.username != clean_username:
+                    user.username = clean_username
+                if user.display_name != clean_name:
+                    user.display_name = clean_name
+                return UserProfile(user.id, clean_name, current_balance)
             user_id = await self._session.scalar(
                 insert(User)
                 .values(

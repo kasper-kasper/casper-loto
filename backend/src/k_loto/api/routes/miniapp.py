@@ -492,7 +492,11 @@ async def dashboard(
     user: Annotated[CurrentMiniAppUser, Depends(get_current_miniapp_user)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> DashboardResponse:
-    return _dashboard_response(await MiniAppQueryService(session).dashboard(user.id))
+    return _dashboard_response(
+        await MiniAppQueryService(session).dashboard(
+            user.id, include_recent_results=False
+        )
+    )
 
 
 @router.get("/account", response_model=AccountResponse)

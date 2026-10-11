@@ -219,6 +219,10 @@ export default function App({ initData, localDev = false }: AppProps) {
   const [loading, setLoading] = useState(authenticated);
   const [ticketsLoading, setTicketsLoading] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
+  const purchaseInFlight = useRef(false);
+  const snapshotEpoch = useRef(0);
+  const dashboardSequence = useRef(0);
+  const accountSequence = useRef(0);
   const [roomLive, setRoomLive] = useState(Boolean(broadcastPreviewConfig()));
   const [fastHighlights, setFastHighlights] = useState<Highlights | null>(null);
   const [highlights, setHighlights] = useState<Highlights | null>(null);
@@ -266,8 +270,10 @@ export default function App({ initData, localDev = false }: AppProps) {
 
   const refreshDashboard = useCallback(async () => {
     if (!authenticated) return null;
+    const epoch = snapshotEpoch.current, sequence = ++dashboardSequence.current;
     const requestedAt = performance.now();
     const value = await miniAppApi.dashboard(initData);
+    if (epoch !== snapshotEpoch.current || sequence !== dashboardSequence.current) return null;
     if (!performance.getEntriesByName("miniapp:dashboard-ready").length) performance.mark("miniapp:dashboard-ready");
     const receivedAt = performance.now();
     if (!clockAnchor.current || clockNeedsSync.current) {
@@ -284,12 +290,15 @@ export default function App({ initData, localDev = false }: AppProps) {
 
   const refreshAccount = useCallback(async () => {
     if (!authenticated) return null;
+    const epoch = snapshotEpoch.current, sequence = ++accountSequence.current;
     const value = await miniAppApi.account(initData);
+    if (epoch !== snapshotEpoch.current || sequence !== accountSequence.current) return null;
     setAccount(value);
     return value;
   }, [authenticated, initData]);
 
   const applyPurchaseSnapshot = useCallback((lotteryCode: string, result: PurchaseResult, currentDrawTickets: number) => {
+    snapshotEpoch.current += 1;
     setDashboard((current) => current ? {
       ...current,
       balance: result.balance_after,
@@ -359,10 +368,13 @@ export default function App({ initData, localDev = false }: AppProps) {
   useEffect(() => {
     if (!authenticated) return;
     const prepare = localDev && !initData ? miniAppApi.devSession() : Promise.resolve();
-    prepare.then(() => {
-      void refreshAccount().catch(() => undefined);
-      return refreshDashboard();
+    let active = true;
+    prepare.then(async () => {
+      await refreshDashboard();
+      // Secondary profile statistics must not compete with first-screen data.
+      if (active) void refreshAccount().catch(() => undefined);
     }).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Не удалось загрузить Casper Loto.")).finally(() => setLoading(false));
+    return () => { active = false; };
   }, [authenticated, initData, localDev, refreshAccount, refreshDashboard]);
   useEffect(() => {
     if (loading || !dashboard || view !== "home" || performance.getEntriesByName("miniapp:home-painted").length) return;
@@ -439,13 +451,13 @@ export default function App({ initData, localDev = false }: AppProps) {
   const fastLotteries = useMemo(() => dashboard?.lotteries.filter((item) => isFastLottery(item.code)) ?? [], [dashboard]);
   const firstAvailable = standardLotteries.find(item => item.purchase_available) ?? null;
   useEffect(() => {
-    if (!authenticated || (view !== "home" && view !== "fast")) return;
+    if (!authenticated || loading || (view !== "home" && view !== "fast")) return;
     let active = true;
     const refresh = () => { if (!document.hidden) void miniAppApi.highlights(initData, view === "fast" ? "fast" : "standard").then(value => { if (active) { if (view === "fast") setFastHighlights(value); else setHighlights(value); } }).catch(() => undefined); };
     refresh();
     const timer = window.setInterval(refresh, 3_600_000);
     return () => { active = false; window.clearInterval(timer); };
-  }, [authenticated, initData, view]);
+  }, [authenticated, initData, loading, view]);
   const cartGroups = useMemo(() => {
     const groups = new Map<string, CartTicket[]>();
     for (const ticket of cart) {
@@ -486,6 +498,7 @@ export default function App({ initData, localDev = false }: AppProps) {
     }
     try {
       const fresh = await refreshDashboard();
+      if (!fresh) return;
       const lottery = fresh?.lotteries.find((item) => item.code === lotteryCode);
       if (!lottery) {
         setNotice("Продажи для выбранного тиража уже завершены. Показываем актуальное расписание.");
@@ -495,7 +508,7 @@ export default function App({ initData, localDev = false }: AppProps) {
       setPickerInitialNumbers(initialNumbers.length === lottery.numbers_to_pick ? initialNumbers : []);
       if (isFastLottery(lottery.code)) setFavorites([]);
       setPickerLottery(lottery);
-      if (!isFastLottery(lottery.code) && lottery.code !== "dual") void miniAppApi.favorites(initData, lottery.code).then(setFavorites).catch(() => undefined);
+      if (!cachedLottery && !isFastLottery(lottery.code) && lottery.code !== "dual") void miniAppApi.favorites(initData, lottery.code).then(setFavorites).catch(() => undefined);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Не удалось обновить состояние продаж.");
     }
@@ -513,31 +526,35 @@ export default function App({ initData, localDev = false }: AppProps) {
   };
 
   const purchaseDirect = async (lotteryCode: string, combinations: number[][], drawCount: 1 | 5) => {
-    if (purchasing) return false;
+    if (purchaseInFlight.current) return false;
+    purchaseInFlight.current = true;
+    snapshotEpoch.current += 1;
     setPurchasing(true); setPurchaseSuccess(false); setError(null);
     try {
       const result = await requestPurchase(lotteryCode, combinations, drawCount);
       applyPurchaseSnapshot(lotteryCode, result, combinations.length);
       setPurchaseSuccess(true); successHaptic();
       setNotice(`${combinations.length === 1 ? "Билет куплен" : `Куплено билетов: ${combinations.length}`} · списано ${formatCas(result.total_cost)}`);
-      void Promise.allSettled([refreshDashboard(), refreshAccount()]).then(([dashboardRefresh]) => {
-        const freshLottery = dashboardRefresh.status === "fulfilled" ? dashboardRefresh.value?.lotteries.find((lottery) => lottery.code === lotteryCode) : undefined;
+      void refreshDashboard().then((fresh) => {
+        const freshLottery = fresh?.lotteries.find((lottery) => lottery.code === lotteryCode);
         if (freshLottery) setPickerLottery((current) => current?.code === lotteryCode ? freshLottery : current);
-      });
+      }).catch(() => undefined);
       setPickerInitialNumbers([]);
-      await new Promise((resolve) => window.setTimeout(resolve, 480));
       return true;
     } catch (reason) {
       errorHaptic();
       setError(reason instanceof ApiError ? reason.message : "Покупка не выполнена.");
       return false;
     } finally {
+      purchaseInFlight.current = false;
       setPurchasing(false); setPurchaseSuccess(false);
     }
   };
 
   const purchaseCart = async () => {
-    if (purchasing || cart.length === 0) return;
+    if (purchaseInFlight.current || cart.length === 0) return;
+    purchaseInFlight.current = true;
+    snapshotEpoch.current += 1;
     const groups = new Map<string, CartTicket[]>();
     for (const item of cart) {
       const key = `${item.lotteryCode}:${item.drawCount}`;
@@ -561,12 +578,12 @@ export default function App({ initData, localDev = false }: AppProps) {
       setPurchaseSuccess(true); successHaptic();
       setNotice(`${done} ${plural(done, "билет куплен", "билета куплены", "билетов куплено")} · списано ${formatCas(totalCost)}`);
       setCartReceipt({ ticketCount: done, totalCost });
-      void Promise.allSettled([refreshDashboard(), refreshAccount()]);
-      await new Promise((resolve) => window.setTimeout(resolve, 480));
+      void refreshDashboard().catch(() => undefined);
     } catch (reason) {
       errorHaptic();
       setError(`${done ? `Куплено ${done} из ${total}. ` : ""}${reason instanceof ApiError ? reason.message : "Покупка прервана. Непроданные билеты остались в корзине."}`);
     } finally {
+      purchaseInFlight.current = false;
       setPurchasing(false); setPurchaseSuccess(false); setPurchaseProgress(null);
     }
   };
@@ -628,16 +645,19 @@ export default function App({ initData, localDev = false }: AppProps) {
   if (!dashboard) return <main className="centered-message"><div className="offline-mark">!</div><h1>Нет связи с Casper Loto</h1><p>{error}</p></main>;
   const bingoLottery = dashboard.lotteries.find(item => item.code === "bingo");
   if (kasperLiveOpen) return <Suspense fallback={<Skeleton />}><KasperLiveView initData={initData} balance={dashboard.balance} onClose={() => setKasperLiveOpen(false)} onSettled={(result) => {
+    snapshotEpoch.current += 1;
     const winning = result.tickets.filter((ticket) => ticket.prize_amount > 0);
     setDashboard((current) => current ? { ...current, balance: result.balance_after, total_ticket_count: current.total_ticket_count + result.tickets.length, total_winning_ticket_count: current.total_winning_ticket_count + winning.length } : current);
     setAccount((current) => current ? { ...current, balance: result.balance_after, ticket_count: current.ticket_count + result.tickets.length, winning_ticket_count: current.winning_ticket_count + winning.length, total_spent: current.total_spent + result.total_cost, total_won: current.total_won + result.total_prize, best_win: Math.max(current.best_win, ...result.tickets.map((ticket) => ticket.prize_amount)) } : current);
   }} /></Suspense>;
   if (auroraOpen) return <Suspense fallback={<Skeleton />}><AuroraView initData={initData} balance={dashboard.balance} onClose={() => setAuroraOpen(false)} onSettled={(result) => {
+    snapshotEpoch.current += 1;
     const winning = result.tickets.filter((ticket) => ticket.prize_amount > 0);
     setDashboard((current) => current ? { ...current, balance: result.balance_after, total_ticket_count: current.total_ticket_count + result.tickets.length, total_winning_ticket_count: current.total_winning_ticket_count + winning.length } : current);
     setAccount((current) => current ? { ...current, balance: result.balance_after, ticket_count: current.ticket_count + result.tickets.length, winning_ticket_count: current.winning_ticket_count + winning.length, total_spent: current.total_spent + result.total_cost, total_won: current.total_won + result.total_prize, best_win: Math.max(current.best_win, ...result.tickets.map((ticket) => ticket.prize_amount)) } : current);
   }} /></Suspense>;
   if (vaultOpen) return <Suspense fallback={<Skeleton />}><VaultView initData={initData} balance={dashboard.balance} onClose={() => setVaultOpen(false)} onSettled={(result) => {
+    snapshotEpoch.current += 1;
     const winning = result.tickets.filter((ticket) => ticket.prize_amount > 0);
     setDashboard((current) => current ? { ...current, balance: result.balance_after, total_ticket_count: current.total_ticket_count + result.tickets.length, total_winning_ticket_count: current.total_winning_ticket_count + winning.length } : current);
     setAccount((current) => current ? { ...current, balance: result.balance_after, ticket_count: current.ticket_count + result.tickets.length, winning_ticket_count: current.winning_ticket_count + winning.length, total_spent: current.total_spent + result.total_cost, total_won: current.total_won + result.total_prize, best_win: Math.max(current.best_win, ...result.tickets.map((ticket) => ticket.prize_amount)) } : current);

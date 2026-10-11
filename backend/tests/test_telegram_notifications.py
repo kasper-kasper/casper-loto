@@ -1,6 +1,7 @@
 """Telegram identity, formatting and durable dispatch tests."""
 
 from datetime import UTC, datetime
+from types import SimpleNamespace
 from typing import Any, cast
 from uuid import UUID
 
@@ -54,7 +55,9 @@ class FakeIdentitySession:
     async def scalar(self, _statement: object) -> Any:
         return next(self._values)
 
-    async def execute(self, _statement: object) -> None:
+    async def execute(self, _statement: object) -> Any:
+        if getattr(_statement, "is_select", False):
+            return SimpleNamespace(first=lambda: None)
         self.executed += 1
 
     def add(self, value: Any) -> None:
@@ -280,3 +283,30 @@ async def test_dispatch_failure_records_only_redacted_error_code() -> None:
     assert await dispatcher.process_one(datetime(2026, 8, 14, tzinfo=UTC))
     assert repository.sent == []
     assert repository.failed == [(event.id, "telegram_send_failed")]
+
+
+@pytest.mark.parametrize("changed", [False, True])
+async def test_initialized_identity_reads_without_balance_lock_or_grant(changed):
+    from k_loto.infrastructure.database.models import User
+
+    user = User(id=UUID(int=12), username="owner", display_name="Owner")
+
+    class Ready(FakeIdentitySession):
+        async def execute(self, statement):
+            assert "FOR UPDATE" not in str(statement)
+            self.executed += 1
+            return SimpleNamespace(first=lambda: (user, 4321))
+
+        async def scalar(self, statement):
+            raise AssertionError("Initialized read must not initialize or lock funds")
+
+    session = Ready(user.id, 4321)
+    result = await TelegramIdentityService(cast(AsyncSession, session)).bind(
+        telegram_id=123,
+        username="new" if changed else "owner",
+        display_name="New" if changed else "Owner",
+    )
+    assert result.balance == 4321
+    assert session.executed == 1 and not session.added
+    assert user.username == ("new" if changed else "owner")
+    assert user.display_name == result.display_name

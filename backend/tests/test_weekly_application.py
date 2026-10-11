@@ -725,3 +725,17 @@ async def test_september_main_prize_is_refilled_from_reserve() -> None:
     assert len([item for item in fake.added if isinstance(item, JackpotWinEvent)]) == 1
     inbox = [item for item in fake.added if isinstance(item, UserNotification)]
     assert {item.type.value for item in inbox} == {"WIN", "JACKPOT_NEWS"}
+
+
+async def test_duplicate_purchase_key_cannot_expose_another_players_receipt():
+    from k_loto.domain.errors import InvalidTicket
+
+    existing = LedgerTransaction(account_id=UUID(int=5))
+    fake = FakeSession(scalar_values=[existing])
+    with pytest.raises(InvalidTicket, match="another request"):
+        await WeeklyTicketPurchaseService(cast(AsyncSession, fake)).purchase(
+            user_id=UUID(int=6),
+            combinations=[[1, 2, 3, 4, 5]],
+            idempotency_key="another-users-key",
+        )
+    assert not fake.added

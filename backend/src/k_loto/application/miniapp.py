@@ -5,13 +5,15 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4
+from weakref import WeakKeyDictionary
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, or_, select, update
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql.elements import ColumnElement
 
+from k_loto.application.display_cache import PlatformTotalsCache
 from k_loto.application.query_scope import LotteryScope, lottery_scope
 from k_loto.domain.dual import dual_phase
 from k_loto.domain.enums import (
@@ -56,6 +58,10 @@ from k_loto.infrastructure.database.models import (
     User,
     UserNotification,
     UserNotificationPreference,
+)
+
+_platform_caches: WeakKeyDictionary[AsyncEngine, PlatformTotalsCache] = (
+    WeakKeyDictionary()
 )
 
 
@@ -513,7 +519,11 @@ class MiniAppQueryService:
         return True
 
     async def dashboard(
-        self, user_id: UUID, *, now: datetime | None = None
+        self,
+        user_id: UUID,
+        *,
+        now: datetime | None = None,
+        include_recent_results: bool = True,
     ) -> MiniAppDashboard:
         timestamp = now or datetime.now(UTC)
         balance = await self._session.scalar(
@@ -535,19 +545,52 @@ class MiniAppQueryService:
                 .order_by(Lottery.kind, Lottery.name)
             )
         ).all()
-        lotteries: list[MiniAppLottery] = []
-        for lottery, jackpot in lottery_rows:
-            draw = await self._session.scalar(
+        open_draws = (
+            await self._session.scalars(
                 select(Draw)
                 .where(
-                    Draw.lottery_id == lottery.id,
+                    Draw.lottery_id.in_([row.id for row, _ in lottery_rows]),
                     Draw.status == DrawStatus.SCHEDULED,
                     Draw.scheduled_at > timestamp,
                     Draw.sales_close_at > timestamp,
                 )
-                .order_by(Draw.scheduled_at)
-                .limit(1)
+                .distinct(Draw.lottery_id)
+                .order_by(Draw.lottery_id, Draw.scheduled_at, Draw.id)
             )
+        ).all()
+        by_lottery = {draw.lottery_id: draw for draw in open_draws}
+        draw_ids = [draw.id for draw in open_draws]
+        primary_counts = (
+            select(
+                Ticket.draw_id.label("draw_id"), func.count(Ticket.id).label("count")
+            )
+            .where(
+                Ticket.user_id == user_id,
+                Ticket.status == TicketStatus.PURCHASED,
+                Ticket.draw_id.in_(draw_ids),
+            )
+            .group_by(Ticket.draw_id)
+        )
+        secondary_counts = (
+            select(
+                Ticket.second_draw_id.label("draw_id"),
+                func.count(Ticket.id).label("count"),
+            )
+            .where(
+                Ticket.user_id == user_id,
+                Ticket.status == TicketStatus.PURCHASED,
+                Ticket.second_draw_id.in_(draw_ids),
+            )
+            .group_by(Ticket.second_draw_id)
+        )
+        player_counts: dict[UUID, int] = {}
+        for draw_id, count in (
+            await self._session.execute(primary_counts.union_all(secondary_counts))
+        ).all():
+            player_counts[draw_id] = player_counts.get(draw_id, 0) + count
+        lotteries: list[MiniAppLottery] = []
+        for lottery, jackpot in lottery_rows:
+            draw = by_lottery.get(lottery.id)
             sales_open = draw is not None and draw.sales_close_at > timestamp
             snapshot = (draw.configuration_snapshot or {}) if draw is not None else {}
             rules = get_lottery_rules(
@@ -559,23 +602,7 @@ class MiniAppQueryService:
                 else lottery.ticket_price
             )
             purchase_available = draw_ticket_price is not None and sales_open
-            player_ticket_count = 0
-            if draw is not None:
-                player_ticket_count = int(
-                    await self._session.scalar(
-                        select(func.count(Ticket.id)).where(
-                            Ticket.user_id == user_id,
-                            or_(
-                                Ticket.draw_id == draw.id,
-                                Ticket.second_draw_id == draw.id,
-                            )
-                            if lottery.code == "dual"
-                            else Ticket.draw_id == draw.id,
-                            Ticket.status == TicketStatus.PURCHASED,
-                        )
-                    )
-                    or 0
-                )
+            player_ticket_count = player_counts.get(draw.id, 0) if draw else 0
             timeline = (
                 draw_timeline(
                     draw.scheduled_at,
@@ -625,12 +652,40 @@ class MiniAppQueryService:
                     is_distribution=bool(draw and draw.is_distribution),
                 )
             )
-        recent_results = await self.tickets(user_id, active=False, limit=3)
+        recent_results = (
+            await self.tickets(user_id, active=False, limit=3)
+            if include_recent_results
+            else ()
+        )
         moscow_now = timestamp.astimezone(ZoneInfo("Europe/Moscow"))
         month_start_local = moscow_now.replace(
             day=1, hour=0, minute=0, second=0, microsecond=0
         )
         month_start = month_start_local.astimezone(UTC)
+
+        async def load_totals() -> tuple[int, int, int]:
+            return await self._platform_totals(month_start)
+
+        bind = getattr(self._session, "bind", None)
+        if isinstance(bind, AsyncEngine):
+            cache = _platform_caches.setdefault(bind, PlatformTotalsCache())
+            monthly_total_payout, total_tickets, winning_tickets = await cache.get(
+                month_start, load_totals
+            )
+        else:
+            monthly_total_payout, total_tickets, winning_tickets = await load_totals()
+        return MiniAppDashboard(
+            server_time=timestamp,
+            balance=balance,
+            active_ticket_count=active_count or 0,
+            lotteries=tuple(lotteries),
+            recent_results=recent_results,
+            monthly_total_payout=monthly_total_payout,
+            total_ticket_count=total_tickets,
+            total_winning_ticket_count=winning_tickets,
+        )
+
+    async def _platform_totals(self, month_start: datetime) -> tuple[int, int, int]:
         monthly_total_payout = int(
             await self._session.scalar(
                 select(func.coalesce(func.sum(Draw.total_payout), 0)).where(
@@ -664,16 +719,10 @@ class MiniAppQueryService:
                 )
             )
         ).one()
-        return MiniAppDashboard(
-            server_time=timestamp,
-            balance=balance,
-            active_ticket_count=active_count or 0,
-            lotteries=tuple(lotteries),
-            recent_results=recent_results,
-            monthly_total_payout=monthly_total_payout,
-            total_ticket_count=int(ticket_totals[0]) + int(instant_ticket_totals[0]),
-            total_winning_ticket_count=int(ticket_totals[1])
-            + int(instant_ticket_totals[1]),
+        return (
+            monthly_total_payout,
+            int(ticket_totals[0]) + int(instant_ticket_totals[0]),
+            int(ticket_totals[1]) + int(instant_ticket_totals[1]),
         )
 
     async def tickets(
@@ -710,6 +759,18 @@ class MiniAppQueryService:
         regular: list[MiniAppTicket] = []
         if not only_instant:
             second_draw = aliased(Draw)
+            group_ticket = aliased(Ticket)
+            group_count = select(func.count(group_ticket.id)).where(
+                group_ticket.user_id == user_id,
+                group_ticket.draw_id == Ticket.draw_id,
+                group_ticket.status == TicketStatus.PURCHASED
+                if active
+                else group_ticket.status.in_(
+                    (TicketStatus.SETTLED, TicketStatus.REFUNDED)
+                ),
+            )
+            if wins_only:
+                group_count = group_count.where(group_ticket.prize_amount > 0)
             regular_rows = (
                 await self._session.execute(
                     select(
@@ -717,7 +778,7 @@ class MiniAppQueryService:
                         Draw,
                         second_draw,
                         Lottery,
-                        func.count(Ticket.id).over(partition_by=Ticket.draw_id),
+                        group_count.correlate(Ticket).scalar_subquery(),
                     )
                     .join(Draw, Draw.id == Ticket.draw_id)
                     .outerjoin(second_draw, second_draw.id == Ticket.second_draw_id)

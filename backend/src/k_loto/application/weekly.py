@@ -129,7 +129,11 @@ class SettlementResult:
     already_completed: bool = False
 
 
-def _existing_purchase_result(existing: LedgerTransaction) -> PurchaseResult:
+def _existing_purchase_result(
+    existing: LedgerTransaction, user_id: UUID
+) -> PurchaseResult:
+    if existing.account_id != user_id:
+        raise InvalidTicket("Purchase key belongs to another request.")
     ticket_ids = tuple(UUID(value) for value in existing.details["ticket_ids"])
     draw_ids = tuple(
         UUID(value)
@@ -238,7 +242,7 @@ class WeeklyTicketPurchaseService:
                 )
             )
             if existing is not None:
-                return _existing_purchase_result(existing)
+                return _existing_purchase_result(existing, user_id)
 
             lottery = await self._session.scalar(
                 select(Lottery)
@@ -284,7 +288,7 @@ class WeeklyTicketPurchaseService:
                 )
             )
             if existing_after_lock is not None:
-                return _existing_purchase_result(existing_after_lock)
+                return _existing_purchase_result(existing_after_lock, user_id)
 
             if len(combinations) > lottery.max_tickets_per_purchase:
                 raise InvalidTicket(

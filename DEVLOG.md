@@ -3416,3 +3416,26 @@ seven-day cleanup eligibility for project-labelled legacy gateway images.
 Retention windows, business data, volumes and database backups are unchanged.
 Full backend suite: 512 passed, one Windows symlink skip; the Linux-only check
 will run on production with disposable filesystem fixtures before cleanup.
+
+
+## 2026-10-11 — Mini App read paths and repeated purchase latency
+
+Baseline production read-only measurements: 31 dashboard queries, 3.0–4.4 s for
+an account with 118k tickets; unused recent history consumed 2.2–3.0 s. Full
+account statistics cost about 1 s. Replaced per-lottery queries with batched draws
+and ticket counts, omitted unused history from dashboard HTTP responses, cached
+only public display totals for 15 s, indexed user/draw/status and open draws via
+concurrent-index migration 0052. History grouping now uses indexed group counts.
+Normal initialized Telegram identities read the existing grant receipt without
+balance locks or upserts. Legacy/new identities retain transactional setup.
+
+Mini App prioritizes dashboard, removes the 480 ms post-confirmation wait and
+full profile refresh on each scheduled purchase. In-flight guards block double
+submits; request generations reject older account/dashboard responses after a
+purchase. Scheduled idempotency receipts now verify account ownership.
+
+Validation: full backend 512 passed / one Windows symlink skip; mypy 78 modules;
+Mini App 155 tests. Linux maintenance fixtures passed including symlink safety.
+Release includes isolated PostgreSQL backup-clone checks for concurrent identity
+initialization, repeated 25-ticket purchases, duplicate replay, receipt ownership,
+ledger reconciliation and preservation of existing tickets/completed draws.

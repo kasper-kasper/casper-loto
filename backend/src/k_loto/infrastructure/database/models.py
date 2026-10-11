@@ -215,6 +215,9 @@ class Draw(TimestampMixin, Base):
         ),
         CheckConstraint("kasper_fund_used >= 0", name="kasper_fund_used_nonnegative"),
         Index("ix_draw_due", "status", "scheduled_at"),
+        Index(
+            "ix_draw_lottery_status_scheduled", "lottery_id", "status", "scheduled_at"
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(
@@ -308,6 +311,7 @@ class Ticket(Base):
         CheckConstraint("prize_amount >= 0", name="prize_amount_nonnegative"),
         CheckConstraint("matches IS NULL OR matches >= 0", name="matches_nonnegative"),
         Index("ix_ticket_user_status", "user_id", "status"),
+        Index("ix_ticket_user_draw_status", "user_id", "draw_id", "status"),
         Index("ix_ticket_draw", "draw_id"),
         Index("ix_ticket_second_draw", "second_draw_id"),
         CheckConstraint(

@@ -310,7 +310,9 @@ async def dashboard(
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> DashboardResponse:
     response = _dashboard_response(
-        await MiniAppQueryService(session).dashboard(player.user_id)
+        await MiniAppQueryService(session).dashboard(
+            player.user_id, include_recent_results=False
+        )
     )
     return response.model_copy(
         update={
