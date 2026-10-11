@@ -3455,3 +3455,22 @@ than ten minutes; no retention window or deletion scope is relaxed. Production
 read-only integrity audit found zero balance/ledger mismatches, zero scheduled
 draws overdue by ten minutes, and zero invalid indexes. Existing purchase throttle
 is ten requests per five seconds; its safety setting remains unchanged.
+
+
+## 2026-10-11 — Performance release production verification
+
+Published API 1.55.2 / Mini App 1.65.1 under the operations lock, with database,
+source/assets and image rollback backups and preserved API/bot diagnostics.
+PostgreSQL backup-clone smoke passed: 25-ticket purchase plus identity 39.7–111.3
+ms; concurrent replay created one purchase; 225 tickets total; balanced ledger;
+original ticket/completed-draw hashes unchanged. Clone dropped. Migration 0052
+and Alembic check passed; database container retained. HTTPS health 200 and exact
+served entry files verified. Web asset fingerprint unchanged.
+
+Production read-only measurements: large-user dashboard first 1197 ms then
+41/16 ms (31 SQL previously, 9 first/5 warm now); second account 126/87/62 ms.
+Account aggregates remain costly (0.66–6.53 s during post-build measurements),
+recorded as follow-up in docs/TECHNICAL_AUDIT_2026-10-11.md. Before/after integrity
+checks found zero balance-ledger discrepancies, overdue draws >10m or invalid
+indexes. Disk after backup/build: 92%, 3.2 GiB free; increase capacity is priority.
+Parallel unrelated Caddy/Dockerfile/legal-miniapp changes were left untouched.
