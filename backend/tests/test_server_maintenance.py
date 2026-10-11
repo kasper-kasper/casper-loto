@@ -426,6 +426,17 @@ class MaintenanceTests(unittest.TestCase):
             )
         self.assertNotIn("--force", run.call_args.args)
 
+    def test_parent_already_removed_by_docker_does_not_abort_cleanup(self):
+        planned = self.image("parent", [])
+        failure = subprocess.CalledProcessError(
+            1, "docker image inspect", stderr="Error: No such image: parent"
+        )
+        with patch.object(server_maintenance, "run", side_effect=failure) as run:
+            self.assertFalse(
+                server_maintenance.remove_planned_image(planned, {"parent"})
+            )
+        self.assertEqual(run.call_count, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

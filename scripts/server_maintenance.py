@@ -334,7 +334,13 @@ def remove_planned_image(image: dict[str, Any], eligible: set[str]) -> bool:
     """Under operations lock, recheck tags/ownership and all container references."""
     if image["Id"] not in eligible:
         return False
-    current = json.loads(run("docker", "image", "inspect", image["Id"]))[0]
+    try:
+        current = json.loads(run("docker", "image", "inspect", image["Id"]))[0]
+    except subprocess.CalledProcessError as error:
+        # Docker can automatically remove unused parents with their descendants.
+        if "No such image" in (error.stderr or ""):
+            return False
+        raise
     if (
         not scoped_image(current)
         or set(current.get("RepoTags") or []) != set(image.get("RepoTags") or [])
