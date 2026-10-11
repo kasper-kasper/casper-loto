@@ -409,6 +409,23 @@ class MaintenanceTests(unittest.TestCase):
             timeout=300,
         )
 
+    def test_required_intermediate_parent_is_preserved_without_force(self):
+        planned = self.image("parent", [])
+        planned["Config"]["Labels"] = {"com.docker.compose.project": "k-loto"}
+        failure = subprocess.CalledProcessError(
+            1, "docker image rm", stderr="conflict: image has dependent child images"
+        )
+        with (
+            patch.object(
+                server_maintenance, "run", side_effect=[json.dumps([planned]), failure]
+            ) as run,
+            patch.object(server_maintenance, "referenced_images", return_value=set()),
+        ):
+            self.assertFalse(
+                server_maintenance.remove_planned_image(planned, {"parent"})
+            )
+        self.assertNotIn("--force", run.call_args.args)
+
 
 if __name__ == "__main__":
     unittest.main()

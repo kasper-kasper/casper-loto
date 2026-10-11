@@ -342,7 +342,15 @@ def remove_planned_image(image: dict[str, Any], eligible: set[str]) -> bool:
     ):
         return False
     # No force: Docker also refuses deletion of an image required by a container.
-    run("docker", "image", "rm", *(current.get("RepoTags") or [current["Id"]]))
+    try:
+        run("docker", "image", "rm", *(current.get("RepoTags") or [current["Id"]]))
+    except subprocess.CalledProcessError as error:
+        # Legacy intermediate images may be parents of protected rollback images.
+        # Their required layers are not independent rollback versions.
+        diagnostic = error.stderr or ""
+        if "dependent child images" in diagnostic or "is being used by" in diagnostic:
+            return False
+        raise
     return True
 
 
@@ -553,7 +561,8 @@ def maintain(*, apply: bool) -> dict[str, Any]:
         if images
         else set()
     )
-    for image in images:
+    # Remove descendants first so unused intermediate parents can also expire.
+    for image in sorted(images, key=image_time, reverse=True):
         if busy_host():
             raise RuntimeError("Concurrent operation detected; maintenance stopped")
         if remove_planned_image(image, eligible):

@@ -12,7 +12,7 @@ is centralized in `scripts/server_maintenance.py`. Retention settings live in
 | Gateway and PostgreSQL diagnostic buffer | 10 MB × 3 files per service (30 MB each). |
 | Database backup dumps | At most seven newest validated dumps in the backup volume, counting both daily and pre-release copies. Nightly creation at 03:30 MSK; prune after successful creation and during daily maintenance. Failed/incomplete dumps do not replace recovery points. |
 | Docker build cache | Target reserve 512 MB of unused cache, without an age exemption. Docker may retain cache required by active builds/images; this is a pruning target, not a guaranteed hard quota. |
-| Project Docker images | Keep current/referenced images and two most recent tagged rollback versions per repository; other eligible project images expire immediately regardless of age. Recheck tags, ownership and container references before removal. |
+| Project Docker images | Keep current/referenced images and two most recent tagged rollback versions per repository; other eligible project images expire immediately regardless of age. Recheck tags, ownership and container references before removal. Required intermediate parent images/layers remain protected by Docker; they are not additional release versions. |
 | Known release rollback archives | Keep only the newest three per category across both archive directories combined; remove older copies regardless of age. Owner-approved 2026-10-11. |
 | Known uploaded release tarballs in `/tmp` | Delete after 48 hours. Unknown files, dumps, directories, symlinks and hardlinks are excluded. |
 | OS journal and temporary files | Existing journald 1 GB cap, logrotate and systemd-tmpfiles policies. |
