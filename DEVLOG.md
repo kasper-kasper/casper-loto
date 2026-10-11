@@ -3439,3 +3439,10 @@ Mini App 155 tests. Linux maintenance fixtures passed including symlink safety.
 Release includes isolated PostgreSQL backup-clone checks for concurrent identity
 initialization, repeated 25-ticket purchases, duplicate replay, receipt ownership,
 ledger reconciliation and preservation of existing tickets/completed draws.
+
+
+Repository-wide Ruff check now passes. The only seven outstanding findings were
+long lines in migration 0045; formatting preserves its exact original Python AST
+including every SQL string. No historical migration logic changed. All three
+clients pass lint/typecheck/build; Admin 45 and Web 35 tests pass. Mini App totals
+156 tests after the additional lottery-opening/purchase-response race regression.
