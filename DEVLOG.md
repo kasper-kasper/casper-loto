@@ -1,3 +1,9 @@
+## Compact server-only storage policy - 2026-10-11
+
+- Owner approved a maximum of seven database dumps on the VPS, current plus two prior rollback images, and a 512 MB unused build-cache target. Removed seven-day image and 48-hour cache age exemptions; source archives keep their separate newest-three policy. No computer transfer is configured.
+- Centralized database dump pruning in maintenance with verified backup-volume identity, strict filenames, filesystem identity revalidation and retained-dump TOC checks. Backup creation now publishes only a validated atomic dump; failed partial creation preserves previous recovery points. Seven files include both nightly and pre-release copies, so this does not guarantee seven days of history.
+- Image cleanup refreshes protected IDs under the operations lock and checks each image's tags, ownership and container references before non-forced removal, avoiding a full image scan per deletion. Added retention, invalid-dump, volume, new-reference/tag and cache-filter regressions. Scope excludes business rows, database data volume and unrelated images/services.
+
 ## Legal Mini App HTTPS integration - 2026-10-11
 
 - Added a separate legal HTTPS virtual host on the existing gateway, proxying only to the independent legal service on the private Docker bridge. Existing lottery routes, containers and database remain independent. The gateway image includes the extension so future builds retain the route. Validation uses Caddy configuration checks and both applications’ health checks; no frontend code changed.

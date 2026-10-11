@@ -8,6 +8,10 @@ flock -x 9
 cd /opt/k-loto
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 docker compose --env-file .env.production -f docker-compose.prod.yml exec -T db \
-  sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc -f "/backups/k-loto-'"$stamp"'.dump"'
-docker compose --env-file .env.production -f docker-compose.prod.yml exec -T db \
-  find /backups -type f -name 'k-loto-*.dump' -mtime +14 -delete
+  sh -c 'set -eu; target="/backups/k-loto-'"$stamp"'.dump"; \
+    trap '\''rm -f "$target.partial"'\'' EXIT; \
+    pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc -f "$target.partial"; \
+    pg_restore --list "$target.partial" >/dev/null; \
+    chmod 600 "$target.partial"; mv "$target.partial" "$target"'
+# The backup lock remains held; retention logic is centralized in maintenance.
+python3 -c 'from scripts.server_maintenance import prune_database_backups; prune_database_backups()'

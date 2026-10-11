@@ -10,9 +10,9 @@ is centralized in `scripts/server_maintenance.py`. Retention settings live in
 | API and bot diagnostic logs | Private gzip archives for 90 days; capture hourly, before cleanup and before service recreation. Also retain the newest three archives per service. |
 | API and bot local Docker log buffer | 20 MB × 5 files per service (100 MB each). |
 | Gateway and PostgreSQL diagnostic buffer | 10 MB × 3 files per service (30 MB each). |
-| Database backup dumps | Daily at 03:30 MSK; existing retention of 14 days. These are copies, not expiration of database history. |
-| Docker build cache | Target reserve 512 MB; only unused entries older than 48 hours are eligible. Recent cache can temporarily exceed the reserve. |
-| Project Docker images | Keep current/referenced images and two most recent tagged rollback versions per repository; other eligible project images expire after seven days. |
+| Database backup dumps | At most seven newest validated dumps in the backup volume, counting both daily and pre-release copies. Nightly creation at 03:30 MSK; prune after successful creation and during daily maintenance. Failed/incomplete dumps do not replace recovery points. |
+| Docker build cache | Target reserve 512 MB of unused cache, without an age exemption. Docker may retain cache required by active builds/images; this is a pruning target, not a guaranteed hard quota. |
+| Project Docker images | Keep current/referenced images and two most recent tagged rollback versions per repository; other eligible project images expire immediately regardless of age. Recheck tags, ownership and container references before removal. |
 | Known release rollback archives | Keep only the newest three per category across both archive directories combined; remove older copies regardless of age. Owner-approved 2026-10-11. |
 | Known uploaded release tarballs in `/tmp` | Delete after 48 hours. Unknown files, dumps, directories, symlinks and hardlinks are excluded. |
 | OS journal and temporary files | Existing journald 1 GB cap, logrotate and systemd-tmpfiles policies. |
@@ -54,6 +54,17 @@ The latest cleanup report records freed space, removed paths/images, health
 and a warning flag at 80% filesystem usage. It does not send notifications.
 Failed service runs remain visible in systemd/journald.
 
+The database count is seven files, not seven calendar days: frequent pre-release
+backups can shorten the time window. Backup creation writes a `.partial` file,
+checks its archive table of contents with `pg_restore --list`, then atomically
+renames it. Before pruning, the retained dumps' tables of contents are checked.
+This detects unreadable metadata, not all possible restore errors; periodically
+perform a complete restore to an isolated disposable database. Count-based
+retention only touches the verified `k-loto_backups` volume and recognized dump
+names; it never deletes a Docker volume or touches `k-loto_postgres_data`.
+The owner chose server-only storage; no computer transfer is configured here.
+Copies on the same VPS do not protect against loss of that VPS.
+
 **When to increase limits:** if frequent releases rebuild old layers, raise
 `cache_keep_mb` to 1024 or 2048. If diagnostics approach the 100 MB per-hour
 buffer, capture more frequently or increase the API/bot Compose log buffer
@@ -84,8 +95,9 @@ service label. New prebuilt gateway images include the service label.
 At audit time the 40 GB filesystem was 89% full, with 4.2 GB available.
 This historical measurement preceded the owner's count-only retention decision.
 If growth continues after cleanup, increase VPS disk capacity. Financial history
-is never a storage-cleanup target. Database dumps retain their separate 14-day
-policy; diagnostic logs retain their separate 90-day policy.
+is never a storage-cleanup target. The later owner-approved compact policy
+replaces database retention with seven newest files and image age protection
+with count-only retention; diagnostic logs retain their separate 90-day policy.
 
 
 The first extended sweep reclaimed 847,052,800 bytes (about 0.85 GB); health

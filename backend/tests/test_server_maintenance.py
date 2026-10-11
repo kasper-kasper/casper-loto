@@ -1,6 +1,7 @@
 """Isolated filesystem/Docker-plan regression tests; no production mutations."""
 
 import gzip
+import json
 import os
 import subprocess
 import tempfile
@@ -263,6 +264,7 @@ class MaintenanceTests(unittest.TestCase):
             "publication_grace_minutes": 15,
             "archive_min_age_days": 0,
             "archive_keep_per_category": 3,
+            "database_backup_keep": 7,
             "upload_min_age_hours": 48,
             "diagnostic_log_retention_days": 90,
             "image_keep_versions": 3,
@@ -276,6 +278,9 @@ class MaintenanceTests(unittest.TestCase):
             patch.object(server_maintenance, "check_health"),
             patch.object(server_maintenance, "busy_host", return_value=False),
             patch.object(server_maintenance, "select_files", return_value=[]),
+            patch.object(
+                server_maintenance, "database_backup_candidates", return_value=[]
+            ),
             patch.object(server_maintenance, "inspect_images", return_value=[]),
             patch.object(server_maintenance, "referenced_images", return_value=set()),
             patch.object(
@@ -290,6 +295,119 @@ class MaintenanceTests(unittest.TestCase):
                 server_maintenance.maintain(apply=True)
             delete.assert_not_called()
             docker.assert_not_called()
+
+    def test_database_retention_keeps_seven_recent_copies_and_ignores_partial_files(
+        self,
+    ):
+        for index in range(9):
+            self.file(f"k-loto-20261011T00000{index}Z.dump", index)
+        self.file("k-loto-20261011T000009Z.dump.partial", 0)
+        self.file("unrecognized.dump", 100)
+        with (
+            patch.object(server_maintenance, "DATABASE_BACKUPS", self.directory),
+            patch.object(
+                server_maintenance, "policy", return_value={"database_backup_keep": 7}
+            ),
+            patch.object(server_maintenance, "run", return_value=str(self.directory)),
+        ):
+            removed = server_maintenance.prune_database_backups()
+        self.assertEqual(
+            {Path(row).name for row in removed},
+            {"k-loto-20261011T000007Z.dump", "k-loto-20261011T000008Z.dump"},
+        )
+        self.assertEqual(len(list(self.directory.glob("k-loto-*.dump"))), 7)
+        self.assertTrue((self.directory / "unrecognized.dump").exists())
+        self.assertTrue(
+            (self.directory / "k-loto-20261011T000009Z.dump.partial").exists()
+        )
+
+    def test_invalid_retained_dump_stops_database_cleanup(self):
+        for index in range(8):
+            self.file(f"k-loto-20261011T00000{index}Z.dump", index)
+
+        def inspect_or_fail(*arguments, **options):
+            if "pg_restore" in arguments:
+                raise subprocess.CalledProcessError(1, "pg_restore")
+            return str(self.directory)
+
+        with (
+            patch.object(server_maintenance, "DATABASE_BACKUPS", self.directory),
+            patch.object(
+                server_maintenance, "policy", return_value={"database_backup_keep": 7}
+            ),
+            patch.object(server_maintenance, "run", side_effect=inspect_or_fail),
+        ):
+            with self.assertRaises(subprocess.CalledProcessError):
+                server_maintenance.prune_database_backups()
+        self.assertEqual(len(list(self.directory.glob("*.dump"))), 8)
+
+    def test_database_cleanup_refuses_unexpected_volume(self):
+        with patch.object(
+            server_maintenance, "run", return_value="/unrelated/database"
+        ):
+            with self.assertRaisesRegex(
+                RuntimeError, "Unexpected database backup volume"
+            ):
+                server_maintenance.database_backup_candidates(7)
+
+    def test_zero_age_retention_also_counts_files_with_future_timestamps(self):
+        for index in range(9):
+            self.file(f"k-loto-20261011T00000{index}Z.dump", -index)
+        plan = select_files(
+            self.directory,
+            server_maintenance.DATABASE_DUMPS,
+            now=self.now,
+            age_seconds=0,
+            keep=7,
+        )
+        self.assertEqual(len(plan), 2)
+
+    def test_new_images_expire_immediately_except_live_and_two_rollbacks(self):
+        images = [
+            self.image(str(i), [f"k-loto-api:before-release-{i}"]) for i in range(1, 5)
+        ]
+        for row in images:
+            row["Created"] = "2099-01-01T00:00:00Z"
+        self.assertEqual(
+            {
+                row["Id"]
+                for row in image_candidates(
+                    images, {"4"}, now=self.now, keep=3, age_seconds=0
+                )
+            },
+            {"1"},
+        )
+
+    def test_changed_image_tags_or_new_container_reference_prevent_removal(self):
+        planned = self.image("old", ["k-loto-api:before-release-1"])
+        changed = self.image("old", ["k-loto-api:latest"])
+        with patch.object(
+            server_maintenance, "run", return_value=json.dumps([changed])
+        ) as run:
+            self.assertFalse(server_maintenance.remove_planned_image(planned, {"old"}))
+            self.assertEqual(run.call_count, 1)
+        with (
+            patch.object(
+                server_maintenance, "run", return_value=json.dumps([planned])
+            ) as run,
+            patch.object(server_maintenance, "referenced_images", return_value={"old"}),
+        ):
+            self.assertFalse(server_maintenance.remove_planned_image(planned, {"old"}))
+            self.assertEqual(run.call_count, 1)
+
+    def test_cache_prune_uses_512_mb_without_age_filter(self):
+        with patch.object(server_maintenance, "run") as run:
+            server_maintenance.prune_build_cache(512, 0)
+        run.assert_called_once_with(
+            "docker",
+            "builder",
+            "prune",
+            "--all",
+            "--force",
+            "--keep-storage",
+            "512MB",
+            timeout=300,
+        )
 
 
 if __name__ == "__main__":

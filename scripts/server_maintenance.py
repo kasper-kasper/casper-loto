@@ -24,6 +24,8 @@ ROOT = Path("/opt/k-loto")
 CONFIG = ROOT / "infrastructure/server-maintenance.toml"
 OPERATIONS_LOCK = Path("/run/lock/k-loto-operations.lock")
 BACKUP_LOCK = Path("/run/lock/k-loto-backup.lock")
+DATABASE_BACKUPS = Path("/var/lib/docker/volumes/k-loto_backups/_data")
+DATABASE_DUMPS = {"database": re.compile(r"k-loto-\d{8}T\d{6}Z\.dump")}
 REPOSITORIES = {"k-loto-api", "k-loto-bot", "k-loto-gateway"}
 CONTAINERS = ("k-loto-db-1", "k-loto-api-1", "k-loto-bot-1", "k-loto-gateway-1")
 ARCHIVES = {
@@ -182,7 +184,7 @@ def select_files(
     for items in groups.values():
         items.sort(key=lambda pair: (pair[1].st_mtime_ns, str(pair[0])), reverse=True)
         for item, info in items[keep:]:
-            if now - info.st_mtime < age_seconds:
+            if age_seconds > 0 and now - info.st_mtime < age_seconds:
                 continue
             candidates.append(
                 FileCandidate(
@@ -284,8 +286,72 @@ def image_candidates(
         for image in images
         if scoped_image(image)
         and image["Id"] not in protected
-        and now - image_time(image) >= age_seconds
+        and (age_seconds == 0 or now - image_time(image) >= age_seconds)
     ]
+
+
+def database_backup_candidates(keep: int) -> list[FileCandidate]:
+    """Only known dumps in the verified backup volume, never database data."""
+    mount = run(
+        "docker", "volume", "inspect", "--format", "{{.Mountpoint}}", "k-loto_backups"
+    ).strip()
+    if mount != str(DATABASE_BACKUPS) or DATABASE_BACKUPS.is_symlink():
+        raise RuntimeError("Unexpected database backup volume; cleanup stopped")
+    if not DATABASE_BACKUPS.is_dir():
+        raise RuntimeError("Database backup directory unavailable")
+    return select_files(
+        DATABASE_BACKUPS, DATABASE_DUMPS, now=time.time(), age_seconds=0, keep=keep
+    )
+
+
+def validate_retained_database_backups(keep: int) -> None:
+    all_copies = database_backup_candidates(0)
+    surplus = {row.path for row in database_backup_candidates(keep)}
+    for row in all_copies:
+        if row.path not in surplus:
+            # Inspect the dump TOC before discarding older recovery points.
+            run(
+                "docker",
+                "exec",
+                "k-loto-db-1",
+                "pg_restore",
+                "--list",
+                "/backups/" + Path(row.path).name,
+            )
+
+
+def prune_database_backups() -> list[str]:
+    """Caller holds BACKUP_LOCK; prune after atomic backup creation or maintenance."""
+    keep = policy()["database_backup_keep"]
+    candidates = database_backup_candidates(keep)
+    if not candidates:
+        return []
+    validate_retained_database_backups(keep)
+    return [row.path for row in candidates if delete_planned_file(row)]
+
+
+def remove_planned_image(image: dict[str, Any], eligible: set[str]) -> bool:
+    """Under operations lock, recheck tags/ownership and all container references."""
+    if image["Id"] not in eligible:
+        return False
+    current = json.loads(run("docker", "image", "inspect", image["Id"]))[0]
+    if (
+        not scoped_image(current)
+        or set(current.get("RepoTags") or []) != set(image.get("RepoTags") or [])
+        or image["Id"] in referenced_images()
+    ):
+        return False
+    # No force: Docker also refuses deletion of an image required by a container.
+    run("docker", "image", "rm", *(current.get("RepoTags") or [current["Id"]]))
+    return True
+
+
+def prune_build_cache(keep_mb: int, minimum_age_hours: int) -> None:
+    command = ["docker", "builder", "prune", "--all", "--force"]
+    if minimum_age_hours:
+        command.extend(["--filter", f"until={minimum_age_hours}h"])
+    command.extend(["--keep-storage", f"{keep_mb}MB"])
+    run(*command, timeout=300)
 
 
 def active_operation(arguments: list[str]) -> bool:
@@ -383,9 +449,10 @@ def policy() -> dict[str, int]:
     values = tomllib.loads(CONFIG.read_text())
     minimum = {
         "cache_keep_mb": 128,
-        "cache_min_age_hours": 24,
+        "cache_min_age_hours": 0,
         "image_keep_versions": 3,
-        "image_min_age_days": 7,
+        "image_min_age_days": 0,
+        "database_backup_keep": 7,
         "archive_keep_per_category": 3,
         "archive_min_age_days": 0,
         "upload_min_age_hours": 24,
@@ -434,6 +501,8 @@ def maintain(*, apply: bool) -> dict[str, Any]:
         age_seconds=values["diagnostic_log_retention_days"] * 86400,
         keep=3,
     )
+    database_files = database_backup_candidates(values["database_backup_keep"])
+    files += database_files
     images = image_candidates(
         inspect_images(),
         referenced_images(),
@@ -459,6 +528,8 @@ def maintain(*, apply: bool) -> dict[str, Any]:
     before = shutil.disk_usage(ROOT)
     # If saving important logs fails, do not start any cleanup.
     report["diagnostic_archive"] = archive_diagnostic_logs()
+    if database_files:
+        validate_retained_database_backups(values["database_backup_keep"])
     removed = []
     for item in files:
         if busy_host():
@@ -466,40 +537,30 @@ def maintain(*, apply: bool) -> dict[str, Any]:
         if delete_planned_file(item):
             removed.append(item.path)
     removed_images = []
+    # Recompute protection once under the operations lock. Check changed tags and
+    # fresh container references before each removal, without rescanning all images.
+    eligible = (
+        {
+            row["Id"]
+            for row in image_candidates(
+                inspect_images(),
+                referenced_images(),
+                now=time.time(),
+                keep=values["image_keep_versions"],
+                age_seconds=values["image_min_age_days"] * 86400,
+            )
+        }
+        if images
+        else set()
+    )
     for image in images:
         if busy_host():
             raise RuntimeError("Concurrent operation detected; maintenance stopped")
-        # Refresh protection and ownership, including tags, before each removal.
-        current = json.loads(run("docker", "image", "inspect", image["Id"]))[0]
-        refreshed = image_candidates(
-            inspect_images(),
-            referenced_images(),
-            now=time.time(),
-            keep=values["image_keep_versions"],
-            age_seconds=values["image_min_age_days"] * 86400,
-        )
-        if not scoped_image(current) or image["Id"] not in {
-            row["Id"] for row in refreshed
-        }:
-            continue
-        # No --force: Docker itself refuses removal if a container needs this image.
-        tags = current.get("RepoTags") or [current["Id"]]
-        run("docker", "image", "rm", *tags)
-        removed_images.append(image["Id"])
+        if remove_planned_image(image, eligible):
+            removed_images.append(image["Id"])
     if busy_host():
         raise RuntimeError("Concurrent operation detected; maintenance stopped")
-    run(
-        "docker",
-        "builder",
-        "prune",
-        "--all",
-        "--force",
-        "--filter",
-        f"until={values['cache_min_age_hours']}h",
-        "--keep-storage",
-        f"{values['cache_keep_mb']}MB",
-        timeout=300,
-    )
+    prune_build_cache(values["cache_keep_mb"], values["cache_min_age_hours"])
     check_health()
     after = shutil.disk_usage(ROOT)
     report.update(

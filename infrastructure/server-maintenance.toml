@@ -1,9 +1,10 @@
 # Small-project profile (<50 players). See docs/SERVER_STORAGE.md before tuning.
-# Cache can temporarily exceed the reserve while entries are younger than 48h.
+# Count-only image/backup retention; prune unused build cache toward 512 MB.
 cache_keep_mb = 512
-cache_min_age_hours = 48
+cache_min_age_hours = 0
 image_keep_versions = 3
-image_min_age_days = 7
+image_min_age_days = 0
+database_backup_keep = 7
 archive_keep_per_category = 3
 # Owner-approved count-only retention across both known archive directories.
 archive_min_age_days = 0
