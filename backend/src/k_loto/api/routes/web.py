@@ -1,6 +1,5 @@
 """Desktop browser client API with simple password authentication."""
 
-import hashlib
 import hmac
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -511,9 +510,7 @@ async def purchase_bingo(
             pool_ticket_ids=payload.ticket_ids or None,
             pool_required_numbers=tuple(payload.required_numbers),
             select_bingo_pool=not payload.ticket_ids,
-            idempotency_key=hashlib.sha256(
-                f"bingo:{player.user_id}:{payload.idempotency_key}".encode()
-            ).hexdigest(),
+            idempotency_key=payload.idempotency_key,
         )
     except (
         InsufficientBalance,

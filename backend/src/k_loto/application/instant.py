@@ -206,6 +206,14 @@ class InstantTicketPurchaseService:
             if balance.amount < total_cost:
                 raise InsufficientBalance("Insufficient CAS balance.")
 
+            # Solvency must never select which random outcomes can commit.
+            # The fund row remains locked through payment of the entire batch.
+            maximum_prize = max(band.prize for band in self._rules.bands)
+            if fund.balance < quantity * maximum_prize:
+                raise ConfigurationError(
+                    "Kasper fund cannot cover every possible prize."
+                )
+
             prizes = tuple(
                 self._rules.prize(self._number_generator.draw_sequence(1, 10_000, 1)[0])
                 for _ in range(quantity)

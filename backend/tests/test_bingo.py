@@ -190,13 +190,13 @@ async def test_draw_starts_once_and_restart_preserves_sequence() -> None:
     )
     lottery = Lottery(id=UUID(int=2), code="bingo")
     session = FakeSession(
-        scalar_values=[draw, lottery, JackpotAccount(balance=10_000_000_000)]
+        scalar_values=[lottery, draw, None, JackpotAccount(balance=10_000_000_000)]
     )
     await LotterySettlementService(cast(AsyncSession, session)).settle(draw.id, now=now)
     original = list(draw.winning_numbers or [])
     assert len(original) == 58 and draw.status == DrawStatus.DRAWING
     assert not session.added
-    restarted = FakeSession(scalar_values=[draw, lottery])
+    restarted = FakeSession(scalar_values=[lottery, draw, None])
     await LotterySettlementService(cast(AsyncSession, restarted)).settle(
         draw.id, now=now + timedelta(seconds=40)
     )
@@ -221,7 +221,7 @@ async def test_missed_empty_draw_recovers_immediately_without_a_new_broadcast() 
     jackpot = JackpotAccount(balance=10_000_000_000, base_amount=10_000_000_000)
     fund = KasperFundAccount(balance=20_000_000_000)
     session = FakeSession(
-        scalar_values=[draw, lottery, jackpot, jackpot, fund],
+        scalar_values=[lottery, draw, None, jackpot, lottery, draw, jackpot, fund],
         scalar_collections=[[], [], []],
     )
     result = await LotterySettlementService(cast(AsyncSession, session)).settle(

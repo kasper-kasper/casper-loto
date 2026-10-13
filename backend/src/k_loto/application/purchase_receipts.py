@@ -9,7 +9,7 @@ from k_loto.application.instant import (
     InstantPurchaseResult,
     InstantTicketPurchaseService,
 )
-from k_loto.application.purchase_guard import lock_attempt
+from k_loto.application.purchase_guard import bingo_purchase_key, lock_attempt
 from k_loto.application.weekly import PurchaseResult, _existing_purchase_result
 from k_loto.infrastructure.database.models import (
     LedgerTransaction,
@@ -29,9 +29,12 @@ class PurchaseReceiptService:
         ledger_key = (
             f"{namespace}:{key}:user:purchase" if instant else f"purchase:{key}:user"
         )
+        ledger_keys = [ledger_key]
+        if not instant:
+            ledger_keys.append(f"purchase:{bingo_purchase_key(user_id, key)}:user")
         ledger = await self._session.scalar(
             select(LedgerTransaction).where(
-                LedgerTransaction.idempotency_key == ledger_key,
+                LedgerTransaction.idempotency_key.in_(ledger_keys),
                 LedgerTransaction.user_id == user_id,
                 LedgerTransaction.account_id == user_id,
             )

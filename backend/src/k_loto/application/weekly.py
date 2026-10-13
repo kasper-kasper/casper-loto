@@ -9,7 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from k_loto.application.ports import SecureNumberGenerator
-from k_loto.application.purchase_guard import guard_attempt
+from k_loto.application.purchase_guard import bingo_purchase_key, guard_attempt
 from k_loto.domain.draw_state import ensure_draw_transition
 from k_loto.domain.dual import DUAL_PRICE, DUAL_PURCHASE_DRAW_WINDOW, dual_phase
 from k_loto.domain.enums import (
@@ -235,10 +235,13 @@ class WeeklyTicketPurchaseService:
                 f"A purchase must contain 1 to {MAX_TICKETS_PER_PURCHASE} tickets."
             )
         timestamp = now or datetime.now(UTC)
+        client_key = idempotency_key
+        if self._lottery_code == "bingo":
+            idempotency_key = bingo_purchase_key(user_id, client_key)
         user_ledger_key = f"purchase:{idempotency_key}:user"
 
         async with self._session.begin():
-            await guard_attempt(self._session, user_id, idempotency_key, "scheduled")
+            await guard_attempt(self._session, user_id, client_key, "scheduled")
             existing = await self._session.scalar(
                 select(LedgerTransaction).where(
                     LedgerTransaction.idempotency_key == user_ledger_key
@@ -299,6 +302,7 @@ class WeeklyTicketPurchaseService:
                     "tickets in one purchase."
                 )
 
+            timestamp = now or datetime.now(UTC)
             draw_query = select(Draw).where(
                 Draw.lottery_id == lottery.id,
                 Draw.status == DrawStatus.SCHEDULED,
@@ -356,11 +360,21 @@ class WeeklyTicketPurchaseService:
                     .limit(1)
                 )
                 schedule_base = latest.scheduled_at if latest is not None else timestamp
-                if lottery.code == "dual":
-                    schedule_base = max(schedule_base, timestamp)
                 scheduled_at = next_draw_at(
                     lottery.kind, schedule_base, lottery.schedule
                 )
+                if (
+                    sales_close_at(
+                        lottery.kind,
+                        scheduled_at,
+                        lottery.sales_cutoff_minutes,
+                        lottery.schedule,
+                    )
+                    <= timestamp
+                ):
+                    raise NoAvailableDraw(
+                        "Draw recovery is pending; ticket sales are temporarily closed."
+                    )
                 draw = Draw(
                     id=uuid4(),
                     lottery_id=lottery.id,
@@ -569,6 +583,11 @@ class WeeklyTicketPurchaseService:
             )
             if balance is None:
                 raise ConfigurationError("User balance account is missing.")
+            timestamp = now or datetime.now(UTC)
+            if any(item.sales_close_at <= timestamp for item in draws[:draw_count]):
+                raise NoAvailableDraw(
+                    "Ticket sales closed while the purchase was waiting."
+                )
             draw_rules = [
                 get_lottery_rules(
                     str(_snapshot_value(item, "ruleset_code", current_rules.code))
@@ -741,63 +760,135 @@ class WeeklySettlementService:
         self._session = session
         self._number_generator = number_generator or SystemRandomNumberGenerator()
 
-    async def settle(
-        self, draw_id: UUID, *, now: datetime | None = None
-    ) -> SettlementResult:
-        timestamp = now or datetime.now(UTC)
+    async def _prepare_outcome(
+        self, draw_id: UUID, timestamp: datetime
+    ) -> SettlementResult | None:
+        """Commit the outcome before any payout can fail or the process can restart."""
         async with self._session.begin():
+            # Purchases also lock the lottery first: no draw/lottery lock inversion.
+            lottery = await self._session.scalar(
+                select(Lottery)
+                .join(Draw, Draw.lottery_id == Lottery.id)
+                .where(Draw.id == draw_id)
+                .with_for_update(of=Lottery)
+            )
+            if lottery is None:
+                raise NoAvailableDraw("Draw does not exist.")
             draw = await self._session.scalar(
-                select(Draw).where(Draw.id == draw_id).with_for_update()
+                select(Draw)
+                .where(Draw.id == draw_id)
+                .with_for_update()
+                .execution_options(populate_existing=True)
             )
             if draw is None:
                 raise NoAvailableDraw("Draw does not exist.")
             if draw.status == DrawStatus.COMPLETED:
                 return SettlementResult(
-                    draw_id=draw.id,
-                    winning_numbers=tuple(draw.winning_numbers or ()),
-                    total_payout=draw.total_payout,
+                    draw.id,
+                    tuple(draw.winning_numbers or ()),
+                    draw.total_payout,
                     already_completed=True,
                 )
             if draw.scheduled_at > timestamp:
                 raise InvalidStateTransition(
                     "A draw cannot be settled before scheduled_at."
                 )
-
-            lottery = await self._session.scalar(
-                select(Lottery).where(Lottery.id == draw.lottery_id).with_for_update()
-            )
-            if lottery is None:
-                raise ConfigurationError(
-                    f"Draw is not attached to a {self.lottery_label} lottery."
+            earlier = await self._session.scalar(
+                select(Draw.id)
+                .where(
+                    Draw.lottery_id == lottery.id,
+                    Draw.scheduled_at < draw.scheduled_at,
+                    Draw.status != DrawStatus.COMPLETED,
                 )
-            if lottery.code == "dual":
-                from k_loto.application.dual import settle_dual_draw
+                .limit(1)
+            )
+            if earlier is not None:
+                raise InvalidStateTransition(
+                    "Earlier draws must finish before this draw."
+                )
+            if draw.winning_numbers is None:
+                jackpot = await self._session.scalar(
+                    select(JackpotAccount)
+                    .where(JackpotAccount.lottery_id == lottery.id)
+                    .with_for_update()
+                )
+                if jackpot is None:
+                    raise ConfigurationError("Draw jackpot account is missing.")
+                draw.configuration_snapshot = {
+                    **draw_configuration_snapshot(lottery, jackpot.base_amount),
+                    **(draw.configuration_snapshot or {}),
+                }
+                if lottery.code == "bingo":
+                    from k_loto.domain.bingo import generate_sequence
 
-                return await settle_dual_draw(
-                    self._session, draw, lottery, timestamp, self._number_generator
+                    winning = generate_sequence()
+                else:
+                    current = _rules_for_lottery(lottery, expected=self.ruleset_code)
+                    rules = get_lottery_rules(
+                        str(_snapshot_value(draw, "ruleset_code", current.code))
+                    )
+                    if (
+                        self.ruleset_code is not None
+                        and rules.code != self.ruleset_code
+                    ):
+                        raise ConfigurationError("Draw rules snapshot is incompatible.")
+                    winning = (
+                        self._number_generator.draw(12, 2)
+                        if lottery.code == "dual"
+                        else rules.generate_combination(self._number_generator)
+                    )
+                ensure_draw_transition(draw.status, DrawStatus.DRAWING)
+                draw.status = DrawStatus.DRAWING
+                draw.winning_numbers = list(winning)
+                draw.jackpot_opening = jackpot.balance
+                missed = timestamp - draw.scheduled_at > timedelta(minutes=5)
+                draw.executed_at = (
+                    draw.scheduled_at
+                    if lottery.code == "bingo" and missed
+                    else timestamp
                 )
             if lottery.code == "bingo":
-                from k_loto.domain.bingo import DRAW_MOVES, generate_sequence
+                from k_loto.domain.bingo import DRAW_MOVES
 
-                if draw.winning_numbers is None:
-                    opening_account = await self._session.scalar(
-                        select(JackpotAccount)
-                        .where(JackpotAccount.lottery_id == lottery.id)
-                        .with_for_update()
-                    )
-                    if opening_account is None:
-                        raise ConfigurationError("Bingo jackpot account is missing.")
-                    draw.jackpot_opening = opening_account.balance
-                    draw.winning_numbers = list(generate_sequence())
-                    missed = timestamp - draw.scheduled_at > timedelta(minutes=5)
-                    draw.executed_at = draw.scheduled_at if missed else timestamp
-                    draw.status = DrawStatus.DRAWING
-                    if not missed:
-                        return SettlementResult(draw.id, (), 0, already_completed=True)
                 if draw.executed_at and timestamp < draw.executed_at + timedelta(
                     seconds=DRAW_MOVES * 2 + 2
                 ):
                     return SettlementResult(draw.id, (), 0, already_completed=True)
+        return None
+
+    async def settle(
+        self, draw_id: UUID, *, now: datetime | None = None
+    ) -> SettlementResult:
+        timestamp = now or datetime.now(UTC)
+        prepared = await self._prepare_outcome(draw_id, timestamp)
+        if prepared is not None:
+            return prepared
+        async with self._session.begin():
+            lottery = await self._session.scalar(
+                select(Lottery)
+                .join(Draw, Draw.lottery_id == Lottery.id)
+                .where(Draw.id == draw_id)
+                .with_for_update(of=Lottery)
+            )
+            draw = await self._session.scalar(
+                select(Draw)
+                .where(Draw.id == draw_id)
+                .with_for_update()
+                .execution_options(populate_existing=True)
+            )
+            if draw is None or lottery is None:
+                raise NoAvailableDraw("Draw does not exist.")
+            if draw.status == DrawStatus.COMPLETED:
+                return SettlementResult(
+                    draw.id,
+                    tuple(draw.winning_numbers or ()),
+                    draw.total_payout,
+                    already_completed=True,
+                )
+            if lottery.code == "dual":
+                from k_loto.application.dual import settle_dual_draw
+
+                return await settle_dual_draw(self._session, draw, lottery, timestamp)
             current_rules = _rules_for_lottery(lottery, expected=self.ruleset_code)
             snapshot_rules = str(
                 _snapshot_value(draw, "ruleset_code", current_rules.code)
@@ -833,11 +924,13 @@ class WeeklySettlementService:
                     )
                 ).all()
             )
-            winning = (
-                tuple(draw.winning_numbers or ())
-                if lottery.code == "bingo"
-                else rules.generate_combination(self._number_generator)
-            )
+            if draw.winning_numbers is None or draw.jackpot_opening is None:
+                raise ConfigurationError("Draw outcome has not been committed.")
+            if jackpot.balance < draw.jackpot_opening:
+                raise ConfigurationError(
+                    "Jackpot is below the committed draw obligation."
+                )
+            winning = tuple(draw.winning_numbers)
             plan = rules.calculate_settlement(
                 [
                     SettlementTicket(
@@ -851,11 +944,7 @@ class WeeklySettlementService:
                 ],
                 winning,
                 distribution_balance=0,
-                jackpot_balance=(
-                    draw.jackpot_opening
-                    if lottery.code == "bingo" and draw.jackpot_opening is not None
-                    else jackpot.balance
-                ),
+                jackpot_balance=draw.jackpot_opening,
                 reserve_balance=fund.balance,
                 base_jackpot=int(
                     _snapshot_value(draw, "base_jackpot", jackpot.base_amount)
@@ -883,11 +972,7 @@ class WeeklySettlementService:
                     ),
                     fund_balance=fund.balance,
                 )
-            retained_jackpot = (
-                max(jackpot.balance - plan.jackpot_opening, 0)
-                if lottery.code == "bingo"
-                else 0
-            )
+            retained_jackpot = jackpot.balance - plan.jackpot_opening
             if retained_jackpot:
                 plan = replace(
                     plan, jackpot_closing=plan.jackpot_closing + retained_jackpot
@@ -1039,8 +1124,6 @@ class WeeklySettlementService:
             ensure_draw_transition(DrawStatus.SETTLING, DrawStatus.COMPLETED)
             draw.status = DrawStatus.COMPLETED
             draw.winning_numbers = list(plan.winning_numbers)
-            if lottery.code != "bingo":
-                draw.executed_at = timestamp
             draw.total_payout = plan.total_payout
             draw.jackpot_opening = plan.jackpot_opening
             draw.jackpot_closing = plan.jackpot_closing
@@ -1067,6 +1150,8 @@ class WeeklySettlementService:
                     else 0,
                     timestamp,
                 )
+            if sum(entry.amount for entry in ledger_entries) != 0:
+                raise ConfigurationError("Draw ledger does not balance.")
             self._session.add_all(ledger_entries)
             fast_lottery = is_fast_lottery(lottery.code)
             preferences = {

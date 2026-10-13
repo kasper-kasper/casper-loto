@@ -50,13 +50,13 @@ def test_aurora_rejects_invalid_random_roll(roll: int) -> None:
 async def test_aurora_three_settles_and_replays_without_new_draw_or_money() -> None:
     user = UUID(int=111)
     balance = Balance(user_id=user, amount=10000, version=1)
-    fund = KasperFundAccount(id=KASPER_FUND_ID, balance=2000000, version=1)
+    fund = KasperFundAccount(id=KASPER_FUND_ID, balance=3000000, version=1)
     fake = FakeSession((None, fund, balance, None))
     result = await InstantTicketPurchaseService(
         cast(AsyncSession, fake), FixedGenerator(), game_code="aurora"
     ).purchase(user_id=user, quantity=3, idempotency_key="same")
     assert result.total_cost == 9000 and result.total_prize == 1002000
-    assert balance.amount == 1003000 and fund.balance == 998000
+    assert balance.amount == 1003000 and fund.balance == 1998000
     tickets = [t for t in fake.added if isinstance(t, InstantTicket)]
     assert all(
         t.odds_version == AURORA_RULES.version and t.purchase_price == 3000

@@ -56,13 +56,13 @@ def test_vault_rejects_invalid_random_roll(roll: int) -> None:
 async def test_vault_three_settles_and_replays_without_new_draw_or_money() -> None:
     user = UUID(int=111)
     balance = Balance(user_id=user, amount=20000, version=1)
-    fund = KasperFundAccount(id=KASPER_FUND_ID, balance=10000000, version=1)
+    fund = KasperFundAccount(id=KASPER_FUND_ID, balance=15000000, version=1)
     fake = FakeSession((None, fund, balance, None))
     result = await InstantTicketPurchaseService(
         cast(AsyncSession, fake), VaultGenerator(), game_code="vault"
     ).purchase(user_id=user, quantity=3, idempotency_key="same")
     assert result.total_cost == 15000 and result.total_prize == 6003000
-    assert balance.amount == 6008000 and fund.balance == 3997000
+    assert balance.amount == 6008000 and fund.balance == 8997000
     tickets = [t for t in fake.added if isinstance(t, InstantTicket)]
     assert all(
         t.odds_version == VAULT_RULES.version and t.purchase_price == 5000

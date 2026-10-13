@@ -28,7 +28,7 @@ from k_loto.domain.errors import (
     InsufficientReserve,
     InvalidStateTransition,
 )
-from k_loto.domain.lottery_rules import DUAL_RULES, NumberGenerator
+from k_loto.domain.lottery_rules import DUAL_RULES
 from k_loto.infrastructure.database.models import (
     Balance,
     Draw,
@@ -46,7 +46,6 @@ async def settle_dual_draw(
     draw: Draw,
     lottery: Lottery,
     timestamp: datetime,
-    generator: NumberGenerator,
 ) -> SettlementResult:
     """Settle a Dual draw under the common draw and lottery locks."""
     if draw.status == DrawStatus.COMPLETED:
@@ -60,7 +59,9 @@ async def settle_dual_draw(
     if snapshot.get("ruleset_code", lottery.ruleset_code) != DUAL_RULES.code:
         raise ConfigurationError("Casper Dual draw rules snapshot is invalid.")
     phase = dual_phase(draw.scheduled_at)
-    winning = tuple(generator.draw(12, 2))
+    if draw.winning_numbers is None:
+        raise ConfigurationError("Casper Dual outcome has not been committed.")
+    winning = tuple(draw.winning_numbers)
     tickets = list(
         (
             await session.scalars(

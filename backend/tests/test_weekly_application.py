@@ -371,7 +371,7 @@ async def test_empty_daily_draw_settlement_is_completed_idempotently() -> None:
         id=UUID(int=700), lottery_id=lottery.id, balance=1_000, version=1
     )
     fake = FakeSession(
-        scalar_values=[draw, lottery, jackpot, reserve],
+        scalar_values=[lottery, draw, None, jackpot, lottery, draw, jackpot, reserve],
         scalar_collections=[[], [], []],
     )
 
@@ -460,7 +460,7 @@ async def test_empty_draw_settlement_completes_and_uses_secure_generator() -> No
         id=UUID(int=700), lottery_id=lottery.id, balance=1_000, version=1
     )
     fake = FakeSession(
-        scalar_values=[draw, lottery, jackpot, reserve],
+        scalar_values=[lottery, draw, None, jackpot, lottery, draw, jackpot, reserve],
         scalar_collections=[[], [], []],
     )
     generator = FixedGenerator()
@@ -480,11 +480,11 @@ async def test_empty_draw_settlement_completes_and_uses_secure_generator() -> No
 
 async def test_completed_draw_settlement_is_idempotent() -> None:
     now = datetime(2026, 8, 14, 17, tzinfo=UTC)
-    _, _, draw, _, _, _ = build_purchase_accounts(now)
+    _, lottery, draw, _, _, _ = build_purchase_accounts(now)
     draw.status = DrawStatus.COMPLETED
     draw.winning_numbers = [1, 2, 3, 4, 5]
     draw.total_payout = 123
-    fake = FakeSession(scalar_values=[draw])
+    fake = FakeSession(scalar_values=[lottery, draw])
     generator = FixedGenerator()
     service = WeeklySettlementService(cast(AsyncSession, fake), generator)
 
@@ -522,7 +522,7 @@ async def test_ordinary_result_does_not_enqueue_telegram_notification() -> None:
         inactivity_reminders_enabled=True,
     )
     fake = FakeSession(
-        scalar_values=[draw, lottery, jackpot, reserve],
+        scalar_values=[lottery, draw, None, jackpot, lottery, draw, jackpot, reserve],
         scalar_collections=[[ticket], [balance], [preference]],
     )
 
@@ -609,7 +609,7 @@ async def test_fast_only_notifies_for_jackpot(
         inactivity_reminders_enabled=True,
     )
     fake = FakeSession(
-        scalar_values=[draw, lottery, jackpot, fund],
+        scalar_values=[lottery, draw, None, jackpot, lottery, draw, jackpot, fund],
         scalar_collections=[[ticket], [balance], [preference]],
     )
 
@@ -637,8 +637,8 @@ async def test_fast_only_notifies_for_jackpot(
 
 async def test_draw_cannot_be_settled_before_official_time() -> None:
     now = datetime(2026, 8, 14, 17, tzinfo=UTC)
-    _, _, draw, _, _, _ = build_purchase_accounts(now)
-    fake = FakeSession(scalar_values=[draw])
+    _, lottery, draw, _, _, _ = build_purchase_accounts(now)
+    fake = FakeSession(scalar_values=[lottery, draw])
     generator = FixedGenerator()
     service = WeeklySettlementService(cast(AsyncSession, fake), generator)
 
@@ -705,7 +705,7 @@ async def test_september_main_prize_is_refilled_from_reserve() -> None:
     )
     reserve = KasperFundAccount(id=UUID(int=907), balance=1_000_000_000, version=1)
     fake = FakeSession(
-        scalar_values=[draw, lottery, jackpot, reserve],
+        scalar_values=[lottery, draw, None, jackpot, lottery, draw, jackpot, reserve],
         scalar_collections=[[ticket], [balance], [], [user_id]],
     )
 

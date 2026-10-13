@@ -454,6 +454,17 @@ class AdminMutationService:
             )
             if jackpot is None:
                 raise LookupError("Lottery jackpot does not exist.")
+            committed = await self._session.scalar(
+                select(func.max(Draw.jackpot_opening)).where(
+                    Draw.lottery_id == lottery_id,
+                    Draw.winning_numbers.is_not(None),
+                    Draw.status != DrawStatus.COMPLETED,
+                )
+            )
+            if committed is not None and target_amount < committed:
+                raise ValueError(
+                    "Jackpot cannot be reduced below a committed draw obligation."
+                )
             before = jackpot.balance
             if before == target_amount:
                 return AdjustmentResult(before, False)

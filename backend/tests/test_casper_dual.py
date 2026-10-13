@@ -341,14 +341,16 @@ async def test_first_round_preserves_ticket_second_round_pays(
     lottery = SimpleNamespace(id=uuid4(), ruleset_code=DUAL_RULES.code)
     first = SimpleNamespace(
         id=uuid4(),
-        status=DrawStatus.SCHEDULED,
+        status=DrawStatus.DRAWING,
+        winning_numbers=[3, 10],
         scheduled_at=first_time,
         configuration_snapshot={"ruleset_code": DUAL_RULES.code},
         public_number=1,
     )
     second = SimpleNamespace(
         id=uuid4(),
-        status=DrawStatus.SCHEDULED,
+        status=DrawStatus.DRAWING,
+        winning_numbers=[3, 10],
         scheduled_at=second_time,
         configuration_snapshot={"ruleset_code": DUAL_RULES.code},
         public_number=2,
@@ -375,7 +377,6 @@ async def test_first_round_preserves_ticket_second_round_pays(
         first,
         lottery,
         first_time,
-        FixedGenerator(),
     )
     assert first_result.total_payout == 0
     assert first.status == DrawStatus.COMPLETED
@@ -390,7 +391,6 @@ async def test_first_round_preserves_ticket_second_round_pays(
         second,
         lottery,
         second_time,
-        FixedGenerator(),
     )
     assert second_result.total_payout == DUAL_JACKPOT
     assert ticket.status == TicketStatus.SETTLED

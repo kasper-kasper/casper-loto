@@ -10,6 +10,11 @@ from k_loto.domain.errors import InvalidTicket
 from k_loto.infrastructure.database.models import PurchaseCancellation
 
 
+def bingo_purchase_key(user_id: UUID, key: str) -> str:
+    """Keep the historical Bingo ledger namespace without losing the client key."""
+    return hashlib.sha256(f"bingo:{user_id}:{key}".encode()).hexdigest()
+
+
 async def lock_attempt(session: AsyncSession, key: str, game: str) -> None:
     digest = hashlib.sha256(f"purchase:{game}:{key}".encode()).digest()
     lock_id = int.from_bytes(digest[:8], "big", signed=True)

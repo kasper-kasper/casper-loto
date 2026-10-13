@@ -1,7 +1,6 @@
 """Authenticated Telegram Mini App API."""
 
 import asyncio
-import hashlib
 from collections.abc import AsyncIterator
 from dataclasses import asdict
 from datetime import datetime
@@ -1227,9 +1226,7 @@ async def bingo_purchase(
             pool_ticket_ids=payload.ticket_ids or None,
             pool_required_numbers=tuple(payload.required_numbers),
             select_bingo_pool=not payload.ticket_ids,
-            idempotency_key=hashlib.sha256(
-                f"bingo:{user.id}:{payload.idempotency_key}".encode()
-            ).hexdigest(),
+            idempotency_key=payload.idempotency_key,
         )
     except InsufficientBalance as error:
         raise HTTPException(status_code=402, detail=str(error)) from error

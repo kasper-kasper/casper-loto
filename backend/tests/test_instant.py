@@ -113,7 +113,7 @@ def test_prize_roll_rejects_values_outside_distribution(roll: int) -> None:
 async def test_three_ticket_purchase_burns_price_and_ledgers_prize() -> None:
     user_id = UUID("00000000-0000-0000-0000-000000000111")
     balance = Balance(user_id=user_id, amount=10_000, version=1)
-    fund = KasperFundAccount(id=KASPER_FUND_ID, balance=2_000_000, version=1)
+    fund = KasperFundAccount(id=KASPER_FUND_ID, balance=3_000_000, version=1)
     fake = FakeSession((None, fund, balance, None))
 
     result = await InstantTicketPurchaseService(
@@ -135,7 +135,7 @@ async def test_three_ticket_purchase_burns_price_and_ledgers_prize() -> None:
         (7, 7, 7),
     ]
     assert balance.amount == 1_005_000
-    assert fund.balance == 999_000
+    assert fund.balance == 1_999_000
 
     ledger = [item for item in fake.added if isinstance(item, LedgerTransaction)]
     assert len(ledger) == 3

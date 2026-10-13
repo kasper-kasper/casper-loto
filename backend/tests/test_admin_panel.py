@@ -367,7 +367,7 @@ async def test_current_jackpot_adjustment_is_ledgered_and_audited() -> None:
         base_amount=888_888,
         version=1,
     )
-    fake = FakeSession(scalar_values=[None, jackpot])
+    fake = FakeSession(scalar_values=[None, jackpot, None])
 
     result = await AdminMutationService(
         cast(AsyncSession, fake), UUID(int=20)
