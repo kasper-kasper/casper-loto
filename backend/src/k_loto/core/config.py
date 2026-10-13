@@ -50,6 +50,7 @@ class Settings(BaseSettings):
     admin_remember_max_age_seconds: int = Field(
         default=7_776_000, ge=86_400, le=31_536_000
     )
+    web_enabled: bool = True
     web_session_secret: SecretStr | None = None
     web_session_max_age_seconds: int = Field(default=604_800, ge=300, le=2_592_000)
 
@@ -83,7 +84,8 @@ class Settings(BaseSettings):
     def web_auth_available(self) -> bool:
         """Enable ordinary browser accounts only with an independent strong secret."""
         return (
-            self.web_session_secret is not None
+            self.web_enabled
+            and self.web_session_secret is not None
             and len(self.web_session_secret.get_secret_value()) >= 32
         )
 

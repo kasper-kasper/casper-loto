@@ -54,6 +54,10 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
     app.include_router(api_router)
+    if settings.web_enabled:
+        from k_loto.api.routes.web import router as web_router
+
+        app.include_router(web_router)
     app.add_middleware(RequestMetricsMiddleware)
     return app
 

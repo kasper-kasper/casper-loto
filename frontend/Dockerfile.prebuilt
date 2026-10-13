@@ -7,4 +7,3 @@ COPY infrastructure/Caddyfile /etc/caddy/Caddyfile
 COPY infrastructure/legal-miniapp.caddy /etc/caddy/extensions/legal-miniapp.caddy
 COPY frontend/admin/dist /srv/admin
 COPY frontend/miniapp/dist /srv/miniapp
-COPY frontend/web/dist /srv/web

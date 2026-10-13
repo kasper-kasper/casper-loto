@@ -5,3 +5,6 @@
 *.jpeg binary
 *.gif binary
 *.ico binary
+
+# Browser-only client is retained locally and excluded from VPS release archives.
+frontend/web export-ignore

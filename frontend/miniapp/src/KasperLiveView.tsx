@@ -74,6 +74,7 @@ export function KasperLiveView({ initData, balance, onClose, onSettled }: { init
   const [error, setError] = useState("");
   const [retryQuantity, setRetryQuantity] = useState<1 | 3 | null>(null);
   const pending = useRef<{ key: string; quantity: 1 | 3 } | null>(null);
+  const historyRequest = useRef(0);
   useEffect(() => {
     const resolved = (event: Event) => {
       const detail = (event as CustomEvent<PurchaseResolution>).detail;
@@ -90,7 +91,6 @@ export function KasperLiveView({ initData, balance, onClose, onSettled }: { init
   }, []);
   const buying = useRef(false);
   const root = useRef<HTMLElement>(null);
-  const historyRequest = useRef(0);
   useEffect(() => disableTelegramVerticalSwipes(), []);
   useEffect(() => {
     const version = ++historyRequest.current;

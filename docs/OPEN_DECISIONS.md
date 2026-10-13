@@ -93,3 +93,8 @@ Owner requires paid distribution to end the jackpot drought cycle, just as a gen
 Every new completed distribution draw creates a separate durable automatic text result in its settlement transaction: jackpot paid, winning tickets (not unique players), exact payout groups, total payouts and closing jackpot. Preserve existing schedule announcements. Results bypass general editorial approval/gaps and remain queued during definite delivery delays; ambiguous failures retain the existing nonduplicate uncertainty policy. Recover missing results only for fresh completed draws from the last 24 hours when upgrading, avoiding unsolicited old retrospective posts.
 
 Unanswered editorial suggestions expire at 24 hours from creation or source event, whichever is earlier; editing cannot prolong them. Remove before pagination and archive with audit/tombstones, preserving published history and authorized delivery. Refresh the open suggestion list automatically, without overwriting editor work; refuse publication/edit of expired proposals on the server.
+
+
+## OD-052 — Browser client retired in production — Resolved 2026-10-14
+
+The owner explicitly requested stage 1 of the financial audit remediation and authorized removing the separate browser version from the server. Keep `frontend/web` in the local Git repository for reference and local development; exclude it from release archives and gateway builds, remove its production checkout and disable `/api/v1/web` (including registration and login). `/web` returns 410. Telegram Mini App, Admin, existing users, purchased tickets, draws and ledger history remain available and unchanged. Retained rollback images follow the existing retention policy.

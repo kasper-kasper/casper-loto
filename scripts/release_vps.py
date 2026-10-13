@@ -25,7 +25,6 @@ ALL_SERVICES = ("api", "bot", "gateway")
 FRONTENDS = (
     ROOT / "frontend" / "miniapp",
     ROOT / "frontend" / "admin",
-    ROOT / "frontend" / "web",
 )
 
 
@@ -145,6 +144,34 @@ def run_remote(
     return text_output
 
 
+def verify_candidate_finances(client: paramiko.SSHClient, compose: str) -> None:
+    """Exercise the freshly built runtime without touching production business rows."""
+    database = f"k_loto_audit_stage1_{uuid4().hex[:12]}"
+    command = (
+        "set -eu; cd /opt/k-loto; "
+        f"{compose} exec -T db sh -c '"
+        f'createdb -U "$POSTGRES_USER" {database}\'; '
+        "cleanup() { "
+        f"{compose} exec -T db sh -c '"
+        f'dropdb -U "$POSTGRES_USER" {database}\'; '
+        "}; trap cleanup EXIT; "
+        f"{compose} exec -T db sh -c '"
+        '(pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --schema-only; '
+        'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" '
+        "--data-only --table=alembic_version) | "
+        f'psql -U "$POSTGRES_USER" -d {database} '
+        "-v ON_ERROR_STOP=1 >/dev/null'; "
+        f"{compose} run --rm --no-deps -e APP_ENV=test "
+        "-e SCHEDULER_ENABLED=false api sh -c '"
+        f'export DATABASE_URL="${{DATABASE_URL%/*}}/{database}"; '
+        "alembic upgrade head >/dev/null && alembic check && "
+        "python -m scripts.financial_recovery_postgres_smoke'"
+    )
+    run_remote(
+        client, "Candidate financial database verification", command, timeout=600
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -174,7 +201,9 @@ def main() -> None:
         build_frontends()
 
     remote_archive = f"/tmp/k-loto-release-{uuid4().hex}.tar.gz"
-    with tempfile.TemporaryDirectory(prefix="k-loto-release-") as directory:
+    with tempfile.TemporaryDirectory(
+        prefix="k-loto-release-", dir=ROOT / ".tools"
+    ) as directory:
         archive = Path(directory) / "release.tar.gz"
         create_release_archive(archive, include_frontends=includes_gateway)
         client = paramiko.SSHClient()
@@ -229,6 +258,8 @@ def main() -> None:
                         + " ".join(backend_services),
                         timeout=1_800,
                     )
+                    if "api" in backend_services:
+                        verify_candidate_finances(client, compose)
                 if includes_gateway:
                     run_remote(
                         client,
@@ -236,6 +267,19 @@ def main() -> None:
                         "cd /opt/k-loto && docker build --quiet "
                         "-f frontend/Dockerfile.prebuilt -t k-loto-gateway:latest .",
                         timeout=300,
+                    )
+                    run_remote(
+                        client,
+                        "Validate gateway configuration",
+                        f"cd /opt/k-loto && {compose} run --rm --no-deps gateway "
+                        "caddy validate --config /etc/caddy/Caddyfile",
+                        timeout=60,
+                    )
+                    run_remote(
+                        client,
+                        "Remove retired browser client from production checkout",
+                        "rm -rf -- /opt/k-loto/frontend/web",
+                        timeout=60,
                     )
                 if backend_services:
                     run_remote(
@@ -283,6 +327,14 @@ def main() -> None:
                     f"{compose} ps",
                     timeout=120,
                 )
+                if includes_gateway:
+                    run_remote(
+                        client,
+                        "Public HTTPS and retired web verification",
+                        "cd /opt/k-loto && "
+                        "python3 scripts/verify_production_release.py",
+                        timeout=300,
+                    )
                 if "api" in services:
                     run_remote(
                         client,

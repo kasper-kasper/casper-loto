@@ -1,6 +1,10 @@
 # Casper Loto
 
-Current release: **1.46.1**.
+Current release: **API 1.56.1 / Mini App 1.66.2 / Admin 1.60.0**.
+
+The standalone browser client is retired in production (`/web`: HTTP 410;
+`/api/v1/web`: HTTP 404). Its source remains in `frontend/web` for local use.
+Production serves the Telegram Mini App and the separate Admin interface.
 
 Casper Loto is a multi-user lottery platform with integer CAS accounting, an
 immutable transaction ledger, recoverable draw scheduling, ten independent
