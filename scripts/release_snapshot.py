@@ -140,7 +140,7 @@ def backup(root: Path, expected: dict[str, str]) -> Path:
     if previous_path.is_symlink():
         raise RuntimeError("Invalid release record")
     previous = json.loads(previous_path.read_text()) if previous_path.exists() else {}
-    with tarfile.open(temporary, "w:gz") as package:
+    with tarfile.open(temporary, "w:gz", compresslevel=1) as package:
         for relative in sorted(set(previous) | set(expected)):
             source = managed_path(root, relative)
             if source.is_file():
