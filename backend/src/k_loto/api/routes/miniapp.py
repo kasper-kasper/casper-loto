@@ -802,7 +802,7 @@ async def save_favorite(
         )
     except LookupError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
-    except ValueError as error:
+    except (ValueError, InvalidTicket) as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     return FavoriteResponse(id=item.id, numbers=list(item.numbers))
 

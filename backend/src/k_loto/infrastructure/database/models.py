@@ -23,6 +23,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.schema import conv
 
 from k_loto.domain.enums import (
     AuditAction,
@@ -38,6 +39,9 @@ from k_loto.domain.enums import (
     TransactionType,
 )
 from k_loto.infrastructure.database.base import Base
+
+# Explicit conv names retain historical PostgreSQL identifiers (including its
+# 63-byte truncation), so schema comparison never proposes rebuilding valid checks.
 
 
 def enum_type(enum: type[Any], name: str) -> Enum:
@@ -283,7 +287,7 @@ class DistributionAnnouncement(Base):
         Index("ix_distribution_announcement_delivery", "state", "retry_after"),
         CheckConstraint(
             "state IN ('queued','sending','sent','uncertain','failed','expired')",
-            name="ck_distribution_announcement_state",
+            name=conv("ck_distribution_announcements_ck_distribution_announcem_3860"),
         ),
     )
     id: Mapped[UUID] = mapped_column(
@@ -324,15 +328,15 @@ class Ticket(Base):
         Index("ix_ticket_second_draw", "second_draw_id"),
         CheckConstraint(
             "second_draw_id IS NULL OR second_draw_id <> draw_id",
-            name="distinct_dual_draws",
+            name=conv("ck_tickets_ck_tickets_distinct_dual_draws"),
         ),
         CheckConstraint(
             "dual_night_matches IS NULL OR dual_night_matches BETWEEN 0 AND 2",
-            name="dual_night_matches",
+            name=conv("ck_tickets_ck_tickets_dual_night_matches"),
         ),
         CheckConstraint(
             "dual_dawn_matches IS NULL OR dual_dawn_matches BETWEEN 0 AND 2",
-            name="dual_dawn_matches",
+            name=conv("ck_tickets_ck_tickets_dual_dawn_matches"),
         ),
         Index("ix_ticket_status_settled_lottery", "status", "settled_at", "lottery_id"),
     )
@@ -416,7 +420,10 @@ class BingoPoolTicket(Base):
     __tablename__ = "bingo_pool_tickets"
     __table_args__ = (
         UniqueConstraint("draw_id", "pool_position", name="uq_bingo_pool_position"),
-        CheckConstraint("pool_position >= 1", name="bingo_pool_position_positive"),
+        CheckConstraint(
+            "pool_position >= 1",
+            name=conv("ck_bingo_pool_tickets_ck_bingo_pool_tickets_bingo_pool__0f39"),
+        ),
         CheckConstraint("cardinality(numbers) = 12", name="bingo_twelve_numbers"),
         Index("ix_bingo_pool_free", "draw_id", "ticket_id"),
     )

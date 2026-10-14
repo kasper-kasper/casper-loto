@@ -55,7 +55,7 @@ async def main():
         scheduler_enabled=False,
         admin_username="synthetic-owner",
         admin_secret="s" * 48,
-        admin_password_hash=password_hash("synthetic-test-password"),
+        admin_password_hash=password_hash.hash("synthetic-test-password"),
         miniapp_purchase_requests_per_minute=120,
     )
     now = datetime.now(UTC)

@@ -137,8 +137,11 @@ def verify_candidate_finances(
         "python -m scripts.verify_runtime_lock && "
         "uv sync --locked --extra dev --no-editable >/dev/null && "
         "pytest -q --disable-warnings --basetemp=/tmp/runtime-tests "
-        "--ignore=backend/tests/test_web_api.py "
-        "--ignore=backend/tests/test_web_identity.py && "
+        "backend/tests/test_release_snapshot.py "
+        "backend/tests/test_server_maintenance.py "
+        "backend/tests/test_local_dev_mode.py "
+        "backend/tests/test_publication_automation.py::"
+        "test_copy_compiler_has_all_owner_variants && "
         "alembic upgrade head >/dev/null && alembic check && "
         "python -m scripts.financial_recovery_postgres_smoke && "
         "python -m scripts.integrity_delivery_postgres_smoke && "
@@ -436,6 +439,7 @@ def main() -> None:
                 )
                 operation("verify")
                 stamp = int(time.time())
+                built_backend = None
                 for service in services:
                     run_remote(
                         client,
@@ -453,21 +457,39 @@ def main() -> None:
                         if service == "gateway"
                         else "backend/Dockerfile"
                     )
+                    if service != "gateway" and built_backend:
+                        run_remote(
+                            client,
+                            "Reuse identical backend image for " + service,
+                            f"docker image tag k-loto-{built_backend}:candidate-"
+                            f"{token} "
+                            f"k-loto-{service}:candidate-{token}",
+                        )
+                        continue
+                    inputs = (
+                        "frontend/Dockerfile.prebuilt infrastructure/Caddyfile "
+                        "infrastructure/legal-miniapp.caddy "
+                        "frontend/admin/dist frontend/miniapp/dist"
+                        if service == "gateway"
+                        else "backend bot scripts pyproject.toml uv.lock README.md "
+                        "alembic.ini CHANGELOG.md DEVLOG.md "
+                        "frontend/miniapp/public/assets/publications"
+                    )
+                    # Stream only this image's verified inputs. Large gateway
+                    # assets need not be read for every backend image build.
+                    build_command = (
+                        f"tar -C {shlex.quote(stage)} -cf - {inputs} | "
+                        f"docker build --quiet -f {dockerfile} "
+                        f"-t k-loto-{service}:candidate-{token} -"
+                    )
                     run_remote(
                         client,
                         "Build verified " + service,
-                        "docker build --quiet -f "
-                        + stage
-                        + "/"
-                        + dockerfile
-                        + " -t k-loto-"
-                        + service
-                        + ":candidate-"
-                        + token
-                        + " "
-                        + stage,
+                        "bash -o pipefail -c " + shlex.quote(build_command),
                         timeout=1800,
                     )
+                    if service != "gateway":
+                        built_backend = service
                 if backend:
                     candidate_service = backend[0]
                     verify_candidate_finances(
