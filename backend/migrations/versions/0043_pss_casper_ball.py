@@ -245,9 +245,7 @@ def upgrade() -> None:
     )
 
     admin_user_id = connection.execute(
-        sa.text(
-            "SELECT id FROM users WHERE is_admin=true ORDER BY created_at LIMIT 1"
-        )
+        sa.text("SELECT id FROM users WHERE is_admin=true ORDER BY created_at LIMIT 1")
     ).scalar_one_or_none()
     if admin_user_id is not None:
         connection.execute(

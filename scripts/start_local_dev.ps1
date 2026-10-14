@@ -34,7 +34,7 @@ $env:Path = (Split-Path -Parent $npm) + ";" + $env:Path
 New-Item -ItemType Directory -Path $toolLogs -Force | Out-Null
 Push-Location $repositoryRoot
 try {
-    & $alembic upgrade head
+    & $python -m scripts.migrate_database
     if ($LASTEXITCODE -ne 0) { throw "Alembic migration failed." }
 
     $api = Start-Process -FilePath $python `

@@ -485,10 +485,7 @@ async def deliver_distribution(
         if row is None:
             return "empty"
         draw = await session.get(Draw, row.draw_id)
-        if (
-            draw is None
-            or (row.kind != "result" and draw.scheduled_at <= now)
-        ):
+        if draw is None or (row.kind != "result" and draw.scheduled_at <= now):
             row.state = "expired"
             return "expired"
         row.state = "sending"

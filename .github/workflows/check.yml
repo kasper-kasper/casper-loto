@@ -1,0 +1,73 @@
+name: Published runtime checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: audit
+          POSTGRES_PASSWORD: synthetic-ci-only
+          POSTGRES_DB: k_loto_bootstrap_smoke_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U audit"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      APP_ENV: test
+      SCHEDULER_ENABLED: "false"
+      WEB_ENABLED: "false"
+      DATABASE_URL: postgresql+asyncpg://audit:synthetic-ci-only@localhost:5432/k_loto_bootstrap_smoke_ci
+      PGHOST: localhost
+      PGUSER: audit
+      PGPASSWORD: synthetic-ci-only
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22.23.2"
+          package-manager-cache: false
+      - name: Locked Python tools
+        run: |
+          python -m pip install uv==0.12.5
+          uv sync --locked --extra dev
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+      - name: Static checks and backend regressions
+        run: |
+          ruff check backend bot scripts
+          ruff format --check backend bot scripts
+          mypy backend/src
+          pytest --disable-warnings --ignore=backend/tests/test_web_api.py --ignore=backend/tests/test_web_identity.py
+          python -m scripts.verify_runtime_lock --allow-dev
+      - name: Empty database and interrupted concurrent index
+        run: |
+          python -m scripts.migrate_database --target 0051_distribution_results
+          python -m scripts.bootstrap_index_smoke
+          python -m scripts.migrate_database
+          alembic check
+      - name: Real Mini App HTTP and financial PostgreSQL scenarios
+        run: |
+          createdb k_loto_audit_stage1_ci
+          { pg_dump -d k_loto_bootstrap_smoke_ci --schema-only; pg_dump -d k_loto_bootstrap_smoke_ci --data-only --table=alembic_version; } | psql -d k_loto_audit_stage1_ci -v ON_ERROR_STOP=1 >/dev/null
+          export DATABASE_URL=postgresql+asyncpg://audit:synthetic-ci-only@localhost:5432/k_loto_audit_stage1_ci
+          python -m scripts.financial_recovery_postgres_smoke
+          python -m scripts.integrity_delivery_postgres_smoke
+          python -m scripts.miniapp_integration_smoke
+      - name: Clean Mini App and Admin checks and builds
+        run: python -m scripts.build_frontends --check

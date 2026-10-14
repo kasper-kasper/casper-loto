@@ -5,17 +5,17 @@ Telegram Mini App and Web Admin with Docker Compose in `/opt/k-loto`. The existi
 sslip.io HTTPS endpoint and VPS are sufficient; no extra host or domain is
 required. Port 9443 is used because the VPS VPN owns the standard TLS ports.
 
-Перед каждым выпуском сценарий создаёт PostgreSQL backup. Web-интерфейсы
+Перед каждым выпуском сценарий создаёт PostgreSQL backup. Mini App и Admin
 компилируются локально и отправляются на VPS уже готовыми: малый сервер больше не
 запускает одновременно TypeScript/Vite и не упирается в память. Backend при
 необходимости по-прежнему собирается на VPS. На сервере настроен swap 2 ГБ как
 страховка от редких пиков; в обычной работе он не используется.
 
-После успешной проверки здоровья релиз ограничивает неиспользуемый Docker build
-cache до 2 ГБ и удаляет только неиспользуемые образы K-Loto старше 48 часов.
-Работающие контейнеры и Docker volumes (включая PostgreSQL и backups) не
-затрагиваются. Свежие образы остаются для быстрого отката. Это не заменяет
-отдельную политику хранения резервных копий.
+Хранение архивов, дампов, диагностических логов и образов обслуживает только
+`scripts/server_maintenance.py` по [SERVER_STORAGE.md](SERVER_STORAGE.md).
+Выпуск не делает широкую очистку Docker или volumes. Его временные файлы удаляются
+по проверенным собственным путям. Перед заменой сохраняются источники/ресурсы,
+дамп и образы отката; логи API/bot архивируются до пересоздания сервисов.
 
 Обычный выпуск выполняется из чистого commit одной командой:
 
@@ -26,9 +26,21 @@ cache до 2 ГБ и удаляет только неиспользуемые о
 Для выпуска только изменённых сервисов можно указать, например,
 `--services api bot` или `--services gateway`. Сценарий не печатает пароли,
 показывает каждый этап, ограничивает время зависшей операции и сам создаёт backup
-до замены файлов. Для `gateway` он собирает Mini App и Admin на локальном
+до замены файлов. Все этапы удерживают `/run/lock/k-loto-operations.lock`.
+Для `gateway` он собирает Mini App и Admin на локальном
 компьютере, а на VPS формирует только лёгкий Caddy-образ. План без подключения
 проверяется ключом `--dry-run`.
+
+Сборки клиентов выполняются в чистых каталогах с `npm ci`. После полной проверки
+`python -m scripts.build_frontends --check` разрешён `--reuse-built`: исходники и
+выходные файлы должны совпадать с манифестом. Backend использует `uv sync --locked`
+и проверяет установленные пакеты. Web не собирается и не загружается.
+
+На VPS сначала проверяются точный каталог кандидата, финансовые/HTTP сценарии
+на синтетической БД и миграции пустого PostgreSQL. Рабочие образы переключаются
+после этих проверок. Миграции выполняются новым образом выбранного сервиса.
+Если ошибка оставила другую схему, старые workers автоматически не запускаются.
+См. [подробности этапа 5](AUDIT_STEP5.md).
 
 Обычное визуальное обновление публикуется так:
 
@@ -56,7 +68,7 @@ Production must define `MINIAPP_URL`, bot token, database credentials and Admin
 credentials and `OWNER_TELEGRAM_ID` in ignored `/opt/k-loto/.env.production`.
 Caddy serves the Mini App
 on `WEB_HOST` and Admin on `ADMIN_HOST`; `/api/*` proxies to FastAPI. PostgreSQL
-is not published externally. Daily backups have 14-day retention.
+is not published externally. Backup retention is defined in `SERVER_STORAGE.md`.
 
 After deployment verify container health, Alembic head, `/health`, both HTTPS
 hosts, bot polling without conflicts, active lottery rows and jackpot balances.

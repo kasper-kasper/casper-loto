@@ -1793,3 +1793,9 @@ All notable changes follow Keep a Changelog and Semantic Versioning principles.
 ## 1.50.4 — 2026-10-06
 
 - Telegram channel posts end with a clickable «Открыть Casper Loto →» link to https://t.me/Kasper_loto_bot/app. Existing links are not duplicated; photo caption limits include the visible link text.
+## [API 1.56.3 / Mini App 1.66.4] - 2026-10-14
+
+- История билетов загружает следующие страницы по курсору; уже показанные билеты остаются видимыми во время загрузки. Запоздалый ответ прежнего фильтра не подмешивается в новый список.
+- Любимые числа профиля считаются в базе без загрузки всех комбинаций игрока в память сервера.
+- Ошибочная комбинация избранного возвращает понятную ошибку ввода вместо серверного сбоя.
+

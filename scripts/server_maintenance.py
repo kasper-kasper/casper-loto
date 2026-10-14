@@ -33,7 +33,7 @@ ARCHIVES = {
     "branding": re.compile(r"before-branding-\d+\.\d+\.\d+-\d+\.tar\.gz"),
     "maintenance": re.compile(r"maintenance-before-\d+\.tar\.gz"),
     "release": re.compile(
-        r"(?:halloween|grand|aurora|vault|distribution(?:-followup)?|performance)-before-\d+\.tar\.gz"
+        r"(?:halloween|grand|aurora|vault|distribution(?:-followup)?|performance|release)-before-\d+\.tar\.gz"
     ),
     "audit": re.compile(
         r"(?:grand|aurora|vault|performance)-audit-before-\d+\.tar\.gz"

@@ -10,3 +10,8 @@ it("requests operational monitoring at the real admin endpoint with credentials"
   expect(fetchMock).toHaveBeenCalledOnce();
   expect(fetchMock).toHaveBeenCalledWith("/api/v1/admin/monitoring", expect.objectContaining({ credentials: "include" }));
 });
+
+it("applies approved aliases inside Admin without importing another client", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify([{ code: "weekly", name: "Kasper Grand" }]), { status: 200 })));
+  expect(await adminApi.lotteries()).toEqual([{ code: "weekly", name: "Casper Grand" }]);
+});

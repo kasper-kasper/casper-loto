@@ -1,8 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { brandViewData, displayBrandName } from "../../shared/brandNames";
 import { miniAppApi } from "./api";
-import { webApi } from "../../web/src/api";
-import { adminApi } from "../../admin/src/api";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -30,9 +28,9 @@ it("formats notification display text but preserves the stored payload source", 
   expect(notification.payload.lottery_name).toBe("Kasper Bingo");
 });
 
-it("applies the same aliases to Mini App, Web and Admin responses", async () => {
+it("applies approved aliases to Mini App responses", async () => {
   vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ lotteries: [{ code: "weekly", name: "Kasper Grand" }], lottery_name: "Kasper Bingo", display_name: "Kasper" }), { status: 200 })));
-  const results = await Promise.all([miniAppApi.dashboard("signed"), webApi.dashboard(), adminApi.lotteries()]);
+  const results = [await miniAppApi.dashboard("signed")];
   for (const result of results) {
     expect(result).toEqual({ lotteries: [{ code: "weekly", name: "Casper Grand" }], lottery_name: "Casper Bingo", display_name: "Kasper" });
   }

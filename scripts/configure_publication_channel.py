@@ -53,8 +53,7 @@ asyncio.run(main())""".replace("CHANNEL", repr(args.channel))
                 client,
                 "Read-only Telegram channel permission check",
                 "cd /opt/k-loto && docker compose --env-file .env.production "
-                "-f docker-compose.prod.yml exec -T api python -c "
-                + shlex.quote(code),
+                "-f docker-compose.prod.yml exec -T api python -c " + shlex.quote(code),
                 timeout=40,
             )
             result = json.loads(output.strip().splitlines()[-1])

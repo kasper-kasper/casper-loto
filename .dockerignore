@@ -13,8 +13,9 @@
 !frontend/admin/dist/**
 !frontend/miniapp/dist
 !frontend/miniapp/dist/**
-!frontend/web/dist
-!frontend/web/dist/**
+frontend/web
+.tmp
+design
 .env
 .env.*
 !.env.example
