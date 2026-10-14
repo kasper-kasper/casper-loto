@@ -79,6 +79,17 @@ it("restores an authenticated session and renders Russian system truth", async (
   expect(screen.getByText("v0.8.0 · работает 2 мин.")).toBeInTheDocument();
 });
 
+it("shows uncertain notification deliveries as requiring attention", async () => {
+  vi.mocked(adminApi.dashboard).mockResolvedValue({ ...dashboard, operations: { ...dashboard.operations, notifications: { UNCERTAIN: 2 } } });
+  render(<App />);
+  await screen.findByText("Всего сорвано джекпотов");
+  fireEvent.click(screen.getByRole("button", { name: /^12Журналы$/ }));
+  fireEvent.click(screen.getByRole("tab", { name: "Состояние" }));
+  const delivery = await screen.findByText("0 ожидают · 2 требуют проверки");
+  expect(delivery.closest("article")).toHaveClass("health-warning");
+  expect(screen.getByText("Вкладка «Уведомления» содержит детали")).toBeInTheDocument();
+});
+
 it("distinguishes one draw jackpot from the all-time lottery total", async () => {
   vi.mocked(adminApi.dashboard).mockResolvedValueOnce({
     ...dashboard,
