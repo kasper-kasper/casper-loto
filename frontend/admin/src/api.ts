@@ -117,7 +117,7 @@ export interface DistributionDraw {
 }
 
 export const adminApi = {
-  monitoring: () => request<MonitoringSnapshot>("/api/v1/admin/monitoring"),
+  monitoring: () => request<MonitoringSnapshot>("/monitoring"),
   distributionDraws: (lotteryId: string, day: string) => request<DistributionDraw[]>(`/distribution-draws?lottery_id=${encodeURIComponent(lotteryId)}&day=${encodeURIComponent(day)}`),
   assignDistribution: (draw: DistributionDraw) => request<DistributionDraw>(`/distribution-draws/${draw.id}`, { method: "POST", body: JSON.stringify({ lottery_id: draw.lottery_id, scheduled_at: draw.scheduled_at }) }),
   publicationTemplates: () => request<PublicationTemplate[]>("/publications/templates"),

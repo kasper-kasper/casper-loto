@@ -1,6 +1,6 @@
 # Casper Loto
 
-Current release: **API 1.56.1 / Mini App 1.66.2 / Admin 1.60.0**.
+Current release: **API 1.56.1 / Mini App 1.66.3 / Admin 1.60.1**.
 
 The standalone browser client is retired in production (`/web`: HTTP 410;
 `/api/v1/web`: HTTP 404). Its source remains in `frontend/web` for local use.
