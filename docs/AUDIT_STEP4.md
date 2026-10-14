@@ -13,6 +13,7 @@
 | Queued delivery ignored current consent/inactive profile | Recheck at claim immediately before formatting/send | Revoked-consent fixture sends nothing |
 | Instant buyer received inactivity invitation | Both draw and instant purchases define latest activity | Actual PostgreSQL engagement check |
 | Archived uncertain publication blocked all posts | Only active drafts block; archive cancels with audit | Actual JSONB queue resumes after audited archive, with fake transport |
+| Late Telegram acknowledgement could undo an archive | Keep archive/cancellation, retain receipt and account for the confirmed automatic-send interval | Actual archive-during-send PostgreSQL regression |
 | Crashed channel delivery stuck forever; malformed artwork blocked next item | Stale sending becomes uncertain; pre-network failure becomes failed | Focused tests and real interrupted-claim smoke |
 | One failed lottery stopped every recovery | Isolate its later draws until next retry, continue other lotteries | Failed first draw stays pending; other lottery completes |
 | Initial recovery/bootstrap schedule failure prevented API startup | Keep diagnostics/API available and install retry jobs | Startup and bootstrap regressions |

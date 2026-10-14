@@ -1460,8 +1460,11 @@ async def deliver_one(
             )
     except TelegramRetryAfter as error:
         async with factory() as session, session.begin():
+            await PublicationEventService(session)._lock()
             row = await session.get(Publication, identifier, with_for_update=True)
             assert row is not None
+            if row.status != "draft":
+                return "archived"
             content = deepcopy(row.content)
             content["delivery"].update(
                 state="queued",
@@ -1473,8 +1476,11 @@ async def deliver_one(
         return "throttled"
     except Exception as error:
         async with factory() as session, session.begin():
+            await PublicationEventService(session)._lock()
             row = await session.get(Publication, identifier, with_for_update=True)
             assert row is not None
+            if row.status != "draft":
+                return "archived"
             content = deepcopy(row.content)
             content["delivery"].update(
                 state="uncertain", error_type=type(error).__name__
@@ -1482,27 +1488,35 @@ async def deliver_one(
             row.content = content
         return "uncertain"
     async with factory() as session, session.begin():
+        await PublicationEventService(session)._lock()
         row = await session.get(Publication, identifier, with_for_update=True)
         assert row is not None
         content = deepcopy(row.content)
         content["delivery"].update(
-            state="sent",
             message_id=message.message_id,
             channel_id=message.chat.id,
             sent_at=datetime.now(UTC).isoformat(),
         )
+        if not content["delivery"].get("historical") and not content["delivery"].get(
+            "manual"
+        ):
+            state = await PublicationEventService(session)._state(
+                "publication.transport"
+            )
+            state.value = {
+                **state.value,
+                "last_automatic_sent_at": content["delivery"]["sent_at"],
+            }
+        if row.status != "draft":
+            # A slow acknowledgement must not undo an operator's archive.
+            # Keep the receipt so the actual Telegram post can be inspected.
+            row.content = content
+            return "archived"
+        content["delivery"]["state"] = "sent"
         row.content = content
         row.status = "published"
         row.published_at = datetime.now(UTC)
         row.revision += 1
-        state = await PublicationEventService(session)._state("publication.transport")
-        if not content["delivery"].get("historical") and not content["delivery"].get(
-            "manual"
-        ):
-            state.value = {
-                **state.value,
-                "last_automatic_sent_at": row.published_at.isoformat(),
-            }
     return "sent"
 
 

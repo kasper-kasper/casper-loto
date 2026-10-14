@@ -409,6 +409,60 @@ async def main():
             assert transport.calls == 1
             assert await deliver_one(session_factory, transport, now=now) == "sent"
             assert transport.calls == 2
+        late_id = uuid4()
+        async with session_factory() as session, session.begin():
+            session.add(
+                Publication(
+                    id=late_id,
+                    author_id=user.id,
+                    lottery_code="weekly",
+                    status="draft",
+                    event_type="A1.1",
+                    event_key=str(late_id),
+                    revision=1,
+                    content={
+                        "event": {"occurred_at": now.isoformat(), "payload": {}},
+                        "delivery": {"state": "queued"},
+                        "channel_caption": "Late receipt smoke",
+                        "fields": {},
+                    },
+                )
+            )
+
+        class LateTransport:
+            async def send_photo(self, *args, **kwargs):
+                # Simulate acknowledgement/DB finalization taking longer than the
+                # interruption window, while the owner explicitly archives it.
+                async with session_factory() as session, session.begin():
+                    row = await session.get(Publication, late_id, with_for_update=True)
+                    content = deepcopy(row.content)
+                    content["delivery"]["attempted_at"] = (
+                        now - timedelta(minutes=6)
+                    ).isoformat()
+                    row.content = content
+                async with session_factory() as session:
+                    await PublicationService(session).change(
+                        late_id, author=user.id, revision=1, action="archive"
+                    )
+                return SimpleNamespace(message_id=88, chat=SimpleNamespace(id=-88))
+
+        assert (
+            await deliver_one(session_factory, LateTransport(), now=now) == "archived"
+        )
+        async with session_factory() as session:
+            row = await session.get(Publication, late_id)
+            assert (
+                row.status == "archived"
+                and row.content["delivery"]["state"] == "cancelled"
+            )
+            assert row.content["delivery"]["message_id"] == 88
+            state = await PublicationEventService(session)._state(
+                "publication.transport"
+            )
+            assert (
+                state.value["last_automatic_sent_at"]
+                == row.content["delivery"]["sent_at"]
+            )
     print(
         "publication interrupted claim, audited archive, "
         "archived rows do not block queue: PASS"
