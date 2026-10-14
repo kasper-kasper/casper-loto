@@ -36,6 +36,7 @@ def managed_path(root: Path, relative: str) -> Path:
         raise RuntimeError("Web is not a release target")
     if any(part.startswith(".env") for part in parts) and relative not in (
         ".env.example",
+        "frontend/miniapp/.env.example",
         "frontend/miniapp/.env.browser",
         "frontend/miniapp/.env.telegram",
     ):

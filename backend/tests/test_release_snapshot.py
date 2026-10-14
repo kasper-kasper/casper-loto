@@ -69,6 +69,14 @@ def test_source_backup_preserves_owned_files_without_runtime_or_secrets(tmp_path
         assert package.extractfile("app.py").read() == b"old-source"
 
 
+def test_snapshot_accepts_only_known_public_environment_templates(tmp_path):
+    assert managed_path(tmp_path, "frontend/miniapp/.env.example") == (
+        tmp_path / "frontend/miniapp/.env.example"
+    )
+    with pytest.raises(RuntimeError, match="Secrets"):
+        managed_path(tmp_path, "frontend/miniapp/.env.production")
+
+
 @pytest.mark.parametrize(
     "relative",
     [
