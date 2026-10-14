@@ -6,6 +6,11 @@ from datetime import UTC, datetime
 
 import structlog
 from aiogram import Bot, Dispatcher, F, Router
+from aiogram.exceptions import (
+    TelegramBadRequest,
+    TelegramForbiddenError,
+    TelegramRetryAfter,
+)
 from aiogram.filters import Command, CommandStart
 from aiogram.types import (
     BotCommand,
@@ -18,7 +23,12 @@ from aiogram.types import (
 )
 
 from k_loto.application.identity import TelegramIdentityService
-from k_loto.application.notifications import ClaimedNotification, NotificationDispatcher
+from k_loto.application.notifications import (
+    ClaimedNotification,
+    DeliveryRejected,
+    DeliveryThrottled,
+    NotificationDispatcher,
+)
 from k_loto.application.web_identity import WebIdentityError, WebIdentityService
 from k_loto.core.config import get_settings
 from k_loto.infrastructure.database.session import session_factory
@@ -94,6 +104,9 @@ async def miniapp_command(message: Message) -> None:
 
 @router.message(Command("web"))
 async def browser_login_command(message: Message) -> None:
+    if not get_settings().web_enabled:
+        await _send_miniapp(message)
+        return
     if message.chat.type != "private" or message.from_user is None:
         return
     async with session_factory() as session:
@@ -129,11 +142,17 @@ class AiogramSender:
     async def send(self, notification: ClaimedNotification, text: str) -> None:
         if notification.chat_id is None:
             raise ValueError("Telegram chat id is missing.")
-        await self._bot.send_message(
-            chat_id=notification.chat_id,
-            text=text,
-            reply_markup=miniapp_markup(self._miniapp_url),
-        )
+        try:
+            async with asyncio.timeout(60):
+                await self._bot.send_message(
+                    chat_id=notification.chat_id,
+                    text=text,
+                    reply_markup=miniapp_markup(self._miniapp_url),
+                )
+        except TelegramRetryAfter as error:
+            raise DeliveryThrottled(error.retry_after) from None
+        except (TelegramForbiddenError, TelegramBadRequest):
+            raise DeliveryRejected() from None
 
 
 async def run_outbox(bot: Bot, interval_seconds: int, miniapp_url: str | None) -> None:
@@ -145,8 +164,10 @@ async def run_outbox(bot: Bot, interval_seconds: int, miniapp_url: str | None) -
     while True:
         try:
             processed = await dispatcher.process_one(datetime.now(UTC))
-        except Exception:
-            logger.exception("notification_outbox_iteration_failed")
+        except Exception as error:
+            logger.error(
+                "notification_outbox_iteration_failed", error_type=type(error).__name__
+            )
             processed = False
         if not processed:
             await asyncio.sleep(interval_seconds)
@@ -161,12 +182,12 @@ async def run_bot() -> None:
         raise RuntimeError("LOTTERY_BOT_TOKEN is empty.")
 
     bot = Bot(token=token)
-    await bot.set_my_commands(
-        [
-            BotCommand(command="start", description="Открыть Casper Loto"),
-            BotCommand(command="web", description="Код входа на сайт"),
-        ]
-    )
+    commands = [
+        BotCommand(command="start", description="Открыть Casper Loto"),
+    ]
+    if settings.web_enabled:
+        commands.append(BotCommand(command="web", description="Код входа на сайт"))
+    await bot.set_my_commands(commands)
     miniapp_url = str(settings.miniapp_url) if settings.miniapp_url else None
     if miniapp_url:
         await bot.set_chat_menu_button(menu_button=miniapp_menu_button(miniapp_url))

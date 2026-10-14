@@ -22,6 +22,7 @@ from sqlalchemy.dialects.postgresql import ARRAY, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from k_loto.application.query_scope import LotteryScope, lottery_scope
+from k_loto.domain.dual import DUAL_JACKPOT, DUAL_PRICE
 from k_loto.domain.enums import (
     AuditAction,
     DrawStatus,
@@ -447,6 +448,13 @@ class AdminMutationService:
             )
             if existing is not None:
                 return AdjustmentResult(existing.balance_after, True)
+            lottery = await self._session.scalar(
+                select(Lottery).where(Lottery.id == lottery_id).with_for_update()
+            )
+            if lottery is None:
+                raise LookupError("Lottery does not exist.")
+            if lottery.code == "dual" and target_amount != DUAL_JACKPOT:
+                raise ValueError("Casper Dual jackpot is fixed at 5000000 CAS.")
             jackpot = await self._session.scalar(
                 select(JackpotAccount)
                 .where(JackpotAccount.lottery_id == lottery_id)
@@ -525,6 +533,12 @@ class AdminMutationService:
             )
             if lottery is None or jackpot is None:
                 raise LookupError("Lottery or jackpot account does not exist.")
+            if lottery.code == "dual" and (
+                ticket_price != DUAL_PRICE or base_jackpot != DUAL_JACKPOT
+            ):
+                raise ValueError(
+                    "Casper Dual price and jackpot are fixed at 20000 and 5000000 CAS."
+                )
             rules = get_lottery_rules(lottery.ruleset_code)
             if ticket_price % rules.price_divisor:
                 raise ValueError(

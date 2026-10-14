@@ -131,6 +131,13 @@ class Lottery(TimestampMixin, Base):
         CheckConstraint("next_draw_number >= 1", name="next_draw_number_positive"),
         CheckConstraint("next_ticket_number >= 1", name="next_ticket_number_positive"),
         CheckConstraint("char_length(ruleset_code) > 0", name="ruleset_code_not_empty"),
+        CheckConstraint(
+            "(code <> 'dual' AND ruleset_code <> 'casper_dual_2_12_2_12') OR "
+            "(code = 'dual' AND ruleset_code = 'casper_dual_2_12_2_12' AND "
+            "ticket_price IS NOT NULL AND ticket_price = 20000 AND "
+            "numbers_to_pick = 4 AND max_number = 24)",
+            name="dual_configuration",
+        ),
         Index("ix_lotteries_ruleset_code", "ruleset_code"),
         CheckConstraint(
             "max_tickets_per_purchase BETWEEN 1 AND 1000",
@@ -203,6 +210,7 @@ class Draw(TimestampMixin, Base):
     __tablename__ = "draws"
     __table_args__ = (
         UniqueConstraint("lottery_id", "public_number", name="uq_draw_lottery_number"),
+        UniqueConstraint("lottery_id", "scheduled_at", name="uq_draw_lottery_schedule"),
         CheckConstraint("public_number >= 1", name="public_number_positive"),
         CheckConstraint(
             "sales_close_at <= scheduled_at", name="sales_close_before_draw"

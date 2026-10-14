@@ -20,6 +20,10 @@ from k_loto.infrastructure.database.session import session_factory
 logger = structlog.get_logger(__name__)
 
 
+class PartialDrawRecoveryError(RuntimeError):
+    """Some lotteries remain blocked; the heartbeat must not report success."""
+
+
 class SchedulerRuntime:
     def __init__(self, interval_seconds: int) -> None:
         settings = get_settings()
@@ -34,7 +38,13 @@ class SchedulerRuntime:
         )
 
     async def start(self) -> None:
-        await self._run()
+        try:
+            await self._run()
+        except Exception as error:
+            # Keep the API/admin available and install the periodic recovery retry.
+            logger.error(
+                "scheduler_startup_recovery_failed", error_type=type(error).__name__
+            )
         await self._run_interesting_facts()
         await self._run_publication_events()
         self._scheduler.add_job(
@@ -127,10 +137,13 @@ class SchedulerRuntime:
             from k_loto.application.distribution import drain_distribution
 
             await drain_distribution(session_factory)
-            await drain(session_factory)
         except Exception as error:
             # No exception text: HTTP errors can embed bot credentials.
             logger.error("publication_delivery_failed", error_type=type(error).__name__)
+        try:
+            await drain(session_factory)
+        except Exception as error:
+            logger.error("editorial_delivery_failed", error_type=type(error).__name__)
 
     async def _run(self) -> None:
         started = datetime.now(UTC)
@@ -145,6 +158,13 @@ class SchedulerRuntime:
             )
         try:
             report = await self._recovery.reconcile(now=started)
+            async with session_factory() as session, session.begin():
+                heartbeat = await session.get(SchedulerHeartbeat, 1)
+                if heartbeat is not None:
+                    heartbeat.settled_count = len(report.settled_draw_ids)
+                    heartbeat.prepared_count = len(report.prepared_draw_ids)
+            if report.failed_lottery_ids:
+                raise PartialDrawRecoveryError()
             await AutoPlayService(session_factory).run(now=started)
             await PlayerEngagementService(session_factory).run(now=started)
         except Exception as error:

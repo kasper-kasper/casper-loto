@@ -4,6 +4,7 @@ import asyncio
 from datetime import UTC, datetime
 from uuid import uuid4
 
+import structlog
 from sqlalchemy import select
 
 from k_loto.application.scheduler import DrawScheduleService
@@ -93,9 +94,18 @@ async def ensure_lottery(
         lottery_id = lottery.id
         is_active = lottery.is_active
     if is_active:
-        async with session_factory() as session:
-            await DrawScheduleService(session).ensure_next_draw(
-                lottery_id, reference=datetime.now(UTC)
+        try:
+            async with session_factory() as session:
+                await DrawScheduleService(session).ensure_next_draw(
+                    lottery_id, reference=datetime.now(UTC)
+                )
+        except Exception as error:
+            # The runtime retries this lottery and records a failed heartbeat.
+            # Keep API/admin startup available for diagnosis of a broken schedule.
+            structlog.get_logger(__name__).error(
+                "bootstrap_draw_preparation_failed",
+                lottery_code=code,
+                error_type=type(error).__name__,
             )
 
 

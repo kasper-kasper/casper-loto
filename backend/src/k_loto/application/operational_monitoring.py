@@ -56,6 +56,7 @@ class OperationalMonitoringService:
                             & (NotificationOutbox.locked_at < stale_before),
                             (NotificationOutbox.status == NotificationStatus.FAILED)
                             & (NotificationOutbox.attempts >= 5),
+                            NotificationOutbox.status == NotificationStatus.UNCERTAIN,
                         )
                     )
                 )

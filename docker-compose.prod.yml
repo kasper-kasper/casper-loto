@@ -79,6 +79,7 @@ services:
       BOT_MAX_TICKETS_PER_PURCHASE: ${BOT_MAX_TICKETS_PER_PURCHASE:-50}
       MINIAPP_URL: ${MINIAPP_URL:?required}
       SCHEDULER_ENABLED: "false"
+      WEB_ENABLED: "false"
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     command: ["python", "-m", "bot"]
     depends_on:

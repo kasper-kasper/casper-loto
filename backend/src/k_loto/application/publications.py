@@ -389,7 +389,35 @@ class PublicationService:
                 row.status = "published"
                 row.published_at = datetime.now(UTC)
             else:
+                delivery = row.content.get("delivery", {})
+                attempted_at = delivery.get("attempted_at")
+                attempted = (
+                    datetime.fromisoformat(attempted_at)
+                    if attempted_at
+                    else row.updated_at
+                )
+                if delivery.get("state") == "sending" and attempted > datetime.now(
+                    UTC
+                ) - timedelta(minutes=5):
+                    raise PublicationConflict(
+                        "Delivery is in progress; wait for its outcome "
+                        "before archiving."
+                    )
                 row.status = "archived"
+                if row.content.get("delivery", {}).get("state") in {
+                    "queued",
+                    "uncertain",
+                    "sending",
+                }:
+                    row.content = {
+                        **row.content,
+                        "delivery": {
+                            **row.content["delivery"],
+                            "previous_state": row.content["delivery"]["state"],
+                            "state": "cancelled",
+                            "resolved_at": datetime.now(UTC).isoformat(),
+                        },
+                    }
                 if action == "delete":
                     row.content = {
                         **row.content,

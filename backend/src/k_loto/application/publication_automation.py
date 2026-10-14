@@ -1373,12 +1373,32 @@ async def deliver_one(
         state = await engine._state("publication.transport")
         if not state.value.get("enabled"):
             return "disabled"
+        interrupted = await session.scalars(
+            select(Publication)
+            .where(
+                Publication.status == "draft",
+                Publication.content["delivery"]["state"].astext == "sending",
+            )
+            .with_for_update()
+        )
+        for pending in interrupted:
+            attempted = pending.content["delivery"].get("attempted_at")
+            if attempted and datetime.fromisoformat(attempted) > now - timedelta(
+                minutes=5
+            ):
+                continue
+            content = deepcopy(pending.content)
+            content["delivery"].update(
+                state="uncertain", error_type="InterruptedDelivery"
+            )
+            pending.content = content
         unresolved = await session.scalar(
             select(Publication.id)
             .where(
+                Publication.status == "draft",
                 Publication.content["delivery"]["state"].astext.in_(
                     ["sending", "uncertain"]
-                )
+                ),
             )
             .limit(1)
         )
@@ -1416,11 +1436,17 @@ async def deliver_one(
         ):
             return "interval"
         # Rendering errors happen before any network side effect or claim.
-        content = editorial_snapshot(row.content, row.lottery_code)
-        image = await asyncio.to_thread(
-            render_post, content, assets=assets, fonts=fonts
-        )
-        caption = caption_html(content["channel_caption"])
+        try:
+            content = editorial_snapshot(row.content, row.lottery_code)
+            image = await asyncio.to_thread(
+                render_post, content, assets=assets, fonts=fonts
+            )
+            caption = caption_html(content["channel_caption"])
+        except Exception as error:
+            content = deepcopy(row.content)
+            content["delivery"].update(state="failed", error_type=type(error).__name__)
+            row.content = content
+            return "failed"
         identifier = row.id
         content["delivery"].update(state="sending", attempted_at=now.isoformat())
         row.content = content

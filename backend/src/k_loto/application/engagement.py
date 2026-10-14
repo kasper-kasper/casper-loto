@@ -16,6 +16,7 @@ from k_loto.domain.enums import (
 from k_loto.domain.lotteries import FAST_LOTTERY_CODES, draw_display_name
 from k_loto.infrastructure.database.models import (
     Draw,
+    InstantTicket,
     Lottery,
     NotificationOutbox,
     Ticket,
@@ -63,7 +64,13 @@ class PlayerEngagementService:
                     select(
                         UserNotificationPreference,
                         User,
-                        func.max(Ticket.purchased_at),
+                        func.greatest(
+                            func.max(Ticket.purchased_at),
+                            select(func.max(InstantTicket.purchased_at))
+                            .where(InstantTicket.user_id == User.id)
+                            .correlate(User)
+                            .scalar_subquery(),
+                        ),
                     )
                     .join(User, User.id == UserNotificationPreference.user_id)
                     .outerjoin(Ticket, Ticket.user_id == User.id)

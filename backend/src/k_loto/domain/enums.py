@@ -74,6 +74,7 @@ class NotificationStatus(StrEnum):
     SENT = "SENT"
     FAILED = "FAILED"
     CANCELLED = "CANCELLED"
+    UNCERTAIN = "UNCERTAIN"
 
 
 class InterestingFactStatus(StrEnum):

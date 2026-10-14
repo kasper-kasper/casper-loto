@@ -24,6 +24,7 @@ logger = structlog.get_logger(__name__)
 class RecoveryReport:
     settled_draw_ids: tuple[UUID, ...]
     prepared_draw_ids: tuple[UUID, ...]
+    failed_lottery_ids: tuple[UUID, ...] = ()
 
 
 class DrawScheduleService:
@@ -131,7 +132,9 @@ class DrawRecoveryService:
                 ).all()
             )
 
-    async def _next_due_draw(self, now: datetime) -> UUID | None:
+    async def _next_due_draw(
+        self, now: datetime, *, excluded: set[UUID] | None = None
+    ) -> UUID | None:
         async with self._session_factory() as session:
             draw_id = await session.scalar(
                 select(Draw.id)
@@ -139,6 +142,7 @@ class DrawRecoveryService:
                 .where(
                     Draw.status != DrawStatus.COMPLETED,
                     Draw.scheduled_at <= now,
+                    Draw.lottery_id.not_in(excluded or set()),
                     or_(
                         Lottery.code != "bingo",
                         Draw.status != DrawStatus.DRAWING,
@@ -182,42 +186,61 @@ class DrawRecoveryService:
         timestamp = now or datetime.now(UTC)
         prepared: list[UUID] = []
         settled: list[UUID] = []
+        failed: set[UUID] = set()
 
         async with self._session_factory() as session:
             await DailyTransitionService(session).finalize_if_ready()
 
         for lottery_id in await self._active_lottery_ids():
-            async with self._session_factory() as session:
-                draw, created = await DrawScheduleService(session).ensure_next_draw(
-                    lottery_id, reference=timestamp
+            try:
+                async with self._session_factory() as session:
+                    draw, created = await DrawScheduleService(session).ensure_next_draw(
+                        lottery_id, reference=timestamp
+                    )
+                    if created:
+                        prepared.append(draw.id)
+            except Exception as error:
+                failed.add(lottery_id)
+                logger.error(
+                    "draw_preparation_failed",
+                    lottery_id=str(lottery_id),
+                    error_type=type(error).__name__,
                 )
-                if created:
-                    prepared.append(draw.id)
 
-        while due_draw_id := await self._next_due_draw(timestamp):
-            async with self._session_factory() as session:
-                service = LotterySettlementService(session)
-                result = await service.settle(due_draw_id, now=timestamp)
-            if not result.already_completed:
-                settled.append(due_draw_id)
+        while due_draw_id := await self._next_due_draw(timestamp, excluded=failed):
+            lottery_id = await self._lottery_id_for_draw(due_draw_id)
+            try:
+                async with self._session_factory() as session:
+                    service = LotterySettlementService(session)
+                    result = await service.settle(due_draw_id, now=timestamp)
+                if not result.already_completed:
+                    settled.append(due_draw_id)
+                if await self._lottery_is_active(lottery_id):
+                    async with self._session_factory() as session:
+                        draw, created = await DrawScheduleService(
+                            session
+                        ).ensure_next_draw(lottery_id, reference=timestamp)
+                        if created:
+                            prepared.append(draw.id)
+            except Exception as error:
+                # The failed lottery's later draws must not overtake its oldest one.
+                # Independent lotteries can still recover during this invocation.
+                failed.add(lottery_id)
+                logger.error(
+                    "draw_recovery_failed",
+                    draw_id=str(due_draw_id),
+                    lottery_id=str(lottery_id),
+                    error_type=type(error).__name__,
+                )
 
             async with self._session_factory() as session:
                 await DailyTransitionService(session).finalize_if_ready()
 
-            lottery_id = await self._lottery_id_for_draw(due_draw_id)
-            if not await self._lottery_is_active(lottery_id):
-                continue
-            async with self._session_factory() as session:
-                draw, created = await DrawScheduleService(session).ensure_next_draw(
-                    lottery_id, reference=timestamp
-                )
-                if created:
-                    prepared.append(draw.id)
-
-        report = RecoveryReport(tuple(settled), tuple(prepared))
+        report = RecoveryReport(tuple(settled), tuple(prepared), tuple(sorted(failed)))
         logger.info(
             "draw_reconciliation_complete",
             settled_count=len(report.settled_draw_ids),
             prepared_count=len(report.prepared_draw_ids),
+            failed_lottery_count=len(report.failed_lottery_ids),
         )
         return report
