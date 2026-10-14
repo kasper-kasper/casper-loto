@@ -138,6 +138,7 @@ def verify_candidate_finances(
         "uv sync --locked --extra dev --no-editable >/dev/null && "
         "pytest -q --disable-warnings --basetemp=/tmp/runtime-tests "
         "backend/tests/test_release_snapshot.py "
+        "backend/tests/test_history_cursor.py "
         "backend/tests/test_server_maintenance.py "
         "backend/tests/test_local_dev_mode.py "
         "backend/tests/test_publication_automation.py::"

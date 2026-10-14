@@ -42,7 +42,11 @@ class TicketHistoryService:
         wins_only: bool = False,
         scope: LotteryScope = "all",
     ) -> HistorySelection:
-        if not 1 <= limit <= 200 or offset < 0 or (cursor and offset):
+        if (
+            not 1 <= limit <= 200
+            or not 0 <= offset < 2**63 - limit
+            or (cursor and offset)
+        ):
             raise ValueError("Invalid history pagination.")
         binding = [str(user_id), lottery_code or "", wins_only, scope]
         boundary = decode_cursor(cursor, binding) if cursor else None
@@ -221,6 +225,7 @@ def decode_cursor(value: str, binding: list[Any]) -> tuple[datetime, int, int, U
             or not 1 <= key[1] < 2**63
             or type(key[2]) is not int
             or key[2] not in (0, 1)
+            or not isinstance(key[3], str)
         ):
             raise ValueError
         return at.astimezone(UTC), key[1], key[2], UUID(key[3])
