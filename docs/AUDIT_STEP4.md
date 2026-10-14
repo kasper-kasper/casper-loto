@@ -31,3 +31,5 @@ Production migration adds a persisted notification state. API and bot are briefl
 ## Validation and release
 
 See the current DEVLOG entry for counts, candidate PostgreSQL results and production verification. Disposable checks copy schema plus Alembic revision only; they never copy player/business data. Current known fresh-empty migration bootstrap limitation from stage 1 is unchanged; release checks start from the actual deployed schema.
+
+Production verified at 2026-10-14 01:15 UTC: API 1.56.2, Admin 1.60.2, Mini App 1.66.3; migration 0055 applied, all four new triggers present. Public clients and exact entry assets pass. Watchdog warnings, overdue draws, ledger/balance mismatches and uncertain notifications are all zero; scheduler has no saved error. Web /web is 410, its API is 404, and Web is disabled in both API and bot. Candidate PostgreSQL tests include the late receipt/archive race and preserve the automatic channel interval. Final correction restarts API only.
