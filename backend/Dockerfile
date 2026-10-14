@@ -19,8 +19,8 @@ COPY scripts ./scripts
 COPY frontend/miniapp/public/assets/publications ./publication-assets
 RUN apt-get update && apt-get install -y --no-install-recommends fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-dev --no-editable --python /usr/local/bin/python
+RUN uv sync --locked --no-dev --no-editable --python /usr/local/bin/python \
+    && uv cache clean
 COPY CHANGELOG.md DEVLOG.md ./
 
 RUN python -m scripts.verify_runtime_lock --write runtime-manifest.json
