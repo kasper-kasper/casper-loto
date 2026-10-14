@@ -652,6 +652,36 @@ it("keeps Fast tickets accessible through a separate server filter", async () =>
   await waitFor(() => expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "active", "scope:standard", false));
 });
 
+it("uses the history cursor once and discards a late page after a filter change", async () => {
+  const ticket: Ticket = {
+    id: "cursor-first", public_number: 465, lottery_code: "pll", lottery_name: "ПЛЛ-лото",
+    draw_number: 12, scheduled_at: "2026-08-15T15:00:00Z", numbers: [1, 2, 3, 4],
+    purchase_price: 100, source: "MANUAL", status: "SETTLED", matches: 0, prize_amount: 0,
+    winning_numbers: [5, 6, 7, 8],
+  };
+  let complete: ((page: { tickets: Ticket[]; total: number; has_more: boolean }) => void) | undefined;
+  vi.mocked(miniAppApi.tickets).mockImplementation(async (_init, _state, _filter, winsOnly, position) => {
+    if (position) return new Promise(resolve => { complete = resolve; });
+    return winsOnly ? { tickets: [], total: 0, has_more: false }
+      : { tickets: [ticket], total: 3, has_more: true, next_cursor: "page-boundary" };
+  });
+  render(<App initData="test" />);
+  fireEvent.click(await screen.findByRole("button", { name: "Моё" }));
+  fireEvent.click(await screen.findByRole("button", { name: /История участия/ }));
+  const button = await screen.findByRole("button", { name: /Показать ещё/ });
+  fireEvent.click(button);
+  fireEvent.click(button);
+  expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "history", "", false, "page-boundary");
+  expect(vi.mocked(miniAppApi.tickets).mock.calls.filter(call => call[4])).toHaveLength(1);
+  expect(screen.getByText("Билет #0465")).toBeInTheDocument();
+  expect(button).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: "Только выигрыши" }));
+  expect(await screen.findByText("История пока пуста")).toBeInTheDocument();
+  await act(async () => { complete?.({ tickets: [{ ...ticket, id: "stale", public_number: 466 }], total: 3, has_more: false }); });
+  expect(screen.getByText("История пока пуста")).toBeInTheDocument();
+  expect(screen.queryByText("Билет #0466")).not.toBeInTheDocument();
+});
+
 it("keeps Casper Dual as one 2+2 ticket with no favorites or five-draw repeat", async () => {
   const scheduled = new Date(Date.now() + 60 * 60_000).toISOString();
   const dualDashboard: Dashboard = {

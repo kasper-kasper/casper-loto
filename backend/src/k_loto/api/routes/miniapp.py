@@ -250,6 +250,7 @@ class TicketListResponse(BaseModel):
     tickets: list[TicketResponse]
     total: int
     has_more: bool
+    next_cursor: str | None = None
 
 
 class FavoriteRequest(BaseModel):
@@ -708,17 +709,38 @@ async def tickets(
     scope: LotteryScope = "all",
     limit: Annotated[int, Query(ge=1, le=200)] = 100,
     offset: Annotated[int, Query(ge=0)] = 0,
+    cursor: Annotated[str | None, Query(max_length=1024)] = None,
 ) -> TicketListResponse:
     service = MiniAppQueryService(session)
-    items = await service.tickets(
-        user.id,
-        active=state == "active",
-        limit=limit,
-        offset=offset,
-        lottery_code=lottery_code,
-        wins_only=wins_only,
-        scope=scope,
-    )
+    next_cursor = None
+    if state == "history":
+        try:
+            items, next_cursor, more = await service.history_page(
+                user.id,
+                limit=limit,
+                offset=offset,
+                cursor=cursor,
+                lottery_code=lottery_code,
+                wins_only=wins_only,
+                scope=scope,
+            )
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+    else:
+        if cursor:
+            raise HTTPException(
+                status_code=422, detail="Cursor applies to history only."
+            )
+        items = await service.tickets(
+            user.id,
+            active=True,
+            limit=limit,
+            offset=offset,
+            lottery_code=lottery_code,
+            wins_only=wins_only,
+            scope=scope,
+        )
+        more = False
     total = await service.ticket_count(
         user.id,
         active=state == "active",
@@ -729,7 +751,8 @@ async def tickets(
     return TicketListResponse(
         tickets=[_ticket_response(item) for item in items],
         total=total,
-        has_more=offset + len(items) < total,
+        has_more=more if state == "history" else offset + len(items) < total,
+        next_cursor=next_cursor,
     )
 
 

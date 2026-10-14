@@ -208,6 +208,10 @@ export default function App({ initData, localDev = false }: AppProps) {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [ticketTotal, setTicketTotal] = useState(0);
   const [ticketsHaveMore, setTicketsHaveMore] = useState(false);
+  const [ticketsMoreLoading, setTicketsMoreLoading] = useState(false);
+  const ticketGeneration = useRef(0);
+  const ticketMorePending = useRef(false);
+  const ticketCursor = useRef<string | null>(null);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [cart, setCart] = useState<CartTicket[]>(() => loadCart(cartTtl));
   const [catalogFilter, setCatalogFilter] = useState<CatalogFilter>("all");
@@ -443,28 +447,38 @@ export default function App({ initData, localDev = false }: AppProps) {
     return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", resync); };
   }, [authenticated, refreshDashboard]);
   useEffect(() => {
+    const generation = ++ticketGeneration.current;
+    ticketMorePending.current = false;
+    ticketCursor.current = null;
     if (view !== "account" || accountView !== "tickets" || !authenticated) return;
     let active = true;
     miniAppApi.tickets(initData, ticketView, ticketLotteryFilter, ticketView === "history" && ticketWinsOnly).then((page) => {
-      if (!active) return;
+      if (!active || generation !== ticketGeneration.current) return;
+      ticketCursor.current = page.next_cursor ?? null;
       setTickets(page.tickets);
       setTicketTotal(page.total);
       setTicketsHaveMore(page.has_more);
-    }).catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "Не удалось загрузить билеты."); }).finally(() => { if (active) setTicketsLoading(false); });
-    return () => { active = false; };
+    }).catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "Не удалось загрузить билеты."); }).finally(() => { if (active) { setTicketsLoading(false); setTicketsMoreLoading(false); } });
+    return () => { active = false; ticketGeneration.current += 1; };
   }, [accountView, authenticated, initData, ticketLotteryFilter, ticketView, ticketWinsOnly, view]);
 
   const loadMoreTickets = async () => {
-    setTicketsLoading(true);
+    if (ticketMorePending.current) return;
+    ticketMorePending.current = true;
+    const generation = ticketGeneration.current;
+    setTicketsMoreLoading(true);
     try {
-      const page = await miniAppApi.tickets(initData, ticketView, ticketLotteryFilter, ticketView === "history" && ticketWinsOnly, tickets.length);
-      setTickets((current) => [...current, ...page.tickets]);
+      const position = ticketView === "history" ? ticketCursor.current ?? tickets.length : tickets.length;
+      const page = await miniAppApi.tickets(initData, ticketView, ticketLotteryFilter, ticketView === "history" && ticketWinsOnly, position);
+      if (generation !== ticketGeneration.current) return;
+      ticketCursor.current = page.next_cursor ?? null;
+      setTickets((current) => { const seen = new Set(current.map(item => item.id)); return [...current, ...page.tickets.filter(item => !seen.has(item.id))]; });
       setTicketTotal(page.total);
       setTicketsHaveMore(page.has_more);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Не удалось загрузить следующую страницу билетов.");
+      if (generation === ticketGeneration.current) setError(reason instanceof Error ? reason.message : "Не удалось загрузить следующую страницу билетов.");
     } finally {
-      setTicketsLoading(false);
+      if (generation === ticketGeneration.current) { ticketMorePending.current = false; setTicketsMoreLoading(false); }
     }
   };
   useEffect(() => {
@@ -729,7 +743,7 @@ export default function App({ initData, localDev = false }: AppProps) {
     {view === "account" && <section className="view-content personal-section" key="account">
       {accountView !== "overview" && <header className="personal-section-heading"><button type="button" aria-label="Обзор" onClick={() => { selectionHaptic(); setAccountView("overview"); void refreshAccount(); }}>← <span>Моё</span></button><h1>{accountView === "tickets" ? "Мои билеты" : "Уведомления"}</h1><button type="button" onClick={() => { if (accountView === "tickets") setAccountView("notifications"); else { setTicketsLoading(true); setAccountView("tickets"); } }}>{accountView === "tickets" ? "Уведомления" : "Билеты"}</button></header>}
       {accountView === "overview" && (account ? <AccountOverview account={account} lotteries={dashboard.lotteries} onCatalog={() => setView("catalog")} onTickets={() => { setTicketLotteryFilter(""); setTicketWinsOnly(false); setTicketsLoading(true); setTicketView("active"); setAccountView("tickets"); }} onHistory={() => { setTicketsLoading(true); setTicketLotteryFilter(""); setTicketWinsOnly(false); setTicketView("history"); setAccountView("tickets"); }} onNotifications={() => setAccountView("notifications")} onEnableTelegram={() => void enableTelegramNotifications()} onSavePreferences={(preferences) => void saveNotificationPreferences(preferences)} /> : <div className="skeleton account-skeleton" />)}
-      {accountView === "tickets" && <><div className={`segmented-control ${ticketView}`}><i /><button className={ticketView === "active" ? "selected" : ""} onClick={() => { selectionHaptic(); if (ticketView !== "active") setTicketsLoading(true); setTicketView("active"); }} type="button">Активные</button><button className={ticketView === "history" ? "selected" : ""} onClick={() => { selectionHaptic(); if (ticketView !== "history") setTicketsLoading(true); setTicketView("history"); }} type="button">История</button></div><div className="ticket-filters"><select aria-label="Фильтр по лотерее" value={ticketLotteryFilter} onChange={(event) => { setTicketsLoading(true); setTicketLotteryFilter(event.target.value); }}><option value="scope:standard">Обычные лотереи</option><option value="scope:fast">Casper Fast</option><option value="">Все игры</option><option value="kasper-live">Casper LIVE</option><option value="aurora">Casper Aurora</option><option value="vault">Casper Vault</option>{dashboard.lotteries.map((lottery) => <option key={lottery.code} value={lottery.code}>{lottery.name}</option>)}</select>{ticketView === "history" && <button aria-pressed={ticketWinsOnly} className={ticketWinsOnly ? "active" : ""} onClick={() => { setTicketsLoading(true); setTicketWinsOnly((value) => !value); }} type="button">Только выигрыши</button>}<span>{ticketTotal} {plural(ticketTotal, "билет", "билета", "билетов")}</span></div>{ticketsLoading ? <div className="ticket-skeletons"><div className="skeleton ticket-skeleton" /><div className="skeleton ticket-skeleton" /></div> : tickets.length ? <><TicketGroups active={ticketView === "active"} lotteries={dashboard.lotteries} now={serverNow} onOpen={setSelectedTicket} tickets={tickets} />{ticketsHaveMore && <button className="load-more-tickets" disabled={ticketsLoading} onClick={() => void loadMoreTickets()} type="button">{ticketsLoading ? "Загружаем…" : `Показать ещё · ${tickets.length} из ${ticketTotal}`}</button>}</> : <EmptyState title={ticketView === "active" ? "Нет активных билетов" : "История пока пуста"} text={ticketView === "active" ? "Выберите лотерею и соберите свою комбинацию." : "Завершённые билеты появятся после розыгрыша."} action={ticketView === "active" && firstAvailable ? { label: "Выбрать лотерею", onClick: () => setView("catalog") } : undefined} />}{ticketView === "active" && firstAvailable && !ticketsLoading && tickets.length > 0 && <PrimaryButton className="sticky-action" onClick={() => void openLottery(firstAvailable.code)}>Ещё один билет</PrimaryButton>}</>}
+      {accountView === "tickets" && <><div className={`segmented-control ${ticketView}`}><i /><button className={ticketView === "active" ? "selected" : ""} onClick={() => { selectionHaptic(); if (ticketView !== "active") setTicketsLoading(true); setTicketView("active"); }} type="button">Активные</button><button className={ticketView === "history" ? "selected" : ""} onClick={() => { selectionHaptic(); if (ticketView !== "history") setTicketsLoading(true); setTicketView("history"); }} type="button">История</button></div><div className="ticket-filters"><select aria-label="Фильтр по лотерее" value={ticketLotteryFilter} onChange={(event) => { setTicketsLoading(true); setTicketLotteryFilter(event.target.value); }}><option value="scope:standard">Обычные лотереи</option><option value="scope:fast">Casper Fast</option><option value="">Все игры</option><option value="kasper-live">Casper LIVE</option><option value="aurora">Casper Aurora</option><option value="vault">Casper Vault</option>{dashboard.lotteries.map((lottery) => <option key={lottery.code} value={lottery.code}>{lottery.name}</option>)}</select>{ticketView === "history" && <button aria-pressed={ticketWinsOnly} className={ticketWinsOnly ? "active" : ""} onClick={() => { setTicketsLoading(true); setTicketWinsOnly((value) => !value); }} type="button">Только выигрыши</button>}<span>{ticketTotal} {plural(ticketTotal, "билет", "билета", "билетов")}</span></div>{ticketsLoading ? <div className="ticket-skeletons"><div className="skeleton ticket-skeleton" /><div className="skeleton ticket-skeleton" /></div> : tickets.length ? <><TicketGroups active={ticketView === "active"} lotteries={dashboard.lotteries} now={serverNow} onOpen={setSelectedTicket} tickets={tickets} />{ticketsHaveMore && <button className="load-more-tickets" disabled={ticketsMoreLoading} onClick={() => void loadMoreTickets()} type="button">{ticketsMoreLoading ? "Загружаем…" : `Показать ещё · ${tickets.length} из ${ticketTotal}`}</button>}</> : <EmptyState title={ticketView === "active" ? "Нет активных билетов" : "История пока пуста"} text={ticketView === "active" ? "Выберите лотерею и соберите свою комбинацию." : "Завершённые билеты появятся после розыгрыша."} action={ticketView === "active" && firstAvailable ? { label: "Выбрать лотерею", onClick: () => setView("catalog") } : undefined} />}{ticketView === "active" && firstAvailable && !ticketsLoading && tickets.length > 0 && <PrimaryButton className="sticky-action" onClick={() => void openLottery(firstAvailable.code)}>Ещё один билет</PrimaryButton>}</>}
       {accountView === "notifications" && <NotificationCenter notifications={notifications} onPlay={() => firstAvailable ? void openLottery(firstAvailable.code) : setView("home")} onTickets={() => { setTicketsLoading(true); setAccountView("tickets"); }} />}
     </section>}
 

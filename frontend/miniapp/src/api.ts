@@ -169,13 +169,14 @@ export const miniAppApi = {
       }
     }
   },
-  tickets: async (initData: string, state: "active" | "history", lotteryCode = "", winsOnly = false, offset = 0) => {
+  tickets: async (initData: string, state: "active" | "history", lotteryCode = "", winsOnly = false, position: number | string = 0) => {
     const params = new URLSearchParams({ state });
     if (lotteryCode.startsWith("scope:")) params.set("scope", lotteryCode.slice(6));
     else if (lotteryCode) params.set("lottery_code", lotteryCode);
     if (winsOnly) params.set("wins_only", "true");
     params.set("limit", "100");
-    params.set("offset", String(offset));
+    if (typeof position === "string") params.set("cursor", position);
+    else params.set("offset", String(position));
     return request<TicketPage>(
       `/api/v1/miniapp/tickets?${params.toString()}`,
       initData,

@@ -1,6 +1,5 @@
 """Read models for the Telegram Mini App."""
 
-from collections import Counter
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -15,6 +14,7 @@ from sqlalchemy.sql.elements import ColumnElement
 
 from k_loto.application.display_cache import PlatformTotalsCache
 from k_loto.application.query_scope import LotteryScope, lottery_scope
+from k_loto.application.ticket_history import TicketHistoryService
 from k_loto.domain.dual import dual_phase
 from k_loto.domain.enums import (
     DrawStatus,
@@ -370,8 +370,9 @@ class MiniAppQueryService:
         ).first()
         favorite_numbers: tuple[int, ...] = ()
         if favorite_lottery is not None:
-            number_rows = await self._session.scalars(
-                select(Ticket.numbers).where(
+            numbers = (
+                select(func.unnest(Ticket.numbers).label("number"))
+                .where(
                     Ticket.user_id == user_id,
                     Ticket.lottery_id
                     == select(Lottery.id)
@@ -379,9 +380,16 @@ class MiniAppQueryService:
                     .scalar_subquery(),
                     Ticket.status != TicketStatus.REFUNDED,
                 )
+                .subquery()
             )
-            counts = Counter(number for numbers in number_rows for number in numbers)
-            favorite_numbers = tuple(number for number, _ in counts.most_common(7))
+            favorite_numbers = tuple(
+                await self._session.scalars(
+                    select(numbers.c.number)
+                    .group_by(numbers.c.number)
+                    .order_by(func.count().desc(), numbers.c.number.asc())
+                    .limit(7)
+                )
+            )
         return MiniAppAccount(
             display_name=user.display_name,
             balance=balance,
@@ -725,6 +733,125 @@ class MiniAppQueryService:
             int(ticket_totals[1]) + int(instant_ticket_totals[1]),
         )
 
+    @staticmethod
+    def _draw_ticket(
+        ticket: Ticket,
+        draw: Draw,
+        second: Draw | None,
+        lottery: Lottery,
+        draw_ticket_count: int,
+    ) -> MiniAppTicket:
+        return MiniAppTicket(
+            id=ticket.id,
+            public_number=ticket.public_number,
+            lottery_code=lottery.code,
+            lottery_name=draw_display_name(
+                lottery.code, lottery.name, draw.scheduled_at
+            ),
+            draw_number=draw.public_number,
+            scheduled_at=(
+                second.scheduled_at
+                if lottery.code == "dual"
+                and second is not None
+                and draw.status == DrawStatus.COMPLETED
+                and ticket.status == TicketStatus.PURCHASED
+                else draw.scheduled_at
+            ),
+            numbers=tuple(ticket.numbers),
+            purchase_price=ticket.purchase_price,
+            source=ticket.source,
+            status=ticket.status,
+            matches=ticket.matches,
+            prize_amount=ticket.prize_amount,
+            winning_numbers=(
+                tuple(draw.winning_numbers)
+                if draw.winning_numbers
+                and lottery.code != "dual"
+                and (lottery.code != "bingo" or draw.status == DrawStatus.COMPLETED)
+                else None
+            ),
+            draw_ticket_count=int(draw_ticket_count),
+            bingo_result=ticket.bingo_result,
+            primary_max_number=(
+                16
+                if lottery.code == "grob" and ticket.status == TicketStatus.REFUNDED
+                else int(
+                    (draw.configuration_snapshot or {}).get(
+                        "max_number", lottery.max_number
+                    )
+                )
+                if lottery.code == "grob"
+                else None
+            ),
+            second_draw_number=second.public_number if second is not None else None,
+            second_scheduled_at=second.scheduled_at if second is not None else None,
+            first_phase=dual_phase(draw.scheduled_at)
+            if lottery.code == "dual"
+            else None,
+            first_winning_numbers=tuple(draw.winning_numbers)
+            if lottery.code == "dual" and draw.winning_numbers
+            else None,
+            second_winning_numbers=tuple(second.winning_numbers)
+            if second is not None and second.winning_numbers
+            else None,
+            dual_night_matches=ticket.dual_night_matches,
+            dual_dawn_matches=ticket.dual_dawn_matches,
+        )
+
+    @staticmethod
+    def _instant_ticket(item: InstantTicket) -> MiniAppTicket:
+        return MiniAppTicket(
+            id=item.id,
+            public_number=item.public_number,
+            lottery_code=instant_rules_for_version(item.odds_version).code,
+            lottery_name=instant_rules_for_version(item.odds_version).name,
+            draw_number=0,
+            scheduled_at=item.purchased_at,
+            numbers=(),
+            purchase_price=item.purchase_price,
+            source=TicketSource.MANUAL,
+            status=TicketStatus.SETTLED,
+            matches=None,
+            prize_amount=item.prize_amount,
+            winning_numbers=None,
+            draw_ticket_count=1,
+            instant_symbols=tuple(item.symbols),
+        )
+
+    async def history_page(
+        self,
+        user_id: UUID,
+        *,
+        limit: int = 100,
+        offset: int = 0,
+        cursor: str | None = None,
+        lottery_code: str | None = None,
+        wins_only: bool = False,
+        scope: LotteryScope = "all",
+    ) -> tuple[tuple[MiniAppTicket, ...], str | None, bool]:
+        page = await TicketHistoryService(self._session).page(
+            user_id,
+            limit=limit,
+            offset=offset,
+            cursor=cursor,
+            lottery_code=lottery_code,
+            wins_only=wins_only,
+            scope=scope,
+        )
+        views = {
+            ("DRAW", ticket.id): self._draw_ticket(
+                ticket, draw, second, lottery, int(count)
+            )
+            for ticket, draw, second, lottery, count in page.draw_rows
+        }
+        views.update(
+            {
+                ("INSTANT", item.id): self._instant_ticket(item)
+                for item in page.instant_rows
+            }
+        )
+        return tuple(views[key] for key in page.keys), page.next_cursor, page.has_more
+
     async def tickets(
         self,
         user_id: UUID,
@@ -790,71 +917,8 @@ class MiniAppQueryService:
                 )
             ).all()
             regular = [
-                MiniAppTicket(
-                    id=ticket.id,
-                    public_number=ticket.public_number,
-                    lottery_code=lottery.code,
-                    lottery_name=draw_display_name(
-                        lottery.code, lottery.name, draw.scheduled_at
-                    ),
-                    draw_number=draw.public_number,
-                    scheduled_at=(
-                        second.scheduled_at
-                        if lottery.code == "dual"
-                        and second is not None
-                        and draw.status == DrawStatus.COMPLETED
-                        and ticket.status == TicketStatus.PURCHASED
-                        else draw.scheduled_at
-                    ),
-                    numbers=tuple(ticket.numbers),
-                    purchase_price=ticket.purchase_price,
-                    source=ticket.source,
-                    status=ticket.status,
-                    matches=ticket.matches,
-                    prize_amount=ticket.prize_amount,
-                    winning_numbers=(
-                        tuple(draw.winning_numbers)
-                        if draw.winning_numbers
-                        and lottery.code != "dual"
-                        and (
-                            lottery.code != "bingo"
-                            or draw.status == DrawStatus.COMPLETED
-                        )
-                        else None
-                    ),
-                    draw_ticket_count=int(draw_ticket_count),
-                    bingo_result=ticket.bingo_result,
-                    primary_max_number=(
-                        16
-                        if lottery.code == "grob"
-                        and ticket.status == TicketStatus.REFUNDED
-                        else int(
-                            (draw.configuration_snapshot or {}).get(
-                                "max_number", lottery.max_number
-                            )
-                        )
-                        if lottery.code == "grob"
-                        else None
-                    ),
-                    second_draw_number=second.public_number
-                    if second is not None
-                    else None,
-                    second_scheduled_at=second.scheduled_at
-                    if second is not None
-                    else None,
-                    first_phase=dual_phase(draw.scheduled_at)
-                    if lottery.code == "dual"
-                    else None,
-                    first_winning_numbers=tuple(draw.winning_numbers)
-                    if lottery.code == "dual" and draw.winning_numbers
-                    else None,
-                    second_winning_numbers=tuple(second.winning_numbers)
-                    if second is not None and second.winning_numbers
-                    else None,
-                    dual_night_matches=ticket.dual_night_matches,
-                    dual_dawn_matches=ticket.dual_dawn_matches,
-                )
-                for ticket, draw, second, lottery, draw_ticket_count in regular_rows
+                self._draw_ticket(ticket, draw, second, lottery, int(count))
+                for ticket, draw, second, lottery, count in regular_rows
             ]
         if not include_instant:
             return tuple(regular)
@@ -876,26 +940,7 @@ class MiniAppQueryService:
                 .limit(limit + offset)
             )
         ).all()
-        instant = [
-            MiniAppTicket(
-                id=item.id,
-                public_number=item.public_number,
-                lottery_code=instant_rules_for_version(item.odds_version).code,
-                lottery_name=instant_rules_for_version(item.odds_version).name,
-                draw_number=0,
-                scheduled_at=item.purchased_at,
-                numbers=(),
-                purchase_price=item.purchase_price,
-                source=TicketSource.MANUAL,
-                status=TicketStatus.SETTLED,
-                matches=None,
-                prize_amount=item.prize_amount,
-                winning_numbers=None,
-                draw_ticket_count=1,
-                instant_symbols=tuple(item.symbols),
-            )
-            for item in instant_rows
-        ]
+        instant = [self._instant_ticket(item) for item in instant_rows]
         merged = sorted(
             regular + instant,
             key=lambda item: (item.scheduled_at, item.public_number),
