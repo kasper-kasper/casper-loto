@@ -95,7 +95,7 @@ def run_remote(
     if exit_code:
         raise RuntimeError(
             f"Remote stage '{label}' failed (exit {exit_code}):\n"
-            f"{text_error or text_output}"
+            f"{text_output}\n{text_error}"
         )
     if text_output.strip():
         print(text_output.strip(), flush=True)
@@ -104,10 +104,17 @@ def run_remote(
 
 
 def verify_candidate_finances(
-    client: paramiko.SSHClient, compose: str, *, service: str = "api"
+    client: paramiko.SSHClient,
+    compose: str,
+    *,
+    service: str = "api",
+    source_dir: str = "/opt/k-loto",
 ) -> None:
     """Exercise the freshly built runtime without touching production business rows."""
     database = f"k_loto_audit_stage1_{uuid4().hex[:12]}"
+    publication_fixture = shlex.quote(
+        source_dir + "/docs/publications:/app/docs/publications:ro"
+    )
     command = (
         "set -eu; cd /opt/k-loto; "
         f"{compose} exec -T db sh -c '"
@@ -123,6 +130,8 @@ def verify_candidate_finances(
         f'psql -U "$POSTGRES_USER" -d {database} '
         "-v ON_ERROR_STOP=1 >/dev/null'; "
         f"{compose} run --rm --no-deps -e APP_ENV=test "
+        f"-v {shlex.quote(source_dir + '/infrastructure:/app/infrastructure:ro')} "
+        f"-v {publication_fixture} "
         f"-e SCHEDULER_ENABLED=false -e UV_CACHE_DIR=/tmp/uv-cache {service} sh -c '"
         f'export DATABASE_URL="${{DATABASE_URL%/*}}/{database}"; '
         "python -m scripts.verify_runtime_lock && "
@@ -462,7 +471,10 @@ def main() -> None:
                 if backend:
                     candidate_service = backend[0]
                     verify_candidate_finances(
-                        client, candidate_compose, service=candidate_service
+                        client,
+                        candidate_compose,
+                        service=candidate_service,
+                        source_dir=stage,
                     )
                     verify_empty_database(
                         client, candidate_compose, service=candidate_service
