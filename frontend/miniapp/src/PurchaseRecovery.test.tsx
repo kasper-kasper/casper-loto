@@ -1,11 +1,13 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { PurchaseRecovery } from "./PurchaseRecovery";
 import { durablePurchase, readPurchase, setPurchaseOwner } from "./purchaseJournal";
+import { mockPurchaseLocks } from "./test/purchaseLocks";
 
 const path = "/api/v1/miniapp/lotteries/daily/purchases";
 const body = JSON.stringify({ idempotency_key: "m1-lost", combinations: [[1, 2, 3, 4]], expected_scheduled_at: "2026-10-11T12:00:00Z" });
 const receipt = { operation_id: "op", draw_id: "draw", draw_ids: ["draw"], draw_count: 1, ticket_ids: ["one"], total_cost: 100, balance_after: 900, already_processed: true };
 beforeEach(async () => {
+  mockPurchaseLocks();
   localStorage.clear(); sessionStorage.clear(); setPurchaseOwner("user");
   await durablePurchase(path, body, async () => { throw new Error("offline"); }, () => false).catch(() => undefined);
 });

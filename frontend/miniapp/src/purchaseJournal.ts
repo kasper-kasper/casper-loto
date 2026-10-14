@@ -1,4 +1,5 @@
 import { configuredCartTtl, containsPurchasedCartIds, loadCart, markCartPurchased, saveCart } from "./cart";
+import { withPurchaseLock } from "./purchaseLock";
 import type { InstantPurchaseResult, PurchaseResult } from "./types";
 
 export type Receipt = PurchaseResult | InstantPurchaseResult;
@@ -23,15 +24,23 @@ export function setPurchaseOwner(value: string): void {
   window.dispatchEvent(new Event(journalEvent));
 }
 export function purchaseActive(): boolean { return active; }
+async function withActiveLock<T>(ownerId: string, run: () => Promise<T>): Promise<T> {
+  if (active) throw new Error("Покупка уже проверяется. Дождитесь результата.");
+  active = true;
+  try { return await withPurchaseLock(ownerId, run); }
+  finally { active = false; window.dispatchEvent(new Event(journalEvent)); }
+}
 export function readPurchase(): PendingPurchase | null {
-  if (!owner) return null;
-  const raw = localStorage.getItem(prefix + owner);
+  return owner ? readForOwner(owner) : null;
+}
+function readForOwner(ownerId: string): PendingPurchase | null {
+  const raw = localStorage.getItem(prefix + ownerId);
   if (!raw) return null;
   const value = JSON.parse(raw) as PendingPurchase;
   const body = JSON.parse(value.body) as { idempotency_key?: string };
   if (!/^\/api\/v1\/miniapp\/(?:lotteries\/[a-z0-9-]+|bingo|kasper-live|aurora|vault)\/purchases$/.test(value.path)
     || typeof value.key !== "string" || body.idempotency_key !== value.key
-    || value.ownerId !== owner || !Array.isArray(value.cartIds)) throw new Error("Не удалось прочитать незавершённую покупку. Обратитесь в поддержку.");
+    || value.ownerId !== ownerId || !Array.isArray(value.cartIds)) throw new Error("Не удалось прочитать незавершённую покупку. Обратитесь в поддержку.");
   return value;
 }
 function writePurchase(value: PendingPurchase): void {
@@ -42,13 +51,18 @@ function writePurchase(value: PendingPurchase): void {
 export function receiptGame(value: PendingPurchase): string {
   return ["kasper-live", "aurora", "vault"].find(game => value.path.endsWith(`/${game}/purchases`)) ?? "scheduled";
 }
-export function completePurchase(value: PendingPurchase, receipt: Receipt, recovered = false): void {
+export function completePurchase(value: PendingPurchase, receipt: Receipt, recovered = false): Promise<void> {
+  return withActiveLock(value.ownerId, async () => finishPurchase(value, receipt, recovered));
+}
+function finishPurchase(value: PendingPurchase, receipt: Receipt, recovered = false): void {
+  // A response from an older tab must never overwrite a newer request journal.
+  if (readForOwner(value.ownerId)?.key !== value.key) return;
   // Keep the receipt until cart cleanup is durable; a reload can resume this step.
   writePurchase({ ...value, receipt });
   const ids = new Set(value.cartIds);
   const ttl = configuredCartTtl();
   if (ids.size) {
-    markCartPurchased(value.cartIds, ttl);
+    markCartPurchased(value.cartIds);
     saveCart(loadCart(ttl).filter(ticket => !ids.has(ticket.id)), ttl);
   }
   localStorage.removeItem(prefix + value.ownerId);
@@ -56,40 +70,53 @@ export function completePurchase(value: PendingPurchase, receipt: Receipt, recov
   window.dispatchEvent(new Event(journalEvent));
 }
 
+export async function cancelPurchase(
+  value: PendingPurchase,
+  send: () => Promise<{ cancelled: boolean; receipt: Receipt | null }>,
+): Promise<{ cancelled: boolean; receipt: Receipt | null }> {
+  return withActiveLock(value.ownerId, async () => {
+    if (readForOwner(value.ownerId)?.key !== value.key) throw new Error("Покупка уже проверена в другом окне. Обновите её состояние.");
+    const response = await send();
+    if (!response.receipt && response.cancelled && readForOwner(value.ownerId)?.key === value.key) {
+      localStorage.removeItem(prefix + value.ownerId);
+      window.dispatchEvent(new Event(journalEvent));
+      if (owner === value.ownerId) window.dispatchEvent(new CustomEvent<PurchaseResolution>(recoveredEvent, { detail: { path: value.path, receipt: null, cartIds: [] } }));
+    }
+    return response;
+  });
+}
+
 export async function durablePurchase<T extends Receipt>(
   path: string, body: string, send: () => Promise<T>, definitive: (reason: unknown) => boolean,
-  cartIds: string[] = [],
+  cartIds: string[] = [], recovered = false,
 ): Promise<T> {
-  const previous = readPurchase();
-  if (!previous && cartIds.length && containsPurchasedCartIds(cartIds, configuredCartTtl())) {
-    throw new Error("Часть позиций уже куплена. Корзина обновлена — проверьте оставшиеся билеты.");
-  }
-  const key = (JSON.parse(body) as { idempotency_key: string }).idempotency_key;
-  if (previous && (previous.key !== key || previous.path !== path || previous.body !== body)) {
-    throw new Error("Сначала проверьте результат предыдущей покупки — она могла уже пройти.");
-  }
-  if (active) throw new Error("Покупка уже проверяется. Дождитесь результата.");
   if (!owner) throw new Error("Дождитесь загрузки аккаунта перед покупкой.");
-  const pending = previous ?? { ownerId: owner, path, body, key, cartIds, uncertain: false };
-  // No request is sent if storage is unavailable.
-  active = true;
-  try {
-    writePurchase(pending);
-    // Also arbitrate old clients without Web Locks: only the surviving journal may send.
-    await new Promise(resolve => window.setTimeout(resolve, 40));
-    if (readPurchase()?.key !== key) throw new Error("Покупка уже начата в другом окне.");
-    const result = await send();
-    completePurchase(pending, result);
-    return result;
-  } catch (reason) {
-    if (readPurchase()?.key === key) {
-      if (!pending.uncertain && definitive(reason)) {
-        localStorage.removeItem(prefix + pending.ownerId);
-      } else writePurchase({ ...pending, uncertain: true });
+  const ownerId = owner;
+  return withActiveLock(ownerId, async () => {
+    if (owner !== ownerId) throw new Error("Аккаунт изменился. Обновите страницу перед покупкой.");
+    // Recheck shared state inside the cross-tab lock, immediately before sending.
+    const previous = readForOwner(ownerId);
+    if (!previous && cartIds.length && containsPurchasedCartIds(cartIds, configuredCartTtl())) {
+      throw new Error("Часть позиций уже куплена. Корзина обновлена — проверьте оставшиеся билеты.");
     }
-    throw reason;
-  } finally {
-    active = false;
-    window.dispatchEvent(new Event(journalEvent));
-  }
+    const key = (JSON.parse(body) as { idempotency_key: string }).idempotency_key;
+    if (previous && (previous.key !== key || previous.path !== path || previous.body !== body)) {
+      throw new Error("Сначала проверьте результат предыдущей покупки — она могла уже пройти.");
+    }
+    const pending = previous ?? { ownerId, path, body, key, cartIds, uncertain: false };
+    try {
+      // No request is sent if durable storage is unavailable.
+      writePurchase(pending);
+      const result = await send();
+      finishPurchase(pending, result, recovered);
+      return result;
+    } catch (reason) {
+      const current = readForOwner(ownerId);
+      if (current?.key === key) {
+        if (!current.uncertain && !current.receipt && definitive(reason)) localStorage.removeItem(prefix + ownerId);
+        else writePurchase({ ...current, uncertain: true });
+      }
+      throw reason;
+    }
+  });
 }

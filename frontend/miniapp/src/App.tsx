@@ -11,7 +11,7 @@ import { MobileNavigation } from "./MobileNavigation";
 import type { Highlights } from "./Today";
 import { logoHorizontal, logoSymbol } from "./brand";
 import { LiveSymbol } from "./LiveSymbol";
-import { CART_MAX_TICKETS, configuredCartTtl, loadCart, saveCart } from "./cart";
+import { CART_MAX_TICKETS, configuredCartTtl, filterPurchasedCartTickets, isCartPurchaseMarker, loadCart, saveCart } from "./cart";
 import {
   Balance,
   EmptyState,
@@ -374,6 +374,26 @@ export default function App({ initData, localDev = false }: AppProps) {
     return () => { active = false; window.clearInterval(timer); };
   }, []);
   useEffect(() => saveCart(cart, cartTtl), [cart, cartTtl]);
+  useEffect(() => {
+    let frame: number | null = null;
+    const synchronizePurchased = (event: StorageEvent) => {
+      if (event.storageArea !== localStorage || !isCartPurchaseMarker(event.key)) return;
+      if (frame !== null) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = null;
+        setCart(current => {
+          if (!current.length) return current;
+          const remaining = filterPurchasedCartTickets(current, cartTtl);
+          return remaining.length === current.length ? current : remaining;
+        });
+      });
+    };
+    window.addEventListener("storage", synchronizePurchased);
+    return () => {
+      window.removeEventListener("storage", synchronizePurchased);
+      if (frame !== null) window.cancelAnimationFrame(frame);
+    };
+  }, [cartTtl]);
   useEffect(() => {
     if (!notice) return;
     const timer = window.setTimeout(() => setNotice(null), 4_000);

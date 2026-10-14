@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { rawRequest } from "./api";
-import { completePurchase, durablePurchase, journalEvent, recoveredEvent, purchaseActive, readPurchase, receiptGame } from "./purchaseJournal";
+import { cancelPurchase, completePurchase, durablePurchase, journalEvent, purchaseActive, readPurchase, receiptGame } from "./purchaseJournal";
 import type { PendingPurchase, Receipt } from "./purchaseJournal";
 import { formatCas } from "./format";
 
@@ -22,8 +22,8 @@ export function PurchaseRecovery({ initData }: { initData: string }) {
           `/api/v1/miniapp/purchase-receipts/${encodeURIComponent(value.key)}?game=${receiptGame(value)}`, initData);
         if (disposed || purchaseActive() || readPurchase()?.key !== value.key) return;
         if (response.receipt) {
-          completePurchase(value, response.receipt, true);
-          setResult(response.receipt); setPending(null); setMessage(null);
+          await completePurchase(value, response.receipt, true);
+          setResult(response.receipt); setPending(readPurchase()); setMessage(null);
         }
       } catch (reason) {
         if (!disposed) setMessage(reason instanceof Error ? reason.message : "Нет связи. Проверим покупку, когда интернет вернётся.");
@@ -48,22 +48,19 @@ export function PurchaseRecovery({ initData }: { initData: string }) {
     try {
       let receipt: Receipt | null;
       if (cancel) {
-        const response = await rawRequest<{ cancelled: boolean; receipt: Receipt | null }>(
-          `/api/v1/miniapp/purchase-receipts/${encodeURIComponent(pending.key)}/cancel?game=${receiptGame(pending)}`, initData, { method: "POST" });
+        const response = await cancelPurchase(pending, () => rawRequest<{ cancelled: boolean; receipt: Receipt | null }>(
+          `/api/v1/miniapp/purchase-receipts/${encodeURIComponent(pending.key)}/cancel?game=${receiptGame(pending)}`, initData, { method: "POST" }));
         receipt = response.receipt;
         if (!receipt && response.cancelled) {
-          // Server has fenced this key. A delayed original request cannot buy tickets.
-          localStorage.removeItem(`k-loto:purchase:v1:${pending.ownerId}`);
-          window.dispatchEvent(new Event(journalEvent));
-          window.dispatchEvent(new CustomEvent(recoveredEvent, { detail: { path: pending.path, receipt: null, cartIds: [] } }));
-          setPending(null); setMessage("Неподтверждённая покупка отменена. Билеты из корзины можно купить заново.");
+          setPending(readPurchase()); setMessage("Неподтверждённая покупка отменена. Билеты из корзины можно купить заново.");
         }
       } else {
         receipt = await durablePurchase(pending.path, pending.body,
-          () => rawRequest<Receipt>(pending.path, initData, { method: "POST", body: pending.body }), () => false, pending.cartIds);
+          () => rawRequest<Receipt>(pending.path, initData, { method: "POST", body: pending.body }), () => false, pending.cartIds, true);
       }
       if (receipt) {
-        completePurchase(pending, receipt, true); setResult(receipt); setPending(null);
+        if (cancel) await completePurchase(pending, receipt, true);
+        setResult(receipt); setPending(readPurchase());
       }
     } catch (reason) { setMessage(reason instanceof Error ? reason.message : "Связь прервалась. Покупку пока не удалось проверить."); }
     finally { setBusy(false); }

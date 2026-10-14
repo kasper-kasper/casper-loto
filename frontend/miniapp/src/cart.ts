@@ -3,6 +3,7 @@ import type { CartTicket } from "./types";
 
 const STORAGE_KEY = "k-loto:cart:v2";
 const PURCHASED_KEY = "k-loto:cart:purchased:v1";
+const PURCHASED_PREFIX = "k-loto:cart:purchased:v2:";
 export const CART_MAX_TICKETS = 1_000;
 
 interface StoredCart {
@@ -16,16 +17,30 @@ function purchasedIds(ttlSeconds: number | null, now: number): Record<string, nu
   return Object.fromEntries(Object.entries(entries).filter(([, expiry]) => Number.isFinite(expiry) && expiry > now));
 }
 
-export function markCartPurchased(ids: string[], ttlSeconds: number | null, now = Date.now()): void {
-  const storage = ttlSeconds === null ? sessionStorage : localStorage;
-  const entries = purchasedIds(ttlSeconds, now);
-  for (const id of ids) entries[id] = ttlSeconds === null ? Number.MAX_SAFE_INTEGER : now + ttlSeconds * 1000;
-  storage.setItem(PURCHASED_KEY, JSON.stringify(entries));
+export function markCartPurchased(ids: string[]): void {
+  // Each position has its own shared marker, avoiding lost read/modify/write
+  // updates across players and protecting duplicated session-only carts.
+  // Display TTL cannot make a purchased ID reusable in a stale, still-open tab.
+  for (const id of ids) localStorage.setItem(PURCHASED_PREFIX + id, "1");
 }
 
 export function containsPurchasedCartIds(ids: string[], ttlSeconds: number | null): boolean {
-  const consumed = purchasedIds(ttlSeconds, Date.now());
-  return ids.some(id => Boolean(consumed[id]));
+  return filterPurchasedCartTickets(ids.map(id => ({ id })), ttlSeconds).length !== ids.length;
+}
+
+export function filterPurchasedCartTickets<T extends { id: string }>(tickets: T[], ttlSeconds: number | null, now = Date.now()): T[] {
+  const consumed = purchasedIds(ttlSeconds, now);
+  return tickets.filter(ticket => {
+    const key = PURCHASED_PREFIX + ticket.id;
+    const raw = localStorage.getItem(key);
+    if (raw === null) return !consumed[ticket.id];
+    if (raw !== "1") throw new Error("Не удалось проверить купленные позиции корзины.");
+    return false;
+  });
+}
+
+export function isCartPurchaseMarker(key: string | null): boolean {
+  return key === null || key === PURCHASED_KEY || key.startsWith(PURCHASED_PREFIX);
 }
 
 export function configuredCartTtl(): number | null {
@@ -43,8 +58,7 @@ export function loadCart(ttlSeconds: number | null, now = Date.now()): CartTicke
       storage.removeItem(STORAGE_KEY);
       return [];
     }
-    const consumed = purchasedIds(ttlSeconds, now);
-    return value.tickets.filter(ticket => !consumed[ticket.id]).slice(0, CART_MAX_TICKETS).map((ticket) => ({
+    return filterPurchasedCartTickets(value.tickets, ttlSeconds, now).slice(0, CART_MAX_TICKETS).map((ticket) => ({
       ...ticket,
       lotteryName: typeof ticket.lotteryName === "string" ? displayBrandName(ticket.lotteryName) : ticket.lotteryName,
       drawCount: ticket.drawCount === 5 ? 5 : 1,
@@ -61,8 +75,7 @@ export function saveCart(
   now = Date.now(),
 ): void {
   const storage = ttlSeconds === null ? sessionStorage : localStorage;
-  const consumed = purchasedIds(ttlSeconds, now);
-  tickets = tickets.filter(ticket => !consumed[ticket.id]);
+  tickets = filterPurchasedCartTickets(tickets, ttlSeconds, now);
   if (tickets.length === 0) {
     storage.removeItem(STORAGE_KEY);
     return;

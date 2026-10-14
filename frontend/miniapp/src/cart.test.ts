@@ -1,6 +1,22 @@
-import { CART_MAX_TICKETS, loadCart, saveCart } from "./cart";
+import { CART_MAX_TICKETS, loadCart, markCartPurchased, saveCart } from "./cart";
+
+beforeEach(() => { sessionStorage.clear(); localStorage.clear(); });
 
 describe("cart persistence", () => {
+  it("does not resurrect purchased positions when a stale cart is saved after its TTL", () => {
+    const ticket = { id: "purchased-before-ttl", lotteryCode: "weekly", lotteryName: "Weekly", price: 100, numbers: [1, 2, 3, 4, 5], drawCount: 1 as const };
+    saveCart([ticket], 300, 1_000);
+    markCartPurchased([ticket.id]);
+    saveCart([ticket], 300, 1_000_000);
+    expect(loadCart(300, 1_000_001)).toEqual([]);
+  });
+
+  it("honors existing session purchase markers from the previous client", () => {
+    const ticket = { id: "legacy-purchased", lotteryCode: "weekly", lotteryName: "Weekly", price: 100, numbers: [1, 2, 3, 4, 5], drawCount: 1 as const };
+    sessionStorage.setItem("k-loto:cart:purchased:v1", JSON.stringify({ [ticket.id]: Number.MAX_SAFE_INTEGER }));
+    saveCart([ticket], null, 1_000);
+    expect(loadCart(null, 2_000)).toEqual([]);
+  });
   it("displays a legacy brand label without changing saved ticket data", () => {
     const ticket = { id: "legacy", lotteryCode: "weekly", lotteryName: "Kasper Grand", price: 50_000, numbers: [1, 2, 3, 4, 5, 36, 37], drawCount: 5 as const };
     saveCart([ticket], null, 1_000);

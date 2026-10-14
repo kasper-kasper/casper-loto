@@ -4,6 +4,7 @@ import { vi } from "vitest";
 import App from "./App";
 import { miniAppApi } from "./api";
 import { MINIAPP_TEXTS } from "./content";
+import { markCartPurchased } from "./cart";
 import type { Account, Dashboard, Ticket } from "./types";
 
 vi.mock("./api", () => ({
@@ -396,6 +397,19 @@ it("keeps a confirmed purchase successful when the following refresh fails", asy
   expect(await screen.findByLabelText("4 900 CAS")).toBeInTheDocument();
   expect(screen.queryByText("Покупка не выполнена.")).not.toBeInTheDocument();
   await waitFor(() => expect(screen.getByRole("button", { name: "Купить билет" })).toBeDisabled());
+});
+
+it("removes cart positions purchased in another tab before checkout", async () => {
+  sessionStorage.setItem("k-loto:cart:v2", JSON.stringify({ expiresAt: Number.MAX_SAFE_INTEGER, tickets: [{ id: "other-tab-ticket", lotteryCode: "weekly", lotteryName: "Weekly 5/20", price: 100, numbers: [1, 2, 3, 4, 5], drawCount: 1 }] }));
+  render(<App initData="signed" />);
+  expect(await screen.findByRole("button", { name: "Корзина: 1 комбинация" })).toBeInTheDocument();
+  act(() => {
+    markCartPurchased(["other-tab-ticket"]);
+    window.dispatchEvent(new StorageEvent("storage", { key: "k-loto:cart:purchased:v2:other-tab-ticket", storageArea: localStorage }));
+  });
+  await waitFor(() => expect(screen.queryByRole("button", { name: "Корзина: 1 комбинация" })).not.toBeInTheDocument());
+  expect(sessionStorage.getItem("k-loto:cart:v2")).toBeNull();
+  expect(miniAppApi.purchase).not.toHaveBeenCalled();
 });
 
 it("keeps Casper Grand main and special number fields independent", async () => {
