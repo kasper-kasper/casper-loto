@@ -356,3 +356,101 @@ async def test_recovery_processes_multiple_missed_draws_chronologically(
     assert settled == draw_ids
     assert report.settled_draw_ids == tuple(draw_ids)
     assert report.prepared_draw_ids == (UUID(int=20), UUID(int=21), UUID(int=22))
+
+
+async def test_failed_lottery_does_not_block_other_recovery_or_overtake(monkeypatch):
+    broken, healthy = UUID(int=40), UUID(int=41)
+    first, later, other = UUID(int=42), UUID(int=43), UUID(int=44)
+    service = DrawRecoveryService(
+        cast(async_sessionmaker[AsyncSession], DummySessionFactory())
+    )
+    monkeypatch.setattr(
+        "k_loto.application.daily_transition.DailyTransitionService.finalize_if_ready",
+        AsyncMock(return_value=False),
+    )
+    monkeypatch.setattr(service, "_active_lottery_ids", AsyncMock(return_value=[]))
+    monkeypatch.setattr(service, "_lottery_is_active", AsyncMock(return_value=False))
+    monkeypatch.setattr(
+        service, "_lottery_id_for_draw", AsyncMock(side_effect=[broken, healthy])
+    )
+    remaining = [(first, broken), (later, broken), (other, healthy)]
+
+    async def next_due(now, *, excluded):
+        return next(
+            (draw for draw, lottery in remaining if lottery not in excluded), None
+        )
+
+    attempted = []
+
+    async def settle(_self, draw_id, *, now):
+        attempted.append(draw_id)
+        if draw_id == first:
+            raise RuntimeError("failed settlement")
+        remaining.remove((draw_id, healthy))
+        return SettlementResult(draw_id, (1, 2, 3, 4, 5), 0)
+
+    monkeypatch.setattr(service, "_next_due_draw", next_due)
+    monkeypatch.setattr(LotterySettlementService, "settle", settle)
+    report = await service.reconcile()
+    assert attempted == [first, other]
+    assert report.failed_lottery_ids == (broken,)
+    assert report.settled_draw_ids == (other,)
+
+
+async def test_scheduler_starts_retry_jobs_after_initial_recovery_failure(monkeypatch):
+    from k_loto.infrastructure.scheduler import SchedulerRuntime
+
+    runtime = SchedulerRuntime(10)
+    run = AsyncMock(side_effect=RuntimeError("initial recovery failed"))
+    monkeypatch.setattr(runtime, "_run", run)
+    monkeypatch.setattr(runtime, "_run_interesting_facts", AsyncMock())
+    monkeypatch.setattr(runtime, "_run_publication_events", AsyncMock())
+    await runtime.start()
+    try:
+        assert runtime._scheduler.running
+        assert runtime._scheduler.get_job("draw-reconciliation") is not None
+        assert run.await_count == 1
+    finally:
+        runtime.shutdown()
+
+
+async def test_partial_recovery_preserves_failed_heartbeat_and_progress(monkeypatch):
+    from unittest.mock import MagicMock
+
+    from k_loto.application.scheduler import RecoveryReport
+    from k_loto.infrastructure import scheduler as adapter
+
+    heartbeat = SimpleNamespace(
+        last_succeeded_at=None, last_failed_at=None, last_error=None
+    )
+
+    class Session:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            pass
+
+        def begin(self):
+            return self
+
+        execute = AsyncMock()
+        get = AsyncMock(return_value=heartbeat)
+
+    monkeypatch.setattr(adapter, "session_factory", Session)
+    autoplay = MagicMock()
+    monkeypatch.setattr(adapter, "AutoPlayService", autoplay)
+    runtime = adapter.SchedulerRuntime(10)
+    runtime._recovery = SimpleNamespace(
+        reconcile=AsyncMock(
+            return_value=RecoveryReport((UUID(int=1),), (), (UUID(int=2),))
+        )
+    )
+    runtime._monitor = SimpleNamespace(alert_scheduler_error=AsyncMock())
+    with pytest.raises(adapter.PartialDrawRecoveryError):
+        await runtime._run()
+    assert heartbeat.last_succeeded_at is None
+    assert heartbeat.last_failed_at is not None
+    assert heartbeat.last_error == "PartialDrawRecoveryError"
+    assert heartbeat.settled_count == 1
+    autoplay.assert_not_called()

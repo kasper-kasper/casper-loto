@@ -85,6 +85,7 @@ def main():
                     "alembic upgrade head >/dev/null && "
                     "alembic check && "
                     "python -m scripts.financial_recovery_postgres_smoke && "
+                    "python -m scripts.integrity_delivery_postgres_smoke && "
                     "python -m unittest backend.tests.test_server_maintenance -q'"
                 )
                 run_remote(

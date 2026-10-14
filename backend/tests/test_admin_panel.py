@@ -367,7 +367,9 @@ async def test_current_jackpot_adjustment_is_ledgered_and_audited() -> None:
         base_amount=888_888,
         version=1,
     )
-    fake = FakeSession(scalar_values=[None, jackpot, None])
+    fake = FakeSession(
+        scalar_values=[None, Lottery(id=lottery_id, code="flash"), jackpot, None]
+    )
 
     result = await AdminMutationService(
         cast(AsyncSession, fake), UUID(int=20)
@@ -472,6 +474,44 @@ async def test_daily_configuration_accepts_owner_even_ticket_price() -> None:
     assert result.ticket_price == 22_222
     assert result.base_jackpot == 2_811_996
     assert jackpot.base_amount == 2_811_996
+
+
+@pytest.mark.parametrize("price,base", [(1, 5_000_000), (20_000, 1)])
+async def test_dual_rejects_invalid_configuration_without_mutation(price, base):
+    lottery = Lottery(
+        id=UUID(int=37),
+        code="dual",
+        ruleset_code="casper_dual_2_12_2_12",
+        ticket_price=20_000,
+    )
+    jackpot = JackpotAccount(
+        lottery_id=lottery.id, balance=5_000_000, base_amount=5_000_000, version=1
+    )
+    fake = FakeSession(scalar_values=[lottery, jackpot])
+    with pytest.raises(ValueError, match="fixed"):
+        await AdminMutationService(
+            cast(AsyncSession, fake), UUID(int=20)
+        ).configure_lottery(
+            lottery.id,
+            ticket_price=price,
+            base_jackpot=base,
+            reason="Invalid Dual change",
+        )
+    assert lottery.ticket_price == 20_000 and jackpot.base_amount == 5_000_000
+    assert not fake.added
+
+
+async def test_dual_rejects_arbitrary_jackpot_adjustment():
+    lottery = Lottery(id=UUID(int=37), code="dual")
+    fake = FakeSession(scalar_values=[None, lottery])
+    with pytest.raises(ValueError, match="fixed"):
+        await AdminMutationService(cast(AsyncSession, fake), UUID(int=20)).set_jackpot(
+            lottery.id,
+            target_amount=10,
+            reason="Invalid jackpot",
+            idempotency_key="bad-dual",
+        )
+    assert not fake.added
 
 
 async def test_number_statistics_are_derived_from_completed_draw_history() -> None:

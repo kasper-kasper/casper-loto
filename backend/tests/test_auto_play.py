@@ -223,7 +223,13 @@ async def test_scheduler_runs_auto_play_without_owner_only_filter(
     class FakeRecovery:
         async def reconcile(self, *, now: datetime) -> Any:
             return type(
-                "Report", (), {"settled_draw_ids": (), "prepared_draw_ids": ()}
+                "Report",
+                (),
+                {
+                    "settled_draw_ids": (),
+                    "prepared_draw_ids": (),
+                    "failed_lottery_ids": (),
+                },
             )()
 
     class FakeAutoPlay:

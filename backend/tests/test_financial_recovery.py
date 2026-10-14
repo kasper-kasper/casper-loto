@@ -121,7 +121,7 @@ async def test_later_draw_cannot_overtake_unpaid_earlier_outcome() -> None:
 async def test_admin_cannot_spend_committed_jackpot() -> None:
     now = datetime(2026, 10, 14, 12, tzinfo=UTC)
     _, lottery, _, _, jackpot, _ = build_purchase_accounts(now)
-    session = FakeSession(scalar_values=[None, jackpot, 2000])
+    session = FakeSession(scalar_values=[None, lottery, jackpot, 2000])
     with pytest.raises(ValueError, match="committed"):
         await AdminMutationService(
             cast(AsyncSession, session), UUID(int=42)

@@ -69,18 +69,40 @@ class FakeRepository:
         self.event = event
         self.sent: list[UUID] = []
         self.failed: list[tuple[UUID, str]] = []
+        self.uncertain: list[UUID] = []
+        self.cancelled: list[tuple[UUID, str]] = []
+        self.retry_after: int | None = None
 
     async def claim_next(self, _now: datetime) -> ClaimedNotification | None:
         event, self.event = self.event, None
         return event
 
-    async def mark_sent(self, notification_id: UUID, _now: datetime) -> None:
+    async def mark_sent(
+        self, notification_id: UUID, _now: datetime, *, attempt: int
+    ) -> None:
         self.sent.append(notification_id)
 
     async def mark_failed(
-        self, notification_id: UUID, _now: datetime, error_code: str
+        self,
+        notification_id: UUID,
+        _now: datetime,
+        error_code: str,
+        *,
+        attempt: int,
+        retry_after: int | None = None,
     ) -> None:
         self.failed.append((notification_id, error_code))
+        self.retry_after = retry_after
+
+    async def mark_uncertain(
+        self, notification_id: UUID, _now: datetime, *, attempt: int
+    ) -> None:
+        self.uncertain.append(notification_id)
+
+    async def mark_cancelled(
+        self, notification_id: UUID, _now: datetime, error_code: str, *, attempt: int
+    ) -> None:
+        self.cancelled.append((notification_id, error_code))
 
 
 class FakeSender:
@@ -149,6 +171,21 @@ def test_miniapp_launch_button_is_only_added_when_url_is_configured() -> None:
     menu_button = miniapp_menu_button("https://example.test/miniapp")
     assert menu_button.text == "🎟 Играть в Casper Loto"
     assert menu_button.web_app.url == "https://example.test/miniapp"
+
+
+async def test_disabled_web_bot_command_opens_miniapp_without_issuing_code(monkeypatch):
+    from unittest.mock import AsyncMock
+
+    from k_loto.infrastructure import telegram_bot
+
+    open_miniapp = AsyncMock()
+    monkeypatch.setattr(
+        telegram_bot, "get_settings", lambda: SimpleNamespace(web_enabled=False)
+    )
+    monkeypatch.setattr(telegram_bot, "_send_miniapp", open_miniapp)
+    message = SimpleNamespace()
+    await telegram_bot.browser_login_command(message)
+    open_miniapp.assert_awaited_once_with(message)
 
 
 def test_purchase_message_contains_all_tickets_and_balance() -> None:
@@ -282,7 +319,47 @@ async def test_dispatch_failure_records_only_redacted_error_code() -> None:
 
     assert await dispatcher.process_one(datetime(2026, 8, 14, tzinfo=UTC))
     assert repository.sent == []
-    assert repository.failed == [(event.id, "telegram_send_failed")]
+    assert repository.failed == []
+    assert repository.uncertain == [event.id]
+
+
+@pytest.mark.parametrize("failure", ["throttled", "rejected", "cancelled"])
+async def test_dispatch_distinguishes_definitive_rejection_and_consent(failure):
+    from k_loto.application.notifications import DeliveryRejected, DeliveryThrottled
+
+    event = ClaimedNotification(
+        id=UUID(int=25),
+        event_key="safe-retry",
+        chat_id=123,
+        type=NotificationType.DELIVERY_TEST,
+        payload={},
+        attempts=1,
+        cancellation_reason="telegram_consent_withdrawn"
+        if failure == "cancelled"
+        else None,
+    )
+    repository = FakeRepository(event)
+
+    class Sender:
+        calls = 0
+
+        async def send(self, notification, text):
+            self.calls += 1
+            if failure == "throttled":
+                raise DeliveryThrottled(123)
+            raise DeliveryRejected()
+
+    sender = Sender()
+    await NotificationDispatcher(
+        repository, sender, BotNotificationFormatter()
+    ).process_one(datetime.now(UTC))
+    assert not repository.uncertain
+    if failure == "throttled":
+        assert repository.retry_after == 123
+        assert repository.failed == [(event.id, "telegram_rate_limited")]
+    else:
+        assert len(repository.cancelled) == 1
+    assert sender.calls == (0 if failure == "cancelled" else 1)
 
 
 @pytest.mark.parametrize("changed", [False, True])

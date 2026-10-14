@@ -101,6 +101,47 @@ def service(session: Session) -> PublicationService:
     return PublicationService(cast(AsyncSession, session))
 
 
+async def test_archiving_uncertain_delivery_is_audited_without_resend():
+    row = stored()
+    row.content["delivery"] = {"state": "uncertain", "error_type": "TimeoutError"}
+    session = Session(row)
+    await service(session).change(
+        row.id, author=row.author_id, revision=1, action="archive"
+    )
+    assert row.status == "archived"
+    assert row.content["delivery"]["state"] == "cancelled"
+    assert row.content["delivery"]["previous_state"] == "uncertain"
+    audit = next(item for item in session.added if isinstance(item, AdminAuditLog))
+    assert audit.old_values["content"]["delivery"]["state"] == "uncertain"
+
+
+async def test_active_delivery_cannot_be_archived_during_network_send():
+    row = stored()
+    row.content["delivery"] = {"state": "sending"}
+    with pytest.raises(PublicationConflict, match="progress"):
+        await service(Session(row)).change(
+            row.id, author=row.author_id, revision=1, action="archive"
+        )
+    assert row.status == "draft"
+
+
+async def test_interrupted_delivery_can_be_archived_without_enabling_transport():
+    from datetime import timedelta
+
+    row = stored()
+    row.content["delivery"] = {
+        "state": "sending",
+        "attempted_at": (datetime.now(UTC) - timedelta(minutes=6)).isoformat(),
+    }
+    session = Session(row)
+    await service(session).change(
+        row.id, author=row.author_id, revision=1, action="archive"
+    )
+    assert row.content["delivery"]["state"] == "cancelled"
+    assert row.content["delivery"]["previous_state"] == "sending"
+    assert any(isinstance(item, AdminAuditLog) for item in session.added)
+
+
 def test_catalog_and_snapshot_trust_only_server_templates() -> None:
     assert len(template_catalog()) == 1992
     assert not any(t["subcategory"] in {"A4.3", "A5.2"} for t in template_catalog())

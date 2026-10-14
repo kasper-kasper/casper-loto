@@ -165,7 +165,8 @@ def verify_candidate_finances(client: paramiko.SSHClient, compose: str) -> None:
         "-e SCHEDULER_ENABLED=false api sh -c '"
         f'export DATABASE_URL="${{DATABASE_URL%/*}}/{database}"; '
         "alembic upgrade head >/dev/null && alembic check && "
-        "python -m scripts.financial_recovery_postgres_smoke'"
+        "python -m scripts.financial_recovery_postgres_smoke && "
+        "python -m scripts.integrity_delivery_postgres_smoke'"
     )
     run_remote(
         client, "Candidate financial database verification", command, timeout=600
