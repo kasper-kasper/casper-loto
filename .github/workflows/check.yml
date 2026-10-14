@@ -69,5 +69,6 @@ jobs:
           python -m scripts.financial_recovery_postgres_smoke
           python -m scripts.integrity_delivery_postgres_smoke
           python -m scripts.miniapp_integration_smoke
+          python -m scripts.profile_projection_postgres_smoke
       - name: Clean Mini App and Admin checks and builds
         run: python -m scripts.build_frontends --check

@@ -98,3 +98,8 @@ Unanswered editorial suggestions expire at 24 hours from creation or source even
 ## OD-052 — Browser client retired in production — Resolved 2026-10-14
 
 The owner explicitly requested stage 1 of the financial audit remediation and authorized removing the separate browser version from the server. Keep `frontend/web` in the local Git repository for reference and local development; exclude it from release archives and gateway builds, remove its production checkout and disable `/api/v1/web` (including registration and login). `/web` returns 410. Telegram Mini App, Admin, existing users, purchased tickets, draws and ledger history remain available and unchanged. Retained rollback images follow the existing retention policy.
+
+
+## OD-053 — Mini App profile statistics — Resolved 2026-10-14
+
+Owner requests ready profile totals and favorite numbers from the latest 1,000 tickets, with no explanatory profile text for now. Preserve the current favorite-lottery selection (eligible lifetime regular-ticket count); favorite-number window is the latest 1,000 eligible regular tickets in that lottery. Refunded tickets and instant symbols are excluded. All tickets and ledger history remain intact. History loads in 20-record pages; derived statistics may be rebuilt from authoritative history. Admin simplification remains separate work.

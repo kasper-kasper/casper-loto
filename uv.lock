@@ -809,7 +809,7 @@ wheels = [
 
 [[package]]
 name = "k-loto"
-version = "1.56.3"
+version = "1.56.4"
 source = { editable = "." }
 dependencies = [
     { name = "aiogram" },

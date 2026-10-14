@@ -7,7 +7,7 @@ from uuid import UUID, uuid4
 from weakref import WeakKeyDictionary
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import func, or_, select, update
+from sqlalchemy import func, or_, select, text, update
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql.elements import ColumnElement
@@ -54,6 +54,8 @@ from k_loto.infrastructure.database.models import (
     LedgerTransaction,
     Lottery,
     NotificationOutbox,
+    PlayerLotteryStats,
+    PlayerProfileStats,
     Ticket,
     User,
     UserNotification,
@@ -305,83 +307,51 @@ class MiniAppQueryService:
         return {"last_jackpot": last, "next_event": next_event}
 
     async def account(self, user_id: UUID) -> MiniAppAccount:
-        user = await self._session.get(User, user_id)
-        if user is None:
-            raise LookupError("Player does not exist.")
-        balance = int(
-            await self._session.scalar(
-                select(Balance.amount).where(Balance.user_id == user_id)
-            )
-            or 0
-        )
-        stats = (
+        row = (
             await self._session.execute(
                 select(
-                    func.count(Ticket.id),
-                    func.count(Ticket.id).filter(
-                        Ticket.status == TicketStatus.PURCHASED
-                    ),
-                    func.count(Ticket.id).filter(Ticket.prize_amount > 0),
-                    func.coalesce(
-                        func.sum(Ticket.purchase_price).filter(
-                            Ticket.status != TicketStatus.REFUNDED
-                        ),
-                        0,
-                    ),
-                    func.coalesce(func.sum(Ticket.prize_amount), 0),
-                    func.coalesce(func.max(Ticket.prize_amount), 0),
-                ).where(Ticket.user_id == user_id)
-            )
-        ).one()
-        instant_stats = (
-            await self._session.execute(
-                select(
-                    func.count(InstantTicket.id),
-                    func.count(InstantTicket.id).filter(InstantTicket.prize_amount > 0),
-                    func.coalesce(func.sum(InstantTicket.purchase_price), 0),
-                    func.coalesce(func.sum(InstantTicket.prize_amount), 0),
-                    func.coalesce(func.max(InstantTicket.prize_amount), 0),
-                ).where(InstantTicket.user_id == user_id)
-            )
-        ).one()
-        preference = await self._session.get(UserNotificationPreference, user_id)
-        unread = int(
-            await self._session.scalar(
-                select(func.count(UserNotification.id)).where(
-                    UserNotification.user_id == user_id,
-                    UserNotification.read_at.is_(None),
-                    UserNotification.type != InAppNotificationType.DRAW_RESULT,
+                    User, Balance.amount, PlayerProfileStats, UserNotificationPreference
                 )
+                .join(PlayerProfileStats, PlayerProfileStats.user_id == User.id)
+                .outerjoin(Balance, Balance.user_id == User.id)
+                .outerjoin(
+                    UserNotificationPreference,
+                    UserNotificationPreference.user_id == User.id,
+                )
+                .where(User.id == user_id)
+                .execution_options(populate_existing=True)
             )
-            or 0
-        )
+        ).one_or_none()
+        if row is None:
+            raise LookupError("Player or profile projection does not exist.")
+        user, balance, stats, preference = row
         favorite_lottery = (
             await self._session.execute(
-                select(Lottery.code, Lottery.name, func.count(Ticket.id).label("uses"))
-                .join(Ticket, Ticket.lottery_id == Lottery.id)
+                select(Lottery.id, Lottery.code, Lottery.name)
+                .join(PlayerLotteryStats, PlayerLotteryStats.lottery_id == Lottery.id)
                 .where(
-                    Ticket.user_id == user_id,
-                    Ticket.status != TicketStatus.REFUNDED,
+                    PlayerLotteryStats.user_id == user_id,
+                    PlayerLotteryStats.ticket_count > 0,
                 )
-                .group_by(Lottery.id)
-                .order_by(func.count(Ticket.id).desc(), Lottery.code)
+                .order_by(PlayerLotteryStats.ticket_count.desc(), Lottery.code)
                 .limit(1)
             )
         ).first()
         favorite_numbers: tuple[int, ...] = ()
         if favorite_lottery is not None:
-            numbers = (
-                select(func.unnest(Ticket.numbers).label("number"))
+            # Limit before unnest/grouping: old tickets never enter this calculation.
+            recent = (
+                select(Ticket.numbers)
                 .where(
                     Ticket.user_id == user_id,
-                    Ticket.lottery_id
-                    == select(Lottery.id)
-                    .where(Lottery.code == favorite_lottery.code)
-                    .scalar_subquery(),
-                    Ticket.status != TicketStatus.REFUNDED,
+                    Ticket.lottery_id == favorite_lottery.id,
+                    text("tickets.status <> 'REFUNDED'"),
                 )
+                .order_by(Ticket.purchased_at.desc(), Ticket.id.desc())
+                .limit(1_000)
                 .subquery()
             )
+            numbers = select(func.unnest(recent.c.numbers).label("number")).subquery()
             favorite_numbers = tuple(
                 await self._session.scalars(
                     select(numbers.c.number)
@@ -392,13 +362,13 @@ class MiniAppQueryService:
             )
         return MiniAppAccount(
             display_name=user.display_name,
-            balance=balance,
-            ticket_count=int(stats[0]) + int(instant_stats[0]),
-            active_ticket_count=int(stats[1]),
-            winning_ticket_count=int(stats[2]) + int(instant_stats[1]),
-            total_spent=int(stats[3]) + int(instant_stats[2]),
-            total_won=int(stats[4]) + int(instant_stats[3]),
-            best_win=max(int(stats[5]), int(instant_stats[4])),
+            balance=int(balance or 0),
+            ticket_count=stats.ticket_count,
+            active_ticket_count=stats.active_ticket_count,
+            winning_ticket_count=stats.winning_ticket_count,
+            total_spent=stats.total_spent,
+            total_won=stats.total_won,
+            best_win=stats.best_win,
             favorite_lottery_code=(
                 str(favorite_lottery.code) if favorite_lottery is not None else None
             ),
@@ -412,7 +382,7 @@ class MiniAppQueryService:
                 else None
             ),
             favorite_numbers=favorite_numbers,
-            unread_notification_count=unread,
+            unread_notification_count=stats.unread_notification_count,
             notification_preferences=MiniAppNotificationPreferences(
                 telegram_enabled=bool(preference and preference.telegram_enabled),
                 draw_results_enabled=(

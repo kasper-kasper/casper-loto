@@ -764,6 +764,31 @@ it("returns to the personal overview when reselecting My in the dock", async () 
   expect(miniAppApi.purchase).not.toHaveBeenCalled();
 });
 
+it("reuses a fresh profile when switching views and reselecting My", async () => {
+  render(<App initData="test" />);
+  const dock = await screen.findByRole("navigation", { name: "Основная навигация" });
+  await waitFor(() => expect(miniAppApi.account).toHaveBeenCalledOnce());
+  fireEvent.click(within(dock).getByRole("button", { name: "Моё" }));
+  expect(await screen.findByRole("heading", { name: "Моё" })).toBeInTheDocument();
+  fireEvent.click(within(dock).getByRole("button", { name: "Сегодня" }));
+  fireEvent.click(within(dock).getByRole("button", { name: "Моё" }));
+  expect(await screen.findByRole("heading", { name: "Моё" })).toBeInTheDocument();
+  expect(miniAppApi.account).toHaveBeenCalledOnce();
+});
+
+it("shares an in-flight profile request when opening My during startup", async () => {
+  let complete!: (value: Account) => void;
+  vi.mocked(miniAppApi.account).mockImplementation(() => new Promise(resolve => { complete = resolve; }));
+  render(<App initData="test" />);
+  const dock = await screen.findByRole("navigation", { name: "Основная навигация" });
+  await waitFor(() => expect(miniAppApi.account).toHaveBeenCalledOnce());
+  fireEvent.click(within(dock).getByRole("button", { name: "Моё" }));
+  fireEvent.click(within(dock).getByRole("button", { name: "Моё" }));
+  expect(miniAppApi.account).toHaveBeenCalledOnce();
+  await act(async () => complete(account));
+  expect(await screen.findByRole("heading", { name: "Моё" })).toBeInTheDocument();
+});
+
 it("opens active regular tickets from home after previously viewing winning history", async () => {
   render(<App initData="test" />);
   fireEvent.click(await screen.findByRole("button", { name: "Моё" }));

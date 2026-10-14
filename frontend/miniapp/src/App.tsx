@@ -228,6 +228,8 @@ export default function App({ initData, localDev = false }: AppProps) {
   const snapshotEpoch = useRef(0);
   const dashboardSequence = useRef(0);
   const accountSequence = useRef(0);
+  const accountCache = useRef<{ epoch: number; identity: string; loadedAt: number; value: Account } | null>(null);
+  const accountRequest = useRef<{ epoch: number; identity: string; promise: Promise<Account | null> } | null>(null);
   const [roomLive, setRoomLive] = useState(Boolean(broadcastPreviewConfig()));
   const [fastHighlights, setFastHighlights] = useState<Highlights | null>(null);
   const [highlights, setHighlights] = useState<Highlights | null>(null);
@@ -293,13 +295,24 @@ export default function App({ initData, localDev = false }: AppProps) {
     return value;
   }, [applyDashboard, authenticated, initData]);
 
-  const refreshAccount = useCallback(async () => {
+  const refreshAccount = useCallback(async (force = true) => {
     if (!authenticated) return null;
-    const epoch = snapshotEpoch.current, sequence = ++accountSequence.current;
-    const value = await miniAppApi.account(initData);
-    if (epoch !== snapshotEpoch.current || sequence !== accountSequence.current) return null;
-    setAccount(value);
-    return value;
+    const epoch = snapshotEpoch.current;
+    const pending = accountRequest.current;
+    if (!force && pending?.epoch === epoch && pending.identity === initData) return pending.promise;
+    const cached = accountCache.current;
+    if (!force && cached?.epoch === epoch && cached.identity === initData && Date.now() - cached.loadedAt < 30_000) return cached.value;
+    const sequence = ++accountSequence.current;
+    const promise = miniAppApi.account(initData).then(value => {
+      if (epoch !== snapshotEpoch.current || sequence !== accountSequence.current) return null;
+      accountCache.current = { epoch, identity: initData, loadedAt: Date.now(), value };
+      setAccount(value);
+      return value;
+    }).finally(() => {
+      if (accountRequest.current?.promise === promise) accountRequest.current = null;
+    });
+    accountRequest.current = { epoch, identity: initData, promise };
+    return promise;
   }, [authenticated, initData]);
 
   useEffect(() => {
@@ -741,7 +754,7 @@ export default function App({ initData, localDev = false }: AppProps) {
     {view === "fast" && <section className="view-content fast-world" key="fast"><FastView lotteries={fastLotteries} feed={fastFeed} now={serverNow} balance={dashboard.balance} purchasing={purchasing} onOpen={(code) => void openLottery(code)} onQuickBuy={(code, combinations) => void purchaseDirect(code, combinations, 1)} /><footer className="fast-world-footer">{fastHighlights?.last_jackpot && <div className="fast-last-jackpot"><small>ПОСЛЕДНИЙ ДЖЕКПОТ</small><strong><Money value={fastHighlights.last_jackpot.jackpot_amount} compact /></strong><span>{fastHighlights.last_jackpot.lottery_name} · {formatMoscow(fastHighlights.last_jackpot.occurred_at)} МСК</span></div>}<button className="fast-history-button" type="button" onClick={() => { setTicketsLoading(true); setTicketLotteryFilter("scope:fast"); setAccountView("tickets"); setView("account"); }}><Icon name="ticket" /><span><b>Билеты Casper Fast</b><small>Активные и история</small></span><strong>→</strong></button></footer></section>}
 
     {view === "account" && <section className="view-content personal-section" key="account">
-      {accountView !== "overview" && <header className="personal-section-heading"><button type="button" aria-label="Обзор" onClick={() => { selectionHaptic(); setAccountView("overview"); void refreshAccount(); }}>← <span>Моё</span></button><h1>{accountView === "tickets" ? "Мои билеты" : "Уведомления"}</h1><button type="button" onClick={() => { if (accountView === "tickets") setAccountView("notifications"); else { setTicketsLoading(true); setAccountView("tickets"); } }}>{accountView === "tickets" ? "Уведомления" : "Билеты"}</button></header>}
+      {accountView !== "overview" && <header className="personal-section-heading"><button type="button" aria-label="Обзор" onClick={() => { selectionHaptic(); setAccountView("overview"); void refreshAccount(false).catch(() => undefined); }}>← <span>Моё</span></button><h1>{accountView === "tickets" ? "Мои билеты" : "Уведомления"}</h1><button type="button" onClick={() => { if (accountView === "tickets") setAccountView("notifications"); else { setTicketsLoading(true); setAccountView("tickets"); } }}>{accountView === "tickets" ? "Уведомления" : "Билеты"}</button></header>}
       {accountView === "overview" && (account ? <AccountOverview account={account} lotteries={dashboard.lotteries} onCatalog={() => setView("catalog")} onTickets={() => { setTicketLotteryFilter(""); setTicketWinsOnly(false); setTicketsLoading(true); setTicketView("active"); setAccountView("tickets"); }} onHistory={() => { setTicketsLoading(true); setTicketLotteryFilter(""); setTicketWinsOnly(false); setTicketView("history"); setAccountView("tickets"); }} onNotifications={() => setAccountView("notifications")} onEnableTelegram={() => void enableTelegramNotifications()} onSavePreferences={(preferences) => void saveNotificationPreferences(preferences)} /> : <div className="skeleton account-skeleton" />)}
       {accountView === "tickets" && <><div className={`segmented-control ${ticketView}`}><i /><button className={ticketView === "active" ? "selected" : ""} onClick={() => { selectionHaptic(); if (ticketView !== "active") setTicketsLoading(true); setTicketView("active"); }} type="button">Активные</button><button className={ticketView === "history" ? "selected" : ""} onClick={() => { selectionHaptic(); if (ticketView !== "history") setTicketsLoading(true); setTicketView("history"); }} type="button">История</button></div><div className="ticket-filters"><select aria-label="Фильтр по лотерее" value={ticketLotteryFilter} onChange={(event) => { setTicketsLoading(true); setTicketLotteryFilter(event.target.value); }}><option value="scope:standard">Обычные лотереи</option><option value="scope:fast">Casper Fast</option><option value="">Все игры</option><option value="kasper-live">Casper LIVE</option><option value="aurora">Casper Aurora</option><option value="vault">Casper Vault</option>{dashboard.lotteries.map((lottery) => <option key={lottery.code} value={lottery.code}>{lottery.name}</option>)}</select>{ticketView === "history" && <button aria-pressed={ticketWinsOnly} className={ticketWinsOnly ? "active" : ""} onClick={() => { setTicketsLoading(true); setTicketWinsOnly((value) => !value); }} type="button">Только выигрыши</button>}<span>{ticketTotal} {plural(ticketTotal, "билет", "билета", "билетов")}</span></div>{ticketsLoading ? <div className="ticket-skeletons"><div className="skeleton ticket-skeleton" /><div className="skeleton ticket-skeleton" /></div> : tickets.length ? <><TicketGroups active={ticketView === "active"} lotteries={dashboard.lotteries} now={serverNow} onOpen={setSelectedTicket} tickets={tickets} />{ticketsHaveMore && <button className="load-more-tickets" disabled={ticketsMoreLoading} onClick={() => void loadMoreTickets()} type="button">{ticketsMoreLoading ? "Загружаем…" : `Показать ещё · ${tickets.length} из ${ticketTotal}`}</button>}</> : <EmptyState title={ticketView === "active" ? "Нет активных билетов" : "История пока пуста"} text={ticketView === "active" ? "Выберите лотерею и соберите свою комбинацию." : "Завершённые билеты появятся после розыгрыша."} action={ticketView === "active" && firstAvailable ? { label: "Выбрать лотерею", onClick: () => setView("catalog") } : undefined} />}{ticketView === "active" && firstAvailable && !ticketsLoading && tickets.length > 0 && <PrimaryButton className="sticky-action" onClick={() => void openLottery(firstAvailable.code)}>Ещё один билет</PrimaryButton>}</>}
       {accountView === "notifications" && <NotificationCenter notifications={notifications} onPlay={() => firstAvailable ? void openLottery(firstAvailable.code) : setView("home")} onTickets={() => { setTicketsLoading(true); setAccountView("tickets"); }} />}
@@ -752,6 +765,6 @@ export default function App({ initData, localDev = false }: AppProps) {
     </section>}
 
     </Suspense>
-    <MobileNavigation view={view} unreadNotifications={account?.unread_notification_count ?? 0} onChange={(target) => { if (target === "account") { setAccountView("overview"); void refreshAccount(); } if (target === view) window.scrollTo({ top: 0, behavior: "instant" }); setView(target); }} />
+    <MobileNavigation view={view} unreadNotifications={account?.unread_notification_count ?? 0} onChange={(target) => { if (target === "account") { setAccountView("overview"); void refreshAccount(false).catch(() => undefined); } if (target === view) window.scrollTo({ top: 0, behavior: "instant" }); setView(target); }} />
   </main>;
 }

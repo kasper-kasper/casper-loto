@@ -174,7 +174,7 @@ export const miniAppApi = {
     if (lotteryCode.startsWith("scope:")) params.set("scope", lotteryCode.slice(6));
     else if (lotteryCode) params.set("lottery_code", lotteryCode);
     if (winsOnly) params.set("wins_only", "true");
-    params.set("limit", "100");
+    params.set("limit", "20");
     if (typeof position === "string") params.set("cursor", position);
     else params.set("offset", String(position));
     return request<TicketPage>(

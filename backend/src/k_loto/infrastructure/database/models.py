@@ -19,6 +19,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
@@ -75,6 +76,52 @@ class User(TimestampMixin, Base):
     is_admin: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default="false"
     )
+
+
+class PlayerProfileStats(Base):
+    """Rebuildable display projection; never the authoritative CAS account."""
+
+    __tablename__ = "player_profile_stats"
+    __table_args__ = (
+        CheckConstraint(
+            "ticket_count >= 0 AND active_ticket_count >= 0 AND "
+            "winning_ticket_count >= 0 AND total_spent >= 0 AND "
+            "total_won >= 0 AND best_win >= 0 AND unread_notification_count >= 0",
+            name="nonnegative",
+        ),
+    )
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    ticket_count: Mapped[int] = mapped_column(BigInteger, server_default="0")
+    active_ticket_count: Mapped[int] = mapped_column(BigInteger, server_default="0")
+    winning_ticket_count: Mapped[int] = mapped_column(BigInteger, server_default="0")
+    total_spent: Mapped[int] = mapped_column(BigInteger, server_default="0")
+    total_won: Mapped[int] = mapped_column(BigInteger, server_default="0")
+    best_win: Mapped[int] = mapped_column(BigInteger, server_default="0")
+    unread_notification_count: Mapped[int] = mapped_column(
+        BigInteger, server_default="0"
+    )
+
+
+class PlayerLotteryStats(Base):
+    """Lifetime eligible-ticket counts for a player's favorite lottery."""
+
+    __tablename__ = "player_lottery_stats"
+    __table_args__ = (CheckConstraint("ticket_count >= 0", name="nonnegative"),)
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    lottery_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("lotteries.id", ondelete="RESTRICT"),
+        primary_key=True,
+    )
+    ticket_count: Mapped[int] = mapped_column(BigInteger, server_default="0")
 
 
 class WebAccount(TimestampMixin, Base):
@@ -326,6 +373,14 @@ class Ticket(Base):
         Index("ix_ticket_user_draw_status", "user_id", "draw_id", "status"),
         Index("ix_ticket_draw", "draw_id"),
         Index("ix_ticket_second_draw", "second_draw_id"),
+        Index(
+            "ix_ticket_profile_recent",
+            "user_id",
+            "lottery_id",
+            text("purchased_at DESC"),
+            text("id DESC"),
+            postgresql_where=text("status <> 'REFUNDED'"),
+        ),
         CheckConstraint(
             "second_draw_id IS NULL OR second_draw_id <> draw_id",
             name=conv("ck_tickets_ck_tickets_distinct_dual_draws"),

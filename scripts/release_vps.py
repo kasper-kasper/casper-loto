@@ -146,7 +146,8 @@ def verify_candidate_finances(
         "alembic upgrade head >/dev/null && alembic check && "
         "python -m scripts.financial_recovery_postgres_smoke && "
         "python -m scripts.integrity_delivery_postgres_smoke && "
-        "python -m scripts.miniapp_integration_smoke'"
+        "python -m scripts.miniapp_integration_smoke && "
+        "python -m scripts.profile_projection_postgres_smoke'"
     )
     run_remote(
         client, "Candidate financial database verification", command, timeout=600
