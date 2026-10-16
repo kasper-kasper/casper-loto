@@ -15,8 +15,6 @@ import type {
   Dashboard,
   Draw,
   DrawDetail,
-  InterestingFact,
-  InterestingFactStatus,
   JackpotEvent,
   KasperLiveSummary,
   Lottery,
@@ -30,16 +28,15 @@ import type {
   Transaction,
 } from "./types";
 
-type View = "distribution" | "dashboard" | "fast" | "vault" | "aurora" | "kasper-live" | "lotteries" | "schedule" | "draws" | "jackpots" | "archive" | "players" | "analytics" | "facts" | "broadcast" | "system" | "publications";
+type View = "distribution" | "dashboard" | "fast" | "instant" | "lotteries" | "schedule" | "draws" | "jackpots" | "archive" | "players" | "analytics" | "system" | "publications";
+type InstantGame = "kasper-live" | "aurora" | "vault";
 type AnalyticsTab = "lotteries" | "tickets" | "numbers" | "finances";
 type SystemTab = "events" | "health" | "ledger" | "notifications" | "audit" | "development";
 
 const navigation: { id: View; label: string; code: string }[] = [
   { id: "dashboard", label: "Сегодня", code: "01" },
   { id: "fast", label: "Fast", code: "02" },
-  { id: "vault", label: "Casper Vault", code: "VAULT" },
-  { id: "aurora", label: "Casper Aurora", code: "AURORA" },
-  { id: "kasper-live", label: "Casper LIVE", code: "LIVE" },
+  { id: "instant", label: "Моментальные", code: "INST" },
   { id: "lotteries", label: "Лотереи", code: "03" },
   { id: "distribution", label: "Распределительные", code: "DIST" },
   { id: "schedule", label: "Расписание", code: "04" },
@@ -47,11 +44,9 @@ const navigation: { id: View; label: string; code: string }[] = [
   { id: "players", label: "Игроки", code: "06" },
   { id: "analytics", label: "Аналитика", code: "07" },
   { id: "jackpots", label: "Джекпоты", code: "08" },
-  { id: "archive", label: "Архив", code: "09" },
-  { id: "facts", label: "Интересные факты", code: "10" },
   { id: "publications", label: "Предложка и посты", code: "NEWS" },
-  { id: "broadcast", label: "Тест эфира", code: "11" },
   { id: "system", label: "Журналы", code: "12" },
+  { id: "archive", label: "Архив", code: "09" },
 ];
 
 const viewStorageKey = "k-loto:admin-view";
@@ -63,10 +58,19 @@ function storedView(): View {
   const legacy: Record<string, View> = {
     ledger: "system", notifications: "system", audit: "system", development: "system",
     statistics: "analytics", "ticket-analytics": "analytics",
+    vault: "instant", aurora: "instant", "kasper-live": "instant",
+    facts: "publications", broadcast: "dashboard",
   };
   const raw = path || remembered || "dashboard";
   const candidate = legacy[raw] ?? raw;
   return navigation.some((item) => item.id === candidate) ? candidate as View : "dashboard";
+}
+
+function storedInstantGame(): InstantGame {
+  const raw = new URLSearchParams(window.location.search).get("game")
+    ?? window.location.pathname.split("/").filter(Boolean).at(-1)
+    ?? window.localStorage.getItem(viewStorageKey);
+  return raw === "vault" || raw === "aurora" ? raw : "kasper-live";
 }
 
 const drawStatuses: Record<string, string> = { SCHEDULED: "Запланирован", CLOSED: "Продажи закрыты", DRAWING: "Розыгрыш", SETTLING: "Начисление выигрышей", PENDING: "Ожидает", RUNNING: "Выполняется", COMPLETED: "Завершён", FAILED: "Ошибка" };
@@ -634,31 +638,6 @@ function DevelopmentView({ changelog, devlog }: { changelog: ReleaseNote[]; devl
   </section>;
 }
 
-function BroadcastTestView({ lotteries, miniappUrl }: { lotteries: Lottery[]; miniappUrl?: string | null }) {
-  const available = lotteries.filter((lottery) => lottery.is_active && !["flash", "shadow", "pulse"].includes(lottery.code));
-  const [lotteryCode, setLotteryCode] = useState(available[0]?.code ?? "");
-  const [scenario, setScenario] = useState<"win" | "loss">("win");
-  const selectedLotteryCode = available.some((lottery) => lottery.code === lotteryCode) ? lotteryCode : available[0]?.code ?? "";
-  const start = () => {
-    if (!miniappUrl || !selectedLotteryCode) return;
-    const url = new URL(miniappUrl);
-    url.searchParams.set("broadcast-preview", selectedLotteryCode);
-    url.searchParams.set("scenario", scenario);
-    url.searchParams.set("started", String(Date.now()));
-    window.open(url.toString(), "_blank", "noopener,noreferrer");
-  };
-  return <section className="broadcast-test">
-    <header><span>РЕПЕТИЦИЯ</span><h2>Проверьте эфир глазами игрока</h2><p>Через пять секунд начнётся настоящий интерфейс эфира на полностью демонстрационных данных.</p></header>
-    <div className="broadcast-test-form">
-      <label>Лотерея<select aria-label="Лотерея тестового эфира" value={selectedLotteryCode} onChange={(event) => setLotteryCode(event.target.value)}>{available.map((lottery) => <option key={lottery.id} value={lottery.code}>{lottery.name}</option>)}</select></label>
-      <label>Результат<select aria-label="Сценарий тестового эфира" value={scenario} onChange={(event) => setScenario(event.target.value as "win" | "loss")}><option value="win">Билет выигрывает</option><option value="loss">Без выигрыша</option></select></label>
-      <button className="broadcast-launch" disabled={!miniappUrl || !selectedLotteryCode} onClick={start} type="button">Запустить тестовый эфир ↗</button>
-    </div>
-    <div className="broadcast-safety"><i>✓</i><span><b>Изолировано от игры</b>Никаких покупок, выплат, уведомлений и записей в историю. Fast здесь намеренно отсутствует.</span></div>
-    {!miniappUrl && <p className="error banner">Адрес Mini App не настроен на сервере.</p>}
-  </section>;
-}
-
 function SectionTabs<T extends string>({ value, items, onChange, label }: { value: T; items: Array<{ id: T; label: string }>; onChange: (value: T) => void; label: string }) {
   return <div className="section-tabs" role="tablist" aria-label={label}>{items.map((item) => <button type="button" role="tab" aria-selected={value === item.id} className={value === item.id ? "active" : ""} key={item.id} onClick={() => onChange(item.id)}>{item.label}</button>)}</div>;
 }
@@ -757,67 +736,6 @@ function SystemView({ tab, onTab, transactions, notifications, audit, onTransact
   </>;
 }
 
-const factTypeLabels: Record<string, string> = {
-  jackpot_drought: "Серия без джекпота",
-  record_current_jackpot: "Рекордный джекпот",
-  jackpot_growth: "Рост джекпота",
-  frequent_numbers: "Частые числа",
-  overdue_numbers: "Давно не выпадали",
-  daily_winner_leader: "Лидер по выигрышным билетам",
-  largest_daily_win: "Крупнейший выигрыш дня",
-  largest_weekly_win: "Крупнейший выигрыш недели",
-  unusual_win_rate: "Необычный процент выигрышей",
-  frequent_pair: "Частая пара",
-  busiest_draw: "Самый заметный тираж",
-};
-const factStatusLabels: Record<InterestingFactStatus, string> = {
-  new: "Новые", viewed: "Просмотренные", used: "Использованные", hidden: "Скрытые",
-};
-const factValueLabels: Record<string, string> = {
-  draws_without_jackpot: "Тиражей без джекпота", jackpot: "Текущий джекпот", previous_jackpot: "Было", growth: "Рост",
-  amount: "Сумма", ticket_count: "Билетов", participant_count: "Игроков", win_rate: "Доля выигрышей",
-  number: "Число", numbers: "Числа", pair: "Пара", appearances: "Выпадений", draws_since_last: "Тиражей не выпадало",
-  winner_count: "Победителей", winning_tickets: "Выигрышных билетов", payout: "Выплачено", sales: "Продажи",
-};
-
-function factValue(key: string, value: unknown): string {
-  if (Array.isArray(value)) return value.join(" · ");
-  if (typeof value === "number") {
-    if (["jackpot", "previous_jackpot", "amount", "payout", "sales"].includes(key)) return cas(value);
-    if (["growth", "win_rate"].includes(key)) return `${value.toLocaleString("ru-RU", { maximumFractionDigits: 1 })}%`;
-    return value.toLocaleString("ru-RU");
-  }
-  return String(value);
-}
-
-function InterestingFactsView({ facts, lotteries, onStatus }: { facts: InterestingFact[]; lotteries: Lottery[]; onStatus: (fact: InterestingFact, status: InterestingFactStatus) => Promise<void> }) {
-  const [factStatus, setFactStatus] = useState<InterestingFactStatus | "">("new");
-  const [lotteryId, setLotteryId] = useState("");
-  const [factType, setFactType] = useState("");
-  const [copiedId, setCopiedId] = useState("");
-  const types = [...new Set(facts.map((fact) => fact.fact_type))].sort();
-  const visible = facts.filter((fact) => (!factStatus || fact.status === factStatus) && (!lotteryId || fact.lottery_id === lotteryId) && (!factType || fact.fact_type === factType)).sort((left, right) => right.score - left.score);
-  const copy = async (fact: InterestingFact) => {
-    await navigator.clipboard.writeText(`${fact.title}\n\n${fact.description}`);
-    setCopiedId(fact.id);
-    window.setTimeout(() => setCopiedId(""), 1800);
-  };
-  return <>
-    <section className="facts-intro"><div><small>РЕДАКЦИОННАЯ ЛЕНТА</small><h2>Интересные факты</h2><p>До 50 сильных, неповторяющихся поводов. Новые идут первыми, использованные можно вернуть фильтром.</p></div><div className="fact-summary"><strong>{facts.filter((fact) => fact.status === "new").length}<small>новых</small></strong><strong>{facts.filter((fact) => fact.status === "used").length}<small>использовано</small></strong></div></section>
-    <div className="facts-filters">
-      <select aria-label="Статус факта" value={factStatus} onChange={(event) => setFactStatus(event.target.value as InterestingFactStatus | "")}><option value="">Все статусы</option>{Object.entries(factStatusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
-      <select aria-label="Лотерея факта" value={lotteryId} onChange={(event) => setLotteryId(event.target.value)}><option value="">Все лотереи</option>{lotteries.map((lottery) => <option key={lottery.id} value={lottery.id}>{lottery.name}</option>)}</select>
-      <select aria-label="Тип факта" value={factType} onChange={(event) => setFactType(event.target.value)}><option value="">Все типы</option>{types.map((type) => <option key={type} value={type}>{factTypeLabels[type] ?? translated(type, {})}</option>)}</select>
-    </div>
-    {visible.length ? <section className="facts-grid">{visible.map((fact, index) => <article className={`fact-card ${fact.status} ${index === 0 ? "featured" : ""}`} key={fact.id}>
-      <header><span>{factTypeLabels[fact.fact_type] ?? translated(fact.fact_type, {})}</span><b>{index === 0 ? "Лучший повод" : factStatusLabels[fact.status]}</b></header>
-      <small>{fact.lottery_name} · {new Date(`${fact.generation_date}T12:00:00`).toLocaleDateString("ru-RU")}</small><h3>{fact.title}</h3><p>{fact.description}</p>
-      <div className="fact-values">{Object.entries(fact.numeric_values).map(([key, value]) => <span key={key}><small>{factValueLabels[key] ?? translated(key, {})}</small><b>{factValue(key, value)}</b></span>)}</div>
-      <footer><button onClick={() => void copy(fact)}>{copiedId === fact.id ? "Текст скопирован" : "Скопировать готовый текст"}</button>{fact.status !== "viewed" && <button onClick={() => void onStatus(fact, "viewed")}>Отложить</button>}{fact.status !== "used" && <button className="primary" onClick={() => void onStatus(fact, "used")}>Использовано</button>}{fact.status !== "hidden" && <button className="quiet" onClick={() => void onStatus(fact, "hidden")}>Скрыть</button>}</footer>
-    </article>)}</section> : <section className="panel empty-facts"><h2>В этой выборке пока нет фактов</h2><p>Новая подборка появится автоматически после ежедневного расчёта.</p></section>}
-  </>;
-}
-
 function KasperLiveAdmin({ data, game = "kasper-live" }: { data: KasperLiveSummary; game?: string }) {
   return <section className="kasper-live-admin">
     <header><small>МГНОВЕННАЯ ЛОТЕРЕЯ</small><h2>{game === "vault" ? "Casper Vault" : game === "aurora" ? "Casper Aurora" : "Casper LIVE"}</h2><p>Только общий итог. Данные игроков в этом разделе не показываются.</p></header>
@@ -834,6 +752,7 @@ export default function App() {
   const [session, setSession] = useState<AdminSession | null>(null);
   const [checking, setChecking] = useState(true);
   const [view, setView] = useState<View>(storedView);
+  const [loadedSection, setLoadedSection] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
@@ -852,9 +771,9 @@ export default function App() {
   const [statisticsWindow, setStatisticsWindow] = useState(20);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [interestingFacts, setInterestingFacts] = useState<InterestingFact[]>([]);
   const [releaseNotes, setReleaseNotes] = useState<{ changelog: ReleaseNote[]; devlog: ReleaseNote[] }>({ changelog: [], devlog: [] });
   const [ticketAnalytics, setTicketAnalytics] = useState<TicketAnalytics | null>(null);
+  const [instantGame, setInstantGame] = useState<InstantGame>(storedInstantGame);
   const [kasperLive, setKasperLive] = useState<KasperLiveSummary | null>(null);
   const [analyticsTab, setAnalyticsTab] = useState<AnalyticsTab>("lotteries");
   const [systemTab, setSystemTab] = useState<SystemTab>(() => window.location.pathname === "/development" ? "development" : "events");
@@ -871,7 +790,7 @@ export default function App() {
 
   useEffect(() => { adminApi.session().then(setSession).catch(() => setSession(null)).finally(() => setChecking(false)); }, []);
   useEffect(() => {
-    const restore = () => setView(storedView());
+    const restore = () => { setView(storedView()); setInstantGame(storedInstantGame()); };
     window.addEventListener("popstate", restore);
     return () => window.removeEventListener("popstate", restore);
   }, []);
@@ -892,9 +811,10 @@ export default function App() {
         const [dashboardData, analyticsData] = await Promise.all([adminApi.dashboard("fast"), adminApi.ticketAnalytics("fast")]);
         apply(() => { setDashboard(dashboardData); setTicketAnalytics(analyticsData); });
       }
-      if (target === "aurora") { const data = await adminApi.aurora(); apply(() => setKasperLive(data)); }
-      if (target === "vault") { const data = await adminApi.vault(); apply(() => setKasperLive(data)); }
-      if (target === "kasper-live") { const data = await adminApi.kasperLive(); apply(() => setKasperLive(data)); }
+      if (target === "instant") {
+        const fetchSummary = instantGame === "vault" ? adminApi.vault : instantGame === "aurora" ? adminApi.aurora : adminApi.kasperLive;
+        const data = await fetchSummary(); apply(() => setKasperLive(data));
+      }
       if (target === "players") { const rows = await adminApi.players(); apply(() => setPlayers(rows)); }
       if (target === "lotteries") { const rows = await adminApi.lotteries(); apply(() => setLotteries(rows)); }
       if (target === "schedule") {
@@ -908,14 +828,23 @@ export default function App() {
         apply(() => { setLotteries(available); });
       }
       if (target === "archive") { const available = await adminApi.lotteries(); apply(() => setLotteries(available)); }
-      if (target === "broadcast") { const rows = await adminApi.lotteries(); apply(() => setLotteries(rows)); }
-      if (target === "facts") {
-        const [facts, available] = await Promise.all([adminApi.interestingFacts(""), adminApi.lotteries()]);
-        apply(() => { setInterestingFacts(facts); setLotteries(available); });
-      }
       if (target === "system") {
-        const [ledgerRows, notificationRows, auditRows, dashboardData, changelog, devlog] = await Promise.all([adminApi.transactions(), adminApi.notifications(), adminApi.audit(), adminApi.dashboard(), adminApi.releaseNotes("changelog"), adminApi.releaseNotes("devlog")]);
-        apply(() => { setTransactions(ledgerRows); setNotifications(notificationRows); setAudit(auditRows); setDashboard(dashboardData); setReleaseNotes({ changelog, devlog }); });
+        if (systemTab === "events" || systemTab === "ledger") {
+          const rows = await adminApi.transactions(); apply(() => setTransactions(rows));
+        }
+        if (systemTab === "events" || systemTab === "notifications") {
+          const rows = await adminApi.notifications(); apply(() => setNotifications(rows));
+        }
+        if (systemTab === "events" || systemTab === "audit") {
+          const rows = await adminApi.audit(); apply(() => setAudit(rows));
+        }
+        if (systemTab === "events" || systemTab === "health") {
+          const data = await adminApi.dashboard(); apply(() => setDashboard(data));
+        }
+        if (systemTab === "development") {
+          const [changelog, devlog] = await Promise.all([adminApi.releaseNotes("changelog"), adminApi.releaseNotes("devlog")]);
+          apply(() => setReleaseNotes({ changelog, devlog }));
+        }
       }
       if (target === "analytics") {
         const [available, dashboardData, analyticsData] = await Promise.all([adminApi.lotteries(), adminApi.dashboard(scope), adminApi.ticketAnalytics(scope)]);
@@ -929,13 +858,13 @@ export default function App() {
     } catch (reason) {
       if (reason instanceof ApiError && reason.status === 401) setSession(null);
       apply(() => setError(reason instanceof Error ? reason.message : "Не удалось выполнить запрос администратора."));
-    } finally { apply(() => { setLoading(false); setRefreshing(false); }); }
-  }, [scope]);
+    } finally { apply(() => { setLoadedSection(`${target}:${scope}:${instantGame}:${systemTab}`); setLoading(false); setRefreshing(false); }); }
+  }, [scope, instantGame, systemTab]);
 
   useEffect(() => {
     if (!session) return;
     const task = window.setTimeout(() => void load(view), 0);
-    return () => window.clearTimeout(task);
+    return () => { window.clearTimeout(task); loadGeneration.current += 1; };
   }, [session, view, load]);
 
 
@@ -959,27 +888,27 @@ export default function App() {
   if (!session) return <Login onAuthenticated={setSession} />;
 
   const visibleLotteries = lotteries.filter(l => scope === "all" || ["flash", "shadow", "pulse"].includes(l.code) === (scope === "fast"));
+  const ready = !loading && loadedSection === `${view}:${scope}:${instantGame}:${systemTab}`;
   const title = navigation.find((item) => item.id === view)?.label ?? "Управление";
   return <div className={`admin-shell ${view === "fast" ? "fast-admin" : ""}`}>
     <aside><div className="brand"><img alt="Casper Loto" src={logoHorizontal} /><small>Панель владельца</small></div><nav>{navigation.map((item) => <button className={view === item.id ? "active" : ""} key={item.id} onClick={() => navigate(item.id)}><small>{item.code}</small>{item.label}</button>)}</nav><div className="operator"><small>ВЛАДЕЛЕЦ</small><b>{session.username}</b><button onClick={() => void adminApi.logout().finally(() => setSession(null))}>ЗАВЕРШИТЬ СЕАНС</button></div></aside>
-    <main className="workspace"><header className="topbar"><div><small>Casper Loto · управление</small><h1>{title}</h1></div><div className="refresh-control"><span>{loadedAt ? `Обновлено ${date(new Date(loadedAt).toISOString())} МСК` : "Загружаем данные"}</span><button disabled={loading || refreshing} onClick={() => void load(view, true)}>{refreshing ? "Обновляем…" : "Обновить данные"}</button></div></header>
+    <main className="workspace"><header className="topbar"><div><small>Casper Loto · управление</small><h1>{title}</h1></div><div className="refresh-control"><span>{loadedAt ? `Обновлено ${date(new Date(loadedAt).toISOString())} МСК` : "Загружаем данные"}</span>{view !== "publications" && <button disabled={loading || refreshing} onClick={() => void load(view, true)}>{refreshing ? "Обновляем…" : "Обновить данные"}</button>}</div></header>
       {["lotteries", "schedule", "draws", "jackpots", "analytics"].includes(view) && <div className="scope-toolbar"><SectionTabs label="Тип игр" value={scope} items={[{ id: "standard", label: "Лотереи" }, { id: "fast", label: "Fast" }, { id: "all", label: "Всё" }]} onChange={setScope} /><p>{scope === "standard" ? "Обычные лотереи. Быстрые тиражи и их выигрыши — в Fast." : scope === "fast" ? "Только быстрые игры: FLASH, SHADOW и PULSE." : "Полная картина: обычные лотереи и Fast вместе."} Игроки и Фонд Каспера общие.</p></div>}
-      {error && <div className="error banner">{error}</div>}{loading && <div className="loading">ЗАГРУЖАЕМ ДАННЫЕ…</div>}
-      {!loading && view === "dashboard" && dashboard && projectDashboard && ticketAnalytics && <DashboardView data={dashboard} project={projectDashboard} analytics={ticketAnalytics} refreshedAt={loadedAt} onOpen={openDraw} onNavigate={(target) => { if (target === "system") setSystemTab("health"); navigate(target); }} />}
-      {!loading && view === "fast" && dashboard && ticketAnalytics && <FastDashboard data={dashboard} analytics={ticketAnalytics} refreshedAt={loadedAt} onOpen={openDraw} />}
-      {!loading && view === "jackpots" && <JackpotHistoryView scope={scope} onOpen={openDraw} />}
-      {!loading && view === "archive" && <DrawsView key={`archive-${archiveScope}`} archivedOnly lotteries={lotteries} onOpen={openDraw} scope={archiveScope} onScope={setArchiveScope} />}
-      {view === "distribution" && <DistributionDraws />}
-      {!loading && (view === "kasper-live" || view === "aurora" || view === "vault") && kasperLive && <KasperLiveAdmin data={kasperLive} game={view} />}
-      {!loading && view === "players" && <PlayersView players={players} search={playerSearch} onSearch={setPlayerSearch} onResults={applyPlayerResults} onReload={() => load("players")} />}
-      {!loading && view === "lotteries" && <section className="stack">{visibleLotteries.filter((lottery) => lottery.is_active).map((lottery) => <LotteryCard key={lottery.id} lottery={lottery} onSaved={() => load("lotteries")} />)}</section>}
-      {!loading && view === "schedule" && <ScheduleView key={scope} entries={scheduleEntries} lotteries={visibleLotteries} loadedAt={scheduleLoadedAt} />}
-      {!loading && view === "draws" && <DrawsView key={scope} scope={scope} lotteries={visibleLotteries} onOpen={openDraw} />}
-      {!loading && view === "analytics" && dashboard && ticketAnalytics && <AnalyticsView tab={analyticsTab} onTab={setAnalyticsTab} dashboard={dashboard} analytics={ticketAnalytics} lotteries={visibleLotteries} statistics={statistics} selectedLotteryId={statisticsLotteryId} windowSize={statisticsWindow} onLottery={id => { setStatistics(null); setStatisticsLotteryId(id); }} onWindow={size => { setStatistics(null); setStatisticsWindow(size); }} />}
-      {!loading && view === "facts" && <InterestingFactsView facts={interestingFacts} lotteries={lotteries} onStatus={async (fact, factStatus) => { try { const updated = await adminApi.setInterestingFactStatus(fact.id, factStatus); setInterestingFacts((current) => current.map((item) => item.id === updated.id ? updated : item)); } catch (reason) { setError(reason instanceof Error ? reason.message : "Не удалось изменить статус факта."); } }} />}
-      {!loading && view === "broadcast" && <BroadcastTestView lotteries={lotteries} miniappUrl={session.miniapp_url} />}
-      {!loading && view === "publications" && <Publications />}
-      {!loading && view === "system" && <SystemView dashboard={dashboard} releaseNotes={releaseNotes} tab={systemTab} onTab={setSystemTab} transactions={transactions} notifications={notifications} audit={audit} onTransactions={(query) => void adminApi.transactions(query).then(setTransactions).catch((reason: Error) => setError(reason.message))} onOpenPlayer={openPlayerById} />}
+      {error && <div className="error banner">{error}</div>}{(loading || !ready) && <div className="loading">ЗАГРУЖАЕМ ДАННЫЕ…</div>}
+      {ready && view === "dashboard" && dashboard && projectDashboard && ticketAnalytics && <DashboardView data={dashboard} project={projectDashboard} analytics={ticketAnalytics} refreshedAt={loadedAt} onOpen={openDraw} onNavigate={(target) => { if (target === "system") setSystemTab("health"); navigate(target); }} />}
+      {ready && view === "fast" && dashboard && ticketAnalytics && <FastDashboard data={dashboard} analytics={ticketAnalytics} refreshedAt={loadedAt} onOpen={openDraw} />}
+      {ready && view === "jackpots" && <JackpotHistoryView key={loadedAt} scope={scope} onOpen={openDraw} />}
+      {ready && view === "archive" && <DrawsView key={`archive-${archiveScope}-${loadedAt}`} archivedOnly lotteries={lotteries} onOpen={openDraw} scope={archiveScope} onScope={setArchiveScope} />}
+      {ready && view === "distribution" && <DistributionDraws key={loadedAt} />}
+      {view === "instant" && <SectionTabs value={instantGame} label="Моментальные лотереи" items={[{ id: "kasper-live", label: "Casper LIVE" }, { id: "aurora", label: "Casper Aurora" }, { id: "vault", label: "Casper Vault" }]} onChange={(game) => { if (game === instantGame) return; loadGeneration.current += 1; setKasperLive(null); setInstantGame(game); window.history.pushState({}, "", `/instant?game=${game}`); }} />}
+      {ready && view === "instant" && kasperLive && <KasperLiveAdmin data={kasperLive} game={instantGame} />}
+      {ready && view === "players" && <PlayersView players={players} search={playerSearch} onSearch={setPlayerSearch} onResults={applyPlayerResults} onReload={() => load("players")} />}
+      {ready && view === "lotteries" && <section className="stack">{visibleLotteries.filter((lottery) => lottery.is_active).map((lottery) => <LotteryCard key={lottery.id} lottery={lottery} onSaved={() => load("lotteries")} />)}</section>}
+      {ready && view === "schedule" && <ScheduleView key={scope} entries={scheduleEntries} lotteries={visibleLotteries} loadedAt={scheduleLoadedAt} />}
+      {ready && view === "draws" && <DrawsView key={`${scope}-${loadedAt}`} scope={scope} lotteries={visibleLotteries} onOpen={openDraw} />}
+      {ready && view === "analytics" && dashboard && ticketAnalytics && <AnalyticsView tab={analyticsTab} onTab={setAnalyticsTab} dashboard={dashboard} analytics={ticketAnalytics} lotteries={visibleLotteries} statistics={statistics} selectedLotteryId={statisticsLotteryId} windowSize={statisticsWindow} onLottery={id => { setStatistics(null); setStatisticsLotteryId(id); }} onWindow={size => { setStatistics(null); setStatisticsWindow(size); }} />}
+      {ready && view === "publications" && <Publications />}
+      {ready && view === "system" && <SystemView key={loadedAt} dashboard={dashboard} releaseNotes={releaseNotes} tab={systemTab} onTab={setSystemTab} transactions={transactions} notifications={notifications} audit={audit} onTransactions={(query) => void adminApi.transactions(query).then(setTransactions).catch((reason: Error) => setError(reason.message))} onOpenPlayer={openPlayerById} />}
     </main>{drawDetail && <DrawDetailPanel key={drawDetail.draw.id} detail={drawDetail} onClose={() => setDrawDetail(null)} onOpenPlayer={openPlayerFromTicket} />}
   </div>;
 }

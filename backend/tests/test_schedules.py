@@ -403,12 +403,16 @@ async def test_scheduler_starts_retry_jobs_after_initial_recovery_failure(monkey
     runtime = SchedulerRuntime(10)
     run = AsyncMock(side_effect=RuntimeError("initial recovery failed"))
     monkeypatch.setattr(runtime, "_run", run)
-    monkeypatch.setattr(runtime, "_run_interesting_facts", AsyncMock())
     monkeypatch.setattr(runtime, "_run_publication_events", AsyncMock())
     await runtime.start()
     try:
         assert runtime._scheduler.running
         assert runtime._scheduler.get_job("draw-reconciliation") is not None
+        assert runtime._scheduler.get_job("daily-interesting-facts") is None
+        assert (
+            runtime._scheduler.get_job("publication-event-reconciliation") is not None
+        )
+        assert runtime._scheduler.get_job("publication-delivery") is not None
         assert run.await_count == 1
     finally:
         runtime.shutdown()

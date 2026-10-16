@@ -27,11 +27,11 @@ export function OperationalMonitor() {
       void adminApi.monitoring().then(value => { if (active) { setData(value); setError(null); } })
         .catch(() => { if (active) setError("Не удалось обновить мониторинг."); });
     };
-    refresh(); const timer = window.setInterval(refresh, 60_000);
-    return () => { active = false; window.clearInterval(timer); };
+    refresh();
+    return () => { active = false; };
   }, []);
   const operations = data?.operations;
-  return <section className="panel"><header><div><h2>Скорость мини-аппа и контроль сервера</h2><span>Проверка каждую минуту · скорость за последний час · после перезапуска выборка собирается заново</span></div></header>
+  return <section className="panel"><header><div><h2>Скорость мини-аппа и контроль сервера</h2><span>Состояние на момент загрузки · «Обновить данные» для новой сводки · скорость за последний час</span></div></header>
     {error && <p role="alert">{error}</p>}
     {!data && !error && <p>Загружаем мониторинг…</p>}
     {operations && <><p>{operations.checked_at ? `Проверено: ${new Date(operations.checked_at).toLocaleString("ru-RU")}` : "Ожидается проверка"}. {operations.warnings.length ? operations.warnings.map(code => warningNames[code] ?? code).join(" · ") : "Проблем не обнаружено"}</p>

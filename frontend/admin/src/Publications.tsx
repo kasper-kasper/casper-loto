@@ -19,19 +19,6 @@ export function Publications() {
   const [view, setView] = useState<"suggestions" | "all" | "editor">("suggestions");
   const [now, setNow] = useState(Date.now);
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
-  useEffect(() => {
-    if (view !== "suggestions" || busy) return;
-    let active = true, running = false;
-    const refresh = async () => {
-      if (document.hidden || running) return;
-      running = true;
-      try { await adminApi.preparePublicationSuggestions(); const page = await adminApi.publications(undefined, "suggestions"); if (active) { setRows(page); setMore(page.length === 30); } }
-      catch { /* Keep the current fresh list; explicit refresh shows errors. */ }
-      finally { running = false; }
-    };
-    const timer = setInterval(() => void refresh(), 60000);
-    return () => { active = false; clearInterval(timer); };
-  }, [view, busy]);
   const proposals = rows.filter(row => row.status === "draft" && freshProposal(row, now));
   const selectedFresh = !selected || selected.status !== "draft" || freshProposal(selected, now);
   const preview = useRef<HTMLDivElement>(null);

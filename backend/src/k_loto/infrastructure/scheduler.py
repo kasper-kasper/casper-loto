@@ -4,12 +4,10 @@ from datetime import UTC, datetime, timedelta
 
 import structlog
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy.dialects.postgresql import insert
 
 from k_loto.application.auto_play import AutoPlayService
 from k_loto.application.engagement import PlayerEngagementService
-from k_loto.application.interesting_facts import InterestingFactService
 from k_loto.application.operational_monitoring import OperationalMonitoringService
 from k_loto.application.publication_automation import PublicationAutomation, drain
 from k_loto.application.scheduler import DrawRecoveryService
@@ -28,7 +26,6 @@ class SchedulerRuntime:
     def __init__(self, interval_seconds: int) -> None:
         settings = get_settings()
         self._recovery = DrawRecoveryService(session_factory)
-        self._interesting_facts = InterestingFactService(session_factory)
         self._scheduler = AsyncIOScheduler(timezone="UTC")
         self._interval_seconds = interval_seconds
         self._monitor = OperationalMonitoringService(
@@ -45,7 +42,6 @@ class SchedulerRuntime:
             logger.error(
                 "scheduler_startup_recovery_failed", error_type=type(error).__name__
             )
-        await self._run_interesting_facts()
         await self._run_publication_events()
         self._scheduler.add_job(
             self._run_publication_events,
@@ -74,28 +70,7 @@ class SchedulerRuntime:
             coalesce=True,
             max_instances=1,
         )
-        self._scheduler.add_job(
-            self._run_interesting_facts,
-            trigger=CronTrigger(
-                hour=4,
-                minute=10,
-                timezone="Europe/Moscow",
-            ),
-            id="daily-interesting-facts",
-            replace_existing=True,
-            coalesce=True,
-            max_instances=1,
-        )
         self._scheduler.start()
-
-    async def _run_interesting_facts(self) -> None:
-        try:
-            generated = await self._interesting_facts.run_if_due(now=datetime.now(UTC))
-            if generated:
-                logger.info("interesting_facts_generated")
-        except Exception:
-            # Content suggestions must never stop settlement or draw recovery.
-            logger.exception("interesting_facts_generation_failed")
 
     async def _run_publication_events(self) -> None:
         try:

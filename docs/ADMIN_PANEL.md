@@ -14,6 +14,28 @@ no decorative or state-transition animations.
 
 ## Capabilities
 
+### Current owner workflow (Admin 1.60.4)
+
+The retired Broadcast test and Interesting facts screens are removed. Old facts
+links open Publications; old broadcast links open Today. Legacy LIVE, Aurora and
+Vault links open the matching subtab of the single Instant games section. Only
+the selected game's summary is requested. Archive is the final navigation item.
+
+Admin is static content served by the existing gateway, not a separate running
+application service. A closed browser makes no Admin requests. Screens fetch on
+entry and explicit actions; there is no periodic Admin API polling, including
+the operational health screen, proposals and distribution delivery status.
+Use Refresh data (or Refresh proposals in the editor section) to refresh.
+Local clocks still enforce proposal expiry and show sales closing correctly.
+System tabs request only their own data; the event feed combines its four
+relevant sources. Project journals are fetched only in Development.
+
+The legacy daily Interesting facts calculation is no longer registered or run
+at API startup. Existing fact records remain untouched. Publication automation,
+delivery, draw recovery and independent health/backup alerts continue running
+without the Admin browser; they serve the actual project, not the Admin UI.
+Schedule is a read-only, on-demand view and does not run a second scheduler.
+
 - operational dashboard: version, uptime, database reachability, configured bot,
   scheduler state, counts, current funds, recent draws and ledger movements;
 - multi-user player overview with balance, tickets, spent, won and net CAS;
@@ -111,7 +133,7 @@ with a jackpot payout, not winning tickets or unique players. Inactive lotteries
 remain in the lifetime breakdown. The collapsible history contains the latest
 50 events only; it never supplies lifetime maxima or per-lottery latest amounts.
 
-Dashboard data refreshes every 30 seconds while visible. Ticket analytics may lag
+Dashboard data refreshes on entry and on request. Ticket analytics may lag
 by its existing 60-second server cache. Manual refresh preserves expanded history.
 Responsive tables scroll within their panels instead of widening the entire page.
 Draw details use JackpotWinEvent as evidence of a jackpot payout. They never infer

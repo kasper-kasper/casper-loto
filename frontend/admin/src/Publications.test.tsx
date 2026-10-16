@@ -74,7 +74,7 @@ it("hides old proposals and removes an expiring one in an open tab", async () =>
   expect(screen.queryByRole("button", { name: "Опубликовать" })).not.toBeInTheDocument();
 });
 
-it("refreshes proposals automatically while preserving an open editor", async () => {
+it("refreshes proposals only on request and preserves an idle editor", async () => {
   vi.mocked(adminApi.publications).mockResolvedValue([row]);
   vi.useFakeTimers();
   vi.spyOn(document, "hidden", "get").mockReturnValue(false);
@@ -83,6 +83,8 @@ it("refreshes proposals automatically while preserving an open editor", async ()
   const fresh = { ...row, id: "new", content: { ...row.content, fields: { ...row.content.fields, title: "Новая запись" } } };
   vi.mocked(adminApi.publications).mockResolvedValue([fresh]);
   await act(async () => { await vi.advanceTimersByTimeAsync(60000); });
+  expect(screen.queryByRole("heading", { name: "Новая запись" })).not.toBeInTheDocument();
+  await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Обновить предложку" })); });
   expect(screen.getByRole("heading", { name: "Новая запись" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Отредактировать" }));
   fireEvent.change(screen.getByLabelText("Заголовок"), { target: { value: "Мой незаконченный текст" } });
