@@ -564,7 +564,8 @@ it("opens a draw summary without tickets and paginates tickets on demand", async
   vi.mocked(adminApi.draws).mockResolvedValue([draw]);
   vi.mocked(adminApi.draw).mockResolvedValue({ draw, tickets: [], ticket_summary: { total: 300, participants: 12, winners: 100, jackpot_winners: 0, bingo_stages: [] } });
   vi.mocked(adminApi.drawPage).mockResolvedValueOnce(first)
-    .mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    .mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }))
+    .mockResolvedValueOnce({ draw, tickets: [], has_more: false, next_after: null });
   render(<App />);
   fireEvent.click(await screen.findByRole("button", { name: /Тиражи/ }));
   fireEvent.click((await screen.findAllByText("Weekly 5/20")).at(-1)!);
@@ -578,5 +579,8 @@ it("opens a draw summary without tickets and paginates tickets on demand", async
   expect(adminApi.drawPage).toHaveBeenLastCalledWith("paged", "all", 1);
   finish({ draw, tickets: [{ ...ticket, id: "page-2", public_number: 2 }], has_more: false, next_after: 0 });
   await waitFor(() => expect(within(dialog).getByText("№0002")).toBeInTheDocument());
+  fireEvent.click(within(dialog).getByRole("button", { name: "Джекпот · 0" }));
+  expect(await within(dialog).findByText("По этому фильтру билетов нет.")).toBeInTheDocument();
+  expect(within(dialog).getByRole("button", { name: "Выигрышные · 100" })).toBeInTheDocument();
   expect(within(dialog).getByRole("button", { name: "Все · 300" })).toBeInTheDocument();
 });
