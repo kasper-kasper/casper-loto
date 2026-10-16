@@ -7,6 +7,8 @@
 
 - Local validation: backend 604 passed / one Windows symlink skip; Ruff and mypy 84 modules pass. Clean Admin typecheck/lint/53 tests/build and source/artifact hashes pass. Unchanged Mini App build hashes verify. Candidate HTTP/PostgreSQL checks now include complete seek traversal of draw tickets and ledger timestamp ties, summary-only draw/Bingo requests, invalid bounds/cursors and live owner/outsider isolation.
 
+- Release preflight exposed a pre-existing 8 KB diagnostic-tail truncation in the structured gateway chunk inventory. Capture that inventory separately up to an explicit 1 MB bound, reject incomplete digests, and avoid printing the full list. Add regressions for output over 8 KB, all inventory entries and truncated digest rejection. The first publication attempt stopped before source promotion/container replacement.
+
 ## [Operations] - 2026-10-16
 
 - Owner authorizes backup repair and owner notifications following the outage audit. Replace the broken direct cron execution (permission denied, exit 126) with a versioned native systemd service using explicit shell execution, the operations/backup locks, and a persistent 03:30 Europe/Moscow timer. No application container recreation or schema changes.

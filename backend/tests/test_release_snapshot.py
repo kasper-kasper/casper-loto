@@ -3,8 +3,11 @@
 import hashlib
 import tarfile
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
+from scripts import release_vps
 from scripts.release_snapshot import (
     backup,
     managed_path,
@@ -13,6 +16,48 @@ from scripts.release_snapshot import (
     record,
     verify,
 )
+
+
+def test_structured_release_output_can_exceed_diagnostic_tail(capsys):
+    payload = b"public-inventory\n" * 2000
+    remaining = [payload]
+    channel = SimpleNamespace(
+        recv_ready=lambda: bool(remaining),
+        recv=lambda _: remaining.pop(),
+        recv_stderr_ready=lambda: False,
+        exit_status_ready=lambda: not remaining,
+        recv_exit_status=lambda: 0,
+    )
+    client = Mock()
+    client.exec_command.return_value = (None, SimpleNamespace(channel=channel), None)
+    assert (
+        release_vps.run_remote(
+            client, "inventory", "read-only", capture_limit=1_000_000, show_output=False
+        )
+        == payload.decode()
+    )
+    assert "public-inventory" not in capsys.readouterr().out
+
+
+def test_large_gateway_inventory_keeps_every_digest(monkeypatch):
+    rows = [f"{'a' * 64}  /srv/miniapp/assets/chunk-{i:08d}.js\n" for i in range(200)]
+    remote = Mock(return_value="".join(rows))
+    monkeypatch.setattr(release_vps, "run_remote", remote)
+    inventory = release_vps.compatibility_chunks(Mock())
+    assert len(inventory) == 200
+    assert inventory["frontend/miniapp/dist/assets/chunk-00000000.js"] == "a" * 64
+    assert remote.call_args.kwargs["capture_limit"] == 1_000_000
+    assert remote.call_args.kwargs["show_output"] is False
+
+
+def test_truncated_gateway_digest_is_rejected(monkeypatch):
+    monkeypatch.setattr(
+        release_vps,
+        "run_remote",
+        Mock(return_value="partial  /srv/miniapp/assets/chunk-00000000.js\n"),
+    )
+    with pytest.raises(RuntimeError, match="Incomplete gateway"):
+        release_vps.compatibility_chunks(Mock())
 
 
 def put(root: Path, relative: str, data: bytes) -> str:

@@ -62,6 +62,8 @@ def run_remote(
     command: str,
     *,
     timeout: int = 900,
+    capture_limit: int = 8_000,
+    show_output: bool = True,
 ) -> str:
     """Run one visible release stage while draining both SSH output streams."""
     print(f"-> {label}", flush=True)
@@ -73,7 +75,7 @@ def run_remote(
     while True:
         progressed = False
         while channel.recv_ready():
-            _tail(output, channel.recv(65_536))
+            _tail(output, channel.recv(65_536), limit=capture_limit)
             progressed = True
         while channel.recv_stderr_ready():
             _tail(error, channel.recv_stderr(65_536))
@@ -97,7 +99,7 @@ def run_remote(
             f"Remote stage '{label}' failed (exit {exit_code}):\n"
             f"{text_output}\n{text_error}"
         )
-    if text_output.strip():
+    if show_output and text_output.strip():
         print(text_output.strip(), flush=True)
     print(f"   {label}: OK", flush=True)
     return text_output
@@ -210,10 +212,16 @@ def compatibility_chunks(client: paramiko.SSHClient) -> dict[str, str]:
             "find /srv/miniapp/assets /srv/admin/assets -type f \\( "
             "-name '*.js' -o -name '*.css' \\) -exec sha256sum {} +"
         ),
+        capture_limit=1_000_000,
+        show_output=False,
     )
+    if len(output.encode()) >= 1_000_000:
+        raise RuntimeError("Gateway compatibility inventory exceeds capture limit")
     result = {}
     for line in output.splitlines():
         value, relative = line.split(None, 1)
+        if not re.fullmatch(r"[a-f0-9]{64}", value):
+            raise RuntimeError("Incomplete gateway compatibility digest")
         relative = relative.strip().replace("/srv/", "frontend/", 1)
         relative = relative.replace(
             "frontend/miniapp/", "frontend/miniapp/dist/", 1
@@ -224,6 +232,7 @@ def compatibility_chunks(client: paramiko.SSHClient) -> dict[str, str]:
         ):
             raise RuntimeError("Unexpected compatibility chunk name")
         result[relative] = value
+    print(f"Verified compatibility inventory: {len(result)} chunks", flush=True)
     return result
 
 
