@@ -1,0 +1,16 @@
+[Unit]
+Description=Validated Casper Loto database backup
+After=docker.service network-online.target
+Requires=docker.service
+Wants=network-online.target
+OnFailure=k-loto-health-monitor.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/k-loto
+ExecStart=/usr/bin/flock --wait 600 /run/lock/k-loto-operations.lock /bin/sh /opt/k-loto/scripts/backup_production.sh
+TimeoutStartSec=30min
+UMask=0077
+NoNewPrivileges=true
+StandardOutput=journal
+StandardError=journal

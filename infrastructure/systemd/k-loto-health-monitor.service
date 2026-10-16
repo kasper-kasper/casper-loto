@@ -6,4 +6,5 @@ After=docker.service network-online.target
 Type=oneshot
 WorkingDirectory=/opt/k-loto
 ExecStart=/usr/bin/python3 /opt/k-loto/scripts/server_health_monitor.py
-TimeoutStartSec=45
+TimeoutStartSec=75
+UMask=0077

@@ -1,5 +1,52 @@
 # Production storage maintenance
 
+## Backup supervision (2026-10-16)
+
+`k-loto-backup.timer` runs at 03:30 Europe/Moscow with `Persistent=true`:
+systemd starts a missed run after the VPS returns. The native oneshot invokes
+`/bin/sh` explicitly, takes the operations lock, and then the existing backup
+lock. It replaces the old `/etc/cron.d/k-loto-backup` entry, which failed with
+exit 126 because the script was not executable. Source promotion does not need
+to preserve executable bits for this path to work.
+
+The independent host watchdog checks the verified backup volume every minute.
+Missing, empty, future-dated or older-than-26-hour copies do not count as fresh.
+A failed backup service is reported even if an earlier backup is still fresh.
+Private Telegram alerts use the existing bot token and explicit owner ID from
+`.env.production`, without depending on API/DB availability. One message is sent
+per incident and one when all monitored conditions recover. The watchdog also
+reports service/public-health failures and independent scheduler/delivery/disk
+warnings; its own warning feedback is excluded.
+
+Notification state lives privately in `.maintenance/owner-health-alert.json`.
+Definitive Telegram rejections retry after a delay (respecting HTTP 429).
+An ambiguous timeout is recorded as `uncertain` and is not blindly replayed;
+inspect `owner_notification` in `.monitoring/state.json` if delivery is uncertain
+or unavailable. Tokens and recipient IDs are never written to that public state.
+Initial healthy checks send no message. A host watchdog cannot notify while the
+entire VPS is powered off; that requires a separately hosted uptime monitor.
+
+```sh
+systemctl status k-loto-backup.timer k-loto-backup.service
+systemctl show k-loto-backup.timer -p Persistent -p NextElapseUSecRealtime
+journalctl -u k-loto-backup.service --since yesterday
+cat /opt/k-loto/.monitoring/state.json
+```
+
+For a full restore check, run `scripts/verify_backup_restore.sh` inside the DB
+container with the selected `/backups/k-loto-*.dump` path. It creates a unique
+disposable database, restores the complete archive, checks all five account
+families against the immutable ledger and checks index validity, then drops only
+its own database. Production rows are not changed. This is an on-demand check,
+not a daily restore job.
+
+Production verification on 2026-10-16: the native systemd job succeeded and
+created `k-loto-20261016T170612Z.dump` (82,807,696 bytes). A complete isolated
+restore through schema `0056_player_profile_projection` recovered 697,652
+tickets and 342,355 ledger records; all five account/ledger families and indexes
+passed verification. The disposable database was removed. Seven backups remain,
+the owner received the setup notification, and the watchdog has no warnings.
+
 Small-project profile, approved 2026-10-04 for fewer than 50 players. Cleanup
 is centralized in `scripts/server_maintenance.py`. Retention settings live in
 `infrastructure/server-maintenance.toml` and need no database migration.

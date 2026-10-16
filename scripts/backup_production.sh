@@ -1,5 +1,6 @@
 #!/bin/sh
 set -eu
+umask 077
 
 # Separate lock: maintenance takes this as well as the publication lock.
 exec 9>/run/lock/k-loto-backup.lock
@@ -9,6 +10,7 @@ cd /opt/k-loto
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 docker compose --env-file .env.production -f docker-compose.prod.yml exec -T db \
   sh -c 'set -eu; target="/backups/k-loto-'"$stamp"'.dump"; \
+    test ! -e "$target"; test ! -e "$target.partial"; \
     trap '\''rm -f "$target.partial"'\'' EXIT; \
     pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc -f "$target.partial"; \
     pg_restore --list "$target.partial" >/dev/null; \
