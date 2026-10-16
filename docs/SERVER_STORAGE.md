@@ -189,3 +189,7 @@ Backend: 523 passed and one Windows-only symlink skip, subsequently passed withi
 26 Linux maintenance checks; Ruff, mypy and Linux backup-shell syntax passed.
 Read-only post-cleanup checks found zero balance/ledger mismatches, zero scheduled
 draws overdue by ten minutes and zero invalid indexes. No app services restarted.
+
+## Retention verification after the live/Admin release, 2026-10-16
+
+At 2026-10-16T18:12:15.800691+00:00, central maintenance retained seven database dumps and removed 5 expired owned files and 4 eligible project images. Removed paths were checked absent; the follow-up plan found 0 surplus recognized files and 0 eligible images. Public health passed. The daily persistent maintenance timer remains enabled; database dumps are pruned after successful creation as well. No ticket, draw, ledger row or Docker volume was deleted.
