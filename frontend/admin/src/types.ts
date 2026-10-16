@@ -142,6 +142,9 @@ export interface DrawTicket {
 export interface DrawDetail {
   draw: Draw;
   tickets: DrawTicket[];
+  ticket_summary?: { total: number; participants: number; winners: number; jackpot_winners: number; bingo_stages: { winners: number; payout: number; first_move: number | null }[] } | null;
+  has_more?: boolean;
+  next_after?: number | null;
 }
 
 export interface ScheduleEntry {

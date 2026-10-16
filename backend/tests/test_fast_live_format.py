@@ -15,8 +15,8 @@ class EmptyPlayerSession:
     async def execute(self, _statement):
         return self
 
-    def one(self):
-        return (0, 0, None, 0)
+    def all(self):
+        return []
 
 
 @pytest.mark.asyncio

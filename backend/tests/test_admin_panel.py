@@ -172,6 +172,54 @@ async def test_draw_detail_exposes_bingo_stage_result() -> None:
     assert tickets[0].is_jackpot_winner is True
 
 
+async def test_draw_summary_counts_all_rows_without_hydrating_ticket_objects() -> None:
+    fake = FakeSession(
+        scalar_values=[],
+        execute_rows=[(1000, 12, 100, 1, 80, 8000, 10, 20, 4000, 30, 1, 5000, 45)],
+    )
+    summary = await AdminQueryService(cast(AsyncSession, fake)).draw_ticket_summary(
+        UUID(int=71), "bingo"
+    )
+    assert summary["total"] == 1000 and summary["participants"] == 12
+    assert summary["winners"] == 100 and summary["jackpot_winners"] == 1
+    assert summary["bingo_stages"][2] == {
+        "winners": 1,
+        "payout": 5000,
+        "first_move": 45,
+    }
+
+
+async def test_ledger_cursor_orders_timestamp_ties_and_preserves_owner_filter() -> None:
+    from sqlalchemy.dialects import postgresql
+
+    captured = []
+    fake = FakeSession(scalar_values=[], scalar_collections=[[]])
+    original = fake.scalars
+
+    async def record(statement):
+        captured.append(
+            str(
+                statement.compile(
+                    dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}
+                )
+            )
+        )
+        return await original(statement)
+
+    fake.scalars = record
+    await AdminQueryService(cast(AsyncSession, fake)).transactions(
+        user_id=UUID(int=1),
+        limit=7,
+        before_id=UUID(int=2),
+        before_at=datetime(2026, 10, 16, tzinfo=UTC),
+    )
+    sql = captured[0]
+    assert "(ledger_transactions.created_at, ledger_transactions.id) <" in sql
+    assert "ledger_transactions.user_id =" in sql
+    assert "created_at DESC, ledger_transactions.id DESC" in sql
+    assert "LIMIT 7" in sql
+
+
 async def test_player_ticket_history_combines_draw_and_instant_ticket_pages() -> None:
     user_id = UUID(int=900)
     ticket_id = UUID(int=901)

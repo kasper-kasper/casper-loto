@@ -11,11 +11,11 @@ from sqlalchemy import (
     String,
     case,
     cast,
-    exists,
     func,
     literal,
     or_,
     select,
+    tuple_,
     union_all,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, insert
@@ -1160,6 +1160,8 @@ class AdminQueryService:
         date_to: datetime | None = None,
         limit: int = 100,
         offset: int = 0,
+        before_at: datetime | None = None,
+        before_id: UUID | None = None,
     ) -> tuple[AdminTransaction, ...]:
         statement = select(LedgerTransaction)
         filters = [
@@ -1174,9 +1176,16 @@ class AdminQueryService:
             (LedgerTransaction.created_at <= date_to) if date_to else None,
         ]
         statement = statement.where(*(item for item in filters if item is not None))
+        if before_at is not None and before_id is not None:
+            statement = statement.where(
+                tuple_(LedgerTransaction.created_at, LedgerTransaction.id)
+                < tuple_(literal(before_at), literal(before_id))
+            )
         rows = (
             await self._session.scalars(
-                statement.order_by(LedgerTransaction.created_at.desc())
+                statement.order_by(
+                    LedgerTransaction.created_at.desc(), LedgerTransaction.id.desc()
+                )
                 .limit(limit)
                 .offset(offset)
             )
@@ -1329,7 +1338,12 @@ class AdminQueryService:
         return tuple(sorted(entries, key=lambda item: item.scheduled_at))
 
     async def draw(
-        self, draw_id: UUID
+        self,
+        draw_id: UUID,
+        *,
+        limit: int = 50,
+        after: int = 0,
+        ticket_filter: str = "all",
     ) -> tuple[AdminDraw, tuple[AdminDrawTicket, ...]]:
         row = (
             await self._session.execute(
@@ -1342,21 +1356,31 @@ class AdminQueryService:
         if row is None:
             raise LookupError("Draw does not exist.")
         draw, lottery, jackpot_amount = row
+        if (
+            not 0 <= limit <= 101
+            or after < 0
+            or ticket_filter not in {"all", "winners", "jackpot"}
+        ):
+            raise ValueError("Invalid ticket page")
+        if limit == 0:
+            return self._draw(draw, lottery, jackpot_amount), ()
+        jackpot_ids = self._draw_jackpot_tickets(draw_id)
+        statement = (
+            select(Ticket, User, jackpot_ids.c.ticket_id.is_not(None))
+            .join(User, User.id == Ticket.user_id)
+            .outerjoin(jackpot_ids, jackpot_ids.c.ticket_id == Ticket.id)
+            .where(
+                self._draw_ticket_filter(draw_id, lottery.code),
+                Ticket.public_number > after,
+            )
+        )
+        if ticket_filter == "winners":
+            statement = statement.where(Ticket.prize_amount > 0)
+        elif ticket_filter == "jackpot":
+            statement = statement.where(jackpot_ids.c.ticket_id.is_not(None))
         tickets = (
             await self._session.execute(
-                select(
-                    Ticket,
-                    User,
-                    exists(
-                        select(LedgerTransaction.id).where(
-                            LedgerTransaction.ticket_id == Ticket.id,
-                            LedgerTransaction.type == TransactionType.JACKPOT_PAYOUT,
-                        )
-                    ).label("is_jackpot_winner"),
-                )
-                .join(User, User.id == Ticket.user_id)
-                .where(Ticket.draw_id == draw_id)
-                .order_by(Ticket.public_number)
+                statement.order_by(Ticket.public_number).limit(limit)
             )
         ).all()
         return self._draw(draw, lottery, jackpot_amount), tuple(
@@ -1376,6 +1400,72 @@ class AdminQueryService:
             )
             for ticket, user, is_jackpot_winner in tickets
         )
+
+    @staticmethod
+    def _draw_ticket_filter(draw_id: UUID, code: str) -> Any:
+        return (
+            or_(Ticket.draw_id == draw_id, Ticket.second_draw_id == draw_id)
+            if code == "dual"
+            else Ticket.draw_id == draw_id
+        )
+
+    @staticmethod
+    def _draw_jackpot_tickets(draw_id: UUID) -> Any:
+        # One bounded ledger scan/join, not one correlated full scan per ticket.
+        return (
+            select(LedgerTransaction.ticket_id)
+            .where(
+                LedgerTransaction.draw_id == draw_id,
+                LedgerTransaction.type == TransactionType.JACKPOT_PAYOUT,
+                LedgerTransaction.ticket_id.is_not(None),
+            )
+            .distinct()
+            .subquery()
+        )
+
+    async def draw_ticket_summary(self, draw_id: UUID, code: str) -> dict[str, Any]:
+        jackpot_ids = self._draw_jackpot_tickets(draw_id)
+        columns = [
+            func.count(Ticket.id),
+            func.count(func.distinct(Ticket.user_id)),
+            func.count(Ticket.id).filter(Ticket.prize_amount > 0),
+            func.count(jackpot_ids.c.ticket_id),
+        ]
+        if code == "bingo":
+            for stage in range(3):
+                amount = cast(Ticket.bingo_result["amounts"][stage].astext, BigInteger)
+                move = cast(Ticket.bingo_result["moves"][stage].astext, Integer)
+                columns.extend(
+                    (
+                        func.count(Ticket.id).filter(amount > 0),
+                        func.coalesce(func.sum(amount), 0),
+                        func.min(move).filter(amount > 0),
+                    )
+                )
+        row = (
+            await self._session.execute(
+                select(*columns)
+                .select_from(Ticket)
+                .outerjoin(jackpot_ids, jackpot_ids.c.ticket_id == Ticket.id)
+                .where(self._draw_ticket_filter(draw_id, code))
+            )
+        ).one()
+        return {
+            "total": int(row[0]),
+            "participants": int(row[1]),
+            "winners": int(row[2]),
+            "jackpot_winners": int(row[3]),
+            "bingo_stages": [
+                {
+                    "winners": int(row[4 + stage * 3]),
+                    "payout": int(row[5 + stage * 3]),
+                    "first_move": row[6 + stage * 3],
+                }
+                for stage in range(3)
+            ]
+            if code == "bingo"
+            else [],
+        }
 
     @staticmethod
     def _draw(
@@ -1556,7 +1646,7 @@ class AdminQueryService:
             overall=row(
                 overall_values,
                 lottery_id=None,
-                name="Все лотереи",
+                name="Р’СЃРµ Р»РѕС‚РµСЂРµРё",
                 active=None,
                 offset=0,
             ),
@@ -1795,7 +1885,7 @@ class AdminQueryService:
                 by_lottery.append(
                     {
                         "lottery_id": str(lottery_id),
-                        "lottery_name": names.get(lottery_id, "Лотерея"),
+                        "lottery_name": names.get(lottery_id, "Р›РѕС‚РµСЂРµСЏ"),
                         "purchased_tickets": 0,
                         "sales": 0,
                         "winning_tickets": lottery_winners,

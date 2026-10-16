@@ -10,7 +10,7 @@ vi.mock("./api", () => ({
   adminApi: {
     login: vi.fn(), session: vi.fn(), logout: vi.fn(), dashboard: vi.fn(), kasperLive: vi.fn(), vault: vi.fn(),
     monitoring: vi.fn(),
-    players: vi.fn(), playerTicketHistory: vi.fn(), lotteries: vi.fn(), schedule: vi.fn(), draws: vi.fn(), draw: vi.fn(), jackpotEvents: vi.fn(),
+    players: vi.fn(), playerTicketHistory: vi.fn(), lotteries: vi.fn(), schedule: vi.fn(), draws: vi.fn(), draw: vi.fn(), drawPage: vi.fn(), jackpotEvents: vi.fn(),
     transactions: vi.fn(), playerTransactions: vi.fn(), statistics: vi.fn(), ticketAnalytics: vi.fn(), activity: vi.fn(), audit: vi.fn(),
     notifications: vi.fn(), releaseNotes: vi.fn(), interestingFacts: vi.fn(), setInterestingFactStatus: vi.fn(),
     setBalance: vi.fn(), configureLottery: vi.fn(), setReserve: vi.fn(), setJackpot: vi.fn(),
@@ -277,7 +277,7 @@ it("shows lightweight ticket win analytics overall and by lottery", async () => 
 
   expect(await screen.findByText("23,33% от рассчитанных")).toBeInTheDocument();
   expect(screen.getByText("Weekly 5/20")).toBeInTheDocument();
-  expect(adminApi.ticketAnalytics).toHaveBeenCalledTimes(2);
+  expect(adminApi.ticketAnalytics).toHaveBeenCalledWith("standard");
 });
 
 it("filters number statistics by lottery and draw window without changing history", async () => {
@@ -510,4 +510,73 @@ it("shows only the four agreed Casper Vault aggregates", async () => {
   expect(screen.getByText("РЕЗУЛЬТАТ")).toBeInTheDocument();
   expect(screen.getByText("+79 000 CAS")).toBeInTheDocument();
   expect(adminApi.vault).toHaveBeenCalledTimes(1);
+});
+
+
+it("queries number statistics only when the numbers tab is opened", async () => {
+  render(<App />);
+  await screen.findByText("ПЛЮС ЛОТО ЗА ДЕНЬ");
+  expect(adminApi.statistics).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: /Аналитика/ }));
+  await waitFor(() => expect(adminApi.ticketAnalytics).toHaveBeenCalledTimes(2));
+  expect(adminApi.statistics).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("tab", { name: "Числа" }));
+  await waitFor(() => expect(adminApi.statistics).toHaveBeenCalledWith("lottery", 20));
+});
+
+it("does not periodically poll heavy analytics and supports manual refresh", async () => {
+  const interval = vi.spyOn(window, "setInterval");
+  render(<App />);
+  await screen.findByText("ПЛЮС ЛОТО ЗА ДЕНЬ");
+  expect(interval.mock.calls.some(call => call[1] === 30_000)).toBe(false);
+  expect(adminApi.ticketAnalytics).toHaveBeenCalledTimes(1);
+  fireEvent.click(screen.getByRole("button", { name: "Обновить данные" }));
+  await waitFor(() => expect(adminApi.ticketAnalytics).toHaveBeenCalledTimes(2));
+  interval.mockRestore();
+});
+
+it("loads CAS pages by cursor once and ignores a late response after a filter change", async () => {
+  const rows = Array.from({ length: 100 }, (_, index) => ({ ...playerTransaction, id: `op-${index}` }));
+  let finish!: (value: Transaction[]) => void;
+  vi.mocked(adminApi.playerTransactions).mockResolvedValueOnce(rows)
+    .mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }))
+    .mockResolvedValueOnce([{ ...playerTransaction, id: "filtered", amount: 77 }]);
+  render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /Игроки/ }));
+  expect(adminApi.playerTransactions).not.toHaveBeenCalled();
+  fireEvent.click(await screen.findByRole("button", { name: "Показать движения CAS" }));
+  const more = await screen.findByRole("button", { name: "Загрузить ещё 100 операций CAS" });
+  fireEvent.click(more); fireEvent.click(more);
+  expect(adminApi.playerTransactions).toHaveBeenCalledTimes(2);
+  expect(adminApi.playerTransactions).toHaveBeenLastCalledWith("player", 0, "", rows[99]);
+  fireEvent.change(screen.getByLabelText("Фильтр движения CAS"), { target: { value: "PRIZE_PAYOUT" } });
+  await screen.findByText("+77 CAS");
+  finish([{ ...playerTransaction, id: "obsolete", amount: 999 }]);
+  await waitFor(() => expect(screen.queryByText("+999 CAS")).not.toBeInTheDocument());
+});
+
+
+it("opens a draw summary without tickets and paginates tickets on demand", async () => {
+  const draw = { id: "paged", lottery_id: "lottery", lottery_code: "weekly", lottery_name: "Weekly 5/20", public_number: 42, status: "COMPLETED", scheduled_at: "2026-10-16T12:00:00Z", sales_close_at: "2026-10-16T12:00:00Z", executed_at: "2026-10-16T12:00:00Z", winning_numbers: [1,2,3,4,5], ticket_count: 300, total_sales: 30000, total_payout: 1000, jackpot_opening: 10000, jackpot_closing: 10000, distribution_opening: 0, distribution_closing: 0, reserve_used: 0, kasper_fund_used: 0, correlation_id: "fixture" };
+  const ticket = { id: "page-1", public_number: 1, user_id: "player", numbers: [1,2,3,4,5], purchase_price: 100, matches: 5, prize_amount: 100 };
+  const first = { draw, tickets: [ticket], has_more: true, next_after: 1 };
+  let finish!: (result: typeof first) => void;
+  vi.mocked(adminApi.draws).mockResolvedValue([draw]);
+  vi.mocked(adminApi.draw).mockResolvedValue({ draw, tickets: [], ticket_summary: { total: 300, participants: 12, winners: 100, jackpot_winners: 0, bingo_stages: [] } });
+  vi.mocked(adminApi.drawPage).mockResolvedValueOnce(first)
+    .mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+  render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /Тиражи/ }));
+  fireEvent.click((await screen.findAllByText("Weekly 5/20")).at(-1)!);
+  const dialog = await screen.findByRole("dialog");
+  expect(within(dialog).getByRole("button", { name: "Все · 300" })).toBeInTheDocument();
+  expect(adminApi.drawPage).not.toHaveBeenCalled();
+  fireEvent.click(within(dialog).getByRole("button", { name: "Показать билеты" }));
+  const more = await within(dialog).findByRole("button", { name: "Загрузить ещё 50 билетов" });
+  fireEvent.click(more); fireEvent.click(more);
+  expect(adminApi.drawPage).toHaveBeenCalledTimes(2);
+  expect(adminApi.drawPage).toHaveBeenLastCalledWith("paged", "all", 1);
+  finish({ draw, tickets: [{ ...ticket, id: "page-2", public_number: 2 }], has_more: false, next_after: 0 });
+  await waitFor(() => expect(within(dialog).getByText("№0002")).toBeInTheDocument());
+  expect(within(dialog).getByRole("button", { name: "Все · 300" })).toBeInTheDocument();
 });

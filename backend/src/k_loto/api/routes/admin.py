@@ -1,11 +1,11 @@
 """Authenticated Web Admin Panel API."""
 
-import asyncio
 import hmac
 from datetime import date, datetime
 from time import monotonic
 from typing import Annotated, Any, Literal
 from uuid import UUID
+from weakref import WeakKeyDictionary
 
 from fastapi import (
     APIRouter,
@@ -19,7 +19,7 @@ from fastapi import (
     status,
 )
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from k_loto import __version__
 from k_loto.api.dependencies import get_db_session
@@ -28,6 +28,7 @@ from k_loto.application.admin import (
     AdminQueryService,
     ensure_admin_user,
 )
+from k_loto.application.display_cache import DisplayCache
 from k_loto.application.instant import InstantTicketQueryService
 from k_loto.application.interesting_facts import InterestingFactAdminService
 from k_loto.application.query_scope import LotteryScope
@@ -55,8 +56,9 @@ from k_loto.infrastructure.admin_auth import (
 
 router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
 started_at = monotonic()
-ticket_analytics_cache: tuple[float, "TicketAnalyticsResponse"] | None = None
-ticket_analytics_lock = asyncio.Lock()
+ticket_analytics_caches: WeakKeyDictionary[
+    AsyncEngine, DisplayCache[LotteryScope, "TicketAnalyticsResponse"]
+] = WeakKeyDictionary()
 
 
 class ApiModel(BaseModel):
@@ -260,6 +262,9 @@ class DrawTicketResponse(ApiModel):
 class DrawDetailResponse(BaseModel):
     draw: DrawResponse
     tickets: list[DrawTicketResponse]
+    ticket_summary: dict[str, Any] | None = None
+    has_more: bool = False
+    next_after: int | None = None
 
 
 class NumberStatisticResponse(ApiModel):
@@ -827,6 +832,8 @@ async def transactions(
     date_to: datetime | None = None,
     limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
+    before_at: datetime | None = None,
+    before_id: UUID | None = None,
 ) -> list[TransactionResponse]:
     if (date_from is not None and date_from.tzinfo is None) or (
         date_to is not None and date_to.tzinfo is None
@@ -835,6 +842,10 @@ async def transactions(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Transaction date filters must include a timezone.",
         )
+    if (before_at is None) != (before_id is None) or (
+        before_at is not None and (before_at.tzinfo is None or offset != 0)
+    ):
+        raise HTTPException(status_code=422, detail="Invalid transaction cursor.")
     items = await AdminQueryService(session).transactions(
         transaction_type=transaction_type,
         user_id=user_id,
@@ -845,6 +856,8 @@ async def transactions(
         date_to=date_to,
         limit=limit,
         offset=offset,
+        before_at=before_at,
+        before_id=before_id,
     )
     return [TransactionResponse.model_validate(item) for item in items]
 
@@ -903,14 +916,33 @@ async def draw_detail(
     draw_id: UUID,
     _admin: Annotated[CurrentAdmin, Depends(get_current_admin)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
+    limit: Annotated[int, Query(ge=0, le=100)] = 50,
+    after: Annotated[int, Query(ge=0)] = 0,
+    ticket_filter: Literal["all", "winners", "jackpot"] = "all",
+    include_summary: bool = True,
 ) -> DrawDetailResponse:
+    service = AdminQueryService(session)
     try:
-        draw, tickets = await AdminQueryService(session).draw(draw_id)
+        draw, tickets = await service.draw(
+            draw_id,
+            limit=limit + 1 if limit else 0,
+            after=after,
+            ticket_filter=ticket_filter,
+        )
     except LookupError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from error
+    summary = (
+        await service.draw_ticket_summary(draw_id, draw.lottery_code)
+        if include_summary
+        else None
+    )
+    page = tickets[:limit]
     return DrawDetailResponse(
         draw=DrawResponse.model_validate(draw),
-        tickets=[DrawTicketResponse.model_validate(item) for item in tickets],
+        tickets=[DrawTicketResponse.model_validate(item) for item in page],
+        ticket_summary=summary,
+        has_more=len(tickets) > limit,
+        next_after=page[-1].public_number if len(tickets) > limit else None,
     )
 
 
@@ -991,25 +1023,17 @@ async def ticket_analytics(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     scope: LotteryScope = "all",
 ) -> TicketAnalyticsResponse:
-    """Return ticket outcome statistics cached for one minute per API worker."""
+    """Single-flight display analytics for every scope; no personal cache values."""
 
-    global ticket_analytics_cache
-    if scope != "all":
+    async def load() -> TicketAnalyticsResponse:
         return TicketAnalyticsResponse.model_validate(
             await AdminQueryService(session, scope=scope).ticket_analytics()
         )
-    now = monotonic()
-    if ticket_analytics_cache and now - ticket_analytics_cache[0] < 60:
-        return ticket_analytics_cache[1]
-    async with ticket_analytics_lock:
-        now = monotonic()
-        if ticket_analytics_cache and now - ticket_analytics_cache[0] < 60:
-            return ticket_analytics_cache[1]
-        result = TicketAnalyticsResponse.model_validate(
-            await AdminQueryService(session, scope=scope).ticket_analytics()
-        )
-        ticket_analytics_cache = (now, result)
-        return result
+
+    if not isinstance(session.bind, AsyncEngine):
+        return await load()
+    cache = ticket_analytics_caches.setdefault(session.bind, DisplayCache(seconds=60))
+    return await cache.get(scope, load)
 
 
 @router.get("/activity", response_model=list[ActivityPointResponse])

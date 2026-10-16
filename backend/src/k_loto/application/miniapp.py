@@ -1,18 +1,18 @@
 """Read models for the Telegram Mini App."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4
 from weakref import WeakKeyDictionary
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import func, or_, select, text, update
+from sqlalchemy import case, func, literal, or_, select, text, union_all, update
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql.elements import ColumnElement
 
-from k_loto.application.display_cache import PlatformTotalsCache
+from k_loto.application.display_cache import DisplayCache, PlatformTotalsCache
 from k_loto.application.query_scope import LotteryScope, lottery_scope
 from k_loto.application.ticket_history import TicketHistoryService
 from k_loto.domain.dual import dual_phase
@@ -187,6 +187,24 @@ class MiniAppLiveFeed:
     latest_completed: MiniAppLiveDraw | None
     next_scheduled: MiniAppLiveDraw | None
     recent_completed: tuple[MiniAppLiveDraw, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class PublicLiveDraw:
+    draw_id: UUID
+    code: str
+    value: MiniAppLiveDraw
+
+
+@dataclass(frozen=True, slots=True)
+class PublicLiveFeed:
+    recent: tuple[PublicLiveDraw, ...]
+    upcoming: PublicLiveDraw | None
+
+
+_live_caches: WeakKeyDictionary[
+    AsyncEngine, DisplayCache[tuple[bool, str | None], PublicLiveFeed]
+] = WeakKeyDictionary()
 
 
 @dataclass(frozen=True, slots=True)
@@ -1000,8 +1018,35 @@ class MiniAppQueryService:
         fast_only: bool = False,
         lottery_code: str | None = None,
     ) -> MiniAppLiveFeed:
-        """Return immutable draw facts and a server clock for visual playback."""
         timestamp = now or datetime.now(UTC)
+
+        async def load() -> PublicLiveFeed:
+            return await self._public_live(timestamp, fast_only, lottery_code)
+
+        bind = getattr(self._session, "bind", None)
+        if isinstance(bind, AsyncEngine) and now is None:
+            cache = _live_caches.setdefault(bind, DisplayCache(seconds=2))
+            public = await cache.get((fast_only, lottery_code), load)
+        else:
+            public = await load()
+        contexts = public.recent + ((public.upcoming,) if public.upcoming else ())
+        personal = await self._personal_live(user_id, contexts, timestamp)
+        recent = tuple(personal[item.draw_id] for item in public.recent)
+        return MiniAppLiveFeed(
+            server_time=timestamp,
+            latest_completed=recent[0] if recent else None,
+            next_scheduled=personal[public.upcoming.draw_id]
+            if public.upcoming
+            else None,
+            recent_completed=recent,
+        )
+
+    async def _public_live(
+        self,
+        timestamp: datetime,
+        fast_only: bool,
+        lottery_code: str | None,
+    ) -> PublicLiveFeed:
         lottery_filter: ColumnElement[bool] = (
             Lottery.code.in_(FAST_LOTTERY_CODES)
             if fast_only
@@ -1025,12 +1070,11 @@ class MiniAppQueryService:
         recent_rows: list[tuple[Draw, Lottery, int | None]] = []
         per_lottery: dict[str, int] = {}
         for row in completed_rows:
-            lottery_code = draw_display_code(row[1].code, row[0].scheduled_at)
-            if per_lottery.get(lottery_code, 0) >= 2:
+            display_code = draw_display_code(row[1].code, row[0].scheduled_at)
+            if per_lottery.get(display_code, 0) >= 2:
                 continue
             recent_rows.append((row[0], row[1], row[2]))
-            per_lottery[lottery_code] = per_lottery.get(lottery_code, 0) + 1
-        latest_row = recent_rows[0] if recent_rows else None
+            per_lottery[display_code] = per_lottery.get(display_code, 0) + 1
         active_statuses = (
             (
                 DrawStatus.SCHEDULED,
@@ -1056,45 +1100,34 @@ class MiniAppQueryService:
                 next_statement.order_by(Draw.scheduled_at, Draw.public_number).limit(1)
             )
         ).first()
-        recent_draws = tuple(
-            [
-                await self._live_draw(user_id, draw, lottery, jackpot)
-                for draw, lottery, jackpot in recent_rows
-            ]
+        recent = tuple(
+            PublicLiveDraw(
+                draw.id,
+                lottery.code,
+                self._public_live_draw(draw, lottery, jackpot, timestamp),
+            )
+            for draw, lottery, jackpot in recent_rows
         )
-        return MiniAppLiveFeed(
-            server_time=timestamp,
-            latest_completed=recent_draws[0] if latest_row else None,
-            next_scheduled=(
-                await self._live_draw(user_id, next_row[0], next_row[1], next_row[2])
-                if next_row
-                else None
-            ),
-            recent_completed=recent_draws,
+        upcoming = (
+            PublicLiveDraw(
+                next_row[0].id,
+                next_row[1].code,
+                self._public_live_draw(
+                    next_row[0], next_row[1], next_row[2], timestamp
+                ),
+            )
+            if next_row
+            else None
         )
+        return PublicLiveFeed(recent, upcoming)
 
-    async def _live_draw(
-        self,
-        user_id: UUID,
+    @staticmethod
+    def _public_live_draw(
         draw: Draw,
         lottery: Lottery,
         jackpot: int | None,
+        now: datetime,
     ) -> MiniAppLiveDraw:
-        round_ticket_filter = (
-            or_(Ticket.draw_id == draw.id, Ticket.second_draw_id == draw.id)
-            if lottery.code == "dual"
-            else Ticket.draw_id == draw.id
-        )
-        aggregate = (
-            await self._session.execute(
-                select(
-                    func.count(Ticket.id),
-                    func.count(Ticket.id).filter(Ticket.prize_amount > 0),
-                    func.max(Ticket.matches),
-                    func.coalesce(func.sum(Ticket.prize_amount), 0),
-                ).where(Ticket.user_id == user_id, round_ticket_filter)
-            )
-        ).one()
         timeline_factory = (
             fast_presentation_timeline
             if lottery.code in FAST_LOTTERY_CODES
@@ -1107,68 +1140,6 @@ class MiniAppQueryService:
             draw.executed_at if draw.status == DrawStatus.COMPLETED else None,
             2 if lottery.code == "dual" else lottery.numbers_to_pick,
         )
-        presentation_now = datetime.now(UTC)
-        highlighted: tuple[MiniAppLiveTicket, ...] = ()
-        if draw.status == DrawStatus.COMPLETED and aggregate[0]:
-            khan_is_revealing = (
-                lottery.code == "khan"
-                and timeline.starts_at <= presentation_now < timeline.ends_at
-            )
-            if khan_is_revealing:
-                revealed_count = sum(
-                    moment <= presentation_now for moment in timeline.reveal_at
-                )
-                if revealed_count and draw.winning_numbers:
-                    tickets = list(
-                        (
-                            await self._session.execute(
-                                select(Ticket)
-                                .where(
-                                    Ticket.user_id == user_id,
-                                    Ticket.draw_id == draw.id,
-                                )
-                                .order_by(Ticket.public_number)
-                            )
-                        ).scalars()
-                    )
-                    revealed = set(draw.winning_numbers[:revealed_count])
-                    best = max(
-                        tickets,
-                        key=lambda ticket: (
-                            len(revealed.intersection(ticket.numbers)),
-                            -ticket.public_number,
-                        ),
-                    )
-                    highlighted = (
-                        MiniAppLiveTicket(
-                            public_number=best.public_number,
-                            numbers=tuple(best.numbers),
-                            matches=len(revealed.intersection(best.numbers)),
-                            prize_amount=0,
-                        ),
-                    )
-            else:
-                ranked_tickets = (
-                    await self._session.execute(
-                        select(Ticket)
-                        .where(Ticket.user_id == user_id, round_ticket_filter)
-                        .order_by(
-                            Ticket.prize_amount.desc(),
-                            Ticket.matches.desc().nullslast(),
-                            Ticket.public_number,
-                        )
-                        .limit(3)
-                    )
-                ).scalars()
-                highlighted = tuple(
-                    MiniAppLiveTicket(
-                        public_number=ticket.public_number,
-                        numbers=tuple(ticket.numbers),
-                        matches=ticket.matches,
-                        prize_amount=ticket.prize_amount,
-                    )
-                    for ticket in ranked_tickets
-                )
         snapshot = draw.configuration_snapshot or {}
         rules = get_lottery_rules(
             str(snapshot.get("ruleset_code", lottery.ruleset_code))
@@ -1186,14 +1157,14 @@ class MiniAppQueryService:
                 tuple(draw.winning_numbers) if draw.winning_numbers else None
             ),
             jackpot=jackpot or 0,
-            player_ticket_count=int(aggregate[0]),
-            player_winning_ticket_count=int(aggregate[1]),
-            player_best_matches=aggregate[2],
-            player_total_prize=int(aggregate[3]),
-            highlighted_tickets=highlighted,
+            player_ticket_count=0,
+            player_winning_ticket_count=0,
+            player_best_matches=None,
+            player_total_prize=0,
+            highlighted_tickets=(),
             sales_close_at=draw.sales_close_at,
             sales_status=sales_status(
-                now=presentation_now,
+                now=now,
                 status=draw.status,
                 sales_close_at=draw.sales_close_at,
                 timeline=timeline,
@@ -1206,6 +1177,157 @@ class MiniAppQueryService:
             primary_max_number=rules.display_primary_max_number,
             is_distribution=bool(draw.is_distribution),
         )
+
+    async def _live_draw(
+        self,
+        user_id: UUID,
+        draw: Draw,
+        lottery: Lottery,
+        jackpot: int | None,
+    ) -> MiniAppLiveDraw:
+        now = datetime.now(UTC)
+        context = PublicLiveDraw(
+            draw.id, lottery.code, self._public_live_draw(draw, lottery, jackpot, now)
+        )
+        return (await self._personal_live(user_id, (context,), now))[draw.id]
+
+    async def _personal_live(
+        self,
+        user_id: UUID,
+        contexts: tuple[PublicLiveDraw, ...],
+        now: datetime,
+    ) -> dict[UUID, MiniAppLiveDraw]:
+        if not contexts:
+            return {}
+        ids = [item.draw_id for item in contexts]
+        dual_ids = [item.draw_id for item in contexts if item.code == "dual"]
+        links = union_all(
+            select(Ticket.id.label("ticket_id"), Ticket.draw_id.label("live_id")).where(
+                Ticket.user_id == user_id, Ticket.draw_id.in_(ids)
+            ),
+            select(
+                Ticket.id.label("ticket_id"), Ticket.second_draw_id.label("live_id")
+            ).where(Ticket.user_id == user_id, Ticket.second_draw_id.in_(dual_ids)),
+        ).subquery()
+        aggregates = (
+            await self._session.execute(
+                select(
+                    links.c.live_id,
+                    func.count(Ticket.id),
+                    func.count(Ticket.id).filter(Ticket.prize_amount > 0),
+                    func.max(Ticket.matches),
+                    func.coalesce(func.sum(Ticket.prize_amount), 0),
+                )
+                .join(Ticket, Ticket.id == links.c.ticket_id)
+                .group_by(links.c.live_id)
+            )
+        ).all()
+        totals = {row[0]: row[1:] for row in aggregates}
+        revealing = {
+            item.draw_id: item
+            for item in contexts
+            if item.code == "khan"
+            and item.value.status == DrawStatus.COMPLETED
+            and item.value.live_starts_at <= now < item.value.live_ends_at
+        }
+        completed = [
+            item.draw_id
+            for item in contexts
+            if item.value.status == DrawStatus.COMPLETED
+            and item.draw_id in totals
+            and item.draw_id not in revealing
+        ]
+        highlighted: dict[UUID, list[MiniAppLiveTicket]] = {}
+        if completed:
+            ranked = (
+                select(
+                    links.c.live_id,
+                    Ticket.public_number,
+                    Ticket.numbers,
+                    Ticket.matches,
+                    Ticket.prize_amount,
+                    func.row_number()
+                    .over(
+                        partition_by=links.c.live_id,
+                        order_by=(
+                            Ticket.prize_amount.desc(),
+                            Ticket.matches.desc().nullslast(),
+                            Ticket.public_number,
+                        ),
+                    )
+                    .label("rank"),
+                )
+                .join(Ticket, Ticket.id == links.c.ticket_id)
+                .where(links.c.live_id.in_(completed))
+                .subquery()
+            )
+            rows = (
+                await self._session.execute(
+                    select(ranked)
+                    .where(ranked.c.rank <= 3)
+                    .order_by(ranked.c.live_id, ranked.c.rank)
+                )
+            ).all()
+            for row in rows:
+                highlighted.setdefault(row.live_id, []).append(
+                    MiniAppLiveTicket(
+                        row.public_number,
+                        tuple(row.numbers),
+                        row.matches,
+                        row.prize_amount,
+                    )
+                )
+        for identifier, item in revealing.items():
+            revealed_count = sum(moment <= now for moment in item.value.reveal_at)
+            if not revealed_count or identifier not in totals:
+                continue
+            revealed = set((item.value.winning_numbers or ())[:revealed_count])
+            if not revealed:
+                continue
+            partial_matches = sum(
+                (
+                    case((Ticket.numbers.contains([number]), 1), else_=0)
+                    for number in revealed
+                ),
+                start=literal(0),
+            )
+            tickets = (
+                await self._session.scalars(
+                    select(Ticket)
+                    .where(Ticket.user_id == user_id, Ticket.draw_id == identifier)
+                    .order_by(partial_matches.desc(), Ticket.public_number)
+                    .limit(1)
+                )
+            ).all()
+            if tickets:
+                best = max(
+                    tickets,
+                    key=lambda ticket: (
+                        len(revealed.intersection(ticket.numbers)),
+                        -ticket.public_number,
+                    ),
+                )
+                highlighted[identifier] = [
+                    MiniAppLiveTicket(
+                        best.public_number,
+                        tuple(best.numbers),
+                        len(revealed.intersection(best.numbers)),
+                        0,
+                    )
+                ]
+        return {
+            item.draw_id: replace(
+                item.value,
+                player_ticket_count=int(totals.get(item.draw_id, (0, 0, None, 0))[0]),
+                player_winning_ticket_count=int(
+                    totals.get(item.draw_id, (0, 0, None, 0))[1]
+                ),
+                player_best_matches=totals.get(item.draw_id, (0, 0, None, 0))[2],
+                player_total_prize=int(totals.get(item.draw_id, (0, 0, None, 0))[3]),
+                highlighted_tickets=tuple(highlighted.get(item.draw_id, [])),
+            )
+            for item in contexts
+        }
 
     async def activity(
         self, user_id: UUID, *, limit: int = 100

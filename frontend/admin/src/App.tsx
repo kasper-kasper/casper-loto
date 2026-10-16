@@ -388,6 +388,10 @@ function PlayerCard({ player, onSaved }: { player: Player; onSaved: () => Promis
   const [operations, setOperations] = useState<Transaction[] | null>(null);
   const [operationsHasMore, setOperationsHasMore] = useState(false);
   const [operationsFilter, setOperationsFilter] = useState("");
+  const [operationsBusy, setOperationsBusy] = useState(false);
+  const operationsRequest = useRef(0);
+  const operationsInFlight = useRef(false);
+  useEffect(() => () => { operationsRequest.current += 1; }, []);
   const [history, setHistory] = useState<PlayerHistoryPage | null>(null);
   const [historyFilter, setHistoryFilter] = useState("all");
   const [historyLottery, setHistoryLottery] = useState("");
@@ -415,13 +419,24 @@ function PlayerCard({ player, onSaved }: { player: Player; onSaved: () => Promis
     } catch (reason) { setHistoryError(reason instanceof Error ? reason.message : "Не удалось загрузить билеты."); }
     finally { setHistoryPageLoading(false); }
   };
-  const loadMoreOperations = async () => {
-    if (!operations || operations.length % 100 !== 0) return;
+  const requestOperations = async (filter: string, append = false) => {
+    if (append && (!operations || !operationsHasMore || operationsInFlight.current)) return;
+    const generation = append ? operationsRequest.current : ++operationsRequest.current;
+    operationsInFlight.current = true;
+    setOperationsBusy(true); setFormError("");
+    if (!append) { setOperations([]); setOperationsHasMore(false); }
     try {
-      const next = await adminApi.playerTransactions(player.id, operations.length, operationsFilter);
-      setOperations((current) => current ? [...current, ...next] : next);
-      setOperationsHasMore(next.length === 100);
-    } catch (reason) { setFormError(reason instanceof Error ? reason.message : "Не удалось загрузить операции."); }
+      const last = append ? operations?.at(-1) : undefined;
+      const rows = await adminApi.playerTransactions(player.id, 0, filter, last);
+      if (generation !== operationsRequest.current) return;
+      setOperations(current => append && current ? [...current, ...rows.filter(row => !current.some(item => item.id === row.id))] : rows);
+      setOperationsHasMore(rows.length === 100);
+    } catch (reason) { if (generation === operationsRequest.current) setFormError(reason instanceof Error ? reason.message : "Не удалось загрузить операции."); }
+    finally { if (generation === operationsRequest.current) { operationsInFlight.current = false; setOperationsBusy(false); } }
+  };
+  const toggleOperations = () => {
+    if (operations) { operationsRequest.current += 1; operationsInFlight.current = false; setOperationsBusy(false); setOperations(null); }
+    else void requestOperations(operationsFilter);
   };
   const save = async () => {
     setBusy(true); setFormError("");
@@ -450,7 +465,7 @@ function PlayerCard({ player, onSaved }: { player: Player; onSaved: () => Promis
     <section className="player-ticket-history"><header><div><small>ПОКУПКИ И РЕЗУЛЬТАТЫ</small><h4>История билетов</h4></div><span>{shownHistory ? `${shownHistory.total.toLocaleString("ru-RU")} записей` : "Загружаем…"}</span></header><div className="player-history-controls"><div className="player-history-tabs" role="group" aria-label="Фильтр билетов">{[["all", "Все"], ["purchases", "Покупки"], ["wins", "Выигрыши"]].map(([key, label]) => <button key={key} className={historyFilter === key ? "active" : ""} onClick={() => setHistoryFilter(key)}>{label}</button>)}</div><select aria-label="Фильтр по лотерее" value={historyLottery} onChange={(event) => setHistoryLottery(event.target.value)}><option value="">Все лотереи</option>{shownHistory?.lottery_stats.map((stat) => <option key={stat.lottery_code} value={stat.lottery_code}>{stat.lottery_name}</option>)}</select></div>{historyError && <p role="alert" className="source-note negative">{historyError}</p>}{shownHistory?.items.length ? <div className="player-ticket-list">{shownHistory.items.map((ticket) => <article key={ticket.id} className={ticket.prize_amount > 0 ? "winner" : ""}><div className="player-ticket-main"><strong>{ticket.lottery_name}</strong><span>Билет №{ticket.public_number}{ticket.draw_number ? ` · тираж №${ticket.draw_number}` : " · мгновенный"}</span><small>{date(ticket.purchased_at)} · {ticket.source === "AUTO_PLAY" ? "Автоучастие" : ticket.ticket_kind === "INSTANT" ? "Мгновенный билет" : "Покупка"}</small></div><div className="player-ticket-number-group"><code className="player-ticket-numbers">{ticket.ticket_kind === "INSTANT" ? `Символы: ${ticket.numbers.map((value) => instantSymbolGlyphs[value - 1] ?? "●").join(" · ")}` : ticket.numbers.map((number) => displayNumber(ticket.lottery_code, number)).join(" · ")}</code>{ticket.winning_numbers?.length ? <small>Выпали: {ticket.winning_numbers.map((number) => displayNumber(ticket.lottery_code, number)).join(" · ")}</small> : null}</div><div className="player-ticket-outcome"><span>Покупка {cas(ticket.purchase_price)}</span><b className={ticket.prize_amount > 0 ? "positive" : ""}>{ticket.prize_amount > 0 ? `Выигрыш +${cas(ticket.prize_amount)}` : ticket.status === "REFUNDED" ? "Возврат" : ticket.status === "PURCHASED" ? "Тираж ещё не завершён" : "Без выигрыша"}</b></div></article>)}</div> : !historyLoading && <p className="source-note">В этой выборке билетов нет.</p>}{shownHistory && shownHistory.items.length < shownHistory.total && <button className="player-history-more" disabled={historyLoading} onClick={() => void loadMoreHistory()}>{historyLoading ? "Загружаем…" : `Показать ещё · ${Math.min(100, shownHistory.total - shownHistory.items.length)} из ${shownHistory.total - shownHistory.items.length}`}</button>}</section>
     <div className="player-automation compact"><div><small>АВТОУЧАСТИЕ · {autoStatus.toLocaleUpperCase("ru-RU")}</small><b>{player.auto_play_enabled ? `${player.auto_play_tickets_per_draw} случайных билетов на каждый тираж` : "Выключена"}</b><span>Только ближайшие 5 тиражей каждой разрешённой лотереи. Casper Dual исключена и не может быть включена здесь.</span><span>Последняя проверка: {date(player.auto_play_last_attempted_at)} · успех: {date(player.auto_play_last_succeeded_at)}</span></div><div className="notification-state"><small>УВЕДОМЛЕНИЯ</small><b>{player.telegram_notifications_enabled ? "Telegram разрешён" : "Telegram выключен"}</b></div><label>Билетов на тираж<input aria-label="Билетов автоучастия на тираж" type="number" min="1" max="5" value={autoTickets} onChange={(event) => setAutoTickets(event.target.value)} /></label><label>Причина автоучастия<input value={autoReason} onChange={(event) => setAutoReason(event.target.value)} placeholder="Почему меняется автоучастие?" /></label><button disabled={autoBusy || !autoReason.trim() || Number(autoTickets) < 1 || Number(autoTickets) > 5} onClick={() => setConfirmation("auto-on")}>{player.auto_play_enabled ? "СОХРАНИТЬ АВТОУЧАСТИЕ" : "ВКЛЮЧИТЬ АВТОУЧАСТИЕ"}</button>{player.auto_play_enabled && <button className="secondary-action" disabled={autoBusy || !autoReason.trim()} onClick={() => setConfirmation("auto-off")}>ОТКЛЮЧИТЬ</button>}</div>
     <div className="adjust"><label>Новый баланс<input min="0" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} /></label><label>Обязательная причина<input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Почему требуется изменение?" /></label><button disabled={busy || !reason.trim()} onClick={() => setConfirmation("balance")}>ПРОВЕРИТЬ ИЗМЕНЕНИЕ</button></div>
-    <button className="player-operations-toggle" onClick={() => operations ? setOperations(null) : void adminApi.playerTransactions(player.id).then((rows) => { setOperations(rows); setOperationsHasMore(rows.length === 100); }).catch((reason: Error) => setFormError(reason.message))}>{operations ? "Скрыть движения CAS" : "Показать все движения CAS"}</button>{operations && <div className="player-operations"><p className="ledger-explainer">Одна запись — одно движение по счёту. Покупку и комбинацию каждого билета смотрите в истории билетов выше.</p><div className="player-history-controls"><select aria-label="Фильтр движения CAS" value={operationsFilter} onChange={(event) => { const filter = event.target.value; setOperationsFilter(filter); void adminApi.playerTransactions(player.id, 0, filter).then((rows) => { setOperations(rows); setOperationsHasMore(rows.length === 100); }).catch((reason: Error) => setFormError(reason.message)); }}><option value="">Все движения</option><option value="TICKET_PURCHASE">Покупки билетов</option><option value="PRIZE_PAYOUT">Выплаты выигрышей</option><option value="JACKPOT_PAYOUT">Выплаты джекпота</option></select><span>Загружено: {operations.length}{operationsHasMore ? "+" : ""}</span></div><TransactionTable rows={operations} userId={player.id} />{operationsHasMore && <button className="player-history-more" onClick={() => void loadMoreOperations()}>Загрузить ещё 100 операций CAS</button>}</div>}
+    <button className="player-operations-toggle" onClick={toggleOperations}>{operations ? "Скрыть движения CAS" : "Показать движения CAS"}</button>{operations && <div className="player-operations"><p className="ledger-explainer">Одна запись — одно движение по счёту. Покупку и комбинацию каждого билета смотрите в истории билетов выше.</p><div className="player-history-controls"><select aria-label="Фильтр движения CAS" value={operationsFilter} onChange={(event) => { const filter = event.target.value; setOperationsFilter(filter); void requestOperations(filter); }}><option value="">Все движения</option><option value="TICKET_PURCHASE">Покупки билетов</option><option value="PRIZE_PAYOUT">Выплаты выигрышей</option><option value="JACKPOT_PAYOUT">Выплаты джекпота</option></select><span>Загружено: {operations.length}{operationsHasMore ? "+" : ""}</span></div><TransactionTable rows={operations} userId={player.id} />{operationsHasMore && <button className="player-history-more" disabled={operationsBusy} onClick={() => void requestOperations(operationsFilter, true)}>Загрузить ещё 100 операций CAS</button>}</div>}
     {confirmation === "balance" && <ActionConfirm title={`Баланс · ${player.display_name}`} details={[`Было: ${cas(player.balance)}`, `Станет: ${cas(Number(amount))}`, `Изменение: ${cas(Number(amount) - player.balance)}`, `Причина: ${reason}`]} busy={busy} onCancel={() => setConfirmation(null)} onConfirm={() => void save()} />}
     {(confirmation === "auto-on" || confirmation === "auto-off") && <ActionConfirm title={`Автоучастие · ${player.display_name}`} details={[`Состояние: ${confirmation === "auto-on" ? "включено" : "выключено"}`, `Билетов на тираж: ${autoTickets}`, `Причина: ${autoReason}`]} busy={autoBusy} onCancel={() => setConfirmation(null)} onConfirm={() => void configureAutoPlay(confirmation === "auto-on")} />}
   </article>;
@@ -551,13 +566,47 @@ function DrawDetailPanel({ detail, onClose, onOpenPlayer }: { detail: DrawDetail
   const draw = detail.draw;
   const jackpotWon = (draw.jackpot_amount ?? 0) > 0;
   const bingo = draw.lottery_code === "bingo";
-  const [ticketFilter, setTicketFilter] = useState<"all" | "winners">(bingo && draw.status === "COMPLETED" ? "winners" : "all");
-  const winningTickets = detail.tickets.filter((ticket) => ticket.prize_amount > 0);
-  const jackpotTickets = detail.tickets.filter((ticket) => ticket.is_jackpot_winner);
-  const shownTickets = ticketFilter === "winners" ? winningTickets : detail.tickets;
-  const participantCount = new Set(detail.tickets.map((ticket) => ticket.user_id)).size;
-  const bingoStages = [0, 1, 2].map((stage) => {
-    const winners = detail.tickets.filter((ticket) => (ticket.bingo_result?.amounts[stage] ?? 0) > 0);
+  const [ticketFilter, setTicketFilter] = useState<"all" | "winners" | "jackpot">(bingo && draw.status === "COMPLETED" ? "winners" : "all");
+  const [page, setPage] = useState({ items: detail.tickets, hasMore: false, after: null as number | null });
+  const [started, setStarted] = useState(false);
+  const [pageLoading, setPageLoading] = useState(false);
+  const [pageError, setPageError] = useState("");
+  const [pageRetry, setPageRetry] = useState(0);
+  const pageRequest = useRef(0);
+  const pageInFlight = useRef(false);
+  useEffect(() => {
+    if (!started) return;
+    const generation = ++pageRequest.current;
+    pageInFlight.current = true;
+    void adminApi.drawPage(draw.id, ticketFilter).then(result => {
+      if (generation === pageRequest.current) setPage({ items: result.tickets, hasMore: !!result.has_more, after: result.next_after ?? null });
+    }).catch((reason: Error) => { if (generation === pageRequest.current) setPageError(reason.message); })
+      .finally(() => { if (generation === pageRequest.current) { pageInFlight.current = false; setPageLoading(false); } });
+    return () => { pageRequest.current += 1; };
+  }, [draw.id, ticketFilter, started, pageRetry]);
+  const loadMore = async () => {
+    if (!page.hasMore || page.after == null || pageInFlight.current) return;
+    const generation = pageRequest.current;
+    pageInFlight.current = true; setPageLoading(true); setPageError("");
+    try {
+      const result = await adminApi.drawPage(draw.id, ticketFilter, page.after);
+      if (generation === pageRequest.current) setPage(current => ({ items: [...current.items, ...result.tickets.filter(row => !current.items.some(item => item.id === row.id))], hasMore: !!result.has_more, after: result.next_after ?? null }));
+    } catch (reason) { if (generation === pageRequest.current) setPageError(reason instanceof Error ? reason.message : "Не удалось загрузить билеты."); }
+    finally { if (generation === pageRequest.current) { pageInFlight.current = false; setPageLoading(false); } }
+  };
+  const chooseFilter = (filter: typeof ticketFilter) => {
+    if (started && filter === ticketFilter) return;
+    pageRequest.current += 1;
+    setPage({ items: [], hasMore: false, after: null });
+    setPageLoading(true); setPageError(""); setTicketFilter(filter); setStarted(true);
+  };
+  const summary = detail.ticket_summary;
+  const winningTickets = page.items.filter((ticket) => ticket.prize_amount > 0);
+  const jackpotTickets = page.items.filter((ticket) => ticket.is_jackpot_winner);
+  const shownTickets = ticketFilter === "winners" ? winningTickets : page.items;
+  const participantCount = summary?.participants ?? new Set(page.items.map((ticket) => ticket.user_id)).size;
+  const bingoStages = summary?.bingo_stages.map(stage => ({ ...stage, firstMove: stage.first_move })) ?? [0, 1, 2].map((stage) => {
+    const winners = page.items.filter((ticket) => (ticket.bingo_result?.amounts[stage] ?? 0) > 0);
     const firstMove = winners.length ? Math.min(...winners.map((ticket) => ticket.bingo_result?.moves[stage] ?? 0)) : null;
     return { winners: winners.length, payout: winners.reduce((sum, ticket) => sum + (ticket.bingo_result?.amounts[stage] ?? 0), 0), firstMove };
   });
@@ -566,7 +615,7 @@ function DrawDetailPanel({ detail, onClose, onOpenPlayer }: { detail: DrawDetail
     window.addEventListener("keydown", close);
     return () => window.removeEventListener("keydown", close);
   }, [onClose]);
-  return <div className="drawer" role="dialog" aria-modal="true" aria-label={`Тираж ${draw.lottery_name} №${drawNumber(draw.public_number)}`}><button aria-label="Закрыть" className="close" onClick={onClose}>×</button><small>НЕИЗМЕНЯЕМАЯ ЗАПИСЬ ТИРАЖА</small><h2>{draw.lottery_name} №{drawNumber(draw.public_number)}</h2><DrawResult draw={draw} detailed />{bingo && draw.status === "COMPLETED" && <section className="bingo-stage-summary">{bingoStages.map((stage, index) => <article key={index}><small>{["РАННЯЯ СТРОКА", "ДВЕ СТРОКИ", "ДЖЕКПОТ"][index]}</small><strong>{stage.winners ? `${stage.winners} бил.` : "Нет победителя"}</strong><span>{stage.firstMove ? `ход ${stage.firstMove} · ${cas(stage.payout)}` : index === 2 ? "Джекпот перенесён" : "Приз не выплачен"}</span></article>)}</section>}{jackpotWon && <div className="jackpot-hit"><small>ДЖЕКПОТ ЭТОГО ТИРАЖА СОРВАН</small><strong>{cas(draw.jackpot_amount)}</strong><span>Эта сумма делится между билетами джекпот-категории. Общая выплата тиража указана отдельно.</span></div>}{jackpotTickets.length > 0 && <section className="jackpot-winners"><h3>Кто сорвал джекпот</h3>{jackpotTickets.map((ticket) => <article key={ticket.id}><div><small>Билет №{drawNumber(ticket.public_number)}</small><strong>{ticket.player_name ?? "Игрок"}</strong><span>{ticket.player_username ? `@${ticket.player_username}` : "без username"} · TG {ticket.player_telegram_id ?? "—"}</span></div><b>{cas(ticket.prize_amount)}</b><button onClick={() => onOpenPlayer(ticket)}>Открыть игрока →</button></article>)}</section>}<dl className="detail-list"><dt>Статус</dt><dd>{translated(draw.status, drawStatuses)}</dd><dt>По расписанию</dt><dd>{date(draw.scheduled_at)}</dd><dt>Проведён</dt><dd>{date(draw.executed_at)}</dd><dt>Игроков</dt><dd>{participantCount.toLocaleString("ru-RU")}</dd><dt>Билетов</dt><dd>{draw.ticket_count.toLocaleString("ru-RU")}</dd><dt>Выигрышных</dt><dd>{winningTickets.length.toLocaleString("ru-RU")}</dd><dt>Продажи</dt><dd>{cas(draw.total_sales)}</dd><dt>Все выплаты тиража</dt><dd>{cas(draw.total_payout)}</dd><dt>Джекпот до тиража</dt><dd>{cas(draw.jackpot_opening)}</dd><dt>Джекпот после тиража</dt><dd>{cas(draw.jackpot_closing)}</dd><dt>Использовано из Фонда Каспера</dt><dd>{cas(draw.kasper_fund_used)}</dd></dl><div className="ticket-list-heading"><h3>Билеты ({shownTickets.length})</h3><div><button className={ticketFilter === "winners" ? "active" : ""} onClick={() => setTicketFilter("winners")}>Выигрышные · {winningTickets.length}</button><button className={ticketFilter === "all" ? "active" : ""} onClick={() => setTicketFilter("all")}>Все · {detail.tickets.length}</button></div></div>{shownTickets.map((ticket) => <div className={`ticket-row ${bingo ? "bingo-ticket-row" : ""} ${ticket.is_jackpot_winner ? "jackpot-ticket" : ""}`} key={ticket.id}><b>№{drawNumber(ticket.public_number)}</b><span className="ticket-owner"><b>{ticket.player_name ?? "Игрок"}</b><small>{ticket.player_username ? `@${ticket.player_username}` : `TG ${ticket.player_telegram_id ?? "—"}`}</small></span><span>{bingo ? <span className="bingo-ticket-numbers">{[0, 1, 2].map((row) => <i key={row}>{ticket.numbers.slice(row * 4, row * 4 + 4).join(" · ")}</i>)}</span> : ticket.numbers.map((number) => displayNumber(draw.lottery_code, number)).join(" · ")}</span><span>{bingo && ticket.bingo_result ? ticket.bingo_result.moves.map((move, index) => `${["строка", "две", "полный"][index]}: ${move <= 60 ? `ход ${move}` : "не закрыто"}`).join(" · ") : `совпадений: ${displayMatches(draw.lottery_code, ticket.matches, ticket.numbers.length === 7)}`}</span><strong>{ticket.is_jackpot_winner && <small>ДЖЕКПОТ</small>}{cas(ticket.prize_amount)}</strong></div>)}{!shownTickets.length && <p className="source-note">В этом тираже выигрышных билетов нет.</p>}</div>;
+  return <div className="drawer" role="dialog" aria-modal="true" aria-label={`Тираж ${draw.lottery_name} №${drawNumber(draw.public_number)}`}><button aria-label="Закрыть" className="close" onClick={onClose}>×</button><small>НЕИЗМЕНЯЕМАЯ ЗАПИСЬ ТИРАЖА</small><h2>{draw.lottery_name} №{drawNumber(draw.public_number)}</h2><DrawResult draw={draw} detailed />{bingo && draw.status === "COMPLETED" && <section className="bingo-stage-summary">{bingoStages.map((stage, index) => <article key={index}><small>{["РАННЯЯ СТРОКА", "ДВЕ СТРОКИ", "ДЖЕКПОТ"][index]}</small><strong>{stage.winners ? `${stage.winners} бил.` : "Нет победителя"}</strong><span>{stage.firstMove ? `ход ${stage.firstMove} · ${cas(stage.payout)}` : index === 2 ? "Джекпот перенесён" : "Приз не выплачен"}</span></article>)}</section>}{jackpotWon && <div className="jackpot-hit"><small>ДЖЕКПОТ ЭТОГО ТИРАЖА СОРВАН</small><strong>{cas(draw.jackpot_amount)}</strong><span>Эта сумма делится между билетами джекпот-категории. Общая выплата тиража указана отдельно.</span></div>}{jackpotTickets.length > 0 && <section className="jackpot-winners"><h3>Кто сорвал джекпот</h3>{jackpotTickets.map((ticket) => <article key={ticket.id}><div><small>Билет №{drawNumber(ticket.public_number)}</small><strong>{ticket.player_name ?? "Игрок"}</strong><span>{ticket.player_username ? `@${ticket.player_username}` : "без username"} · TG {ticket.player_telegram_id ?? "—"}</span></div><b>{cas(ticket.prize_amount)}</b><button onClick={() => onOpenPlayer(ticket)}>Открыть игрока →</button></article>)}</section>}<dl className="detail-list"><dt>Статус</dt><dd>{translated(draw.status, drawStatuses)}</dd><dt>По расписанию</dt><dd>{date(draw.scheduled_at)}</dd><dt>Проведён</dt><dd>{date(draw.executed_at)}</dd><dt>Игроков</dt><dd>{participantCount.toLocaleString("ru-RU")}</dd><dt>Билетов</dt><dd>{draw.ticket_count.toLocaleString("ru-RU")}</dd><dt>Выигрышных</dt><dd>{(summary?.winners ?? winningTickets.length).toLocaleString("ru-RU")}</dd><dt>Продажи</dt><dd>{cas(draw.total_sales)}</dd><dt>Все выплаты тиража</dt><dd>{cas(draw.total_payout)}</dd><dt>Джекпот до тиража</dt><dd>{cas(draw.jackpot_opening)}</dd><dt>Джекпот после тиража</dt><dd>{cas(draw.jackpot_closing)}</dd><dt>Использовано из Фонда Каспера</dt><dd>{cas(draw.kasper_fund_used)}</dd></dl><div className="ticket-list-heading"><h3>Билеты ({shownTickets.length})</h3><div><button className={ticketFilter === "winners" ? "active" : ""} onClick={() => chooseFilter("winners")}>Выигрышные · {summary?.winners ?? winningTickets.length}</button><button className={ticketFilter === "all" ? "active" : ""} onClick={() => chooseFilter("all")}>Все · {summary?.total ?? page.items.length}</button><button className={ticketFilter === "jackpot" ? "active" : ""} onClick={() => chooseFilter("jackpot")}>Джекпот · {summary?.jackpot_winners ?? jackpotTickets.length}</button></div></div>{shownTickets.map((ticket) => <div className={`ticket-row ${bingo ? "bingo-ticket-row" : ""} ${ticket.is_jackpot_winner ? "jackpot-ticket" : ""}`} key={ticket.id}><b>№{drawNumber(ticket.public_number)}</b><span className="ticket-owner"><b>{ticket.player_name ?? "Игрок"}</b><small>{ticket.player_username ? `@${ticket.player_username}` : `TG ${ticket.player_telegram_id ?? "—"}`}</small></span><span>{bingo ? <span className="bingo-ticket-numbers">{[0, 1, 2].map((row) => <i key={row}>{ticket.numbers.slice(row * 4, row * 4 + 4).join(" · ")}</i>)}</span> : ticket.numbers.map((number) => displayNumber(draw.lottery_code, number)).join(" · ")}</span><span>{bingo && ticket.bingo_result ? ticket.bingo_result.moves.map((move, index) => `${["строка", "две", "полный"][index]}: ${move <= 60 ? `ход ${move}` : "не закрыто"}`).join(" · ") : `совпадений: ${displayMatches(draw.lottery_code, ticket.matches, ticket.numbers.length === 7)}`}</span><strong>{ticket.is_jackpot_winner && <small>ДЖЕКПОТ</small>}{cas(ticket.prize_amount)}</strong></div>)}{!started && !page.items.length && <button className="player-history-more" onClick={() => chooseFilter(ticketFilter)}>Показать билеты</button>}{pageLoading && <p role="status">Загружаем билеты…</p>}{pageError && <p role="alert">{pageError}<button onClick={() => { if (page.items.length) void loadMore(); else { setPageLoading(true); setPageError(""); setPageRetry(value => value + 1); } }}>Повторить загрузку</button></p>}{page.hasMore && <button className="player-history-more" disabled={pageLoading} onClick={() => void loadMore()}>Загрузить ещё 50 билетов</button>}{started && !pageLoading && !pageError && !shownTickets.length && <p className="source-note">В этом тираже выигрышных билетов нет.</p>}</div>;
 }
 
 function DevelopmentView({ changelog, devlog }: { changelog: ReleaseNote[]; devlog: ReleaseNote[] }) {
@@ -874,16 +923,14 @@ export default function App() {
         apply(() => { setDashboard(dashboardData); });
         apply(() => { setTicketAnalytics(analyticsData); });
         const scoped = available.filter(l => l.code !== "bingo" && (scope === "all" || ["flash", "shadow", "pulse"].includes(l.code) === (scope === "fast")));
-        const selectedId = scoped.find(l => l.id === statisticsLotteryId)?.id || scoped[0]?.id || "";
-        apply(() => { setStatisticsLotteryId(selectedId); });
-        if (selectedId) { const report = await adminApi.statistics(selectedId, statisticsWindow); apply(() => setStatistics(report)); }
+        apply(() => setStatisticsLotteryId(current => scoped.some(l => l.id === current) ? current : scoped[0]?.id || ""));
       }
       apply(() => setLoadedAt(Date.now()));
     } catch (reason) {
       if (reason instanceof ApiError && reason.status === 401) setSession(null);
       apply(() => setError(reason instanceof Error ? reason.message : "Не удалось выполнить запрос администратора."));
     } finally { apply(() => { setLoading(false); setRefreshing(false); }); }
-  }, [statisticsLotteryId, statisticsWindow, scope]);
+  }, [scope]);
 
   useEffect(() => {
     if (!session) return;
@@ -891,11 +938,14 @@ export default function App() {
     return () => window.clearTimeout(task);
   }, [session, view, load]);
 
+
   useEffect(() => {
-    if (!session || !["dashboard", "fast"].includes(view)) return;
-    const timer = window.setInterval(() => { if (document.visibilityState === "visible") void load(view, true); }, 30_000);
-    return () => window.clearInterval(timer);
-  }, [session, view, load]);
+    if (!session || view !== "analytics" || analyticsTab !== "numbers" || !statisticsLotteryId) return;
+    let current = true;
+    void adminApi.statistics(statisticsLotteryId, statisticsWindow).then(report => { if (current) setStatistics(report); })
+      .catch((reason: Error) => { if (current) setError(reason.message); });
+    return () => { current = false; };
+  }, [session, view, analyticsTab, statisticsLotteryId, statisticsWindow, loadedAt]);
 
   const openDraw = (id: string) => { void adminApi.draw(id).then(setDrawDetail).catch((reason: Error) => setError(reason.message)); };
   const openPlayerFromTicket = (ticket: DrawDetail["tickets"][number]) => {
@@ -925,12 +975,12 @@ export default function App() {
       {!loading && view === "lotteries" && <section className="stack">{visibleLotteries.filter((lottery) => lottery.is_active).map((lottery) => <LotteryCard key={lottery.id} lottery={lottery} onSaved={() => load("lotteries")} />)}</section>}
       {!loading && view === "schedule" && <ScheduleView key={scope} entries={scheduleEntries} lotteries={visibleLotteries} loadedAt={scheduleLoadedAt} />}
       {!loading && view === "draws" && <DrawsView key={scope} scope={scope} lotteries={visibleLotteries} onOpen={openDraw} />}
-      {!loading && view === "analytics" && dashboard && ticketAnalytics && <AnalyticsView tab={analyticsTab} onTab={setAnalyticsTab} dashboard={dashboard} analytics={ticketAnalytics} lotteries={visibleLotteries} statistics={statistics} selectedLotteryId={statisticsLotteryId} windowSize={statisticsWindow} onLottery={setStatisticsLotteryId} onWindow={setStatisticsWindow} />}
+      {!loading && view === "analytics" && dashboard && ticketAnalytics && <AnalyticsView tab={analyticsTab} onTab={setAnalyticsTab} dashboard={dashboard} analytics={ticketAnalytics} lotteries={visibleLotteries} statistics={statistics} selectedLotteryId={statisticsLotteryId} windowSize={statisticsWindow} onLottery={id => { setStatistics(null); setStatisticsLotteryId(id); }} onWindow={size => { setStatistics(null); setStatisticsWindow(size); }} />}
       {!loading && view === "facts" && <InterestingFactsView facts={interestingFacts} lotteries={lotteries} onStatus={async (fact, factStatus) => { try { const updated = await adminApi.setInterestingFactStatus(fact.id, factStatus); setInterestingFacts((current) => current.map((item) => item.id === updated.id ? updated : item)); } catch (reason) { setError(reason instanceof Error ? reason.message : "Не удалось изменить статус факта."); } }} />}
       {!loading && view === "broadcast" && <BroadcastTestView lotteries={lotteries} miniappUrl={session.miniapp_url} />}
       {!loading && view === "publications" && <Publications />}
       {!loading && view === "system" && <SystemView dashboard={dashboard} releaseNotes={releaseNotes} tab={systemTab} onTab={setSystemTab} transactions={transactions} notifications={notifications} audit={audit} onTransactions={(query) => void adminApi.transactions(query).then(setTransactions).catch((reason: Error) => setError(reason.message))} onOpenPlayer={openPlayerById} />}
-    </main>{drawDetail && <DrawDetailPanel detail={drawDetail} onClose={() => setDrawDetail(null)} onOpenPlayer={openPlayerFromTicket} />}
+    </main>{drawDetail && <DrawDetailPanel key={drawDetail.draw.id} detail={drawDetail} onClose={() => setDrawDetail(null)} onOpenPlayer={openPlayerFromTicket} />}
   </div>;
 }
 

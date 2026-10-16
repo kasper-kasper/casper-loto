@@ -271,6 +271,91 @@ async def main():
                     "FROM tickets t"
                 )
             )
+        # All of these checks read synthetic data in the disposable audit DB.
+        detail_path = f"/api/v1/admin/draws/{draw.id}"
+        detail = (await client.get(detail_path, params={"limit": 0})).json()
+        assert detail["tickets"] == [] and detail["ticket_summary"]["total"] == 81
+        assert detail["ticket_summary"]["participants"] == 1
+        pages = []
+        after = 0
+        while True:
+            response = await client.get(
+                detail_path,
+                params={"limit": 13, "after": after, "include_summary": "false"},
+            )
+            assert response.status_code == 200, response.text
+            page = response.json()
+            assert page["ticket_summary"] is None and len(page["tickets"]) <= 13
+            pages.extend(item["id"] for item in page["tickets"])
+            if not page["has_more"]:
+                break
+            assert page["next_after"] > after
+            after = page["next_after"]
+        assert len(pages) == len(set(pages)) == 81
+        bingo_detail = await client.get(
+            f"/api/v1/admin/draws/{bingo_draw.id}", params={"limit": 0}
+        )
+        assert bingo_detail.status_code == 200, bingo_detail.text
+        assert len(bingo_detail.json()["ticket_summary"]["bingo_stages"]) == 3
+        assert (await client.get(detail_path, params={"limit": 101})).status_code == 422
+        async with session_factory() as session:
+            owner_id = await session.scalar(
+                text("SELECT id FROM users WHERE telegram_id=8000000000101")
+            )
+            expected_operations = list(
+                (
+                    await session.scalars(
+                        text(
+                            "SELECT id FROM ledger_transactions WHERE user_id=:user_id "
+                            "ORDER BY created_at DESC,id DESC"
+                        ),
+                        {"user_id": owner_id},
+                    )
+                ).all()
+            )
+        operation_ids = []
+        params = {"user_id": str(owner_id), "limit": "7"}
+        for _ in range(100):
+            response = await client.get("/api/v1/admin/transactions", params=params)
+            assert response.status_code == 200, response.text
+            rows = response.json()
+            operation_ids.extend(item["id"] for item in rows)
+            if len(rows) < 7:
+                break
+            params.update(before_at=rows[-1]["created_at"], before_id=rows[-1]["id"])
+        assert operation_ids == list(map(str, expected_operations))
+        assert len(operation_ids) == len(set(operation_ids))
+        assert (
+            await client.get(
+                "/api/v1/admin/transactions", params={"before_id": str(owner_id)}
+            )
+        ).status_code == 422
+        live_response = await client.get(
+            "/api/v1/miniapp/live",
+            headers=headers,
+            params={"lottery_code": "audit-weekly"},
+        )
+        assert live_response.status_code == 200, live_response.text
+        own_live = live_response.json()["latest_completed"]
+        assert own_live["player_ticket_count"] == 81
+        outsider_headers = {
+            "X-Telegram-Init-Data": init_data(
+                config.lottery_bot_token.get_secret_value(), 8_000_000_000_102
+            )
+        }
+        outsider_response = await client.get(
+            "/api/v1/miniapp/live",
+            headers=outsider_headers,
+            params={"lottery_code": "audit-weekly"},
+        )
+        assert outsider_response.status_code == 200, outsider_response.text
+        outsider_live = outsider_response.json()["latest_completed"]
+        assert outsider_live["draw_number"] == own_live["draw_number"]
+        assert outsider_live["player_ticket_count"] == 0
+        assert outsider_live["highlighted_tickets"] == []
+        print(
+            "Live shared facts/private results and Admin bounded draw/ledger pages PASS"
+        )
         seen = []
         cursor = None
         first_cursor = None

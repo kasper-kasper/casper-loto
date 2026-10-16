@@ -152,12 +152,17 @@ export const adminApi = {
     return request<JackpotEvent[]>(`/jackpots?${params.toString()}`);
   },
   schedule: (scope: LotteryScope = "all") => request<ScheduleEntry[]>(`/schedule?scope=${scope}`),
-  draw: (id: string) => request<DrawDetail>(`/draws/${id}`),
+  draw: (id: string) => request<DrawDetail>(`/draws/${id}?limit=0`),
+  drawPage: (id: string, filter: "all" | "winners" | "jackpot", after = 0) => {
+    const params = new URLSearchParams({ limit: "50", after: String(after), ticket_filter: filter, include_summary: "false" });
+    return request<DrawDetail>(`/draws/${id}?${params.toString()}`);
+  },
   transactions: (query = "") =>
     request<Transaction[]>(`/transactions${query ? `?${query}` : ""}`),
-  playerTransactions: (userId: string, offset = 0, type = "") => {
+  playerTransactions: (userId: string, offset = 0, type = "", before?: Transaction) => {
     const params = new URLSearchParams({ user_id: userId, limit: "100", offset: String(offset) });
     if (type) params.set("type", type);
+    if (before) { params.set("before_at", before.created_at); params.set("before_id", before.id); params.delete("offset"); }
     return request<Transaction[]>(`/transactions?${params.toString()}`);
   },
   statistics: (lotteryId: string, limit = 20, dateFrom = "2026-08-31T21:00:00.000Z") => {

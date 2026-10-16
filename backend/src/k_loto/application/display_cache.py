@@ -1,9 +1,33 @@
 """Short, single-flight cache for public display aggregates only."""
 
 import asyncio
+from collections import OrderedDict
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 from time import monotonic
+
+
+class DisplayCache[K, V]:
+    """Bounded worker-local single-flight cache. Never store personal data here."""
+
+    def __init__(self, *, seconds: float, capacity: int = 32) -> None:
+        self.seconds = seconds
+        self.capacity = capacity
+        self.lock = asyncio.Lock()
+        self.values: OrderedDict[K, tuple[float, V]] = OrderedDict()
+
+    async def get(self, key: K, load: Callable[[], Awaitable[V]]) -> V:
+        async with self.lock:
+            cached = self.values.get(key)
+            if cached is not None and monotonic() < cached[0]:
+                self.values.move_to_end(key)
+                return cached[1]
+            value = await load()
+            self.values[key] = (monotonic() + self.seconds, value)
+            self.values.move_to_end(key)
+            while len(self.values) > self.capacity:
+                self.values.popitem(last=False)
+            return value
 
 
 class PlatformTotalsCache:
