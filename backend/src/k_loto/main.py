@@ -8,6 +8,8 @@ from pathlib import Path
 from fastapi import FastAPI
 
 from k_loto import __version__
+from k_loto.api.economy_maintenance import maintenance_gate
+from k_loto.api.economy_maintenance import router as maintenance_router
 from k_loto.api.router import api_router
 from k_loto.application.runtime_monitoring import runtime_monitoring
 from k_loto.core.config import get_settings
@@ -54,6 +56,8 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
     app.include_router(api_router)
+    app.include_router(maintenance_router)
+    app.middleware("http")(maintenance_gate)
     if settings.web_enabled:
         from k_loto.api.routes.web import router as web_router
 

@@ -120,6 +120,23 @@ def main() -> None:
             warnings.extend(sorted(runtime_warnings))
     except (OSError, subprocess.SubprocessError):
         warnings.append("runtime_monitor_stale")
+    # This marker is written under the operations lock for a planned owner pause.
+    # Network, database, storage and backup checks remain enabled.
+    try:
+        planned = (
+            json.loads((ROOT / ".monitoring/planned-maintenance.json").read_text()).get(
+                "enabled"
+            )
+            is True
+        )
+    except (OSError, ValueError):
+        planned = False
+    if planned:
+        warnings = [
+            w
+            for w in warnings
+            if w not in {"runtime_monitor_stale", "scheduler_stale", "overdue_draws"}
+        ]
     warnings = sorted(set(warnings))
     report = {
         "checked_at": now.isoformat(),

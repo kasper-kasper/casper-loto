@@ -813,6 +813,42 @@ BINGO_RULES = LotteryRuleStrategy(
     12,
     jackpot_refill_from_reserve=True,
 )
+# Persisted draws continue resolving their original immutable payout versions.
+LEGACY_FLASH_V3_RULES = FAST_RULES
+LEGACY_PULSE_V4_RULES = PULSE_RULES
+LEGACY_CODE_V2_RULES = CODE_RULES
+FAST_RULES = replace(
+    FAST_RULES,
+    code="fast_5_20_economy_v2",
+    jackpot_share=PayoutRatio(2, 5),
+    fixed_payouts=MappingProxyType({2: 2_000, 3: 8_000, 4: 100_000}),
+)
+CODE_RULES = replace(
+    CODE_RULES,
+    code="code_5_digits_economy_v2",
+    jackpot_share=PayoutRatio(2, 5),
+    fixed_payouts=MappingProxyType({1: 2_000, 2: 4_000, 3: 10_000, 4: 500_000}),
+)
+PULSE_RULES = replace(
+    PULSE_RULES,
+    code="pulse_2_12_2_6_cipher_199_economy_v2",
+    jackpot_share=PayoutRatio(2, 5),
+    fixed_payouts=MappingProxyType(
+        {
+            110: 4_000,
+            111: 4_000,
+            20: 4_000,
+            21: 4_000,
+            120: 8_000,
+            121: 8_000,
+            200: 14_000,
+            201: 14_000,
+            210: 14_000,
+            211: 14_000,
+            220: 500_000,
+        }
+    ),
+)
 LOTTERY_RULES: Mapping[str, LotteryRuleStrategy] = MappingProxyType(
     {
         rule.code: rule
@@ -831,12 +867,15 @@ LOTTERY_RULES: Mapping[str, LotteryRuleStrategy] = MappingProxyType(
             LEGACY_FAST_RULES,
             LEGACY_FLASH_RULES,
             LEGACY_FLASH_V2_RULES,
+            LEGACY_FLASH_V3_RULES,
             FAST_RULES,
             LEGACY_PULSE_RULES,
             LEGACY_PULSE_V2_RULES,
             LEGACY_PULSE_V3_RULES,
+            LEGACY_PULSE_V4_RULES,
             PULSE_RULES,
             LEGACY_CODE_RULES,
+            LEGACY_CODE_V2_RULES,
             CODE_RULES,
         )
     }

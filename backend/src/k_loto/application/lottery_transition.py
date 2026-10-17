@@ -89,7 +89,9 @@ class LotteryFormatTransitionService:
                         select(Draw)
                         .where(
                             Draw.lottery_id == lottery.id,
-                            Draw.status != DrawStatus.COMPLETED,
+                            Draw.status.not_in(
+                                (DrawStatus.COMPLETED, DrawStatus.CANCELLED)
+                            ),
                         )
                         .order_by(Draw.scheduled_at, Draw.id)
                         .with_for_update(nowait=True)

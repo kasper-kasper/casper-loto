@@ -8,6 +8,7 @@ import structlog
 from sqlalchemy import exists, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from k_loto.application.economy import is_paused
 from k_loto.application.weekly import LotteryTicketPurchaseService
 from k_loto.domain.enums import DrawStatus, LotteryKind, TicketSource, TicketStatus
 from k_loto.domain.errors import (
@@ -169,6 +170,9 @@ class AutoPlayService:
                 setting.last_succeeded_at = now
 
     async def run(self, *, now: datetime | None = None) -> AutoPlayReport:
+        async with self._session_factory() as session:
+            if await is_paused(session):
+                return AutoPlayReport((), ())
         timestamp = now or datetime.now(UTC)
         purchased: list[UUID] = []
         failed: list[UUID] = []

@@ -8,6 +8,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from k_loto.application.economy import require_open, schedule_checkpoint
 from k_loto.application.ports import SecureNumberGenerator
 from k_loto.application.purchase_guard import bingo_purchase_key, guard_attempt
 from k_loto.domain.draw_state import ensure_draw_transition
@@ -78,6 +79,7 @@ def draw_configuration_snapshot(lottery: Lottery, base_jackpot: int) -> dict[str
         "numbers_to_pick": lottery.numbers_to_pick,
         "max_number": lottery.max_number,
         "base_jackpot": base_jackpot,
+        "economy_epoch": lottery.economy_epoch or 1,
     }
     if lottery.code == "bingo":
         from k_loto.domain.bingo import JACKPOT_MOVE, TOUR_MOVES
@@ -241,6 +243,7 @@ class WeeklyTicketPurchaseService:
         user_ledger_key = f"purchase:{idempotency_key}:user"
 
         async with self._session.begin():
+            economy = await require_open(self._session)
             await guard_attempt(self._session, user_id, client_key, "scheduled")
             existing = await self._session.scalar(
                 select(LedgerTransaction).where(
@@ -359,7 +362,9 @@ class WeeklyTicketPurchaseService:
                     .order_by(Draw.scheduled_at.desc())
                     .limit(1)
                 )
-                schedule_base = latest.scheduled_at if latest is not None else timestamp
+                schedule_base = schedule_checkpoint(
+                    latest.scheduled_at if latest is not None else timestamp, economy
+                )
                 scheduled_at = next_draw_at(
                     lottery.kind, schedule_base, lottery.schedule
                 )
@@ -668,7 +673,9 @@ class WeeklyTicketPurchaseService:
                 fund.balance += total_cost
                 fund.version += 1
             else:
-                jackpot.balance += total_cost
+                jackpot.balance += len(canonical) * sum(
+                    purchase_rules.jackpot_share.apply(price) for price in prices
+                )
                 jackpot.version += 1
             shared_details = {
                 "draw_id": str(draw.id),
@@ -680,6 +687,10 @@ class WeeklyTicketPurchaseService:
                 "ticket_ids": [str(value) for value in ticket_ids],
                 "ticket_count": len(ticket_ids),
                 "source": source.value,
+                "jackpot_contribution": jackpot.balance - jackpot_before,
+                "burned_cas": 0
+                if lottery.code == "dual"
+                else total_cost - (jackpot.balance - jackpot_before),
             }
             purchase_ledger = [
                 _ledger_entry(
@@ -765,6 +776,7 @@ class WeeklySettlementService:
     ) -> SettlementResult | None:
         """Commit the outcome before any payout can fail or the process can restart."""
         async with self._session.begin():
+            await require_open(self._session)
             # Purchases also lock the lottery first: no draw/lottery lock inversion.
             lottery = await self._session.scalar(
                 select(Lottery)
@@ -789,6 +801,8 @@ class WeeklySettlementService:
                     draw.total_payout,
                     already_completed=True,
                 )
+            if draw.status == DrawStatus.CANCELLED:
+                raise InvalidStateTransition("Cancelled maintenance slots cannot run.")
             if draw.scheduled_at > timestamp:
                 raise InvalidStateTransition(
                     "A draw cannot be settled before scheduled_at."
@@ -798,7 +812,7 @@ class WeeklySettlementService:
                 .where(
                     Draw.lottery_id == lottery.id,
                     Draw.scheduled_at < draw.scheduled_at,
-                    Draw.status != DrawStatus.COMPLETED,
+                    Draw.status.not_in((DrawStatus.COMPLETED, DrawStatus.CANCELLED)),
                 )
                 .limit(1)
             )
@@ -864,6 +878,7 @@ class WeeklySettlementService:
         if prepared is not None:
             return prepared
         async with self._session.begin():
+            await require_open(self._session)
             lottery = await self._session.scalar(
                 select(Lottery)
                 .join(Draw, Draw.lottery_id == Lottery.id)

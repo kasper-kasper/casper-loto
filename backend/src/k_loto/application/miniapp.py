@@ -289,7 +289,9 @@ class MiniAppQueryService:
                     lottery_scope(scope),
                     Lottery.is_active.is_(True),
                     or_(
-                        Draw.status != DrawStatus.COMPLETED,
+                        Draw.status.not_in(
+                            (DrawStatus.COMPLETED, DrawStatus.CANCELLED)
+                        ),
                         Draw.executed_at >= now - timedelta(seconds=150),
                     ),
                 )

@@ -14,6 +14,7 @@ class DrawStatus(StrEnum):
     DRAWING = "DRAWING"
     SETTLING = "SETTLING"
     COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
     FAILED = "FAILED"
 
 

@@ -2,7 +2,7 @@ import type { LotteryScope } from "./api";
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
-import { ApiError, adminApi } from "./api";
+import { ApiError, adminApi, setEconomyScope } from "./api";
 import { OperationalMonitor } from "./OperationalMonitor";
 import { DistributionDraws } from "./DistributionDraws";
 import { Publications } from "./Publications";
@@ -46,7 +46,7 @@ const navigation: { id: View; label: string; code: string }[] = [
   { id: "jackpots", label: "Джекпоты", code: "08" },
   { id: "publications", label: "Предложка и посты", code: "NEWS" },
   { id: "system", label: "Журналы", code: "12" },
-  { id: "archive", label: "Архив", code: "09" },
+  { id: "archive", label: "История форматов", code: "09" },
 ];
 
 const viewStorageKey = "k-loto:admin-view";
@@ -73,7 +73,7 @@ function storedInstantGame(): InstantGame {
   return raw === "vault" || raw === "aurora" ? raw : "kasper-live";
 }
 
-const drawStatuses: Record<string, string> = { SCHEDULED: "Запланирован", CLOSED: "Продажи закрыты", DRAWING: "Розыгрыш", SETTLING: "Начисление выигрышей", PENDING: "Ожидает", RUNNING: "Выполняется", COMPLETED: "Завершён", FAILED: "Ошибка" };
+const drawStatuses: Record<string, string> = { SCHEDULED: "Запланирован", CLOSED: "Продажи закрыты", DRAWING: "Розыгрыш", SETTLING: "Начисление выигрышей", PENDING: "Ожидает", RUNNING: "Выполняется", COMPLETED: "Завершён", CANCELLED: "Отменён на паузе", FAILED: "Ошибка" };
 const transactionTypes: Record<string, string> = {
   ADMIN_BALANCE_ADJUSTMENT: "Изменение баланса администратором",
   TICKET_PURCHASE: "Покупка билета",
@@ -749,6 +749,7 @@ function KasperLiveAdmin({ data, game = "kasper-live" }: { data: KasperLiveSumma
 }
 
 export default function App() {
+  const [economyMode, setEconomyMode] = useState<"current" | "archive">("current");
   const [session, setSession] = useState<AdminSession | null>(null);
   const [checking, setChecking] = useState(true);
   const [view, setView] = useState<View>(storedView);
@@ -858,8 +859,8 @@ export default function App() {
     } catch (reason) {
       if (reason instanceof ApiError && reason.status === 401) setSession(null);
       apply(() => setError(reason instanceof Error ? reason.message : "Не удалось выполнить запрос администратора."));
-    } finally { apply(() => { setLoadedSection(`${target}:${scope}:${instantGame}:${systemTab}`); setLoading(false); setRefreshing(false); }); }
-  }, [scope, instantGame, systemTab]);
+    } finally { apply(() => { setLoadedSection(`${target}:${scope}:${instantGame}:${systemTab}:${economyMode}`); setLoading(false); setRefreshing(false); }); }
+  }, [scope, instantGame, systemTab, economyMode]);
 
   useEffect(() => {
     if (!session) return;
@@ -888,11 +889,16 @@ export default function App() {
   if (!session) return <Login onAuthenticated={setSession} />;
 
   const visibleLotteries = lotteries.filter(l => scope === "all" || ["flash", "shadow", "pulse"].includes(l.code) === (scope === "fast"));
-  const ready = !loading && loadedSection === `${view}:${scope}:${instantGame}:${systemTab}`;
+  const ready = !loading && loadedSection === `${view}:${scope}:${instantGame}:${systemTab}:${economyMode}`;
   const title = navigation.find((item) => item.id === view)?.label ?? "Управление";
   return <div className={`admin-shell ${view === "fast" ? "fast-admin" : ""}`}>
-    <aside><div className="brand"><img alt="Casper Loto" src={logoHorizontal} /><small>Панель владельца</small></div><nav>{navigation.map((item) => <button className={view === item.id ? "active" : ""} key={item.id} onClick={() => navigate(item.id)}><small>{item.code}</small>{item.label}</button>)}</nav><div className="operator"><small>ВЛАДЕЛЕЦ</small><b>{session.username}</b><button onClick={() => void adminApi.logout().finally(() => setSession(null))}>ЗАВЕРШИТЬ СЕАНС</button></div></aside>
-    <main className="workspace"><header className="topbar"><div><small>Casper Loto · управление</small><h1>{title}</h1></div><div className="refresh-control"><span>{loadedAt ? `Обновлено ${date(new Date(loadedAt).toISOString())} МСК` : "Загружаем данные"}</span>{view !== "publications" && <button disabled={loading || refreshing} onClick={() => void load(view, true)}>{refreshing ? "Обновляем…" : "Обновить данные"}</button>}</div></header>
+    <aside><div className="brand"><img alt="Casper Loto" src={logoHorizontal} /><small>Панель владельца</small></div><nav>{navigation.map((item) => <button className={view === item.id ? "active" : ""} key={item.id} onClick={() => navigate(item.id)}><small>{item.code}</small>{item.label}</button>)}<button className={economyMode === "archive" ? "active" : ""} onClick={() => {
+      const mode = economyMode === "current" ? "archive" : "current";
+      setEconomyScope(mode); loadGeneration.current += 1; setLoadedSection(""); setDrawDetail(null);
+      setEconomyMode(mode); navigate("dashboard");
+    }}>{economyMode === "archive" ? "Вернуться к новой экономике" : "Архив старой экономики"}</button></nav><div className="operator"><small>ВЛАДЕЛЕЦ</small><b>{session.username}</b><button onClick={() => void adminApi.logout().finally(() => setSession(null))}>ЗАВЕРШИТЬ СЕАНС</button></div></aside>
+    <main className="workspace" key={economyMode}>
+      {economyMode === "archive" && <div className="banner">Архив старой экономики · Только просмотр. Переключай разделы меню, чтобы посмотреть старые показатели, тиражи и билеты.</div>}<header className="topbar"><div><small>Casper Loto · управление</small><h1>{title}</h1></div><div className="refresh-control"><span>{loadedAt ? `Обновлено ${date(new Date(loadedAt).toISOString())} МСК` : "Загружаем данные"}</span>{view !== "publications" && <button disabled={loading || refreshing} onClick={() => void load(view, true)}>{refreshing ? "Обновляем…" : "Обновить данные"}</button>}</div></header>
       {["lotteries", "schedule", "draws", "jackpots", "analytics"].includes(view) && <div className="scope-toolbar"><SectionTabs label="Тип игр" value={scope} items={[{ id: "standard", label: "Лотереи" }, { id: "fast", label: "Fast" }, { id: "all", label: "Всё" }]} onChange={setScope} /><p>{scope === "standard" ? "Обычные лотереи. Быстрые тиражи и их выигрыши — в Fast." : scope === "fast" ? "Только быстрые игры: FLASH, SHADOW и PULSE." : "Полная картина: обычные лотереи и Fast вместе."} Игроки и Фонд Каспера общие.</p></div>}
       {error && <div className="error banner">{error}</div>}{(loading || !ready) && <div className="loading">ЗАГРУЖАЕМ ДАННЫЕ…</div>}
       {ready && view === "dashboard" && dashboard && projectDashboard && ticketAnalytics && <DashboardView data={dashboard} project={projectDashboard} analytics={ticketAnalytics} refreshedAt={loadedAt} onOpen={openDraw} onNavigate={(target) => { if (target === "system") setSystemTab("health"); navigate(target); }} />}
@@ -947,7 +953,7 @@ function StatisticsView({ lotteries, report, selectedLotteryId, windowSize, onLo
   const windowLabel = windowSize === 0 ? "все доступные" : `последние ${windowSize}`;
   return <>
     <section className="statistics-brief">
-      <div><span>История выпадений</span><h2>{report.lottery_name}</h2><p>Статистика начата заново с 1 сентября 2026 года. История тиражей и их номера не изменялись.</p></div>
+      <div><span>История выпадений</span><h2>{report.lottery_name}</h2><p>Статистика показана для выбранного этапа экономики. История тиражей и их номера сохранены.</p></div>
       <article><small>УЧТЕНО ТИРАЖЕЙ</small><strong>{report.draw_count}</strong><span>{windowLabel}</span></article>
       <article><small>ЧАЩЕ ВСЕГО</small><strong>{hottest?.appearances ? numberLabel(hottest.number) : "—"}</strong><span>{hottest?.appearances ? `${hottest.appearances} выпадений` : "данные накапливаются"}</span></article>
       <article><small>РЕЖЕ ВСЕГО</small><strong>{coldest?.appearances || report.draw_count ? coldest ? numberLabel(coldest.number) : "—" : "—"}</strong><span>{coldest ? `${coldest.appearances} выпадений` : "данные накапливаются"}</span></article>

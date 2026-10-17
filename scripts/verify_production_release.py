@@ -56,7 +56,10 @@ def main() -> None:
         if frontend == "miniapp":
             fetch(base + "/web", 410)
             fetch(base + "/web/", 410)
-            fetch(base + "/api/v1/miniapp/dashboard", 401)
+            pause = json.loads(fetch(base + "/api/v1/miniapp/maintenance"))
+            fetch(
+                base + "/api/v1/miniapp/dashboard", 503 if pause["maintenance"] else 401
+            )
         else:
             fetch(base + "/api/v1/admin/auth/session", 401)
         print(

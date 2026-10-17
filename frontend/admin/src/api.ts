@@ -32,6 +32,8 @@ export class ApiError extends Error {
 }
 
 let csrfToken = "";
+let economyScope: "current" | "archive" = "current";
+export function setEconomyScope(value: "current" | "archive") { economyScope = value; }
 
 const errorMessages: Record<string, string> = {
   "Proposal expired after 24 hours; refresh suggestions.": "Предложение устарело. Обновите предложку.",
@@ -75,6 +77,7 @@ function localizedError(detail: string | undefined, status: number): string {
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
+  headers.set("X-Economy-Scope", economyScope);
   if (init.body) headers.set("Content-Type", "application/json");
   if (csrfToken && init.method && init.method !== "GET") {
     headers.set("X-Admin-CSRF", csrfToken);

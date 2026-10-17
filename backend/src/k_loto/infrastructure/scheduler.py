@@ -7,6 +7,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy.dialects.postgresql import insert
 
 from k_loto.application.auto_play import AutoPlayService
+from k_loto.application.economy import is_paused
 from k_loto.application.engagement import PlayerEngagementService
 from k_loto.application.operational_monitoring import OperationalMonitoringService
 from k_loto.application.publication_automation import PublicationAutomation, drain
@@ -73,6 +74,9 @@ class SchedulerRuntime:
         self._scheduler.start()
 
     async def _run_publication_events(self) -> None:
+        async with session_factory() as session:
+            if await is_paused(session):
+                return
         try:
             async with session_factory() as session:
                 from k_loto.application.publication_events import due_slot, event_config
@@ -102,6 +106,9 @@ class SchedulerRuntime:
             logger.exception("publication_event_scan_failed")
 
     async def _run_publication_delivery(self) -> None:
+        async with session_factory() as session:
+            if await is_paused(session):
+                return
         try:
             from k_loto.application.publication_retention import expire_proposals
 
@@ -121,6 +128,9 @@ class SchedulerRuntime:
             logger.error("editorial_delivery_failed", error_type=type(error).__name__)
 
     async def _run(self) -> None:
+        async with session_factory() as session:
+            if await is_paused(session):
+                return
         started = datetime.now(UTC)
         async with session_factory() as session, session.begin():
             await session.execute(

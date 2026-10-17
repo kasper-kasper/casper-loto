@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from k_loto.application.economy import require_open
 from k_loto.application.ports import SecureNumberGenerator
 from k_loto.application.purchase_guard import guard_attempt
 from k_loto.application.weekly import KASPER_FUND_ID, _ledger_entry
@@ -162,6 +163,7 @@ class InstantTicketPurchaseService:
         )
         user_key = f"{namespace}:{idempotency_key}:user:purchase"
         async with self._session.begin():
+            await require_open(self._session)
             await guard_attempt(
                 self._session, user_id, idempotency_key, self._rules.code
             )

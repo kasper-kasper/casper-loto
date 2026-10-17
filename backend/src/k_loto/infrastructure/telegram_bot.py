@@ -22,6 +22,7 @@ from aiogram.types import (
     WebAppInfo,
 )
 
+from k_loto.application.economy import is_paused
 from k_loto.application.identity import TelegramIdentityService
 from k_loto.application.notifications import (
     ClaimedNotification,
@@ -69,6 +70,8 @@ async def _bind_player(message: Message) -> None:
         value for value in (telegram_user.first_name, telegram_user.last_name) if value
     )
     async with session_factory() as session:
+        if await is_paused(session):
+            return
         await TelegramIdentityService(session).bind(
             telegram_id=telegram_user.id,
             username=telegram_user.username,
@@ -77,6 +80,12 @@ async def _bind_player(message: Message) -> None:
 
 
 async def _send_miniapp(message: Message) -> None:
+    async with session_factory() as session:
+        if await is_paused(session):
+            await message.answer(
+                "Обновляем экономику. Приложение на технической паузе."
+            )
+            return
     settings = get_settings()
     if settings.miniapp_url is None:
         await message.answer(
@@ -162,6 +171,11 @@ async def run_outbox(bot: Bot, interval_seconds: int, miniapp_url: str | None) -
         BotNotificationFormatter(),
     )
     while True:
+        async with session_factory() as session:
+            paused = await is_paused(session)
+        if paused:
+            await asyncio.sleep(interval_seconds)
+            continue
         try:
             processed = await dispatcher.process_one(datetime.now(UTC))
         except Exception as error:

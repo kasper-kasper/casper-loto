@@ -159,3 +159,5 @@
 .fast-view .fast-card-jackpot { background:#050b1640; }
 .fast-view .fast-live-card .fast-live-veil { background:linear-gradient(90deg,#080d1826,transparent); }
 @keyframes fast-signal-cell { 0%,100% { opacity:.3; } 40%,60% { opacity:1; } }
+
+.fast-prizes{margin-top:18px;padding:14px;border:1px solid #ffffff20;border-radius:14px;font-size:12px}.fast-prizes summary{cursor:pointer;font-weight:700}.fast-prizes dl>div{display:flex;gap:16px;justify-content:space-between;padding:8px 0;border-bottom:1px solid #ffffff12}.fast-prizes dd{margin:0;white-space:nowrap}.fast-prizes p{color:#bfccdd;line-height:1.5}

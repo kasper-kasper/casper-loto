@@ -15,6 +15,7 @@ from fastapi import (
     Header,
     HTTPException,
     Query,
+    Request,
     Response,
     status,
 )
@@ -29,6 +30,8 @@ from k_loto.application.admin import (
     ensure_admin_user,
 )
 from k_loto.application.display_cache import DisplayCache
+from k_loto.application.economy import control_state
+from k_loto.application.economy_archive import apply_archive_scope
 from k_loto.application.instant import InstantTicketQueryService
 from k_loto.application.interesting_facts import InterestingFactAdminService
 from k_loto.application.query_scope import LotteryScope
@@ -57,7 +60,7 @@ from k_loto.infrastructure.admin_auth import (
 router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
 started_at = monotonic()
 ticket_analytics_caches: WeakKeyDictionary[
-    AsyncEngine, DisplayCache[LotteryScope, "TicketAnalyticsResponse"]
+    AsyncEngine, DisplayCache[tuple[Any, ...], "TicketAnalyticsResponse"]
 ] = WeakKeyDictionary()
 
 
@@ -414,12 +417,25 @@ def _validated_session(token: str | None, settings: Settings) -> AdminSession:
 
 
 async def get_current_admin(
+    request: Request,
     session: Annotated[AsyncSession, Depends(get_db_session)],
     settings: Annotated[Settings, Depends(get_settings)],
     token: Annotated[str | None, Cookie(alias=ADMIN_COOKIE)] = None,
 ) -> CurrentAdmin:
     admin_session = _validated_session(token, settings)
     user_id = await ensure_admin_user(session, admin_session.username)
+    if request.method == "GET":
+        control = await control_state(session)
+        epoch, started = control.epoch, control.epoch_started_at
+        # Authentication already committed its identity; leave the read handler
+        # free to use its own transaction while filtering every Admin route.
+        await session.rollback()
+        apply_archive_scope(
+            session,
+            epoch=epoch,
+            started_at=started,
+            archive=request.headers.get("X-Economy-Scope") == "archive",
+        )
     return CurrentAdmin(user_id, admin_session)
 
 
@@ -1033,7 +1049,7 @@ async def ticket_analytics(
     if not isinstance(session.bind, AsyncEngine):
         return await load()
     cache = ticket_analytics_caches.setdefault(session.bind, DisplayCache(seconds=60))
-    return await cache.get(scope, load)
+    return await cache.get((scope, session.info.get("economy_scope")), load)
 
 
 @router.get("/activity", response_model=list[ActivityPointResponse])

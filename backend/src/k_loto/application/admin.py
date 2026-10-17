@@ -466,7 +466,7 @@ class AdminMutationService:
                 select(func.max(Draw.jackpot_opening)).where(
                     Draw.lottery_id == lottery_id,
                     Draw.winning_numbers.is_not(None),
-                    Draw.status != DrawStatus.COMPLETED,
+                    Draw.status.not_in((DrawStatus.COMPLETED, DrawStatus.CANCELLED)),
                 )
             )
             if committed is not None and target_amount < committed:
@@ -713,6 +713,11 @@ class AdminQueryService:
         self._scope = scope
 
     def _current_fast_format(self) -> Any:
+        if (
+            getattr(self._session, "info", {}).get("economy_scope", (None, None))[1]
+            == "archive"
+        ):
+            return True
         current = (
             Draw.configuration_snapshot["ruleset_code"].astext == Lottery.ruleset_code
         )
@@ -1234,7 +1239,8 @@ class AdminQueryService:
             )
         elif period == "future":
             statement = statement.where(
-                Draw.scheduled_at > now, Draw.status != DrawStatus.COMPLETED
+                Draw.scheduled_at > now,
+                Draw.status.not_in((DrawStatus.COMPLETED, DrawStatus.CANCELLED)),
             )
         elif period == "completed":
             statement = statement.where(Draw.status == DrawStatus.COMPLETED)
@@ -2037,7 +2043,10 @@ class AdminQueryService:
                 )
                 .join(Lottery, Lottery.id == Draw.lottery_id)
                 .outerjoin(Ticket, Ticket.draw_id == Draw.id)
-                .where(Draw.status != DrawStatus.COMPLETED, lottery_scope(self._scope))
+                .where(
+                    Draw.status.not_in((DrawStatus.COMPLETED, DrawStatus.CANCELLED)),
+                    lottery_scope(self._scope),
+                )
                 .group_by(Draw.id, Lottery.id)
                 .order_by(Draw.scheduled_at)
                 .limit(8)
@@ -2053,7 +2062,7 @@ class AdminQueryService:
         stuck_count = int(
             await self._session.scalar(
                 select(func.count(Draw.id)).where(
-                    Draw.status != DrawStatus.COMPLETED,
+                    Draw.status.not_in((DrawStatus.COMPLETED, DrawStatus.CANCELLED)),
                     Draw.scheduled_at < now - timedelta(minutes=5),
                 )
             )

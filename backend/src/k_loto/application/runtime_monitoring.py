@@ -142,7 +142,9 @@ class RuntimeMonitoring:
             overdue = int(
                 await session.scalar(
                     select(func.count(Draw.id)).where(
-                        Draw.status != DrawStatus.COMPLETED,
+                        Draw.status.not_in(
+                            (DrawStatus.COMPLETED, DrawStatus.CANCELLED)
+                        ),
                         Draw.scheduled_at < cutoff,
                     )
                 )

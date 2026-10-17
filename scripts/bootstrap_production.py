@@ -76,7 +76,7 @@ async def ensure_lottery(
         lottery.name = name
         lottery.schedule = schedule
         # Existing Grand terms change only through the explicit audited transition.
-        if created or code != "weekly":
+        if created or (code != "weekly" and (lottery.economy_epoch or 1) == 1):
             lottery.ruleset_code = ruleset_code
         lottery.numbers_to_pick = pick
         lottery.max_number = maximum

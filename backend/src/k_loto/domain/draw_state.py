@@ -4,12 +4,15 @@ from k_loto.domain.enums import DrawStatus
 from k_loto.domain.errors import InvalidStateTransition
 
 ALLOWED_DRAW_TRANSITIONS: dict[DrawStatus, frozenset[DrawStatus]] = {
-    DrawStatus.SCHEDULED: frozenset({DrawStatus.CLOSED, DrawStatus.DRAWING}),
+    DrawStatus.SCHEDULED: frozenset(
+        {DrawStatus.CLOSED, DrawStatus.DRAWING, DrawStatus.CANCELLED}
+    ),
     DrawStatus.CLOSED: frozenset({DrawStatus.DRAWING}),
     DrawStatus.DRAWING: frozenset({DrawStatus.SETTLING, DrawStatus.FAILED}),
     DrawStatus.SETTLING: frozenset({DrawStatus.COMPLETED, DrawStatus.FAILED}),
     DrawStatus.FAILED: frozenset({DrawStatus.DRAWING}),
     DrawStatus.COMPLETED: frozenset(),
+    DrawStatus.CANCELLED: frozenset(),
 }
 
 

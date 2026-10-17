@@ -9,8 +9,6 @@ from zoneinfo import ZoneInfo
 from k_loto.domain.enums import LotteryKind
 from k_loto.domain.lottery_rules import (
     CLASSIC_6_36_RULES,
-    CODE_RULES,
-    FAST_RULES,
     GROB_RULES,
     LEGACY_CODE_RULES,
     LEGACY_FAST_RULES,
@@ -20,12 +18,20 @@ from k_loto.domain.lottery_rules import (
     LEGACY_PULSE_V2_RULES,
     LEGACY_PULSE_V3_RULES,
     PSS_CASPER_BALL_RULES,
-    PULSE_RULES,
     SEPTEMBER_RULES,
     LotteryRuleStrategy,
     PayoutRatio,
     SettlementTicket,
     get_lottery_rules,
+)
+from k_loto.domain.lottery_rules import (
+    LEGACY_CODE_V2_RULES as CODE_RULES,
+)
+from k_loto.domain.lottery_rules import (
+    LEGACY_FLASH_V3_RULES as FAST_RULES,
+)
+from k_loto.domain.lottery_rules import (
+    LEGACY_PULSE_V4_RULES as PULSE_RULES,
 )
 from k_loto.domain.schedules import future_draw_target, next_draw_at
 

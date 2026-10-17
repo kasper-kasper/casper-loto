@@ -2,10 +2,11 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { vi } from "vitest";
 
 import App from "./App";
-import { adminApi } from "./api";
+import { adminApi, setEconomyScope } from "./api";
 import type { Dashboard, Lottery, NumberStatisticsReport, Player, PlayerHistoryPage, ScheduleEntry, TicketAnalytics, Transaction } from "./types";
 
 vi.mock("./api", () => ({
+  setEconomyScope: vi.fn(),
   ApiError: class ApiError extends Error { status = 500; },
   adminApi: {
     login: vi.fn(), session: vi.fn(), logout: vi.fn(), dashboard: vi.fn(), kasperLive: vi.fn(), vault: vi.fn(), aurora: vi.fn(),
@@ -173,7 +174,7 @@ it("keeps only the useful owner sections and puts the archive last", async () =>
   await screen.findByText("Всего сорвано джекпотов");
 
   const nav = within(screen.getByRole("navigation"));
-  for (const label of ["Сегодня", "Fast", "Моментальные", "Лотереи", "Расписание", "Тиражи", "Джекпоты", "Архив", "Игроки", "Аналитика", "Журналы"]) {
+  for (const label of ["Сегодня", "Fast", "Моментальные", "Лотереи", "Расписание", "Тиражи", "Джекпоты", "История форматов", "Игроки", "Аналитика", "Журналы"]) {
     expect(nav.getByRole("button", { name: new RegExp(label) })).toBeInTheDocument();
   }
   expect(nav.queryByRole("button", { name: /Тест эфира|Интересные факты|Casper LIVE|Casper Aurora|Casper Vault/ })).not.toBeInTheDocument();
@@ -255,7 +256,7 @@ it("filters number statistics by lottery and draw window without changing histor
   fireEvent.click(await screen.findByRole("button", { name: /Аналитика/ }));
   fireEvent.click(await screen.findByRole("tab", { name: "Числа" }));
 
-  expect(await screen.findByText("Статистика начата заново с 1 сентября 2026 года. История тиражей и их номера не изменялись.")).toBeInTheDocument();
+  expect(await screen.findByText("Статистика показана для выбранного этапа экономики. История тиражей и их номера сохранены.")).toBeInTheDocument();
   fireEvent.change(screen.getByLabelText("Количество тиражей"), { target: { value: "50" } });
   await waitFor(() => expect(adminApi.statistics).toHaveBeenCalledWith("lottery", 50));
 });
@@ -465,7 +466,7 @@ it("opens a Fast jackpot from its own catalog and routes to the draw details", a
 
 it("opens the separate archive on historical completed formats", async () => {
   render(<App />);
-  fireEvent.click(await screen.findByRole("button", { name: /Архив/ }));
+  fireEvent.click(await screen.findByRole("button", { name: /История форматов/ }));
   await waitFor(() => expect(adminApi.draws).toHaveBeenCalledWith("scope=all&period=archived&limit=100&offset=0"));
   expect(await screen.findByText("Архив завершённых лотерей")).toBeInTheDocument();
 });
@@ -604,4 +605,17 @@ it("loads project journals only when opened and keeps other system tabs idle", a
   await screen.findByText("БАЗА ДАННЫХ РАБОТАЕТ");
   expect(adminApi.dashboard).toHaveBeenCalledOnce();
   expect(adminApi.transactions).toHaveBeenCalledOnce();
+});
+
+it("switches all statistics to the old economy and back without retaining old details", async () => {
+  render(<App />);
+  await screen.findByText("Всего сорвано джекпотов");
+  const calls = vi.mocked(adminApi.dashboard).mock.calls.length;
+  fireEvent.click(screen.getByRole("button", { name: "Архив старой экономики" }));
+  await screen.findByText(/Архив старой экономики · Только просмотр/);
+  expect(setEconomyScope).toHaveBeenLastCalledWith("archive");
+  await waitFor(() => expect(vi.mocked(adminApi.dashboard).mock.calls.length).toBeGreaterThan(calls));
+  fireEvent.click(screen.getByRole("button", { name: "Вернуться к новой экономике" }));
+  expect(setEconomyScope).toHaveBeenLastCalledWith("current");
+  await waitFor(() => expect(screen.queryByText(/Архив старой экономики · Только просмотр/)).not.toBeInTheDocument());
 });

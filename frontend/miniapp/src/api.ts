@@ -47,7 +47,8 @@ export async function rawRequest<T>(path: string, initData: string, init?: Reque
   });
   observedStatus = response.status;
   if (!response.ok) {
-    const payload = (await response.json().catch(() => ({}))) as { detail?: string };
+    const payload = (await response.json().catch(() => ({}))) as { detail?: string; maintenance?: boolean };
+    if (payload.maintenance) window.dispatchEvent(new Event("economy-maintenance"));
     const translated: Record<number, string> = {
       402: "Недостаточно CAS для этой покупки.",
       409: "Продажи на выбранный тираж завершены. Обновите расписание и выберите следующий.",

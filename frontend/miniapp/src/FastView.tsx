@@ -126,6 +126,20 @@ export function FastView({ lotteries, feed, now, balance = Number.MAX_SAFE_INTEG
   </section>;
 }
 
+function FastPrizes({ lottery }: { lottery: Lottery }) {
+  const pulse = lottery.code === "pulse";
+  const cipher = pulse && Boolean(lottery.ruleset_code?.includes("cipher"));
+  const entries = Object.entries(lottery.fixed_payouts ?? {}).filter(([tier]) => !cipher || Number(tier) % 10 === 0);
+  const label = (tier: number) => cipher
+    ? `${Math.floor(tier / 100)} в А + ${Math.floor(tier / 10) % 10} в Б${tier === 220 ? " · без шифра" : ""}`
+    : `${tier} ${lottery.code === "shadow" ? "правильных позиций" : "совпадения"}`;
+  if (!entries.length) return null;
+  return <details className="fast-prizes"><summary>Таблица выигрышей</summary><dl>
+    {entries.map(([tier, amount]) => <div key={tier}><dt>{label(Number(tier))}</dt><dd><Money value={amount} /></dd></div>)}
+    <div><dt>{cipher ? "2 в А + 2 в Б + шифр" : `${lottery.numbers_to_pick} совпадений`}</dt><dd>Джекпот</dd></div>
+  </dl><p>Один билет — один приз высшей выигранной категории. Джекпот делится между выигравшими билетами.</p><p>До {lottery.max_tickets_per_user_per_draw} билетов на один раунд.</p></details>;
+}
+
 export function FastPicker({ lottery, purchasing, success, error, onClose, onBuy }: { error?: string | null; lottery: Lottery; purchasing: boolean; success: boolean; onClose: () => void; onBuy: (numbers: number[]) => Promise<boolean> }) {
   const [selected, setSelected] = useState<number[]>([]);
   const code = presentationCode(lottery);
@@ -172,5 +186,6 @@ export function FastPicker({ lottery, purchasing, success, error, onClose, onBuy
     {error && <p className="fast-picker-error" role="alert">{error}</p>}
     <div className="fast-purchase"><div><span>Стоимость</span><strong>{formatCas(lottery.ticket_price ?? 0)}</strong></div><PrimaryButton disabled={!complete || !lottery.purchase_available} loading={purchasing} success={success} onClick={() => void buy()}><Icon name="fast" />{success ? "Билет куплен" : pulse ? "Запустить пульс" : code === "flash" ? "Активировать" : codeMode ? "Подтвердить код" : "Купить сигнал"}</PrimaryButton></div>
     <p className="fast-picker-note">Билет участвует в ближайшем раунде</p>
+    <FastPrizes lottery={lottery} />
   </div>;
 }

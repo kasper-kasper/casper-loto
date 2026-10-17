@@ -171,6 +171,21 @@ class WebLoginToken(Base):
     )
 
 
+class EconomyControl(Base):
+    """Durable owner-controlled pause; no clock can reopen the application."""
+
+    __tablename__ = "economy_control"
+    __table_args__ = (CheckConstraint("id = 1", name="singleton"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    paused: Mapped[bool] = mapped_column(Boolean, server_default="false")
+    pause_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    recovery_after: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    epoch: Mapped[int] = mapped_column(Integer, server_default="1")
+    epoch_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    applied_steps: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default="{}")
+
+
 class Lottery(TimestampMixin, Base):
     __tablename__ = "lotteries"
     __table_args__ = (
@@ -207,6 +222,7 @@ class Lottery(TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(128))
     kind: Mapped[LotteryKind] = mapped_column(enum_type(LotteryKind, "lottery_kind"))
     ruleset_code: Mapped[str] = mapped_column(String(64))
+    economy_epoch: Mapped[int] = mapped_column(Integer, server_default="1", default=1)
     numbers_to_pick: Mapped[int] = mapped_column(Integer)
     max_number: Mapped[int] = mapped_column(Integer)
     ticket_price: Mapped[int | None] = mapped_column(BigInteger)

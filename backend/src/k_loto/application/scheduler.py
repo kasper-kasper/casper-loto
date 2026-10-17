@@ -9,6 +9,7 @@ from sqlalchemy import or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from k_loto.application.daily_transition import DailyTransitionService
+from k_loto.application.economy import is_paused, require_open, schedule_checkpoint
 from k_loto.application.weekly import (
     LotterySettlementService,
     draw_configuration_snapshot,
@@ -37,6 +38,7 @@ class DrawScheduleService:
         self, lottery_id: UUID, *, reference: datetime
     ) -> tuple[Draw, bool]:
         async with self._session.begin():
+            economy = await require_open(self._session)
             lottery = await self._session.scalar(
                 select(Lottery).where(Lottery.id == lottery_id).with_for_update()
             )
@@ -46,7 +48,7 @@ class DrawScheduleService:
                 select(Draw)
                 .where(
                     Draw.lottery_id == lottery.id,
-                    Draw.status != DrawStatus.COMPLETED,
+                    Draw.status.not_in((DrawStatus.COMPLETED, DrawStatus.CANCELLED)),
                     Draw.sales_close_at > reference,
                 )
                 .order_by(Draw.scheduled_at)
@@ -74,7 +76,9 @@ class DrawScheduleService:
                 .order_by(Draw.scheduled_at.desc())
                 .limit(1)
             )
-            schedule_base = latest.scheduled_at if latest is not None else reference
+            schedule_base = schedule_checkpoint(
+                latest.scheduled_at if latest is not None else reference, economy
+            )
             created: list[Draw] = []
             while len(pending_draws) < target:
                 scheduled_at = next_draw_at(
@@ -140,7 +144,7 @@ class DrawRecoveryService:
                 select(Draw.id)
                 .join(Lottery, Lottery.id == Draw.lottery_id)
                 .where(
-                    Draw.status != DrawStatus.COMPLETED,
+                    Draw.status.not_in((DrawStatus.COMPLETED, DrawStatus.CANCELLED)),
                     Draw.scheduled_at <= now,
                     Draw.lottery_id.not_in(excluded or set()),
                     or_(
@@ -183,6 +187,9 @@ class DrawRecoveryService:
         return bool(active)
 
     async def reconcile(self, *, now: datetime | None = None) -> RecoveryReport:
+        async with self._session_factory() as session:
+            if await is_paused(session):
+                return RecoveryReport((), ())
         timestamp = now or datetime.now(UTC)
         prepared: list[UUID] = []
         settled: list[UUID] = []
