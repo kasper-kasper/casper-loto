@@ -104,7 +104,7 @@ async def main():
         with patch(
             "k_loto.application.instant.instant_rules", return_value=LEGACY_LIVE_RULES
         ):
-            old_live_service = InstantTicketPurchaseService(s)
+            old_live_service = InstantTicketPurchaseService(s, Fixed())
         old_live = await old_live_service.purchase(
             user_id=uid, quantity=1, idempotency_key=f"legacy-live-{uid}"
         )
