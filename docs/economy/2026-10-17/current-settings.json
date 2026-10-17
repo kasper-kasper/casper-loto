@@ -1,0 +1,928 @@
+{
+  "snapshot_utc": "2026-10-17T19:59:49.641470+00:00",
+  "transaction": "REPEATABLE READ / READ ONLY",
+  "welcome_grant_cas": 100000000000,
+  "miniapp_purchase_requests_per_minute": 10,
+  "bot_max_tickets_per_purchase_setting": 50,
+  "lotteries": [
+    {
+      "code": "bingo",
+      "name": "Kasper Bingo",
+      "ruleset_code": "bingo_12_60",
+      "kind": "DAILY",
+      "is_active": true,
+      "numbers_to_pick": 12,
+      "max_number": 60,
+      "ticket_price": 50000,
+      "schedule": {
+        "slots": [
+          "10:30",
+          "22:00"
+        ],
+        "future_draw_count": 1
+      },
+      "sales_cutoff_minutes": 2,
+      "max_tickets_per_purchase": 50,
+      "max_tickets_per_user_per_draw": 50,
+      "base_amount": 10000000000,
+      "jackpot_current": 10060200000,
+      "rules": {
+        "code": "bingo_12_60",
+        "numbers_to_pick": 12,
+        "max_number": 60,
+        "primary_numbers_to_pick": null,
+        "primary_max_number": null,
+        "secondary_numbers_to_pick": 0,
+        "secondary_max_number": 0,
+        "secondary_storage_offset": 0,
+        "server_code_max": 0,
+        "ordered": false,
+        "allow_repeats": false,
+        "jackpot_match": 12,
+        "price_divisor": 1,
+        "fixed_payouts": {},
+        "guaranteed_payouts": {},
+        "tier_pool_payouts": {}
+      },
+      "next_scheduled_draw": {
+        "public_number": 66,
+        "scheduled_at": "2026-10-18T07:30:00+00:00",
+        "sales_close_at": "2026-10-18T07:28:00+00:00",
+        "ticket_count": 45,
+        "snapshot_keys": [
+          "max_number",
+          "base_jackpot",
+          "ruleset_code",
+          "ticket_price",
+          "numbers_to_pick",
+          "bingo_tour_moves",
+          "bingo_jackpot_move"
+        ],
+        "configuration": {
+          "ticket_price": 50000,
+          "base_jackpot": 10000000000,
+          "ruleset_code": "bingo_12_60"
+        }
+      }
+    },
+    {
+      "code": "daily",
+      "name": "Архив общей Daily 4/15",
+      "ruleset_code": "daily_4_15",
+      "kind": "DAILY",
+      "is_active": false,
+      "numbers_to_pick": 4,
+      "max_number": 15,
+      "ticket_price": 24000,
+      "schedule": {
+        "slots": [
+          "02:22",
+          "12:00",
+          "18:00"
+        ]
+      },
+      "sales_cutoff_minutes": 2,
+      "max_tickets_per_purchase": 1000,
+      "max_tickets_per_user_per_draw": 5000,
+      "base_amount": 24000000,
+      "jackpot_current": 0,
+      "rules": {
+        "code": "daily_4_15",
+        "numbers_to_pick": 4,
+        "max_number": 15,
+        "primary_numbers_to_pick": null,
+        "primary_max_number": null,
+        "secondary_numbers_to_pick": 0,
+        "secondary_max_number": 0,
+        "secondary_storage_offset": 0,
+        "server_code_max": 0,
+        "ordered": false,
+        "allow_repeats": false,
+        "jackpot_match": 4,
+        "price_divisor": 2,
+        "fixed_payouts": {},
+        "guaranteed_payouts": {
+          "2": [
+            1,
+            2
+          ],
+          "3": [
+            3,
+            1
+          ]
+        },
+        "tier_pool_payouts": {}
+      }
+    },
+    {
+      "code": "dual",
+      "name": "Casper Dual",
+      "ruleset_code": "casper_dual_2_12_2_12",
+      "kind": "DAILY",
+      "is_active": true,
+      "numbers_to_pick": 4,
+      "max_number": 24,
+      "ticket_price": 20000,
+      "schedule": {
+        "slots": [
+          "00:30",
+          "07:30"
+        ],
+        "future_draw_count": 3
+      },
+      "sales_cutoff_minutes": 2,
+      "max_tickets_per_purchase": 1000,
+      "max_tickets_per_user_per_draw": 5000,
+      "base_amount": 5000000,
+      "jackpot_current": 5000000,
+      "rules": {
+        "code": "casper_dual_2_12_2_12",
+        "numbers_to_pick": 4,
+        "max_number": 24,
+        "primary_numbers_to_pick": 2,
+        "primary_max_number": 12,
+        "secondary_numbers_to_pick": 2,
+        "secondary_max_number": 12,
+        "secondary_storage_offset": 12,
+        "server_code_max": 0,
+        "ordered": false,
+        "allow_repeats": false,
+        "jackpot_match": 22,
+        "price_divisor": 1,
+        "fixed_payouts": {},
+        "guaranteed_payouts": {},
+        "tier_pool_payouts": {}
+      },
+      "next_scheduled_draw": {
+        "public_number": 47,
+        "scheduled_at": "2026-10-17T21:30:00+00:00",
+        "sales_close_at": "2026-10-17T21:28:00+00:00",
+        "ticket_count": 70,
+        "snapshot_keys": [
+          "max_number",
+          "base_jackpot",
+          "ruleset_code",
+          "ticket_price",
+          "numbers_to_pick"
+        ],
+        "configuration": {
+          "ticket_price": 20000,
+          "base_jackpot": 5000000,
+          "ruleset_code": "casper_dual_2_12_2_12"
+        }
+      }
+    },
+    {
+      "code": "flash",
+      "name": "FLASH",
+      "ruleset_code": "fast_5_20_jackpot_only",
+      "kind": "DAILY",
+      "is_active": true,
+      "numbers_to_pick": 5,
+      "max_number": 20,
+      "ticket_price": 2000,
+      "schedule": {
+        "type": "interval",
+        "category": "fast",
+        "anchor_time": "00:00",
+        "live_enabled": true,
+        "interval_minutes": 9,
+        "future_draw_count": 2,
+        "sales_cutoff_seconds": 8
+      },
+      "sales_cutoff_minutes": 1,
+      "max_tickets_per_purchase": 100,
+      "max_tickets_per_user_per_draw": 500,
+      "base_amount": 2500000,
+      "jackpot_current": 6280000,
+      "rules": {
+        "code": "fast_5_20_jackpot_only",
+        "numbers_to_pick": 5,
+        "max_number": 20,
+        "primary_numbers_to_pick": null,
+        "primary_max_number": null,
+        "secondary_numbers_to_pick": 0,
+        "secondary_max_number": 0,
+        "secondary_storage_offset": 0,
+        "server_code_max": 0,
+        "ordered": false,
+        "allow_repeats": false,
+        "jackpot_match": 5,
+        "price_divisor": 1,
+        "fixed_payouts": {},
+        "guaranteed_payouts": {},
+        "tier_pool_payouts": {}
+      },
+      "next_scheduled_draw": {
+        "public_number": 7131,
+        "scheduled_at": "2026-10-17T20:06:00+00:00",
+        "sales_close_at": "2026-10-17T20:05:52+00:00",
+        "ticket_count": 45,
+        "snapshot_keys": [
+          "max_number",
+          "base_jackpot",
+          "ruleset_code",
+          "ticket_price",
+          "numbers_to_pick"
+        ],
+        "configuration": {
+          "ticket_price": 2000,
+          "base_jackpot": 2500000,
+          "ruleset_code": "fast_5_20_jackpot_only"
+        }
+      }
+    },
+    {
+      "code": "grob",
+      "name": "Casper Halloween",
+      "ruleset_code": "halloween_3_28",
+      "kind": "DAILY",
+      "is_active": true,
+      "numbers_to_pick": 3,
+      "max_number": 28,
+      "ticket_price": 6666,
+      "schedule": {
+        "slots": [
+          "06:06",
+          "23:06"
+        ]
+      },
+      "sales_cutoff_minutes": 2,
+      "max_tickets_per_purchase": 1000,
+      "max_tickets_per_user_per_draw": 5000,
+      "base_amount": 6666666,
+      "jackpot_current": 13552644,
+      "rules": {
+        "code": "halloween_3_28",
+        "numbers_to_pick": 3,
+        "max_number": 28,
+        "primary_numbers_to_pick": null,
+        "primary_max_number": null,
+        "secondary_numbers_to_pick": 0,
+        "secondary_max_number": 0,
+        "secondary_storage_offset": 0,
+        "server_code_max": 0,
+        "ordered": false,
+        "allow_repeats": false,
+        "jackpot_match": 3,
+        "price_divisor": 1,
+        "fixed_payouts": {
+          "2": 28000
+        },
+        "guaranteed_payouts": {},
+        "tier_pool_payouts": {}
+      },
+      "next_scheduled_draw": {
+        "public_number": 93,
+        "scheduled_at": "2026-10-17T20:06:00+00:00",
+        "sales_close_at": "2026-10-17T20:04:00+00:00",
+        "ticket_count": 45,
+        "snapshot_keys": [
+          "max_number",
+          "base_jackpot",
+          "ruleset_code",
+          "ticket_price",
+          "numbers_to_pick"
+        ],
+        "configuration": {
+          "ticket_price": 6666,
+          "base_jackpot": 6666666,
+          "ruleset_code": "halloween_3_28"
+        }
+      }
+    },
+    {
+      "code": "khan",
+      "name": "6 из 36",
+      "ruleset_code": "classic_6_36",
+      "kind": "DAILY",
+      "is_active": true,
+      "numbers_to_pick": 6,
+      "max_number": 36,
+      "ticket_price": 48000,
+      "schedule": {
+        "slots": [
+          "09:00",
+          "18:00"
+        ]
+      },
+      "sales_cutoff_minutes": 2,
+      "max_tickets_per_purchase": 1000,
+      "max_tickets_per_user_per_draw": 5000,
+      "base_amount": 30000000,
+      "jackpot_current": 696552000,
+      "rules": {
+        "code": "classic_6_36",
+        "numbers_to_pick": 6,
+        "max_number": 36,
+        "primary_numbers_to_pick": null,
+        "primary_max_number": null,
+        "secondary_numbers_to_pick": 0,
+        "secondary_max_number": 0,
+        "secondary_storage_offset": 0,
+        "server_code_max": 0,
+        "ordered": false,
+        "allow_repeats": false,
+        "jackpot_match": 6,
+        "price_divisor": 2,
+        "fixed_payouts": {},
+        "guaranteed_payouts": {
+          "2": [
+            1,
+            4
+          ],
+          "3": [
+            1,
+            1
+          ],
+          "4": [
+            10,
+            1
+          ],
+          "5": [
+            100,
+            1
+          ]
+        },
+        "tier_pool_payouts": {}
+      },
+      "next_scheduled_draw": {
+        "public_number": 140,
+        "scheduled_at": "2026-10-18T06:00:00+00:00",
+        "sales_close_at": "2026-10-18T05:58:00+00:00",
+        "ticket_count": 45,
+        "snapshot_keys": [
+          "max_number",
+          "base_jackpot",
+          "ruleset_code",
+          "ticket_price",
+          "numbers_to_pick"
+        ],
+        "configuration": {
+          "ticket_price": 48000,
+          "base_jackpot": 30000000,
+          "ruleset_code": "classic_6_36"
+        }
+      }
+    },
+    {
+      "code": "pll",
+      "name": "ПЛЛ-лото",
+      "ruleset_code": "daily_4_15",
+      "kind": "DAILY",
+      "is_active": true,
+      "numbers_to_pick": 4,
+      "max_number": 15,
+      "ticket_price": 22000,
+      "schedule": {
+        "slots": [
+          "02:22",
+          "13:45"
+        ]
+      },
+      "sales_cutoff_minutes": 2,
+      "max_tickets_per_purchase": 511,
+      "max_tickets_per_user_per_draw": 5000,
+      "base_amount": 24000000,
+      "jackpot_current": 52842000,
+      "rules": {
+        "code": "daily_4_15",
+        "numbers_to_pick": 4,
+        "max_number": 15,
+        "primary_numbers_to_pick": null,
+        "primary_max_number": null,
+        "secondary_numbers_to_pick": 0,
+        "secondary_max_number": 0,
+        "secondary_storage_offset": 0,
+        "server_code_max": 0,
+        "ordered": false,
+        "allow_repeats": false,
+        "jackpot_match": 4,
+        "price_divisor": 2,
+        "fixed_payouts": {},
+        "guaranteed_payouts": {
+          "2": [
+            1,
+            2
+          ],
+          "3": [
+            3,
+            1
+          ]
+        },
+        "tier_pool_payouts": {}
+      },
+      "next_scheduled_draw": {
+        "public_number": 137,
+        "scheduled_at": "2026-10-17T23:22:00+00:00",
+        "sales_close_at": "2026-10-17T23:20:00+00:00",
+        "ticket_count": 45,
+        "snapshot_keys": [
+          "max_number",
+          "base_jackpot",
+          "ruleset_code",
+          "ticket_price",
+          "numbers_to_pick"
+        ],
+        "configuration": {
+          "ticket_price": 22000,
+          "base_jackpot": 24000000,
+          "ruleset_code": "daily_4_15"
+        }
+      }
+    },
+    {
+      "code": "pss",
+      "name": "Casper Ball",
+      "ruleset_code": "casper_ball_5_36_1_8",
+      "kind": "DAILY",
+      "is_active": true,
+      "numbers_to_pick": 6,
+      "max_number": 44,
+      "ticket_price": 24000,
+      "schedule": {
+        "slots": [
+          "12:00",
+          "20:30"
+        ]
+      },
+      "sales_cutoff_minutes": 2,
+      "max_tickets_per_purchase": 1000,
+      "max_tickets_per_user_per_draw": 5000,
+      "base_amount": 50000000,
+      "jackpot_current": 123536000,
+      "rules": {
+        "code": "casper_ball_5_36_1_8",
+        "numbers_to_pick": 6,
+        "max_number": 44,
+        "primary_numbers_to_pick": 5,
+        "primary_max_number": 36,
+        "secondary_numbers_to_pick": 1,
+        "secondary_max_number": 8,
+        "secondary_storage_offset": 36,
+        "server_code_max": 0,
+        "ordered": false,
+        "allow_repeats": false,
+        "jackpot_match": 51,
+        "price_divisor": 2,
+        "fixed_payouts": {
+          "50": 10000000,
+          "41": 1000000,
+          "40": 100000,
+          "1": 12000
+        },
+        "guaranteed_payouts": {},
+        "tier_pool_payouts": {}
+      },
+      "next_scheduled_draw": {
+        "public_number": 138,
+        "scheduled_at": "2026-10-18T09:00:00+00:00",
+        "sales_close_at": "2026-10-18T08:58:00+00:00",
+        "ticket_count": 45,
+        "snapshot_keys": [
+          "max_number",
+          "base_jackpot",
+          "ruleset_code",
+          "ticket_price",
+          "numbers_to_pick"
+        ],
+        "configuration": {
+          "ticket_price": 24000,
+          "base_jackpot": 50000000,
+          "ruleset_code": "casper_ball_5_36_1_8"
+        }
+      }
+    },
+    {
+      "code": "pulse",
+      "name": "PULSE",
+      "ruleset_code": "pulse_2_12_2_6_cipher_199",
+      "kind": "DAILY",
+      "is_active": true,
+      "numbers_to_pick": 5,
+      "max_number": 18,
+      "ticket_price": 2555,
+      "schedule": {
+        "type": "interval",
+        "category": "fast",
+        "anchor_time": "00:06",
+        "live_enabled": true,
+        "interval_minutes": 9,
+        "future_draw_count": 2,
+        "sales_cutoff_seconds": 8
+      },
+      "sales_cutoff_minutes": 1,
+      "max_tickets_per_purchase": 100,
+      "max_tickets_per_user_per_draw": 500,
+      "base_amount": 2555555,
+      "jackpot_current": 141675305,
+      "rules": {
+        "code": "pulse_2_12_2_6_cipher_199",
+        "numbers_to_pick": 5,
+        "max_number": 18,
+        "primary_numbers_to_pick": 2,
+        "primary_max_number": 12,
+        "secondary_numbers_to_pick": 2,
+        "secondary_max_number": 6,
+        "secondary_storage_offset": 12,
+        "server_code_max": 199,
+        "ordered": false,
+        "allow_repeats": false,
+        "jackpot_match": 221,
+        "price_divisor": 1,
+        "fixed_payouts": {
+          "220": 500000
+        },
+        "guaranteed_payouts": {},
+        "tier_pool_payouts": {}
+      },
+      "next_scheduled_draw": {
+        "public_number": 6943,
+        "scheduled_at": "2026-10-17T20:03:00+00:00",
+        "sales_close_at": "2026-10-17T20:02:52+00:00",
+        "ticket_count": 45,
+        "snapshot_keys": [
+          "max_number",
+          "base_jackpot",
+          "ruleset_code",
+          "ticket_price",
+          "numbers_to_pick"
+        ],
+        "configuration": {
+          "ticket_price": 2555,
+          "base_jackpot": 2555555,
+          "ruleset_code": "pulse_2_12_2_6_cipher_199"
+        }
+      }
+    },
+    {
+      "code": "september",
+      "name": "3 СЕНТЯБРЯ",
+      "ruleset_code": "september_3_33",
+      "kind": "DAILY",
+      "is_active": true,
+      "numbers_to_pick": 3,
+      "max_number": 33,
+      "ticket_price": 3292,
+      "schedule": {
+        "slots": [
+          "03:33",
+          "15:33"
+        ]
+      },
+      "sales_cutoff_minutes": 2,
+      "max_tickets_per_purchase": 1000,
+      "max_tickets_per_user_per_draw": 5000,
+      "base_amount": 33333333,
+      "jackpot_current": 37744613,
+      "rules": {
+        "code": "september_3_33",
+        "numbers_to_pick": 3,
+        "max_number": 33,
+        "primary_numbers_to_pick": null,
+        "primary_max_number": null,
+        "secondary_numbers_to_pick": 0,
+        "secondary_max_number": 0,
+        "secondary_storage_offset": 0,
+        "server_code_max": 0,
+        "ordered": false,
+        "allow_repeats": false,
+        "jackpot_match": 3,
+        "price_divisor": 1,
+        "fixed_payouts": {
+          "1": 333,
+          "2": 3333
+        },
+        "guaranteed_payouts": {},
+        "tier_pool_payouts": {}
+      },
+      "next_scheduled_draw": {
+        "public_number": 94,
+        "scheduled_at": "2026-10-18T00:33:00+00:00",
+        "sales_close_at": "2026-10-18T00:31:00+00:00",
+        "ticket_count": 45,
+        "snapshot_keys": [
+          "max_number",
+          "base_jackpot",
+          "ruleset_code",
+          "ticket_price",
+          "numbers_to_pick"
+        ],
+        "configuration": {
+          "ticket_price": 3292,
+          "base_jackpot": 33333333,
+          "ruleset_code": "september_3_33"
+        }
+      }
+    },
+    {
+      "code": "shadow",
+      "name": "CODE",
+      "ruleset_code": "code_5_digits",
+      "kind": "DAILY",
+      "is_active": true,
+      "numbers_to_pick": 5,
+      "max_number": 9,
+      "ticket_price": 1999,
+      "schedule": {
+        "type": "interval",
+        "category": "fast",
+        "anchor_time": "00:03",
+        "live_enabled": true,
+        "interval_minutes": 9,
+        "future_draw_count": 2,
+        "sales_cutoff_seconds": 8
+      },
+      "sales_cutoff_minutes": 1,
+      "max_tickets_per_purchase": 100,
+      "max_tickets_per_user_per_draw": 500,
+      "base_amount": 3000000,
+      "jackpot_current": 163599660,
+      "rules": {
+        "code": "code_5_digits",
+        "numbers_to_pick": 5,
+        "max_number": 9,
+        "primary_numbers_to_pick": null,
+        "primary_max_number": null,
+        "secondary_numbers_to_pick": 0,
+        "secondary_max_number": 0,
+        "secondary_storage_offset": 0,
+        "server_code_max": 0,
+        "ordered": true,
+        "allow_repeats": true,
+        "jackpot_match": 5,
+        "price_divisor": 1,
+        "fixed_payouts": {
+          "4": 1500000
+        },
+        "guaranteed_payouts": {},
+        "tier_pool_payouts": {}
+      },
+      "next_scheduled_draw": {
+        "public_number": 7131,
+        "scheduled_at": "2026-10-17T20:00:00+00:00",
+        "sales_close_at": "2026-10-17T19:59:52+00:00",
+        "ticket_count": 45,
+        "snapshot_keys": [
+          "max_number",
+          "base_jackpot",
+          "ruleset_code",
+          "ticket_price",
+          "numbers_to_pick"
+        ],
+        "configuration": {
+          "ticket_price": 1999,
+          "base_jackpot": 3000000,
+          "ruleset_code": "code_5_digits"
+        }
+      }
+    },
+    {
+      "code": "weekly",
+      "name": "Kasper Grand",
+      "ruleset_code": "grand_fixed_5_35_2_5",
+      "kind": "WEEKLY",
+      "is_active": true,
+      "numbers_to_pick": 7,
+      "max_number": 40,
+      "ticket_price": 50000,
+      "schedule": {
+        "weekday": "sunday",
+        "draw_time": "20:00"
+      },
+      "sales_cutoff_minutes": 5,
+      "max_tickets_per_purchase": 1000,
+      "max_tickets_per_user_per_draw": 5000,
+      "base_amount": 5000000000,
+      "jackpot_current": 5021972500,
+      "rules": {
+        "code": "grand_fixed_5_35_2_5",
+        "numbers_to_pick": 7,
+        "max_number": 40,
+        "primary_numbers_to_pick": 5,
+        "primary_max_number": 35,
+        "secondary_numbers_to_pick": 2,
+        "secondary_max_number": 5,
+        "secondary_storage_offset": 35,
+        "server_code_max": 0,
+        "ordered": false,
+        "allow_repeats": false,
+        "jackpot_match": 52,
+        "price_divisor": 1,
+        "fixed_payouts": {
+          "21": 50000,
+          "22": 50000,
+          "30": 100000,
+          "31": 200000,
+          "32": 300000,
+          "40": 500000,
+          "41": 1000000,
+          "42": 3000000,
+          "50": 10000000,
+          "51": 20000000
+        },
+        "guaranteed_payouts": {},
+        "tier_pool_payouts": {}
+      },
+      "next_scheduled_draw": {
+        "public_number": 10,
+        "scheduled_at": "2026-10-18T17:00:00+00:00",
+        "sales_close_at": "2026-10-18T16:55:00+00:00",
+        "ticket_count": 45,
+        "snapshot_keys": [
+          "max_number",
+          "base_jackpot",
+          "ruleset_code",
+          "ticket_price",
+          "numbers_to_pick"
+        ],
+        "configuration": {
+          "ticket_price": 50000,
+          "base_jackpot": 5000000000,
+          "ruleset_code": "grand_fixed_5_35_2_5"
+        }
+      }
+    }
+  ],
+  "instant_games": [
+    {
+      "code": "kasper-live",
+      "name": "Casper LIVE",
+      "price": 2000,
+      "odds_version": "kasper-live-v1",
+      "allowed_quantities": [
+        1,
+        3
+      ],
+      "per_day_ticket_cap": null,
+      "bands": [
+        {
+          "prize": 0,
+          "weight": 7000,
+          "denominator": 10000
+        },
+        {
+          "prize": 1000,
+          "weight": 1500,
+          "denominator": 10000
+        },
+        {
+          "prize": 2000,
+          "weight": 800,
+          "denominator": 10000
+        },
+        {
+          "prize": 5000,
+          "weight": 500,
+          "denominator": 10000
+        },
+        {
+          "prize": 20000,
+          "weight": 180,
+          "denominator": 10000
+        },
+        {
+          "prize": 100000,
+          "weight": 19,
+          "denominator": 10000
+        },
+        {
+          "prize": 1000000,
+          "weight": 1,
+          "denominator": 10000
+        }
+      ]
+    },
+    {
+      "code": "aurora",
+      "name": "Casper Aurora",
+      "price": 3000,
+      "odds_version": "casper-aurora-v1",
+      "allowed_quantities": [
+        1,
+        3
+      ],
+      "per_day_ticket_cap": null,
+      "bands": [
+        {
+          "prize": 0,
+          "weight": 6000,
+          "denominator": 10000
+        },
+        {
+          "prize": 2000,
+          "weight": 2000,
+          "denominator": 10000
+        },
+        {
+          "prize": 3000,
+          "weight": 1000,
+          "denominator": 10000
+        },
+        {
+          "prize": 6000,
+          "weight": 700,
+          "denominator": 10000
+        },
+        {
+          "prize": 25000,
+          "weight": 280,
+          "denominator": 10000
+        },
+        {
+          "prize": 200000,
+          "weight": 19,
+          "denominator": 10000
+        },
+        {
+          "prize": 1000000,
+          "weight": 1,
+          "denominator": 10000
+        }
+      ]
+    },
+    {
+      "code": "vault",
+      "name": "Casper Vault",
+      "price": 5000,
+      "odds_version": "casper-vault-v1",
+      "allowed_quantities": [
+        1,
+        3
+      ],
+      "per_day_ticket_cap": null,
+      "bands": [
+        {
+          "prize": 0,
+          "weight": 2199,
+          "denominator": 10000
+        },
+        {
+          "prize": 3000,
+          "weight": 3500,
+          "denominator": 10000
+        },
+        {
+          "prize": 5000,
+          "weight": 2500,
+          "denominator": 10000
+        },
+        {
+          "prize": 10000,
+          "weight": 1000,
+          "denominator": 10000
+        },
+        {
+          "prize": 50000,
+          "weight": 500,
+          "denominator": 10000
+        },
+        {
+          "prize": 300000,
+          "weight": 200,
+          "denominator": 10000
+        },
+        {
+          "prize": 1000000,
+          "weight": 100,
+          "denominator": 10000
+        },
+        {
+          "prize": 5000000,
+          "weight": 1,
+          "denominator": 10000
+        }
+      ]
+    }
+  ],
+  "dual": {
+    "price": 20000,
+    "maximum_per_ticket": 5000000,
+    "payouts": {
+      "11": 10000,
+      "12": 100000,
+      "21": 100000,
+      "22": 5000000
+    }
+  },
+  "bingo": {
+    "POOL_SIZE": 2000,
+    "DRAW_MOVES": 58,
+    "JACKPOT_MOVE": 28,
+    "TOUR_PRIZES": [
+      100000,
+      500000
+    ],
+    "TOUR_MOVES": [
+      18,
+      34
+    ]
+  },
+  "source_sha256": {
+    "k_loto.domain.instant": "99d0f8f9227f6524157153484cbc48c2d6935298d8e77327e7b07575129b2bac",
+    "k_loto.domain.lottery_rules": "4bc698cb8e7ca2314ecb016a925f5d3849f669bc034a13bbd871af9094fd6745",
+    "k_loto.domain.bingo": "36d8dcbffb89a7845596a2abc2f38e514ff6d893205914765b7e4a04d26959a0",
+    "k_loto.domain.dual": "e474f2ac75ff0ea0c6d0968fb07d53fd0e1d132ba523124aff1559a80752959b",
+    "k_loto.application.weekly": "c7e78187e853fc1ceca23e0d2161bb87a19affb63f42353eed83dfe253313081"
+  }
+}
