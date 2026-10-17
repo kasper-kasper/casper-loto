@@ -1,3 +1,10 @@
+## [Planning — Collections and public showcase] - 2026-10-17
+
+- Owner discusses a fifth leaderboard destination, collections, cases for virtual CAS and a gold badge for a genuine “6 из 36” jackpot; confirms current accounts are owner-controlled test bots. No financial adjustments are performed.
+- Added an illustrative clickable navigation flow and a draft roadmap: keep collection/case entry inside “Моё”, show selected items/badges on a public masked player card reached from the leaderboard, and distinguish event-earned badges from purchasable collection items. Case price, item count/content, no-duplicate policy and gift case are explicitly unapproved examples/proposals, tracked in OD-055.
+- Planning artifacts only; no application/business-rule/schema/production change. Preserve existing unrelated worktree edits, including the earlier OD-054 discussion.
+- Fragment validation and JavaScript syntax pass. Focused Chromium smoke covers case result, inventory progress, equipping, own/other public cards, masked names and badge navigation; no horizontal overflow at 780/360/320 px. Symbols are illustrative placeholders, not approved collection artwork.
+
 ## [Marketing — Casper free-play Reel] - 2026-10-17
 
 - Owner commissions an Instagram Reel with a hook, animated typography and an explicit free-play message. Added the isolated Remotion project `design/reels/casper-free-v1`, six editable scenes and a Russian post caption. Approved Casper logo/artwork are reused unchanged. Actual Mini App screens are captured from its existing local design preview; demo labels are visible and no real purchases or production records are involved.

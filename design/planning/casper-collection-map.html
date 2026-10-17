@@ -1,0 +1,221 @@
+<div id="casper-collection-plan">
+  <div class="cp-caption">Концепт навигации · предметы, цены и данные условные</div>
+  <div class="viz-dotted-background cp-stage">
+    <section class="cp-phone" aria-label="Черновой интерфейс коллекций Casper Loto">
+      <header class="cp-header"><button type="button" data-go="my" class="cp-back cursor-interaction" aria-label="Назад в Моё" hidden>←</button><h2 id="cp-title">Моё</h2><span class="cp-concept">КОНЦЕПТ</span></header>
+      <main class="cp-content">
+        <section data-screen="my">
+          <div class="cp-person"><span class="cp-avatar">N</span><div><strong>Nik***</strong><span>Мой профиль</span></div><button type="button" data-action="self" class="cp-link cursor-interaction">Как видят другие ↗</button></div>
+          <div class="cp-wallet"><span>Игровой баланс</span><strong data-balance>42 000 CAS</strong></div>
+          <div class="cp-showcase"><div class="cp-feature"><i data-feature-icon data-lucide="gem" aria-hidden="true"></i><span data-feature-name>Кристалл</span></div><div class="cp-awards"><span class="cp-eyebrow">МОЯ ВИТРИНА</span><button type="button" data-go="badges" class="cp-medal cursor-interaction"><i data-lucide="medal" aria-hidden="true"></i><span>Джекпот<br/>6 из 36</span></button><span class="cp-subtle">Фигурка + значки</span></div></div>
+          <button type="button" data-go="collection" class="cp-entry cp-emphasis cursor-interaction"><i data-lucide="boxes" aria-hidden="true"></i><span><strong>Коллекция</strong><small data-progress>Собрано 3 из 12</small></span><span>↗</span></button>
+          <button type="button" data-go="badges" class="cp-entry cursor-interaction"><i data-lucide="award" aria-hidden="true"></i><span><strong>Значки</strong><small>Награды за игровые события</small></span><span>↗</span></button>
+          <div class="cp-existing"><span>Активные билеты</span><span>История участия</span><span>Статистика и настройки</span></div>
+        </section>
+        <section data-screen="collection" hidden>
+          <div class="cp-section-heading"><div><span class="cp-eyebrow">ПЕРВАЯ КОЛЛЕКЦИЯ · ПРИМЕР</span><h3>Миры Casper</h3></div><strong data-count>3 / 12</strong></div>
+          <div class="cp-progress" aria-label="Прогресс коллекции"><span id="cp-progress-fill" style="width:25%"></span></div>
+          <div id="cp-items" class="cp-grid" aria-label="Фигурки коллекции"></div>
+          <button type="button" data-go="case" class="cp-primary cursor-interaction"><i data-lucide="package" aria-hidden="true"></i>Получить фигурку · Открыть кейс</button>
+          <div class="cp-note">Выбранная фигурка видна на публичной витрине.</div>
+        </section>
+        <section data-screen="item" hidden>
+          <div id="cp-item-detail"></div>
+        </section>
+        <section data-screen="case" hidden>
+          <span class="cp-eyebrow">КЕЙС КОЛЛЕКЦИИ</span><h3>Миры Casper</h3>
+          <div class="cp-case-art"><i data-lucide="package-open" aria-hidden="true"></i></div>
+          <div class="cp-case-copy"><strong>Одна новая фигурка</strong><span>Случайная из ещё не собранных</span></div>
+          <div class="cp-rule"><i data-lucide="check" aria-hidden="true"></i>В этом варианте — без повторов</div>
+          <button type="button" id="cp-open" data-action="open" class="cp-primary cursor-interaction">Открыть за 5 000 CAS</button>
+          <div class="cp-note">Баланс: <span data-balance>42 000 CAS</span></div>
+          <button type="button" data-go="collection" class="cp-secondary cursor-interaction">Посмотреть всю коллекцию</button>
+        </section>
+        <section data-screen="result" hidden>
+          <span class="cp-eyebrow">НОВАЯ ФИГУРКА</span><h3>Коллекция стала ближе</h3>
+          <div class="cp-result-art"><i data-lucide="sun" aria-hidden="true"></i></div>
+          <div class="cp-case-copy"><strong>Солнечный шар</strong><span data-progress>Собрано 4 из 12</span></div>
+          <button type="button" data-action="equip-new" class="cp-primary cursor-interaction">Поставить на витрину</button>
+          <button type="button" data-go="collection" class="cp-secondary cursor-interaction">Вернуться в коллекцию</button>
+        </section>
+        <section data-screen="badges" hidden>
+          <span class="cp-eyebrow">НАГРАДЫ ЗА СОБЫТИЯ</span><h3>Мои значки</h3>
+          <div class="cp-badge-detail"><i data-lucide="medal" aria-hidden="true"></i><strong>Джекпот · 6 из 36</strong><span>За настоящий сорванный джекпот</span><span class="cp-badge-state">На публичной витрине ✓</span></div>
+          <div class="cp-note">Такой значок выдаётся автоматически за событие. Его нельзя купить или получить из кейса.</div>
+        </section>
+        <section data-screen="ranking" hidden>
+          <div class="cp-section-heading"><h3>Выиграно</h3><span class="cp-subtle">CAS</span></div>
+          <button type="button" data-action="other" class="cp-rank cursor-interaction"><span class="cp-place">1</span><span class="cp-mini-avatar">A</span><span><strong>Але***</strong><small>128 400 000 CAS</small></span><i data-lucide="medal" aria-label="Есть значок джекпота"></i><span>↗</span></button>
+          <button type="button" data-action="other" class="cp-rank cursor-interaction"><span class="cp-place">2</span><span class="cp-mini-avatar">M</span><span><strong>Мар***</strong><small>96 200 000 CAS</small></span><i data-lucide="award" aria-label="Есть значок"></i><span>↗</span></button>
+          <button type="button" data-action="self" class="cp-rank cp-you cursor-interaction"><span class="cp-place">3</span><span class="cp-mini-avatar">N</span><span><strong>Nik*** · вы</strong><small>84 100 000 CAS</small></span><i data-lucide="medal" aria-label="Есть значок джекпота"></i><span>↗</span></button>
+          <div class="cp-note">Нажатие на игрока открывает его витрину.</div>
+        </section>
+        <section data-screen="public" hidden>
+          <div class="cp-person cp-public-person"><span class="cp-avatar" id="cp-public-avatar">A</span><div><strong id="cp-public-name">Але***</strong><span>Публичная карточка игрока</span></div></div>
+          <div class="cp-showcase cp-public-showcase"><div class="cp-feature"><i id="cp-public-figure" data-lucide="orbit" aria-hidden="true"></i><span id="cp-public-item">Золотая орбита</span></div><div class="cp-awards"><span class="cp-eyebrow">ВИТРИНА</span><span class="cp-medal"><i data-lucide="medal" aria-hidden="true"></i><span>Джекпот<br/>6 из 36</span></span></div></div>
+          <div class="cp-public-line"><span>Коллекция «Миры Casper»</span><strong id="cp-public-count">7 / 12</strong></div>
+          <div class="cp-public-line"><span>Значки</span><strong>1</strong></div>
+          <div class="cp-note">Эту карточку открывают из рейтинга или по ссылке на профиль. Баланс и личные билеты здесь не показываются.</div>
+        </section>
+      </main>
+      <div id="cp-message" class="cp-message" aria-live="polite"></div>
+      <nav class="cp-dock" aria-label="Основная навигация">
+        <button type="button" disabled><i data-lucide="house" aria-hidden="true"></i><span>Сегодня</span></button>
+        <button type="button" disabled><i data-lucide="ticket" aria-hidden="true"></i><span>Лотереи</span></button>
+        <button type="button" disabled><i data-lucide="zap" aria-hidden="true"></i><span>Fast</span></button>
+        <button type="button" data-go="ranking" class="cursor-interaction"><i data-lucide="trophy" aria-hidden="true"></i><span>Рейтинг</span></button>
+        <button type="button" data-go="my" class="cursor-interaction" aria-current="page"><i data-lucide="user" aria-hidden="true"></i><span>Моё</span></button>
+      </nav>
+    </section>
+  </div>
+</div>
+<style>
+#casper-collection-plan .cp-caption{margin:0 0 12px;color:var(--muted-foreground)}
+#casper-collection-plan .cp-stage{padding:20px 12px;display:flex;justify-content:center}
+#casper-collection-plan .cp-phone{--cp-bg:#0a1328;--cp-panel:#15243c;--cp-ink:#f6edd7;--cp-muted:#b2bfd0;--cp-gold:#d4a962;--cp-line:#ffffff1c;box-sizing:border-box;width:100%;max-width:390px;min-width:0;background:var(--cp-bg);color:var(--cp-ink);border-radius:28px;padding:22px 18px 10px;font:14px/1.45 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;box-shadow:0 16px 48px #0003}
+#casper-collection-plan .cp-phone *{box-sizing:border-box}
+#casper-collection-plan .cp-phone button{font:inherit;color:inherit}
+#casper-collection-plan .cp-phone strong{font-weight:600}
+#casper-collection-plan .cp-phone h2{font-size:30px;font-weight:550;line-height:1.1;margin:0;letter-spacing:-1px}
+#casper-collection-plan .cp-phone h3{font-size:22px;font-weight:550;margin:8px 0 12px;letter-spacing:-.5px}
+#casper-collection-plan .cp-header{display:flex;gap:10px;align-items:center;margin:4px 0 22px;min-height:38px}
+#casper-collection-plan .cp-concept{margin-left:auto;font-size:10px;letter-spacing:1.3px;color:var(--cp-muted)}
+#casper-collection-plan .cp-back{border:0;background:transparent;min-width:36px;min-height:44px;padding:0;font-size:24px!important}
+#casper-collection-plan .cp-content{min-height:492px}
+#casper-collection-plan [hidden]{display:none!important}
+#casper-collection-plan .cp-person{display:flex;align-items:center;gap:10px;margin:0 0 16px}
+#casper-collection-plan .cp-person>div{display:grid;gap:3px}
+#casper-collection-plan .cp-person>div>span{font-size:11px;color:var(--cp-muted)}
+#casper-collection-plan .cp-avatar{display:grid;place-items:center;width:40px;height:40px;flex:none;border-radius:14px;background:#314562;color:var(--cp-ink);font-size:19px}
+#casper-collection-plan .cp-link{background:transparent;border:0;color:var(--cp-gold)!important;padding:4px;min-height:44px;margin-left:auto;max-width:120px;font-size:11px!important;text-align:right}
+#casper-collection-plan .cp-wallet{display:flex;align-items:center;justify-content:space-between;padding:15px 16px;border-radius:16px;background:linear-gradient(130deg,#243d61,#14263e);margin-bottom:14px;gap:10px}
+#casper-collection-plan .cp-wallet>span{font-size:12px;color:var(--cp-muted)}
+#casper-collection-plan .cp-wallet>strong{font-size:20px;white-space:nowrap;color:var(--cp-ink)}
+#casper-collection-plan .cp-showcase{display:flex;align-items:center;gap:12px;min-height:154px;padding:16px;background:radial-gradient(ellipse at 15% 45%,#d4a96222,transparent 75%),var(--cp-panel);border-radius:20px;margin:0 0 15px}
+#casper-collection-plan .cp-feature{display:flex;flex:1;flex-direction:column;align-items:center;gap:12px;text-align:center;font-size:12px;color:var(--cp-gold)}
+#casper-collection-plan .cp-feature svg{width:62px!important;height:62px!important;stroke-width:1.2;filter:drop-shadow(0 5px 10px #d4a96244)}
+#casper-collection-plan .cp-awards{display:flex;flex:1;flex-direction:column;align-items:flex-start;gap:10px}
+#casper-collection-plan .cp-eyebrow{font-size:10px;color:var(--cp-muted);letter-spacing:1.2px}
+#casper-collection-plan .cp-medal{display:flex;gap:9px;align-items:center;background:transparent;border:0;padding:0;min-height:44px;color:var(--cp-gold)!important;text-align:left}
+#casper-collection-plan .cp-medal svg{width:29px;height:32px;stroke-width:1.4}
+#casper-collection-plan .cp-medal>span{font-size:12px}
+#casper-collection-plan .cp-subtle{font-size:11px;color:var(--cp-muted)}
+#casper-collection-plan .cp-entry{width:100%;display:flex;align-items:center;gap:12px;padding:13px 14px;margin-bottom:10px;border:1px solid var(--cp-line);border-radius:16px;background:var(--cp-panel);text-align:left}
+#casper-collection-plan .cp-entry>svg{color:var(--cp-gold);width:24px;height:24px;flex:none}
+#casper-collection-plan .cp-entry>span:first-of-type{flex:1;display:grid;gap:3px}
+#casper-collection-plan .cp-entry small{font-size:11px;color:var(--cp-muted)}
+#casper-collection-plan .cp-emphasis{background:linear-gradient(120deg,#2c3543,#17283e)}
+#casper-collection-plan .cp-existing{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:11px;color:var(--cp-muted);padding:9px 4px}
+#casper-collection-plan .cp-section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+#casper-collection-plan .cp-section-heading>strong{font-size:18px;color:var(--cp-gold);white-space:nowrap}
+#casper-collection-plan .cp-progress{height:5px;border-radius:6px;background:#ffffff12;margin:5px 0 16px;overflow:hidden}
+#casper-collection-plan .cp-progress>span{display:block;height:100%;background:var(--cp-gold)}
+#casper-collection-plan .cp-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:0 0 18px}
+#casper-collection-plan .cp-item{min-height:83px;display:flex;flex-direction:column;gap:7px;align-items:center;justify-content:center;background:var(--cp-panel);border:1px solid transparent;border-radius:13px;padding:9px 4px;font-size:10px!important;min-width:0;position:relative}
+#casper-collection-plan .cp-item svg{width:27px;height:27px;color:var(--cp-gold);stroke-width:1.4}
+#casper-collection-plan .cp-item.cp-locked{color:#8491a6;background:#101d32}
+#casper-collection-plan .cp-item.cp-locked svg{color:#718098}
+#casper-collection-plan .cp-item[aria-pressed=true]{border-color:var(--cp-gold)}
+#casper-collection-plan .cp-item>span{text-align:center;overflow-wrap:anywhere}
+#casper-collection-plan .cp-primary{display:flex;justify-content:center;align-items:center;gap:8px;width:100%;min-height:48px;padding:12px;border-radius:13px;border:0;background:var(--cp-gold);color:#111b2b!important;font-weight:600!important}
+#casper-collection-plan .cp-primary svg{width:19px;height:19px}
+#casper-collection-plan .cp-primary:disabled{opacity:.55}
+#casper-collection-plan .cp-secondary{width:100%;min-height:44px;background:transparent;border:1px solid var(--cp-line);border-radius:13px;margin-top:12px;padding:9px}
+#casper-collection-plan .cp-note{font-size:11px;color:var(--cp-muted);line-height:1.6;margin:13px 0}
+#casper-collection-plan .cp-case-art,#casper-collection-plan .cp-result-art{height:210px;display:grid;place-items:center;background:radial-gradient(ellipse,#d4a96222,transparent 65%)}
+#casper-collection-plan .cp-case-art svg,#casper-collection-plan .cp-result-art svg{width:100px!important;height:100px!important;color:var(--cp-gold);stroke-width:1.1;filter:drop-shadow(0 12px 20px #d4a96222)}
+#casper-collection-plan .cp-case-copy{display:grid;gap:5px;text-align:center;margin-bottom:20px}
+#casper-collection-plan .cp-case-copy>strong{font-size:20px}
+#casper-collection-plan .cp-case-copy>span{font-size:12px;color:var(--cp-muted)}
+#casper-collection-plan .cp-rule{display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;color:var(--cp-muted);margin:0 0 18px}
+#casper-collection-plan .cp-rule svg{width:15px;height:15px}
+#casper-collection-plan .cp-badge-detail{display:flex;flex-direction:column;align-items:center;gap:15px;padding:35px 12px;background:var(--cp-panel);border-radius:18px;text-align:center}
+#casper-collection-plan .cp-badge-detail>svg{width:80px!important;height:80px!important;color:var(--cp-gold);stroke-width:1.1}
+#casper-collection-plan .cp-badge-detail>span{font-size:12px;color:var(--cp-muted)}
+#casper-collection-plan .cp-badge-state{color:var(--cp-gold)!important}
+#casper-collection-plan .cp-rank{display:flex;align-items:center;gap:9px;width:100%;min-height:78px;background:transparent;border:0;border-bottom:1px solid var(--cp-line);padding:13px 3px;text-align:left}
+#casper-collection-plan .cp-place{width:16px;color:var(--cp-muted)}
+#casper-collection-plan .cp-mini-avatar{display:grid;place-items:center;width:32px;height:32px;border-radius:12px;background:#263b56;flex:none}
+#casper-collection-plan .cp-rank>span:nth-of-type(3){display:grid;gap:4px;flex:1;min-width:0}
+#casper-collection-plan .cp-rank small{font-size:11px;color:var(--cp-muted)}
+#casper-collection-plan .cp-rank>svg{width:20px;height:24px;color:var(--cp-gold);flex:none}
+#casper-collection-plan .cp-you{background:#d4a96209}
+#casper-collection-plan .cp-public-person{padding:8px 0 14px}
+#casper-collection-plan .cp-public-showcase{min-height:220px}
+#casper-collection-plan .cp-public-line{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:17px 0;border-bottom:1px solid var(--cp-line);font-size:12px}
+#casper-collection-plan .cp-public-line>strong{color:var(--cp-gold)}
+#casper-collection-plan .cp-message{color:var(--cp-gold);font-size:11px;min-height:25px;padding:4px 0}
+#casper-collection-plan .cp-dock{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;padding:10px 0 3px;border-top:1px solid var(--cp-line);margin-top:13px}
+#casper-collection-plan .cp-dock>button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:51px;padding:5px 0;border:0;background:transparent;color:var(--cp-muted);font-size:10px!important;min-width:0}
+#casper-collection-plan .cp-dock>button>svg{width:21px;height:21px;stroke-width:1.5}
+#casper-collection-plan .cp-dock>button[aria-current=page]{color:var(--cp-gold);background:#d4a9620d;border-radius:11px}
+#casper-collection-plan .cp-dock>button:disabled{opacity:.65}
+@media(max-width:360px){#casper-collection-plan .cp-stage{padding:12px 0}#casper-collection-plan .cp-phone{padding:18px 12px 10px}#casper-collection-plan .cp-link{max-width:98px}#casper-collection-plan .cp-content{min-height:492px}}
+</style>
+<script>
+(() => {
+  const root=document.getElementById('casper-collection-plan');
+  const items=[['gem','Кристалл'],['orbit','Золотая орбита'],['moon','Лунный шар'],['sun','Солнечный шар'],['flame','Огонёк'],['waves','Волна'],['clock-3','Часы'],['flower-2','Цветок'],['sparkles','Искра'],['shell','Ракушка'],['snowflake','Снежинка'],['star','Звезда']];
+  const titles={my:'Моё',collection:'Коллекция',item:'Фигурка',case:'Кейс',result:'Получено',badges:'Значки',ranking:'Рейтинг',public:'Карточка игрока'};
+  const state={screen:'my',opened:false,equipped:0,self:false,selectedItem:0};
+  const saved=window.openai?.widgetState?.privateContent;
+  if(saved && typeof saved==='object'){
+    if(titles[saved.screen]) state.screen=saved.screen;
+    state.opened=saved.opened===true;
+    if(Number.isInteger(saved.equipped)&&saved.equipped>=0&&saved.equipped<(state.opened?4:3)) state.equipped=saved.equipped;
+    state.self=saved.self===true;
+    if(Number.isInteger(saved.selectedItem)&&saved.selectedItem>=0&&saved.selectedItem<items.length)state.selectedItem=saved.selectedItem;
+  }
+  const icons=()=>{if(globalThis.lucide)lucide.createIcons({attrs:{width:20,height:20}});};
+  function replaceIcon(selector,name){const old=root.querySelector(selector);if(!old)return;const el=document.createElement('i');if(old.id)el.id=old.id;if(old.hasAttribute('data-feature-icon'))el.setAttribute('data-feature-icon','');el.setAttribute('data-lucide',name);el.setAttribute('aria-hidden','true');old.replaceWith(el);}
+  function render(){
+    const count=state.opened?4:3;
+    const i=state.selectedItem,owned=i<count;
+    root.querySelector('#cp-item-detail').innerHTML=`<span class="cp-eyebrow">МИРЫ CASPER · ПРИМЕР ФИГУРКИ</span><h3>${items[i][1]}</h3><div class="cp-case-art"><i data-lucide="${items[i][0]}" aria-hidden="true"></i></div><div class="cp-case-copy"><strong>${owned?'Есть в коллекции':'Ещё не получена'}</strong></div><button type="button" class="cp-primary cursor-interaction" ${owned?`data-equip="${i}"`:'data-go="case"'}>${owned?'Поставить на витрину':'Перейти к кейсу'}</button>`;
+    root.querySelectorAll('[data-screen]').forEach(el=>{el.hidden=el.dataset.screen!==state.screen;});
+    root.querySelector('#cp-title').textContent=titles[state.screen];
+    root.querySelector('.cp-back').hidden=state.screen==='my'||state.screen==='ranking';
+    root.querySelectorAll('[data-balance]').forEach(el=>el.textContent=state.opened?'37 000 CAS':'42 000 CAS');
+    root.querySelectorAll('[data-progress]').forEach(el=>el.textContent=`Собрано ${count} из 12`);
+    root.querySelector('[data-count]').textContent=`${count} / 12`;
+    root.querySelector('#cp-progress-fill').style.width=`${count/12*100}%`;
+    root.querySelector('#cp-items').innerHTML=items.map((v,i)=>`<button type="button" data-item="${i}" class="cp-item cursor-interaction ${i>=count?'cp-locked':''}" aria-pressed="${i===state.equipped}" aria-label="${v[1]}${i>=count?' — ещё не получена':i===state.equipped?' — на витрине':' — в коллекции'}"><i data-lucide="${v[0]}" aria-hidden="true"></i><span>${v[1]}${i===state.equipped?' ✓':''}</span></button>`).join('');
+    root.querySelector('[data-feature-name]').textContent=items[state.equipped][1];
+    replaceIcon('[data-feature-icon]',items[state.equipped][0]);
+    root.querySelector('#cp-public-name').textContent=state.self?'Nik***':'Але***';
+    root.querySelector('#cp-public-avatar').textContent=state.self?'N':'A';
+    root.querySelector('#cp-public-count').textContent=state.self?`${count} / 12`:'7 / 12';
+    root.querySelector('#cp-public-item').textContent=state.self?items[state.equipped][1]:'Золотая орбита';
+    replaceIcon('#cp-public-figure',state.self?items[state.equipped][0]:'orbit');
+    root.querySelector('#cp-open').disabled=state.opened;
+    root.querySelector('#cp-open').textContent=state.opened?'Пример открытия уже показан':'Открыть за 5 000 CAS';
+    root.querySelectorAll('.cp-dock [data-go]').forEach(el=>{const current=(state.screen==='ranking'||state.screen==='public'&&!state.self)?'ranking':'my';if(el.dataset.go===current)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');});
+    icons();
+  }
+  function save(){if(window.openai?.setWidgetState)window.openai.setWidgetState({modelContent:{concept:'Collection inside My; public showcase via leaderboard',screen:state.screen},privateContent:{...state}}).catch(()=>{});}
+  root.addEventListener('click',e=>{
+    const button=e.target.closest('button');if(!button||button.disabled)return;
+    root.querySelector('#cp-message').textContent='';
+    if(button.dataset.go){state.screen=button.dataset.go;render();save();return;}
+    if(button.dataset.item!==undefined){state.selectedItem=Number(button.dataset.item);state.screen='item';render();save();return;}
+    if(button.dataset.equip!==undefined){state.equipped=Number(button.dataset.equip);state.screen='my';render();root.querySelector('#cp-message').textContent='Фигурка видна в публичной карточке';save();return;}
+    if(button.dataset.action==='open'){state.opened=true;state.screen='result';}
+    else if(button.dataset.action==='equip-new'){state.equipped=3;state.screen='my';}
+    else if(button.dataset.action==='self'){state.self=true;state.screen='public';}
+    else if(button.dataset.action==='other'){state.self=false;state.screen='public';}
+    else return;
+    render();save();
+  });
+  render();
+  window.addEventListener('openai:set_globals',event=>{
+    const next=event.detail?.globals?.widgetState?.privateContent;
+    if(!next||typeof next!=='object')return;
+    if(titles[next.screen])state.screen=next.screen;
+    state.opened=next.opened===true;
+    state.self=next.self===true;
+    if(Number.isInteger(next.selectedItem)&&next.selectedItem>=0&&next.selectedItem<items.length)state.selectedItem=next.selectedItem;
+    if(Number.isInteger(next.equipped)&&next.equipped>=0&&next.equipped<(state.opened?4:3))state.equipped=next.equipped;else state.equipped=0;
+    render();
+  });
+})();
+</script>
