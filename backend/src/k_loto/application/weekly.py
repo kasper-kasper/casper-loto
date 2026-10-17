@@ -682,7 +682,7 @@ class WeeklyTicketPurchaseService:
                 fund.version += 1
             else:
                 jackpot.balance += len(canonical) * sum(
-                    purchase_rules.jackpot_share.apply(price) for price in prices
+                    purchase_rules.jackpot_contribution(price) for price in prices
                 )
                 jackpot.version += 1
             shared_details = {

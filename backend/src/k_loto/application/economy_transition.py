@@ -68,6 +68,7 @@ class EconomyTransitionService:
         operation: UUID,
         lottery: UUID,
         ticket: Ticket | None = None,
+        step: str = STEP,
     ) -> None:
         before = account.amount if isinstance(account, Balance) else account.balance
         if before + delta < 0:
@@ -94,7 +95,7 @@ class EconomyTransitionService:
                 draw_id=ticket.draw_id if ticket else None,
                 ticket_id=ticket.id if ticket else None,
                 details={
-                    "economy_step": STEP,
+                    "economy_step": step,
                     "reason": "Full refund" if ticket else "Base jackpot reset",
                 },
             )

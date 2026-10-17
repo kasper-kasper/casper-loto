@@ -302,6 +302,12 @@ class LotteryRuleStrategy:
             )
         return main_matches * 10 + special_matches
 
+    def jackpot_contribution(self, ticket_price: int) -> int:
+        """Split one ticket; a half-CAS remainder belongs to the jackpot."""
+        if self.jackpot_share.numerator * 2 == self.jackpot_share.denominator:
+            return (ticket_price + 1) // 2
+        return self.jackpot_share.apply(ticket_price)
+
     def quote_purchase(
         self,
         combinations: list[list[int] | tuple[int, ...]],
@@ -321,7 +327,7 @@ class LotteryRuleStrategy:
             raise InsufficientBalance("Insufficient CAS balance.")
         # Split every ticket independently so integer rounding never depends on
         # whether equal tickets were bought separately or in one bulk request.
-        jackpot = self.jackpot_share.apply(ticket_price) * len(canonical)
+        jackpot = self.jackpot_contribution(ticket_price) * len(canonical)
         return PurchaseQuote(canonical, total_cost, jackpot, total_cost - jackpot)
 
     def calculate_settlement(
@@ -849,6 +855,27 @@ PULSE_RULES = replace(
         }
     ),
 )
+PLL_ECONOMY_RULES = replace(
+    DAILY_RULES,
+    code="pll_4_15_economy_v2",
+    label="2:22",
+    price_divisor=1,
+    jackpot_share=PayoutRatio(1, 2),
+    guaranteed_payouts=MappingProxyType({}),
+    fixed_payouts=MappingProxyType({2: 22_222, 3: 44_444}),
+)
+HALLOWEEN_ECONOMY_RULES = replace(
+    HALLOWEEN_RULES,
+    code="halloween_3_28_economy_v2",
+    jackpot_share=PayoutRatio(1, 2),
+    fixed_payouts=MappingProxyType({2: 66_666}),
+)
+SEPTEMBER_ECONOMY_RULES = replace(
+    SEPTEMBER_RULES,
+    code="september_3_33_economy_v2",
+    jackpot_share=PayoutRatio(1, 2),
+    fixed_payouts=MappingProxyType({1: 3_333, 2: 9_999}),
+)
 LOTTERY_RULES: Mapping[str, LotteryRuleStrategy] = MappingProxyType(
     {
         rule.code: rule
@@ -858,12 +885,15 @@ LOTTERY_RULES: Mapping[str, LotteryRuleStrategy] = MappingProxyType(
             KASPER_GRAND_RULES,
             GRAND_FIXED_RULES,
             DAILY_RULES,
+            PLL_ECONOMY_RULES,
             PSS_CASPER_BALL_RULES,
             CLASSIC_6_36_RULES,
             DUAL_RULES,
             SEPTEMBER_RULES,
+            SEPTEMBER_ECONOMY_RULES,
             GROB_RULES,
             HALLOWEEN_RULES,
+            HALLOWEEN_ECONOMY_RULES,
             LEGACY_FAST_RULES,
             LEGACY_FLASH_RULES,
             LEGACY_FLASH_V2_RULES,

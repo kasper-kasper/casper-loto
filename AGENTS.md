@@ -77,3 +77,10 @@ These rules apply to every human or AI change in this repository.
     combined release with backup, operations lock and health verification.
     Reopen only when explicitly instructed. After this window, normal release
     rules apply again. DEVLOG/CHANGELOG updates are deferred until that finale.
+
+19. Preserve owner-approved thematic CAS amounts exactly; never round ticket
+    prices, jackpots or prizes to tens/hundreds/thousands. All monetary operations
+    use integer arithmetic. For a 50% ticket-to-jackpot allocation, round each
+    ticket's contribution upward and burn the integer remainder (3,333 CAS means
+    1,667 to jackpot and 1,666 burned). Bulk/multi-draw purchases sum these
+    per-ticket contributions; do not round half of the combined purchase instead.
