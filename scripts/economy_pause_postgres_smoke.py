@@ -27,6 +27,7 @@ from k_loto.domain.lottery_rules import (
     LEGACY_FLASH_V3_RULES,
     LEGACY_PULSE_V4_RULES,
 )
+from k_loto.domain.schedules import next_draw_at
 from k_loto.infrastructure.database.models import (
     Balance,
     Draw,
@@ -140,6 +141,33 @@ async def main():
             )
             session.add(draw)
             ids[code] = (lottery.id, draw.id)
+        # Cancelled reservations after reopening (including a month ahead) must
+        # not delay the first new draw or monopolize its calendar slot.
+        for number, scheduled in (
+            (
+                1002,
+                next_draw_at(
+                    LotteryKind.DAILY,
+                    now + timedelta(hours=6),
+                    {"type": "interval", "interval_minutes": 9},
+                ),
+            ),
+            (1003, now + timedelta(days=30)),
+        ):
+            session.add(
+                Draw(
+                    id=uuid4(),
+                    lottery_id=ids["flash"][0],
+                    public_number=number,
+                    status=DrawStatus.SCHEDULED,
+                    scheduled_at=scheduled,
+                    sales_close_at=scheduled,
+                    correlation_id=uuid4(),
+                    configuration_snapshot={"ruleset_code": LEGACY_FLASH_V3_RULES.code},
+                )
+            )
+        flash = await session.get(Lottery, ids["flash"][0])
+        flash.next_draw_number = 1004
         # A completed old draw must remain byte-for-byte unchanged.
         old = Draw(
             id=uuid4(),
@@ -281,10 +309,10 @@ async def main():
         fresh, _ = await DrawScheduleService(session).ensure_next_draw(
             ids["flash"][0], reference=resume
         )
-    assert (
-        fresh.scheduled_at > resume
-        and fresh.public_number == counters[ids["flash"][0]][0]
+    assert fresh.scheduled_at == next_draw_at(
+        LotteryKind.DAILY, resume, {"type": "interval", "interval_minutes": 9}
     )
+    assert fresh.public_number == counters[ids["flash"][0]][0]
     assert fresh.configuration_snapshot["economy_epoch"] == 2
     async with session_factory() as session:
         before = await session.scalar(

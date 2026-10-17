@@ -295,7 +295,9 @@ class DistributionDrawService:
                 )
             existing = await self.session.scalar(
                 select(Draw).where(
-                    Draw.lottery_id == lottery_id, Draw.scheduled_at == at
+                    Draw.lottery_id == lottery_id,
+                    Draw.scheduled_at == at,
+                    Draw.status != DrawStatus.CANCELLED,
                 )
             )
             if existing is not None:

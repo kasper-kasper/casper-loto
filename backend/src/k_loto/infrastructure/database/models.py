@@ -277,7 +277,13 @@ class Draw(TimestampMixin, Base):
     __tablename__ = "draws"
     __table_args__ = (
         UniqueConstraint("lottery_id", "public_number", name="uq_draw_lottery_number"),
-        UniqueConstraint("lottery_id", "scheduled_at", name="uq_draw_lottery_schedule"),
+        Index(
+            "uq_draw_active_lottery_schedule",
+            "lottery_id",
+            "scheduled_at",
+            unique=True,
+            postgresql_where=text("status <> 'CANCELLED'"),
+        ),
         CheckConstraint("public_number >= 1", name="public_number_positive"),
         CheckConstraint(
             "sales_close_at <= scheduled_at", name="sales_close_before_draw"

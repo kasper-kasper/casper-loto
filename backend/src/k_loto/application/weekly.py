@@ -358,7 +358,10 @@ class WeeklyTicketPurchaseService:
             if draw is None:
                 latest = await self._session.scalar(
                     select(Draw)
-                    .where(Draw.lottery_id == lottery.id)
+                    .where(
+                        Draw.lottery_id == lottery.id,
+                        Draw.status != DrawStatus.CANCELLED,
+                    )
                     .order_by(Draw.scheduled_at.desc())
                     .limit(1)
                 )
@@ -416,7 +419,10 @@ class WeeklyTicketPurchaseService:
             if draw_count > 1:
                 latest = await self._session.scalar(
                     select(Draw)
-                    .where(Draw.lottery_id == lottery.id)
+                    .where(
+                        Draw.lottery_id == lottery.id,
+                        Draw.status != DrawStatus.CANCELLED,
+                    )
                     .order_by(Draw.scheduled_at.desc())
                     .limit(1)
                 )
@@ -469,7 +475,9 @@ class WeeklyTicketPurchaseService:
                 dual_second_draw = await self._session.scalar(
                     select(Draw)
                     .where(
-                        Draw.lottery_id == lottery.id, Draw.scheduled_at == expected_at
+                        Draw.lottery_id == lottery.id,
+                        Draw.scheduled_at == expected_at,
+                        Draw.status != DrawStatus.CANCELLED,
                     )
                     .with_for_update()
                 )

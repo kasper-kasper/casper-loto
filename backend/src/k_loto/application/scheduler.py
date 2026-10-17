@@ -72,7 +72,9 @@ class DrawScheduleService:
 
             latest = await self._session.scalar(
                 select(Draw)
-                .where(Draw.lottery_id == lottery.id)
+                .where(
+                    Draw.lottery_id == lottery.id, Draw.status != DrawStatus.CANCELLED
+                )
                 .order_by(Draw.scheduled_at.desc())
                 .limit(1)
             )

@@ -36,6 +36,26 @@ def upgrade() -> None:
         "status IN ('SCHEDULED','CLOSED','DRAWING','SETTLING',"
         "'COMPLETED','FAILED','CANCELLED')",
     )
+    op.drop_constraint("uq_draw_lottery_schedule", "draws", type_="unique")
+    op.create_index(
+        "uq_draw_active_lottery_schedule",
+        "draws",
+        ["lottery_id", "scheduled_at"],
+        unique=True,
+        postgresql_where=sa.text("status <> 'CANCELLED'"),
+    )
+    op.execute("""
+        CREATE OR REPLACE FUNCTION prevent_completed_draw_mutation()
+        RETURNS trigger AS $$
+        BEGIN
+            IF OLD.status IN ('COMPLETED', 'CANCELLED') THEN
+                RAISE EXCEPTION 'completed or cancelled draws are immutable';
+            END IF;
+            IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
+            RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql;
+    """)
 
 
 def downgrade() -> None:
