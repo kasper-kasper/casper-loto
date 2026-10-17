@@ -1,3 +1,10 @@
+## [Marketing — Casper free-play Reel] - 2026-10-17
+
+- Owner commissions an Instagram Reel with a hook, animated typography and an explicit free-play message. Added the isolated Remotion project `design/reels/casper-free-v1`, six editable scenes and a Russian post caption. Approved Casper logo/artwork are reused unchanged. Actual Mini App screens are captured from its existing local design preview; demo labels are visible and no real purchases or production records are involved.
+- Delivered a 24-second 1080×1920 / 30 fps H.264/AAC video and cover. Original synthesized music/effects are synchronized to cuts and number selections. Claims follow the owner brief and existing virtual-CAS scope: free, no investment, no purchase or cash-out for real money; no cash-prize or guaranteed-win claims.
+- ESLint, TypeScript and Remotion bundle pass. All six scene layouts visually reviewed. Final MP4: 720 frames, limited-range YUV 4:2:0 / BT.709, fast-start, full decode passes, stereo 48 kHz AAC, no clipped samples; measured −15.48 LUFS / −1.98 dBTP. Reproducible media checks and output report included. Source and delivery artifacts backed up in the repository's ignored backups directory.
+- Standalone marketing deliverable only: no application/service/schema/config changes and no application release or VPS restart. Instagram publication remains the owner's action. Existing unrelated worktree changes are preserved.
+
 ## [API 1.56.7] - 2026-10-17
 
 - Owner requests fixing recurring false publication-delay alerts. Incident evidence matches the 12:22/18:35 Moscow scans and legitimate 30-minute sequential delivery, with no failed sends or overdue draws. Preserve that publication policy.
