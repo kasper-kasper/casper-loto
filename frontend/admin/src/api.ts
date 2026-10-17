@@ -3,6 +3,7 @@ import type { MonitoringSnapshot } from "./OperationalMonitor";
 import type { Publication, PublicationInput, PublicationTemplate } from "../../shared/publications";
 import type {
   AdminSession,
+  EconomyReport,
   AuditEntry,
   Dashboard,
   Draw,
@@ -137,6 +138,7 @@ export const adminApi = {
     }).then(rememberSession),
   session: () => request<AdminSession>("/auth/session").then(rememberSession),
   logout: () => request<void>("/auth/logout", { method: "POST" }),
+  economy: (days: 7 | 30 = 7, through = "") => request<EconomyReport>(`/economy?days=${days}${through ? `&through=${encodeURIComponent(through)}` : ""}`),
   dashboard: (scope: LotteryScope = "all") => request<Dashboard>(`/dashboard?scope=${scope}`),
   vault: () => request<KasperLiveSummary>("/vault"),
   aurora: () => request<KasperLiveSummary>("/aurora"),

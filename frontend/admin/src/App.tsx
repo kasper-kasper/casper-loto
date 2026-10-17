@@ -3,6 +3,7 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
 import { ApiError, adminApi, setEconomyScope } from "./api";
+import { EconomyPanel } from "./EconomyPanel";
 import { OperationalMonitor } from "./OperationalMonitor";
 import { DistributionDraws } from "./DistributionDraws";
 import { Publications } from "./Publications";
@@ -311,6 +312,7 @@ function DashboardView({ data, project, analytics, refreshedAt, onOpen, onNaviga
   const margin = today.sales ? (today.net / today.sales) * 100 : 0;
   const attention = data.operations.stuck_draw_count > 0 || !data.database_healthy || !data.scheduler_enabled || !!data.operations.scheduler.last_error;
   return <>
+    <EconomyPanel refreshedAt={refreshedAt} />
     <section className="today-command"><div><span>ОБЫЧНЫЕ ЛОТЕРЕИ · МСК</span><h2>Сегодня в лото</h2><p>{today.net >= 0 ? "Обычные лото сегодня в плюсе" : "Сегодня выплаты выше продаж"} · продажи минус выплаты: <b className={today.net >= 0 ? "positive" : "negative"}>{cas(today.net)}</b></p></div><button className={attention ? "attention-button warning" : "attention-button"} onClick={() => onNavigate("system")}>{attention ? "Требует внимания" : "Система работает"}<span>→</span></button></section>
     <div className="today-ticker"><div><span>СЕГОДНЯ</span><b>{today.completed_draws} тиражей проведено</b><i>•</i><b>{today.purchased_tickets} билетов куплено</b><i>•</i><b>{cas(today.sales)} продажи</b><i>•</i><b>{cas(today.payout)} выиграно</b><i>•</i><b className={today.net >= 0 ? "positive" : "negative"}>итог {cas(today.net)}</b></div></div>
     <section className="metric-grid today-metrics"><article className="metric"><small>ТИРАЖИ СЕГОДНЯ</small><strong>{today.completed_draws}</strong><em>уже завершены</em></article><article className="metric"><small>ПРОДАНО БИЛЕТОВ</small><strong>{today.purchased_tickets.toLocaleString("ru-RU")}</strong><em>выручка {cas(today.sales)}</em></article><article className="metric"><small>ВЫПЛАТЫ СЕГОДНЯ</small><strong>{cas(today.payout)}</strong><em>{today.winning_tickets} выигрышных билетов</em></article><article className={`metric today-result ${today.net >= 0 ? "is-positive" : "is-negative"}`}><small>ПЛЮС ЛОТО ЗА ДЕНЬ</small><strong>{today.net >= 0 ? "+" : ""}{cas(today.net)}</strong><em>продажи − все выплаты · {margin.toLocaleString("ru-RU", { maximumFractionDigits: 1 })}%</em></article></section>

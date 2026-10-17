@@ -32,6 +32,7 @@ from k_loto.application.admin import (
 from k_loto.application.display_cache import DisplayCache
 from k_loto.application.economy import control_state
 from k_loto.application.economy_archive import apply_archive_scope
+from k_loto.application.economy_reporting import EconomyReportService
 from k_loto.application.instant import InstantTicketQueryService
 from k_loto.application.interesting_facts import InterestingFactAdminService
 from k_loto.application.query_scope import LotteryScope
@@ -555,6 +556,19 @@ async def logout(
     _admin: Annotated[CurrentAdmin, Depends(require_admin_csrf)],
 ) -> None:
     response.delete_cookie(key=ADMIN_COOKIE, path="/api/v1/admin")
+
+
+@router.get("/economy")
+async def economy_report(
+    _admin: Annotated[CurrentAdmin, Depends(get_current_admin)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    days: int = Query(default=7, ge=7, le=30),
+    through: date | None = None,
+) -> dict[str, Any]:
+    try:
+        return await EconomyReportService(session).daily(days=days, through=through)
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
 
 
 @router.get("/dashboard", response_model=DashboardResponse)

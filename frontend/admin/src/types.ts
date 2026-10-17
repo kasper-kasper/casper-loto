@@ -336,3 +336,17 @@ export interface JackpotEvent {
   base_jackpot_after: number;
   occurred_at: string;
 }
+
+
+export interface EconomyDay {
+  day: string; included: boolean; partial: boolean;
+  credited: number; debited: number; player_net: number;
+  prizes: number; refunds: number; admin_credit: number; admin_debit: number;
+  other_credit: number; other_debit: number; purchases: number;
+  issued: number; burned: number; supply_net: number;
+}
+export interface EconomyReport {
+  today: string; selected_day: string; timezone: string;
+  epoch: number; scope: "current" | "archive"; epoch_started_at: string | null;
+  days: EconomyDay[];
+}

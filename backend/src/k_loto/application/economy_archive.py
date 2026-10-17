@@ -22,6 +22,7 @@ def apply_archive_scope(
     session: AsyncSession, *, epoch: int, started_at: datetime | None, archive: bool
 ) -> None:
     session.info["economy_scope"] = (epoch, "archive" if archive else "current")
+    session.info["economy_started_at"] = started_at
     if started_at is None:
         return
     epoch_value = func.coalesce(

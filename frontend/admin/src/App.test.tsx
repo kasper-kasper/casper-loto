@@ -10,7 +10,7 @@ vi.mock("./api", () => ({
   ApiError: class ApiError extends Error { status = 500; },
   adminApi: {
     login: vi.fn(), session: vi.fn(), logout: vi.fn(), dashboard: vi.fn(), kasperLive: vi.fn(), vault: vi.fn(), aurora: vi.fn(),
-    monitoring: vi.fn(),
+    monitoring: vi.fn(), economy: vi.fn().mockResolvedValue({ today: "2026-10-18", selected_day: "2026-10-18", days: [] }),
     players: vi.fn(), playerTicketHistory: vi.fn(), lotteries: vi.fn(), schedule: vi.fn(), draws: vi.fn(), draw: vi.fn(), drawPage: vi.fn(), jackpotEvents: vi.fn(),
     transactions: vi.fn(), playerTransactions: vi.fn(), statistics: vi.fn(), ticketAnalytics: vi.fn(), activity: vi.fn(), audit: vi.fn(),
     notifications: vi.fn(), releaseNotes: vi.fn(), interestingFacts: vi.fn(), setInterestingFactStatus: vi.fn(),
