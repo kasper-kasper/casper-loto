@@ -1,3 +1,10 @@
+## [Planning and channel artwork — October roadmap] - 2026-10-17
+
+- Owner confirms the six October roadmap directions and requests a Telegram-ready image and a separate implementation order. Replaces the earlier no-repeat-only case proposal with a seasonal mixed-reward case: collectible figures, lottery tickets and virtual CAS, with weighted chances and a roughly three-month cadence. “50/12” is an example; precise rules remain open in OD-055.
+- Created the 1086×1448 PNG `assets/roadmaps/2026-10/roadmap-october-2026.png`, optional caption and generation provenance. Used built-in ImageGen and a targeted correction removing unintended ghosts/crown; final typography and all six texts visually checked. Public copy contains no unapproved counts, prices, probabilities or exact release dates. The owner will post it manually.
+- Added `docs/OCTOBER_2026_IMPLEMENTATION_ORDER.md`: economy modelling, shared reward/inventory accounting, leaderboard/public profiles, badges/achievements, seasonal collection/case, tasks/bonuses, and a ledgered test-balance transition after replacement grants work. Notes ticket-funding and payout-return effects. Updates the earlier draft and illustrative case copy to reflect mixed rewards.
+- Planning/media only: no business-rule/schema/runtime/production change or balance adjustment. Basic image integrity and focused prototype checks verify delivery assets; application release checks do not apply to this asset-only task. Existing unrelated OD-054 worktree changes are preserved.
+
 ## [Planning — Collections and public showcase] - 2026-10-17
 
 - Owner discusses a fifth leaderboard destination, collections, cases for virtual CAS and a gold badge for a genuine “6 из 36” jackpot; confirms current accounts are owner-controlled test bots. No financial adjustments are performed.
