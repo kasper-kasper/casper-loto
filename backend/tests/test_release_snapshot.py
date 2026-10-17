@@ -67,6 +67,31 @@ def put(root: Path, relative: str, data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def test_release_inventory_excludes_tracked_design_before_snapshot(
+    tmp_path, monkeypatch
+):
+    public = "frontend/miniapp/public/assets/example.webp"
+    names = [
+        "backend/src/app.py",
+        public,
+        "design/reels/video.mp4",
+        "frontend/web/a.ts",
+    ]
+    for name in names:
+        put(tmp_path, name, b"fixture")
+    monkeypatch.setattr(release_vps, "ROOT", tmp_path)
+    monkeypatch.setattr(
+        release_vps.subprocess,
+        "check_output",
+        Mock(return_value="\0".join(names).encode()),
+    )
+    expected = release_vps.release_files(False)
+    assert set(expected) == {"backend/src/app.py", public}
+    stage = tmp_path / ".maintenance/candidate-test"
+    stage.parent.mkdir()
+    assert prepare(tmp_path, stage, expected) == []
+
+
 def test_exact_snapshot_excludes_stale_source_and_backend_only_preserves_clients(
     tmp_path,
 ):
@@ -130,6 +155,7 @@ def test_snapshot_accepts_only_known_public_environment_templates(tmp_path):
         ".env.production",
         ".maintenance/data",
         "backups/dump",
+        "design/reels/video.mp4",
         "frontend/web/package.json",
     ],
 )

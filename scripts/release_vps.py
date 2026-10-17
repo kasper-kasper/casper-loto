@@ -192,7 +192,7 @@ def release_files(include_frontends: bool) -> dict[str, str]:
     paths = [
         p
         for p in paths
-        if p and not p.startswith("frontend/web/") and (ROOT / p).is_file()
+        if p and not p.startswith(("frontend/web/", "design/")) and (ROOT / p).is_file()
     ]
     if include_frontends:
         if __package__:
