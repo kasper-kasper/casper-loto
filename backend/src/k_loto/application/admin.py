@@ -33,7 +33,7 @@ from k_loto.domain.enums import (
     TicketStatus,
     TransactionType,
 )
-from k_loto.domain.instant import INSTANT_GAMES
+from k_loto.domain.instant import INSTANT_GAMES, instant_versions
 from k_loto.domain.lotteries import MOSCOW, draw_display_name, is_fast_lottery
 from k_loto.domain.lottery_rules import get_lottery_rules
 from k_loto.domain.schedules import next_draw_at
@@ -892,14 +892,14 @@ class AdminQueryService:
             cast(literal(None), Lottery.id.type).label("lottery_id"),
             case(
                 *[
-                    (InstantTicket.odds_version == r.version, r.code)
+                    (InstantTicket.odds_version.in_(instant_versions(r.code)), r.code)
                     for r in INSTANT_GAMES.values()
                 ],
                 else_="kasper-live",
             ).label("lottery_code"),
             case(
                 *[
-                    (InstantTicket.odds_version == r.version, r.name)
+                    (InstantTicket.odds_version.in_(instant_versions(r.code)), r.name)
                     for r in INSTANT_GAMES.values()
                 ],
                 else_="Kasper LIVE",
@@ -1014,7 +1014,7 @@ class AdminQueryService:
                         func.coalesce(func.sum(InstantTicket.prize_amount), 0),
                     ).where(
                         InstantTicket.user_id == user_id,
-                        InstantTicket.odds_version == rules.version,
+                        InstantTicket.odds_version.in_(instant_versions(rules.code)),
                     )
                 )
             ).one()

@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 TICKET_PRICE = 2_000
-ODDS_VERSION = "kasper-live-v1"
+ODDS_VERSION = "kasper-live-v2"
 SYMBOL_COUNT = 3
 SYMBOL_VARIANTS = 8
 # The visual combination is part of the result: three different symbols mean
@@ -26,8 +26,8 @@ class PrizeBand:
 
 
 PRIZE_BANDS = (
-    PrizeBand(7_000, 0),
-    PrizeBand(8_500, 1_000),
+    PrizeBand(6_000, 0),
+    PrizeBand(7_500, 1_000),
     PrizeBand(9_300, 2_000),
     PrizeBand(9_800, 5_000),
     PrizeBand(9_980, 20_000),
@@ -74,6 +74,21 @@ class InstantRules:
 LIVE_RULES = InstantRules(
     "kasper-live", "Casper LIVE", TICKET_PRICE, ODDS_VERSION, PRIZE_BANDS
 )
+LEGACY_LIVE_RULES = InstantRules(
+    "kasper-live",
+    "Casper LIVE",
+    2_000,
+    "kasper-live-v1",
+    (
+        PrizeBand(7_000, 0),
+        PrizeBand(8_500, 1_000),
+        PrizeBand(9_300, 2_000),
+        PrizeBand(9_800, 5_000),
+        PrizeBand(9_980, 20_000),
+        PrizeBand(9_999, 100_000),
+        PrizeBand(10_000, 1_000_000),
+    ),
+)
 AURORA_RULES = InstantRules(
     "aurora",
     "Casper Aurora",
@@ -92,7 +107,7 @@ AURORA_RULES = InstantRules(
 VAULT_RULES = InstantRules(
     "vault",
     "Casper Vault",
-    5_000,
+    30_000,
     "casper-vault-v1",
     (
         PrizeBand(2_199, 0),
@@ -106,6 +121,9 @@ VAULT_RULES = InstantRules(
     ),
 )
 INSTANT_GAMES = {rules.code: rules for rules in (LIVE_RULES, AURORA_RULES, VAULT_RULES)}
+_RULES_BY_VERSION = {
+    rules.version: rules for rules in (LEGACY_LIVE_RULES, *INSTANT_GAMES.values())
+}
 
 
 def instant_rules(code: str) -> InstantRules:
@@ -116,7 +134,13 @@ def instant_rules(code: str) -> InstantRules:
 
 
 def instant_rules_for_version(version: str) -> InstantRules:
-    for rules in INSTANT_GAMES.values():
-        if rules.version == version:
-            return rules
-    raise ValueError("Unknown instant odds version.")
+    try:
+        return _RULES_BY_VERSION[version]
+    except KeyError as error:
+        raise ValueError("Unknown instant odds version.") from error
+
+
+def instant_versions(code: str) -> tuple[str, ...]:
+    """Include historical odds in the same game's read-only history/statistics."""
+    game = instant_rules(code)
+    return tuple(r.version for r in _RULES_BY_VERSION.values() if r.code == game.code)

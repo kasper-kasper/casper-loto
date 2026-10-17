@@ -82,7 +82,7 @@ export function LotteryCatalog({ lotteries, onOpen, now, selectedFilter, onFilte
           <div className="collection-card-content">
             <h2 aria-label={name}>{code === "grob" ? <HalloweenBrand /> : name}</h2>
             <div className="collection-prize">{lottery ? <><small>Джекпот</small><strong title={formatCas(lottery.jackpot)}><Money value={lottery.jackpot} compact /></strong></> : <><small>Моментальная игра</small><strong className="collection-instant-prize">{code === "vault" ? "До 5 млн" : code === "aurora" ? "До 1 млн" : "Выигрыш по символам"}</strong></>}</div>
-            <div className="collection-price">{lottery?.ticket_price === null ? "Цена скоро" : <>Билет <Money value={lottery?.ticket_price ?? (code === "vault" ? 5_000 : code === "aurora" ? 3_000 : 2_000)} compact /></>}</div>
+            <div className="collection-price">{lottery?.ticket_price === null ? "Цена скоро" : <>Билет <Money value={lottery?.ticket_price ?? (code === "vault" ? 30_000 : code === "aurora" ? 3_000 : 2_000)} compact /></>}</div>
             <div className="collection-time"><span aria-hidden="true">{lottery ? "◷" : "ϟ"}</span>{lottery ? <time dateTime={lottery.scheduled_at ?? undefined} title={lottery.scheduled_at ? `${formatMoscow(lottery.scheduled_at)} МСК` : undefined}>{drawTime(lottery, now)}</time> : <span>Результат сразу</span>}</div>
           </div>
         </button>;

@@ -29,8 +29,8 @@ from k_loto.domain.enums import (
 )
 from k_loto.domain.instant import (
     INSTANT_GAMES,
-    instant_rules,
     instant_rules_for_version,
+    instant_versions,
 )
 from k_loto.domain.live_timeline import (
     draw_timeline,
@@ -913,7 +913,7 @@ class MiniAppQueryService:
         instant_filters = [InstantTicket.user_id == user_id]
         if only_instant and lottery_code:
             instant_filters.append(
-                InstantTicket.odds_version == instant_rules(lottery_code).version
+                InstantTicket.odds_version.in_(instant_versions(lottery_code))
             )
         if wins_only:
             instant_filters.append(InstantTicket.prize_amount > 0)
@@ -974,7 +974,7 @@ class MiniAppQueryService:
             instant_filters = [InstantTicket.user_id == user_id]
             if only_instant and lottery_code:
                 instant_filters.append(
-                    InstantTicket.odds_version == instant_rules(lottery_code).version
+                    InstantTicket.odds_version.in_(instant_versions(lottery_code))
                 )
             if wins_only:
                 instant_filters.append(InstantTicket.prize_amount > 0)

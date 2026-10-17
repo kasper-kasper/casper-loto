@@ -14,7 +14,7 @@ from sqlalchemy.orm import aliased
 
 from k_loto.application.query_scope import LotteryScope, lottery_scope
 from k_loto.domain.enums import TicketStatus
-from k_loto.domain.instant import INSTANT_GAMES, instant_rules
+from k_loto.domain.instant import INSTANT_GAMES, instant_versions
 from k_loto.infrastructure.database.models import Draw, InstantTicket, Lottery, Ticket
 
 
@@ -79,7 +79,7 @@ class TicketHistoryService:
             instant_conditions = [InstantTicket.user_id == user_id]
             if only_instant and lottery_code:
                 instant_conditions.append(
-                    InstantTicket.odds_version == instant_rules(lottery_code).version
+                    InstantTicket.odds_version.in_(instant_versions(lottery_code))
                 )
             if wins_only:
                 instant_conditions.append(InstantTicket.prize_amount > 0)

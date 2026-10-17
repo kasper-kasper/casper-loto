@@ -12,7 +12,7 @@ from k_loto.application.purchase_guard import guard_attempt
 from k_loto.application.weekly import KASPER_FUND_ID, _ledger_entry
 from k_loto.domain.enums import LedgerAccountKind, TransactionType
 from k_loto.domain.errors import ConfigurationError, InsufficientBalance, InvalidTicket
-from k_loto.domain.instant import instant_rules
+from k_loto.domain.instant import instant_rules, instant_versions
 from k_loto.domain.weekly import SystemRandomNumberGenerator
 from k_loto.infrastructure.database.models import (
     Balance,
@@ -62,7 +62,7 @@ class InstantTicketQueryService:
                 select(InstantTicket)
                 .where(
                     InstantTicket.user_id == user_id,
-                    InstantTicket.odds_version == instant_rules(game_code).version,
+                    InstantTicket.odds_version.in_(instant_versions(game_code)),
                 )
                 .order_by(
                     InstantTicket.purchased_at.desc(),
@@ -92,7 +92,7 @@ class InstantTicketQueryService:
                     ),
                     func.coalesce(func.sum(InstantTicket.purchase_price), 0)
                     - func.coalesce(func.sum(InstantTicket.prize_amount), 0),
-                ).where(InstantTicket.odds_version == instant_rules(game_code).version)
+                ).where(InstantTicket.odds_version.in_(instant_versions(game_code)))
             )
         ).one()
         return InstantSummary(*(int(value) for value in row))

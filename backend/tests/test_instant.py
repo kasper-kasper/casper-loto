@@ -1,5 +1,6 @@
 """Kasper LIVE fixed-odds and atomic accounting tests."""
 
+from collections import Counter
 from collections.abc import Iterable
 from contextlib import AbstractAsyncContextManager
 from datetime import UTC, datetime
@@ -15,6 +16,9 @@ from k_loto.domain.enums import LedgerAccountKind, TransactionType
 from k_loto.domain.instant import (
     PRIZE_BANDS,
     TICKET_PRICE,
+    instant_rules,
+    instant_rules_for_version,
+    instant_versions,
     prize_for_roll,
     symbols_for_prize,
 )
@@ -73,10 +77,10 @@ class FixedGenerator:
     ("roll", "expected"),
     (
         (1, 0),
-        (7_000, 0),
-        (7_001, 1_000),
-        (8_500, 1_000),
-        (8_501, 2_000),
+        (6_000, 0),
+        (6_001, 1_000),
+        (7_500, 1_000),
+        (7_501, 2_000),
         (9_300, 2_000),
         (9_301, 5_000),
         (9_800, 5_000),
@@ -92,6 +96,15 @@ def test_prize_band_boundaries(roll: int, expected: int) -> None:
 
 
 def test_prize_table_is_complete_and_has_agreed_rtp() -> None:
+    assert Counter(prize_for_roll(roll) for roll in range(1, 10_001)) == {
+        0: 6000,
+        1000: 1500,
+        2000: 1800,
+        5000: 500,
+        20000: 180,
+        100000: 19,
+        1000000: 1,
+    }
     lower = 1
     expected_payout = 0
     for band in PRIZE_BANDS:
@@ -99,8 +112,17 @@ def test_prize_table_is_complete_and_has_agreed_rtp() -> None:
         lower = band.upper_roll + 1
 
     assert lower == 10_001
-    assert expected_payout / 10_000 == 1_210
-    assert expected_payout / 10_000 / TICKET_PRICE == pytest.approx(0.605)
+    assert expected_payout / 10_000 == 1_410
+    assert expected_payout / 10_000 / TICKET_PRICE == pytest.approx(0.705)
+
+
+def test_live_new_odds_keep_the_original_version_resolvable() -> None:
+    current = instant_rules("kasper-live")
+    old = instant_rules_for_version("kasper-live-v1")
+    assert current.version == "kasper-live-v2" and current.price == old.price == 2000
+    assert current.prize(8000) == 2000 and old.prize(8000) == 1000
+    assert instant_versions("kasper-live") == ("kasper-live-v1", "kasper-live-v2")
+    assert instant_versions("vault") == ("casper-vault-v1",)
 
 
 @pytest.mark.parametrize("roll", (0, 10_001))

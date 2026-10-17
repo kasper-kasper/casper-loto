@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from k_loto.application.publications import PublicationConflict, PublicationService
 from k_loto.domain.enums import DrawStatus, LedgerAccountKind, TicketStatus
-from k_loto.domain.instant import INSTANT_GAMES
+from k_loto.domain.instant import INSTANT_GAMES, instant_versions
 from k_loto.infrastructure.database.models import (
     Draw,
     InstantTicket,
@@ -636,7 +636,7 @@ class PublicationEventService:
             for rules in INSTANT_GAMES.values():
                 counts[rules.code] = await self._count(
                     InstantTicket,
-                    InstantTicket.odds_version == rules.version,
+                    InstantTicket.odds_version.in_(instant_versions(rules.code)),
                     InstantTicket.purchased_at >= start,
                     InstantTicket.purchased_at < end,
                 )

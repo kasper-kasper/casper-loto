@@ -11,10 +11,24 @@ vi.mock("./telegram", () => ({ errorHaptic: vi.fn(), selectionHaptic: vi.fn(), s
 const games = [
   { name: "LIVE", View: KasperLiveView, history: miniAppApi.kasperLiveHistory, purchase: miniAppApi.kasperLivePurchase, price: 2000 },
   { name: "Aurora", View: AuroraView, history: miniAppApi.auroraHistory, purchase: miniAppApi.auroraPurchase, price: 3000 },
-  { name: "Vault", View: VaultView, history: miniAppApi.vaultHistory, purchase: miniAppApi.vaultPurchase, price: 5000 },
+  { name: "Vault", View: VaultView, history: miniAppApi.vaultHistory, purchase: miniAppApi.vaultPurchase, price: 30000 },
 ];
 const batch=(price:number,quantity:number,number:number)=>({operation_id:`op-${number}`,tickets:Array.from({length:quantity},(_,i)=>({id:`${number+i}`,public_number:number+i,symbols:[1,2,3],prize_amount:0})),total_cost:price*quantity,total_prize:0,balance_after:90000,already_processed:false});
 beforeEach(()=>{vi.clearAllMocks();vi.spyOn(HTMLCanvasElement.prototype,"getContext").mockReturnValue(null);for(const game of games)vi.mocked(game.history).mockResolvedValue([]);});
+it.each([1, 3])("Vault requires the new full price for %i tickets", async quantity => {
+  const price = quantity * 30000;
+  const props = { initData: "signed", onClose: vi.fn(), onSettled: vi.fn() };
+  const { rerender } = render(<VaultView {...props} balance={price - 1} />);
+  if (quantity === 3) fireEvent.click(screen.getByRole("button", { name: /3 билета.*Откры/ }));
+  const button = screen.getByRole("button", { name: quantity === 3 ? /Купить 3 билета/ : /Купить билет/ });
+  expect(button).toHaveTextContent(quantity === 3 ? /90\s*000/ : /30\s*000/);
+  expect(button).toBeDisabled();
+  fireEvent.click(button);
+  expect(miniAppApi.vaultPurchase).not.toHaveBeenCalled();
+  expect(screen.queryByText("Стоимость билета")).not.toBeInTheDocument();
+  rerender(<VaultView {...props} balance={price} />);
+  expect(button).toBeEnabled();
+});
 for(const {name,View,purchase,price} of games){
   for(const quantity of [1,3]) it(`${name} buys another ${quantity} directly and disables duplicate clicks`,async()=>{
     const api=vi.mocked(purchase);api.mockResolvedValueOnce(batch(price,quantity,100));

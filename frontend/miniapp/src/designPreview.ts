@@ -134,7 +134,7 @@ export function installDesignPreview(): void {
     if (path.endsWith("/vault/purchases") && init?.method === "POST") {
       const quantity = (JSON.parse(String(init.body)) as { quantity: 1 | 3 }).quantity;
       const created = Array.from({ length: quantity }, (_, index): InstantTicket => ({ id: crypto.randomUUID(), public_number: 10_043 + index, symbols: index === 0 ? [4, 4, 4] : [1, 2, 3], prize_amount: index === 0 ? 10_000 : 0 }));
-      const totalCost = quantity * 5_000;
+      const totalCost = quantity * 30_000;
       const totalPrize = created.reduce((sum, ticket) => sum + ticket.prize_amount, 0);
       balance = balance - totalCost + totalPrize;
       vaultTickets = [...created, ...vaultTickets];
