@@ -14,11 +14,11 @@ from typing import Any
 import structlog
 from sqlalchemy import func, select
 
+from k_loto.application.publication_monitoring import delayed_publications
 from k_loto.domain.enums import DrawStatus
 from k_loto.infrastructure.database.models import (
     DistributionAnnouncement,
     Draw,
-    Publication,
     SchedulerHeartbeat,
 )
 from k_loto.infrastructure.database.session import session_factory
@@ -159,16 +159,8 @@ class RuntimeMonitoring:
                 )
                 or 0
             )
-            delayed_posts = int(
-                await session.scalar(
-                    select(func.count(Publication.id)).where(
-                        Publication.content["delivery"]["state"].astext.in_(
-                            ["queued", "sending", "failed", "uncertain"]
-                        ),
-                        Publication.updated_at < cutoff,
-                    )
-                )
-                or 0
+            delayed_posts = await delayed_publications(
+                session, now=now, grace=timedelta(minutes=stuck_minutes)
             )
             heartbeat = await session.get(SchedulerHeartbeat, 1)
             last_success = heartbeat.last_succeeded_at if heartbeat else None

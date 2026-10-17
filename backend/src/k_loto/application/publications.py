@@ -321,7 +321,12 @@ class PublicationService:
                 old_content = deepcopy(row.content)
                 row.content = {
                     **row.content,
-                    "delivery": {**delivery, "state": "queued", "manual": True},
+                    "delivery": {
+                        **delivery,
+                        "state": "queued",
+                        "manual": True,
+                        "queued_at": datetime.now(UTC).isoformat(),
+                    },
                 }
                 row.revision += 1
                 self._audit(row, author, "event_approve", old_content)

@@ -340,6 +340,8 @@ class PublicationAutomation:
             else "approval_required",
             historical=historical,
         )
+        if snapshot["delivery"]["state"] == "queued":
+            snapshot["delivery"]["queued_at"] = datetime.now(UTC).isoformat()
         row.content = snapshot
         rotation.value = {
             "images": (rotation.value.get("images", []) + [selected["id"]])[-3:],
@@ -1426,13 +1428,15 @@ async def deliver_one(
             and datetime.fromisoformat(delivery["retry_after"]) > now
         ):
             return "throttled"
+        last_sent = state.value.get("last_automatic_sent_at")
+        bypass = bool(delivery.get("historical") or delivery.get("manual"))
         if (
-            not delivery.get("historical")
-            and not delivery.get("manual")
-            and state.value.get("last_automatic_sent_at")
-            and now
-            < datetime.fromisoformat(state.value["last_automatic_sent_at"])
-            + timedelta(seconds=event_config().delivery.minimum_interval_seconds)
+            event_config().delivery.earliest(
+                now,
+                datetime.fromisoformat(last_sent) if last_sent and not bypass else None,
+                manual=bypass,
+            )
+            > now
         ):
             return "interval"
         # Rendering errors happen before any network side effect or claim.

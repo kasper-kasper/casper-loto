@@ -1,6 +1,10 @@
 """Focused rules and transport payload checks for the new delivery stage."""
 
+from datetime import UTC, datetime
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
+from uuid import uuid4
 
 import pytest
 from scripts.compile_publication_copy import compile_copy
@@ -17,6 +21,40 @@ from k_loto.application.publication_automation import (
     publication_is_eligible,
     unique_winners_record_eligible,
 )
+from k_loto.infrastructure.database.models import Publication
+
+
+@pytest.mark.parametrize(
+    "mode,historical", [("automatic", False), ("draft", True), ("draft", False)]
+)
+async def test_snapshot_records_queue_entry_once_not_source_event_age(mode, historical):
+    automation = PublicationAutomation(AsyncMock())
+    automation.library = {}
+    automation.events._state = AsyncMock(return_value=SimpleNamespace(value={}))
+    row = Publication(
+        id=uuid4(),
+        author_id=uuid4(),
+        lottery_code="weekly",
+        status="draft",
+        event_type="A1.1",
+        event_key="monitoring:queue-clock",
+        event_mode=mode,
+        content={"event": {"occurred_at": "2020-01-01T00:00:00+00:00"}, "delivery": {}},
+    )
+    before = datetime.now(UTC)
+    await automation.snapshot(row, {"caption": "Synthetic news"}, historical=historical)
+    delivery = row.content["delivery"]
+    if mode == "automatic" or historical:
+        assert (
+            before <= datetime.fromisoformat(delivery["queued_at"]) <= datetime.now(UTC)
+        )
+    else:
+        assert "queued_at" not in delivery
+    original = dict(delivery)
+    await automation.snapshot(
+        row, {"caption": "Repeated preparation"}, historical=historical
+    )
+    assert row.content["delivery"] == original
 
 
 @pytest.mark.parametrize(

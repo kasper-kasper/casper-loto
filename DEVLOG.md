@@ -1,3 +1,10 @@
+## [API 1.56.7] - 2026-10-17
+
+- Owner requests fixing recurring false publication-delay alerts. Incident evidence matches the 12:22/18:35 Moscow scans and legitimate 30-minute sequential delivery, with no failed sends or overdue draws. Preserve that publication policy.
+- Record the actual queue-entry UTC timestamp in new automatic/historical snapshots and manual event approvals, independently of the original event time. Preparation/retry does not refresh this timestamp. Existing published content/history is untouched; legacy unmarked drafts retain updated_at as a fallback. No schema migration.
+- Delivery and monitoring use the existing DeliveryPolicy. Health checks only the eligible queue head after its permitted slot plus the configured ten-minute grace; Telegram retry_after is respected. Unresolved sends are reported as blockers, paused transport is not an overdue queue, and real failed/uncertain sends remain actionable. Archived/published/ineligible/stale-series rows cannot generate a queue delay.
+- Full backend suite: 624 passed / one Windows symlink skip; subsequent manual approval/queue timestamp regression passes with all 20 publication service tests (625 unique backend tests in total). Ruff lint/format and mypy 85 modules pass. Frontends are unchanged. Add the affected unit regressions and a real PostgreSQL queue regression to the release candidate checks. Focused preflight passed in a fresh disposable schema with rollback and verified database cleanup; no Telegram I/O or production business-row changes. Verification/release results follow below.
+
 ## [API 1.56.6 / Admin 1.60.4] - 2026-10-16
 
 - Owner requests a smaller, rarely used Admin. Remove Broadcast test and Interesting facts UI, route old bookmarks safely, consolidate LIVE/Aurora/Vault under Instant games with on-demand game selection, and move Archive to the final navigation position. Keep Schedule as its inexpensive read-only/on-entry view.

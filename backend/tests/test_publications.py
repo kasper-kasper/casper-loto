@@ -101,6 +101,32 @@ def service(session: Session) -> PublicationService:
     return PublicationService(cast(AsyncSession, session))
 
 
+async def test_manual_approval_stamps_queue_entry_and_retry_preserves_it() -> None:
+    row = stored()
+    template = next(
+        item
+        for item in template_catalog()
+        if item["lottery"] == "weekly" and item["subcategory"] == "A1.1"
+    )
+    row.lottery_code = "weekly"
+    row.event_type = "A1.1"
+    row.content = content_snapshot(
+        payload().model_copy(update={"template_id": template["id"]})
+    )
+    row.content["delivery"] = {"state": "approval_required"}
+    session = Session(row)
+    before = datetime.now(UTC)
+    await service(session).change(
+        row.id, author=row.author_id, revision=1, action="publish"
+    )
+    queued_at = row.content["delivery"]["queued_at"]
+    assert before <= datetime.fromisoformat(queued_at) <= datetime.now(UTC)
+    await service(session).change(
+        row.id, author=row.author_id, revision=1, action="publish"
+    )
+    assert row.content["delivery"]["queued_at"] == queued_at
+
+
 async def test_archiving_uncertain_delivery_is_audited_without_resend():
     row = stored()
     row.content["delivery"] = {"state": "uncertain", "error_type": "TimeoutError"}
