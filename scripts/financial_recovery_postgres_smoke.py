@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 from sqlalchemy import func, select, update
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import DBAPIError
 
 from k_loto.application.admin import AdminMutationService
@@ -23,6 +24,7 @@ from k_loto.infrastructure.database.models import (
     Balance,
     BingoPoolTicket,
     Draw,
+    EconomyControl,
     JackpotAccount,
     KasperFundAccount,
     LedgerTransaction,
@@ -47,6 +49,13 @@ class FixedNumbers:
 async def seed(now):
     user = uuid4()
     async with session_factory() as session, session.begin():
+        # Schema-only clones omit migration-seeded singleton data. Restore the
+        # default fixture only; never overwrite an existing pause or epoch.
+        await session.execute(
+            insert(EconomyControl)
+            .values(id=1)
+            .on_conflict_do_nothing(index_elements=[EconomyControl.id])
+        )
         session.add(User(id=user, display_name="Isolated financial smoke"))
         await session.flush()
         session.add(Balance(user_id=user, amount=10_000_000))
