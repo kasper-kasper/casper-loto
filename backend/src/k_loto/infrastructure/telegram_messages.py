@@ -175,7 +175,65 @@ def format_delivery_test() -> str:
     )
 
 
+def format_owner_economy(payload: dict[str, Any]) -> str:
+    def cash(key: str, signed: bool = False) -> str:
+        value = int(payload[key])
+        return f"{'+' if signed and value > 0 else ''}{format_cas(value)} CAS"
+
+    attention = payload["attention"]
+    verdict = {
+        "unresolved_draws": "⚠️ Есть незавершённые тиражи: итог ещё может дополниться.",
+        "fund_empty": "🚨 Фонд Каспера пуст. Проверь возможность выплат.",
+        "fund_less_than_day": "⚠️ Фонда меньше чем на день при текущем темпе расхода.",
+    }.get(attention, "📊 Сводка по фактическим движениям CAS")
+    runway = payload["fund_runway_days"]
+    days = int(payload["trend_days"])
+    if runway is not None:
+        estimate = (
+            f"При таком темпе: около {runway} дн. запаса (по {days} полным дням)."
+        )
+    elif days:
+        estimate = f"За {days} полных дней чистого расхода фонда не было."
+    else:
+        estimate = "Для оценки расхода ещё нет полных дней нового этапа."
+    partial = " · часть дня после обновления экономики" if payload["partial"] else ""
+    supply = int(payload["supply_net"])
+    direction = (
+        "Валюты стало больше"
+        if supply > 0
+        else "Валюты стало меньше"
+        if supply < 0
+        else "Объём валюты не изменился"
+    )
+    return (
+        f"Casper Loto · {payload['report_day']} МСК{partial}\n"
+        f"{verdict}\n\n"
+        f"🎟 Куплено билетов: {int(payload['total_tickets'])}\n"
+        f"Тиражные и Fast: {int(payload['regular_tickets'])} · "
+        f"мгновенные: {int(payload['instant_tickets'])}\n"
+        f"Покупки: {cash('purchases')}\n"
+        f"Выигрыши: {cash('prizes')}\n"
+        f"Возвраты: {cash('refunds')}\n"
+        f"Покупки − выигрыши − возвраты: {cash('game_net', True)}\n\n"
+        f"Бонусы и прочие начисления: {cash('other_credit')}\n"
+        f"Ручные изменения балансов: {cash('admin_net', True)}\n"
+        f"Изменение балансов игроков: {cash('player_net', True)}\n\n"
+        f"🔥 Сожжено: {cash('burned')}\n"
+        f"Создано в системе: {cash('issued')}\n"
+        f"{direction}: {cash('supply_net', True)}\n\n"
+        f"🏦 Фонд сейчас: {cash('fund_balance')}\n"
+        f"Изменение фонда за день: {cash('fund_net', True)}\n"
+        f"{estimate}\n\n"
+        "Это не прибыль: часть покупок остаётся в джекпотах. "
+        "Рост CAS допустим; следим за его темпом и расходом фонда. "
+        "Запас в днях — оценка по прошлому расходу, а не гарантия будущих выплат.\n"
+        "Подробности: админка → Экономика."
+    )
+
+
 def format_system_alert(payload: dict[str, Any]) -> str:
+    if payload.get("kind") == "owner_daily_economy":
+        return format_owner_economy(payload)
     labels = {
         "stuck_draws": "зависшие тиражи",
         "stuck_notifications": "зависшие уведомления",

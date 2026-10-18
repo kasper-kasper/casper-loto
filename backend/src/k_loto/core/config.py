@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     scheduler_enabled: bool = True
     scheduler_interval_seconds: int = Field(default=30, ge=5, le=3600)
     owner_telegram_id: int | None = Field(default=None, gt=0)
+    owner_daily_summary_enabled: bool = True
     operational_stuck_minutes: int = Field(default=10, ge=5, le=1440)
     monitoring_backup_dir: str = "/backups"
     lottery_bot_token: SecretStr | None = None

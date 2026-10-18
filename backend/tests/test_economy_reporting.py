@@ -147,6 +147,8 @@ def test_all_games_grants_refunds_and_transfers_are_counted_once(ledger):
         purchases=3000,
         issued=500,
         burned=1800,
+        fund_credited=0,
+        fund_debited=15_000,
     )
 
 

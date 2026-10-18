@@ -6,8 +6,10 @@ from uuid import UUID
 from sqlalchemy import or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from k_loto.application.economy import control_state
 from k_loto.application.notifications import ClaimedNotification
 from k_loto.domain.enums import NotificationStatus, NotificationType
+from k_loto.domain.schedules import MOSCOW
 from k_loto.infrastructure.database.models import (
     NotificationOutbox,
     User,
@@ -16,8 +18,14 @@ from k_loto.infrastructure.database.models import (
 
 
 class SqlNotificationRepository:
-    def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
+    def __init__(
+        self,
+        session_factory: async_sessionmaker[AsyncSession],
+        *,
+        owner_telegram_id: int | None = None,
+    ) -> None:
         self._session_factory = session_factory
+        self._owner_telegram_id = owner_telegram_id
 
     async def claim_next(self, now: datetime) -> ClaimedNotification | None:
         async with self._session_factory() as session, session.begin():
@@ -65,6 +73,21 @@ class SqlNotificationRepository:
             cancellation_reason = None
             if not user.is_active:
                 cancellation_reason = "player_inactive"
+            elif (
+                event.type == NotificationType.SYSTEM_ALERT
+                and event.payload.get("kind") == "owner_daily_economy"
+            ):
+                control = await control_state(session)
+                yesterday = (
+                    now.astimezone(MOSCOW).date() - timedelta(days=1)
+                ).isoformat()
+                if user.telegram_id != self._owner_telegram_id:
+                    cancellation_reason = "owner_report_recipient_changed"
+                elif (
+                    event.payload.get("economy_epoch") != control.epoch
+                    or event.payload.get("report_day") != yesterday
+                ):
+                    cancellation_reason = "owner_report_expired"
             elif event.type != NotificationType.SYSTEM_ALERT:
                 if event.type in (
                     NotificationType.TICKET_PURCHASED,

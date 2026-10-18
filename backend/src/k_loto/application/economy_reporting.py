@@ -27,12 +27,15 @@ class EconomyDay:
     purchases: int = 0
     issued: int = 0
     burned: int = 0
+    fund_credited: int = 0
+    fund_debited: int = 0
 
     def payload(self) -> dict[str, Any]:
         return {
             **asdict(self),
             "player_net": self.credited - self.debited,
             "supply_net": self.issued - self.burned,
+            "fund_net": self.fund_credited - self.fund_debited,
             "other_credit": self.credited
             - self.prizes
             - self.refunds
@@ -100,6 +103,16 @@ def daily_flows_query(
                 negative & (ledger.c.type == TransactionType.TICKET_PURCHASE),
                 -ledger.c.amount,
             ).label("purchases"),
+            total(
+                (ledger.c.account_kind == LedgerAccountKind.KASPER_FUND)
+                & (ledger.c.amount > 0),
+                ledger.c.amount,
+            ).label("fund_credited"),
+            total(
+                (ledger.c.account_kind == LedgerAccountKind.KASPER_FUND)
+                & (ledger.c.amount < 0),
+                -ledger.c.amount,
+            ).label("fund_debited"),
         )
         .where(ledger.c.operation_id.in_(candidates))
         .group_by(ledger.c.operation_id)
@@ -118,6 +131,8 @@ def daily_flows_query(
                 "admin_credit",
                 "admin_debit",
                 "purchases",
+                "fund_credited",
+                "fund_debited",
             )
         ),
         total(operation.c.supply_net > 0, operation.c.supply_net).label("issued"),
@@ -203,6 +218,8 @@ class EconomyReportService:
                         "purchases",
                         "issued",
                         "burned",
+                        "fund_credited",
+                        "fund_debited",
                     )
                 },
             )

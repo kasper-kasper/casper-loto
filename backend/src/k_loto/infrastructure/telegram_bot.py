@@ -156,7 +156,9 @@ class AiogramSender:
                 await self._bot.send_message(
                     chat_id=notification.chat_id,
                     text=text,
-                    reply_markup=miniapp_markup(self._miniapp_url),
+                    reply_markup=None
+                    if notification.payload.get("kind") == "owner_daily_economy"
+                    else miniapp_markup(self._miniapp_url),
                 )
         except TelegramRetryAfter as error:
             raise DeliveryThrottled(error.retry_after) from None
@@ -166,7 +168,9 @@ class AiogramSender:
 
 async def run_outbox(bot: Bot, interval_seconds: int, miniapp_url: str | None) -> None:
     dispatcher = NotificationDispatcher(
-        SqlNotificationRepository(session_factory),
+        SqlNotificationRepository(
+            session_factory, owner_telegram_id=get_settings().owner_telegram_id
+        ),
         AiogramSender(bot, miniapp_url),
         BotNotificationFormatter(),
     )

@@ -10,6 +10,7 @@ from k_loto.application.auto_play import AutoPlayService
 from k_loto.application.economy import is_paused
 from k_loto.application.engagement import PlayerEngagementService
 from k_loto.application.operational_monitoring import OperationalMonitoringService
+from k_loto.application.owner_economy import OwnerEconomySummaryService
 from k_loto.application.publication_automation import PublicationAutomation, drain
 from k_loto.application.scheduler import DrawRecoveryService
 from k_loto.core.config import get_settings
@@ -44,6 +45,16 @@ class SchedulerRuntime:
                 "scheduler_startup_recovery_failed", error_type=type(error).__name__
             )
         await self._run_publication_events()
+        await self._run_owner_economy()
+        self._scheduler.add_job(
+            self._run_owner_economy,
+            trigger="interval",
+            seconds=300,
+            id="owner-daily-economy",
+            replace_existing=True,
+            coalesce=True,
+            max_instances=1,
+        )
         self._scheduler.add_job(
             self._run_publication_events,
             trigger="interval",
@@ -72,6 +83,20 @@ class SchedulerRuntime:
             max_instances=1,
         )
         self._scheduler.start()
+
+    async def _run_owner_economy(self) -> None:
+        settings = get_settings()
+        if not settings.owner_daily_summary_enabled or not settings.owner_telegram_id:
+            return
+        try:
+            async with session_factory() as session:
+                await OwnerEconomySummaryService(session).prepare(
+                    owner_telegram_id=settings.owner_telegram_id, now=datetime.now(UTC)
+                )
+        except Exception as error:
+            logger.error(
+                "owner_economy_summary_failed", error_type=type(error).__name__
+            )
 
     async def _run_publication_events(self) -> None:
         async with session_factory() as session:
