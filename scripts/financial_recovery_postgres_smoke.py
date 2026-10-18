@@ -343,7 +343,7 @@ async def main():
         assert raced[0].ticket_ids == raced[1].ticket_ids
     print("bingo: receipt, replay, cancelled attempt and purchase/cancel race PASS")
 
-    # Persist the broadcast then settle it: ordinary payouts plus jackpot must balance.
+    # Payout transfers balance; approved Bingo purchases burn 30,000 per card.
     original = bingo.generate_sequence
     async with session_factory() as session:
         purchased_ticket = await session.get(Ticket, purchased.ticket_ids[0])
@@ -374,13 +374,15 @@ async def main():
             bingo_draw_id, now=draw.scheduled_at + timedelta(seconds=120)
         )
     async with session_factory() as session:
-        assert (
-            await session.scalar(
-                select(func.sum(LedgerTransaction.amount)).where(
-                    LedgerTransaction.draw_id == bingo_draw_id
-                )
+        assert await session.scalar(
+            select(func.sum(LedgerTransaction.amount)).where(
+                LedgerTransaction.draw_id == bingo_draw_id
             )
-            == 0
+        ) == -30_000 * int(
+            await session.scalar(
+                select(func.count(Ticket.id)).where(Ticket.draw_id == bingo_draw_id)
+            )
+            or 0
         )
     async with session_factory() as session:
         card = await session.get(Ticket, purchased.ticket_ids[0])
