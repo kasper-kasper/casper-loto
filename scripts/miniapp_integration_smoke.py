@@ -296,7 +296,7 @@ async def main():
             f"/api/v1/admin/draws/{bingo_draw.id}", params={"limit": 0}
         )
         assert bingo_detail.status_code == 200, bingo_detail.text
-        assert len(bingo_detail.json()["ticket_summary"]["bingo_stages"]) == 3
+        assert len(bingo_detail.json()["ticket_summary"]["bingo_stages"]) == 4
         assert (await client.get(detail_path, params={"limit": 101})).status_code == 422
         async with session_factory() as session:
             owner_id = await session.scalar(
