@@ -66,17 +66,11 @@ These rules apply to every human or AI change in this repository.
     broad Docker pruning or volume deletion to release helpers. Compact
     retention settings and when to increase them are in `docs/SERVER_STORAGE.md`.
 
-18. Current owner-authorized economy maintenance window: accumulate incoming
-    lottery/economy changes and related Admin improvements locally. Run focused
-    checks for the affected part; defer full release checks, clean production
-    builds, backup, deployment and restarts until the owner's explicit final
-    instruction (for example, "это финал, включай"). Keep production paused.
-    Do not repeat ticket refunds or alter production balances for each part.
-    Existing scheduled backups and independent health monitoring stay enabled.
-    At the final instruction, run the required full checks and publish the
-    combined release with backup, operations lock and health verification.
-    Reopen only when explicitly instructed. After this window, normal release
-    rules apply again. DEVLOG/CHANGELOG updates are deferred until that finale.
+18. The October 2026 local economy accumulation window is complete (OD-065).
+    The owner explicitly authorized final checks, deployment and reopening.
+    Normal release rules apply again. Do not repeat the completed ticket refunds,
+    reset draw/ticket counters, or reapply the economic transition as a new epoch.
+    Future maintenance windows require a new owner instruction.
 
 19. Preserve owner-approved thematic CAS amounts exactly; never round ticket
     prices, jackpots or prizes to tens/hundreds/thousands. All monetary operations
