@@ -21,6 +21,11 @@ from k_loto.application.weekly import (
 )
 from k_loto.core.config import get_settings
 from k_loto.domain.enums import DrawStatus, LedgerAccountKind, TransactionType
+from k_loto.domain.lottery_rules import (
+    GRAND_ECONOMY_RULES,
+    GRAND_FIXED_RULES,
+    get_lottery_rules,
+)
 from k_loto.infrastructure.database.models import (
     AdminAuditLog,
     Balance,
@@ -66,7 +71,12 @@ async def main():
             )
         )
         lottery = await s.scalar(select(Lottery).where(Lottery.code == "weekly"))
-        assert lottery and lottery.ruleset_code == "grand_fixed_5_35_2_5"
+        assert lottery and lottery.ruleset_code in (
+            GRAND_FIXED_RULES.code,
+            GRAND_ECONOMY_RULES.code,
+        )
+        rules = get_lottery_rules(lottery.ruleset_code)
+        ordinary_prizes = rules.fixed_payouts[51] * 2 + rules.fixed_payouts[42]
         lid = lottery.id
         jackpot = await s.scalar(
             select(JackpotAccount).where(JackpotAccount.lottery_id == lid)
@@ -227,7 +237,7 @@ async def main():
     async with session_factory() as s:
         draw = await s.get(Draw, did)
         assert draw.distribution_category == "51" and draw.distributed_amount == opening
-        assert draw.total_payout == opening + 43_000_000
+        assert draw.total_payout == opening + ordinary_prizes
         assert (
             await s.scalar(
                 select(JackpotAccount.balance).where(JackpotAccount.lottery_id == lid)
@@ -236,7 +246,7 @@ async def main():
         )
         assert (
             await s.scalar(select(Balance.amount).where(Balance.user_id == uid))
-            == before_money + opening + 43_000_000
+            == before_money + opening + ordinary_prizes
         )
         ledger = (
             await s.scalars(

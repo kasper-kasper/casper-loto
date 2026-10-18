@@ -13,6 +13,7 @@ from k_loto.application.weekly import LotteryTicketPurchaseService
 from k_loto.core.config import get_settings
 from k_loto.domain.enums import DrawStatus
 from k_loto.domain.errors import InvalidTicket
+from k_loto.domain.lottery_rules import CLASSIC_6_36_RULES, CLASSIC_ECONOMY_RULES
 from k_loto.infrastructure.database.models import (
     Balance,
     Draw,
@@ -42,7 +43,10 @@ async def main() -> None:
     async with session_factory() as session:
         lottery = await session.scalar(
             select(Lottery).where(
-                Lottery.ruleset_code == "classic_6_36", Lottery.is_active.is_(True)
+                Lottery.ruleset_code.in_(
+                    (CLASSIC_6_36_RULES.code, CLASSIC_ECONOMY_RULES.code)
+                ),
+                Lottery.is_active.is_(True),
             )
         )
         assert lottery is not None

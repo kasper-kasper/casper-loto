@@ -855,6 +855,55 @@ PULSE_RULES = replace(
         }
     ),
 )
+CLASSIC_ECONOMY_RULES = replace(
+    CLASSIC_6_36_RULES,
+    code="classic_6_36_economy_v2",
+    price_divisor=1,
+    jackpot_share=PayoutRatio(2, 5),
+    guaranteed_payouts=MappingProxyType({}),
+    fixed_payouts=MappingProxyType(
+        {2: 30_000, 3: 140_000, 4: 1_000_000, 5: 7_000_000}
+    ),
+)
+BALL_ECONOMY_RULES = replace(
+    PSS_CASPER_BALL_RULES,
+    code="casper_ball_5_36_1_8_economy_v2",
+    price_divisor=1,
+    jackpot_share=PayoutRatio(2, 5),
+    fixed_payouts=MappingProxyType(
+        {
+            1: 25_000,
+            11: 100_000,
+            20: 50_000,
+            21: 100_000,
+            30: 200_000,
+            31: 400_000,
+            40: 1_000_000,
+            41: 5_000_000,
+            50: 25_000_000,
+        }
+    ),
+)
+GRAND_ECONOMY_RULES = replace(
+    GRAND_FIXED_RULES,
+    code="grand_fixed_5_35_2_5_economy_v2",
+    jackpot_share=PayoutRatio(2, 5),
+    fixed_payouts=MappingProxyType(
+        {
+            20: 75_000,
+            21: 150_000,
+            22: 300_000,
+            30: 650_000,
+            31: 850_000,
+            32: 1_200_000,
+            40: 1_500_000,
+            41: 3_000_000,
+            42: 8_000_000,
+            50: 30_000_000,
+            51: 60_000_000,
+        }
+    ),
+)
 PLL_ECONOMY_RULES = replace(
     DAILY_RULES,
     code="pll_4_15_economy_v2",
@@ -884,10 +933,13 @@ LOTTERY_RULES: Mapping[str, LotteryRuleStrategy] = MappingProxyType(
             WEEKLY_RULES,
             KASPER_GRAND_RULES,
             GRAND_FIXED_RULES,
+            GRAND_ECONOMY_RULES,
             DAILY_RULES,
             PLL_ECONOMY_RULES,
             PSS_CASPER_BALL_RULES,
+            BALL_ECONOMY_RULES,
             CLASSIC_6_36_RULES,
+            CLASSIC_ECONOMY_RULES,
             DUAL_RULES,
             SEPTEMBER_RULES,
             SEPTEMBER_ECONOMY_RULES,

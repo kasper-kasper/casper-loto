@@ -156,7 +156,7 @@ class BatchSession(FakeSession):
         assert "pg_advisory_xact_lock" in str(statement)
 
 
-def batch_objects():
+def batch_objects(terms=TERMS):
     now = datetime(2026, 10, 18, tzinfo=UTC)
     control = SimpleNamespace(
         paused=True,
@@ -166,7 +166,7 @@ def batch_objects():
         recovery_after=None,
     )
     lotteries, jackpots = [], []
-    for code, rule, _, base in TERMS:
+    for code, rule, _, base in terms:
         _, lottery, _, _, jackpot, _ = build_purchase_accounts(now)
         lottery.id = uuid4()
         lottery.code = code
