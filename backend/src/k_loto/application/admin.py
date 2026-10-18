@@ -1554,11 +1554,30 @@ class AdminQueryService:
         )
         if lottery is None:
             raise LookupError("Lottery does not exist.")
+        ruleset_code = lottery.ruleset_code
+        maximum = lottery.max_number
+        if (
+            getattr(self._session, "info", {}).get("economy_scope", (None, None))[1]
+            == "archive"
+        ):
+            # The current payout version may not exist in the old economy.
+            # Use its latest recorded format rather than returning an empty archive.
+            historical_rules = await self._session.scalar(
+                select(Draw.configuration_snapshot["ruleset_code"].astext)
+                .where(
+                    Draw.lottery_id == lottery_id, Draw.status == DrawStatus.COMPLETED
+                )
+                .order_by(Draw.scheduled_at.desc(), Draw.id.desc())
+                .limit(1)
+            )
+            if historical_rules:
+                ruleset_code = str(historical_rules)
+                maximum = get_lottery_rules(ruleset_code).max_number
         statement = select(Draw).where(
             Draw.lottery_id == lottery_id,
             Draw.status == DrawStatus.COMPLETED,
             Draw.winning_numbers.is_not(None),
-            Draw.configuration_snapshot["ruleset_code"].astext == lottery.ruleset_code,
+            Draw.configuration_snapshot["ruleset_code"].astext == ruleset_code,
         )
         if date_from is not None:
             statement = statement.where(Draw.scheduled_at >= date_from)
@@ -1568,7 +1587,7 @@ class AdminQueryService:
         recent_draws = (await self._session.scalars(statement)).all()
         draws = sorted(recent_draws, key=lambda item: item.scheduled_at)
         positions: dict[int, list[int]] = {
-            number: [] for number in range(1, lottery.max_number + 1)
+            number: [] for number in range(1, maximum + 1)
         }
         for index, draw in enumerate(draws):
             for number in draw.winning_numbers or []:
@@ -2029,10 +2048,12 @@ class AdminQueryService:
             "history": history,
         }
 
-    async def operational_status(self) -> dict[str, Any]:
+    async def operational_status(self, *, technical: bool = True) -> dict[str, Any]:
         """Return a cheap, read-only control-room projection for the owner."""
         now = datetime.now(UTC)
-        heartbeat = await self._session.get(SchedulerHeartbeat, 1)
+        heartbeat = (
+            await self._session.get(SchedulerHeartbeat, 1) if technical else None
+        )
         next_rows = (
             await self._session.execute(
                 select(
@@ -2052,6 +2073,27 @@ class AdminQueryService:
                 .limit(8)
             )
         ).all()
+        business = {
+            "today": await self.today_summary(now=now),
+            "next_draws": [
+                {
+                    "id": str(draw.id),
+                    "lottery_name": draw_display_name(
+                        lottery.code, lottery.name, draw.scheduled_at
+                    ),
+                    "draw_number": draw.public_number,
+                    "scheduled_at": draw.scheduled_at,
+                    "sales_close_at": draw.sales_close_at,
+                    "status": draw.status.value,
+                    "ticket_count": int(ticket_count),
+                    "participant_count": int(participant_count),
+                    "total_sales": draw.total_sales,
+                }
+                for draw, lottery, ticket_count, participant_count in next_rows
+            ],
+        }
+        if not technical:
+            return business
         notification_rows = (
             await self._session.execute(
                 select(
@@ -2069,7 +2111,7 @@ class AdminQueryService:
             or 0
         )
         return {
-            "today": await self.today_summary(now=now),
+            **business,
             "scheduler": {
                 "last_started_at": heartbeat.last_started_at if heartbeat else None,
                 "last_succeeded_at": (
@@ -2084,22 +2126,6 @@ class AdminQueryService:
             "notifications": {
                 status.value: int(count) for status, count in notification_rows
             },
-            "next_draws": [
-                {
-                    "id": str(draw.id),
-                    "lottery_name": draw_display_name(
-                        lottery.code, lottery.name, draw.scheduled_at
-                    ),
-                    "draw_number": draw.public_number,
-                    "scheduled_at": draw.scheduled_at,
-                    "sales_close_at": draw.sales_close_at,
-                    "status": draw.status.value,
-                    "ticket_count": int(ticket_count),
-                    "participant_count": int(participant_count),
-                    "total_sales": draw.total_sales,
-                }
-                for draw, lottery, ticket_count, participant_count in next_rows
-            ],
         }
 
     async def notifications(

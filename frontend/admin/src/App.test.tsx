@@ -3,13 +3,13 @@ import { vi } from "vitest";
 
 import App from "./App";
 import { adminApi, setEconomyScope } from "./api";
-import type { Dashboard, Lottery, NumberStatisticsReport, Player, PlayerHistoryPage, ScheduleEntry, TicketAnalytics, Transaction } from "./types";
+import type { Overview, Dashboard, Lottery, NumberStatisticsReport, Player, PlayerHistoryPage, ScheduleEntry, TicketAnalytics, Transaction } from "./types";
 
 vi.mock("./api", () => ({
   setEconomyScope: vi.fn(),
   ApiError: class ApiError extends Error { status = 500; },
   adminApi: {
-    login: vi.fn(), session: vi.fn(), logout: vi.fn(), dashboard: vi.fn(), kasperLive: vi.fn(), vault: vi.fn(), aurora: vi.fn(),
+    login: vi.fn(), session: vi.fn(), logout: vi.fn(), dashboard: vi.fn(), overview: vi.fn(), kasperLive: vi.fn(), vault: vi.fn(), aurora: vi.fn(),
     monitoring: vi.fn(), economy: vi.fn().mockResolvedValue({ today: "2026-10-18", selected_day: "2026-10-18", days: [] }),
     players: vi.fn(), playerTicketHistory: vi.fn(), lotteries: vi.fn(), schedule: vi.fn(), draws: vi.fn(), draw: vi.fn(), drawPage: vi.fn(), jackpotEvents: vi.fn(),
     transactions: vi.fn(), playerTransactions: vi.fn(), statistics: vi.fn(), ticketAnalytics: vi.fn(), activity: vi.fn(), audit: vi.fn(),
@@ -19,9 +19,14 @@ vi.mock("./api", () => ({
   },
 }));
 
+async function openManagement() {
+  const summary = await screen.findByText("Управление", { selector: "summary" });
+  if (!summary.closest("details")?.open) fireEvent.click(summary);
+}
+
 const session = { username: "owner", csrf_token: "csrf", expires_at: "2026-08-16T00:00:00Z", miniapp_url: "https://play.example.test/" };
 const lottery: Lottery = { id: "lottery", code: "weekly", name: "Weekly 5/20", kind: "WEEKLY", ticket_price: 100, base_jackpot: 10_000, current_jackpot: 12_000, distribution_fund: 500, reserve: 100_000, schedule: { weekday: "sunday" }, sales_cutoff_minutes: 5, max_tickets_per_purchase: 1000, max_tickets_per_user_per_draw: 5000, is_active: true, next_draw_number: 8, next_draw_at: "2026-08-16T17:00:00Z" };
-const dashboard: Dashboard = { version: "0.8.0", uptime_seconds: 120, database_healthy: true, bot_configured: true, scheduler_enabled: true, counts: { users: 1, tickets: 6, completed_draws: 3, pending_draws: 1 }, lotteries: [lottery], recent_draws: [], recent_transactions: [], operations: { today: { completed_draws: 2, purchased_tickets: 4, sales: 400, winning_tickets: 1, payout: 250, net: 150, by_lottery: [{ lottery_id: "lottery", lottery_name: "Weekly 5/20", purchased_tickets: 4, sales: 400, winning_tickets: 1, payout: 250, net: 150 }] }, scheduler: { last_started_at: null, last_succeeded_at: null, last_failed_at: null, last_error: null, settled_count: 0, prepared_count: 0 }, stuck_draw_count: 0, notifications: {}, next_draws: [] }, jackpots: { kasper_fund_balance: 1_000_000_000_000_000, total_wins: 0, total_paid: 0, largest_win: 0, lotteries: [{ code: "weekly", name: "Weekly 5/20", win_count: 0, total_paid: 0, last_win_at: null }], history: [] } };
+const dashboard: Dashboard & Pick<Overview, "economy"> = { economy: { epoch: 2, started_at: "2026-10-18T00:00:00Z", paused: true, scope: "current" }, version: "0.8.0", uptime_seconds: 120, database_healthy: true, bot_configured: true, scheduler_enabled: true, counts: { users: 1, tickets: 6, completed_draws: 3, pending_draws: 1 }, lotteries: [lottery], recent_draws: [], recent_transactions: [], operations: { today: { completed_draws: 2, purchased_tickets: 4, sales: 400, winning_tickets: 1, payout: 250, net: 150, by_lottery: [{ lottery_id: "lottery", lottery_name: "Weekly 5/20", purchased_tickets: 4, sales: 400, winning_tickets: 1, payout: 250, net: 150 }] }, scheduler: { last_started_at: null, last_succeeded_at: null, last_failed_at: null, last_error: null, settled_count: 0, prepared_count: 0 }, stuck_draw_count: 0, notifications: {}, next_draws: [] }, jackpots: { kasper_fund_balance: 1_000_000_000_000_000, total_wins: 0, total_paid: 0, largest_win: 0, lotteries: [{ code: "weekly", name: "Weekly 5/20", win_count: 0, total_paid: 0, last_win_at: null }], history: [] } };
 const player: Player = { id: "player", display_name: "Test Player", username: "player", telegram_id: 123, is_active: true, balance: 5_000, ticket_count: 6, active_ticket_count: 2, spent: 600, won: 250, net: -350, telegram_notifications_enabled: false, auto_play_enabled: false, auto_play_tickets_per_draw: 5, auto_play_last_attempted_at: null, auto_play_last_succeeded_at: null, auto_play_last_error: null };
 const playerTransaction: Transaction = { id: "ledger-row", operation_id: "operation", type: "TICKET_PURCHASE", account_kind: "USER_BALANCE", amount: -100, balance_before: 5_100, balance_after: 5_000, user_id: "player", lottery_id: "lottery", draw_id: "draw", ticket_id: "ticket", created_at: "2026-09-20T12:00:00Z", details: {} };
 const playerHistory: PlayerHistoryPage = { items: [{ id: "ticket-1", ticket_kind: "DRAW", purchased_at: "2026-09-20T12:00:00Z", lottery_id: "lottery", lottery_code: "weekly", lottery_name: "Weekly 5/20", draw_number: 7, public_number: 77, numbers: [1, 2, 3, 4, 5], purchase_price: 100, prize_amount: 250, status: "SETTLED", source: "MANUAL", matches: 5, winning_numbers: [1, 2, 3, 4, 5], bingo_result: null }], total: 1, offset: 0, limit: 100, lottery_stats: [{ lottery_id: "lottery", lottery_code: "weekly", lottery_name: "Weekly 5/20", ticket_count: 6, active_ticket_count: 2, winning_ticket_count: 1, spent: 600, won: 250 }] };
@@ -36,6 +41,7 @@ beforeEach(() => {
   vi.mocked(adminApi.session).mockResolvedValue(session);
   vi.mocked(adminApi.login).mockResolvedValue(session);
   vi.mocked(adminApi.logout).mockResolvedValue();
+  vi.mocked(adminApi.overview).mockResolvedValue(dashboard);
   vi.mocked(adminApi.dashboard).mockResolvedValue(dashboard);
   vi.mocked(adminApi.monitoring).mockResolvedValue({ metrics: {}, operations: { checked_at: null, warnings: [] } });
   vi.mocked(adminApi.aurora).mockResolvedValue({ ticket_count: 7, winning_tickets: 2, losing_tickets: 5, result: 900 });
@@ -45,6 +51,14 @@ beforeEach(() => {
   vi.mocked(adminApi.playerTicketHistory).mockResolvedValue(playerHistory);
   vi.mocked(adminApi.lotteries).mockResolvedValue([lottery]);
   vi.mocked(adminApi.draws).mockResolvedValue([]);
+  vi.mocked(adminApi.draw).mockResolvedValue({ draw: {
+    id: "draw", lottery_id: lottery.id, lottery_code: lottery.code, lottery_name: lottery.name,
+    public_number: 7, status: "COMPLETED", scheduled_at: "2026-10-18T01:00:00Z",
+    sales_close_at: "2026-10-18T00:55:00Z", executed_at: "2026-10-18T01:00:00Z",
+    winning_numbers: [1, 2, 3, 4, 5], ticket_count: 0, total_sales: 0, total_payout: 0,
+    jackpot_opening: 10000, jackpot_closing: 10000, distribution_opening: 0,
+    distribution_closing: 0, reserve_used: 0, kasper_fund_used: 0, correlation_id: "fixture",
+  }, tickets: [] });
   vi.mocked(adminApi.jackpotEvents).mockResolvedValue([]);
   vi.mocked(adminApi.schedule).mockResolvedValue(scheduleEntries);
   vi.mocked(adminApi.transactions).mockResolvedValue([]);
@@ -67,12 +81,12 @@ beforeEach(() => {
 it("restores an authenticated session and renders Russian system truth", async () => {
   render(<App />);
 
-  expect(await screen.findByText("Всего сорвано джекпотов")).toBeInTheDocument();
-  expect(screen.getByText("ТИРАЖИ СЕГОДНЯ")).toBeInTheDocument();
-  expect(screen.getByText("Весь проект одним взглядом")).toBeInTheDocument();
-  expect(screen.getByText("12 000 CAS")).toBeInTheDocument();
+  expect(await screen.findByText("Вся игра в цифрах")).toBeInTheDocument();
+  expect(screen.getByLabelText("Итоги этапа")).toBeInTheDocument();
+  expect(adminApi.dashboard).not.toHaveBeenCalled();
+  expect(adminApi.monitoring).not.toHaveBeenCalled();
   expect(screen.queryByText("v0.8.0 · работает 2 мин.")).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: /^12Журналы$/ }));
+  fireEvent.click(screen.getByRole("button", { name: "Система" }));
   fireEvent.click(await screen.findByRole("tab", { name: "Состояние" }));
   expect(await screen.findByText("БАЗА ДАННЫХ РАБОТАЕТ")).toBeInTheDocument();
   expect(screen.getByText("v0.8.0 · работает 2 мин.")).toBeInTheDocument();
@@ -81,8 +95,8 @@ it("restores an authenticated session and renders Russian system truth", async (
 it("shows uncertain notification deliveries as requiring attention", async () => {
   vi.mocked(adminApi.dashboard).mockResolvedValue({ ...dashboard, operations: { ...dashboard.operations, notifications: { UNCERTAIN: 2 } } });
   render(<App />);
-  await screen.findByText("Всего сорвано джекпотов");
-  fireEvent.click(screen.getByRole("button", { name: /^12Журналы$/ }));
+  await screen.findByText("Вся игра в цифрах");
+  fireEvent.click(screen.getByRole("button", { name: "Система" }));
   fireEvent.click(await screen.findByRole("tab", { name: "Состояние" }));
   const delivery = await screen.findByText("0 ожидают · 2 требуют проверки");
   expect(delivery.closest("article")).toHaveClass("health-warning");
@@ -90,7 +104,7 @@ it("shows uncertain notification deliveries as requiring attention", async () =>
 });
 
 it("distinguishes one draw jackpot from the all-time lottery total", async () => {
-  vi.mocked(adminApi.dashboard).mockResolvedValueOnce({
+  vi.mocked(adminApi.overview).mockResolvedValueOnce({
     ...dashboard,
     jackpots: {
       ...dashboard.jackpots,
@@ -101,8 +115,9 @@ it("distinguishes one draw jackpot from the all-time lottery total", async () =>
     },
   });
   render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: "Джекпоты" }));
 
-  expect(await screen.findByText("Выплачено за всё время")).toBeInTheDocument();
+  expect(await screen.findByText("Выплачено за этап")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /Показать последние выигрыши/ }));
   expect(screen.getByText("Джекпот этого тиража")).toBeInTheDocument();
   expect(screen.getAllByText("1 019 980 CAS")).toHaveLength(2);
@@ -117,11 +132,12 @@ it("shows login and authenticates when no session exists", async () => {
   fireEvent.click(screen.getByRole("button", { name: "ВОЙТИ" }));
 
   await waitFor(() => expect(adminApi.login).toHaveBeenCalledWith("owner", "password", true));
-  expect(await screen.findByText("Всего сорвано джекпотов")).toBeInTheDocument();
+  expect(await screen.findByText("Вся игра в цифрах")).toBeInTheDocument();
 });
 
 it("adjusts a player balance only with a mandatory reason", async () => {
   render(<App />);
+  await openManagement();
   fireEvent.click(await screen.findByRole("button", { name: /Игроки/ }));
 
   const save = await screen.findByRole("button", { name: "ПРОВЕРИТЬ ИЗМЕНЕНИЕ" });
@@ -136,6 +152,7 @@ it("adjusts a player balance only with a mandatory reason", async () => {
 
 it("shows a player's internal ID, per-lottery stats, and searchable ticket history", async () => {
   render(<App />);
+  await openManagement();
   fireEvent.click(await screen.findByRole("button", { name: /Игроки/ }));
 
   expect(await screen.findByText("История билетов")).toBeInTheDocument();
@@ -151,6 +168,7 @@ it("loads player ticket history in pages beyond the first hundred records", asyn
     .mockResolvedValueOnce({ ...playerHistory, total: 101 })
     .mockResolvedValueOnce({ ...playerHistory, items: [{ ...playerHistory.items[0], id: "ticket-101", public_number: 101 }], offset: 1, total: 101 });
   render(<App />);
+  await openManagement();
   fireEvent.click(await screen.findByRole("button", { name: /Игроки/ }));
 
   fireEvent.click(await screen.findByRole("button", { name: /Показать ещё/ }));
@@ -161,7 +179,7 @@ it("loads player ticket history in pages beyond the first hundred records", asyn
 it("opens a player dossier directly from the event log", async () => {
   vi.mocked(adminApi.transactions).mockResolvedValue([playerTransaction]);
   render(<App />);
-  fireEvent.click(await screen.findByRole("button", { name: /Журналы/ }));
+  fireEvent.click(await screen.findByRole("button", { name: "Система" }));
   fireEvent.click(await screen.findByRole("tab", { name: "Лента событий" }));
 
   fireEvent.click(await screen.findByRole("button", { name: /Игрок · player/ }));
@@ -171,15 +189,12 @@ it("opens a player dossier directly from the event log", async () => {
 
 it("keeps only the useful owner sections and puts the archive last", async () => {
   render(<App />);
-  await screen.findByText("Всего сорвано джекпотов");
+  await screen.findByText("Вся игра в цифрах");
 
-  const nav = within(screen.getByRole("navigation"));
-  for (const label of ["Сегодня", "Fast", "Моментальные", "Лотереи", "Расписание", "Тиражи", "Джекпоты", "История форматов", "Игроки", "Аналитика", "Журналы"]) {
-    expect(nav.getByRole("button", { name: new RegExp(label) })).toBeInTheDocument();
-  }
-  expect(nav.queryByRole("button", { name: /Тест эфира|Интересные факты|Casper LIVE|Casper Aurora|Casper Vault/ })).not.toBeInTheDocument();
-  expect(nav.getAllByRole("button").at(-1)).toHaveTextContent("Архив");
-  fireEvent.click(nav.getByRole("button", { name: /Журналы/ }));
+  const nav = within(screen.getByRole("navigation", { name: "Основные разделы" }));
+  expect(nav.getAllByRole("button").map(button => button.textContent)).toEqual(["Обзор", "Экономика", "Билеты и выигрыши", "Джекпоты", "Статистика"]);
+  expect(screen.getByText("Управление", { selector: "summary" }).closest("details")).not.toHaveAttribute("open");
+  fireEvent.click(screen.getByRole("button", { name: "Система" }));
   expect(await screen.findByRole("tab", { name: "Журнал CAS" })).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: "Уведомления" })).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: "Аудит действий" })).toBeInTheDocument();
@@ -187,6 +202,7 @@ it("keeps only the useful owner sections and puts the archive last", async () =>
 
 it("shows only the four agreed Casper LIVE aggregates", async () => {
   render(<App />);
+  await openManagement();
   fireEvent.click(await screen.findByRole("button", { name: /Моментальные/ }));
 
   expect(await screen.findByText("КОЛИЧЕСТВО БИЛЕТОВ")).toBeInTheDocument();
@@ -199,16 +215,17 @@ it("shows only the four agreed Casper LIVE aggregates", async () => {
 
 it("shows the daily owner result and its lottery breakdown", async () => {
   render(<App />);
-  expect(await screen.findByText("ПЛЮС ЛОТО ЗА ДЕНЬ")).toBeInTheDocument();
-  expect(screen.getByText("Из чего сложился итог дня")).toBeInTheDocument();
-  expect(screen.getAllByText("+150 CAS").length).toBeGreaterThan(0);
+  expect(await screen.findByText("Вся игра в цифрах")).toBeInTheDocument();
+  expect(screen.getByText("Результаты дня по лотереям")).toBeInTheDocument();
+  expect(screen.getAllByText("400 CAS").length).toBeGreaterThan(0);
 });
 
 it("loads the daily schedule only after opening its section", async () => {
   render(<App />);
-  await screen.findByText("Всего сорвано джекпотов");
+  await screen.findByText("Вся игра в цифрах");
   expect(adminApi.schedule).not.toHaveBeenCalled();
 
+  await openManagement();
   fireEvent.click(screen.getByRole("button", { name: /Расписание/ }));
 
   expect(await screen.findByText("№0008")).toBeInTheDocument();
@@ -219,7 +236,7 @@ it("loads the daily schedule only after opening its section", async () => {
 
 it("shows complete changelog and devlog in separate protected tabs", async () => {
   render(<App />);
-  fireEvent.click(await screen.findByRole("button", { name: /^12Журналы$/ }));
+  fireEvent.click(await screen.findByRole("button", { name: "Система" }));
   fireEvent.click(await screen.findByRole("tab", { name: "Разработка" }));
 
   expect(await screen.findByText("Публичное изменение")).toBeInTheDocument();
@@ -232,6 +249,7 @@ it("shows complete changelog and devlog in separate protected tabs", async () =>
 
 it("keeps the selected section in the URL and restores it after refresh", async () => {
   const first = render(<App />);
+  await openManagement();
   fireEvent.click(await screen.findByRole("button", { name: /Игроки/ }));
   await screen.findByText("Test Player");
   expect(window.location.pathname).toBe("/players");
@@ -243,17 +261,17 @@ it("keeps the selected section in the URL and restores it after refresh", async 
 
 it("shows lightweight ticket win analytics overall and by lottery", async () => {
   render(<App />);
-  fireEvent.click(await screen.findByRole("button", { name: /Аналитика/ }));
+  fireEvent.click(await screen.findByRole("button", { name: "Статистика" }));
   fireEvent.click(await screen.findByRole("tab", { name: "Билеты" }));
 
   expect(await screen.findByText("23,33% от рассчитанных")).toBeInTheDocument();
   expect(screen.getByText("Weekly 5/20")).toBeInTheDocument();
-  expect(adminApi.ticketAnalytics).toHaveBeenCalledWith("standard");
+  expect(adminApi.ticketAnalytics).toHaveBeenCalledWith("all");
 });
 
 it("filters number statistics by lottery and draw window without changing history", async () => {
   render(<App />);
-  fireEvent.click(await screen.findByRole("button", { name: /Аналитика/ }));
+  fireEvent.click(await screen.findByRole("button", { name: "Статистика" }));
   fireEvent.click(await screen.findByRole("tab", { name: "Числа" }));
 
   expect(await screen.findByText("Статистика показана для выбранного этапа экономики. История тиражей и их номера сохранены.")).toBeInTheDocument();
@@ -263,7 +281,8 @@ it("filters number statistics by lottery and draw window without changing histor
 
 it("saves lottery price, base jackpot and limits with one action", async () => {
   render(<App />);
-  fireEvent.click(await screen.findByRole("button", { name: /Лотереи/ }));
+  await openManagement();
+  fireEvent.click(await screen.findByRole("button", { name: "Настройки лотерей" }));
 
   fireEvent.change(await screen.findByLabelText("Цена билета, CAS"), { target: { value: "22222" } });
   fireEvent.change(screen.getByLabelText("Базовый джекпот после выигрыша, CAS"), { target: { value: "2811996" } });
@@ -279,7 +298,8 @@ it("saves lottery price, base jackpot and limits with one action", async () => {
 
 it("adjusts the current jackpot through the ledger action", async () => {
   render(<App />);
-  fireEvent.click(await screen.findByRole("button", { name: /Лотереи/ }));
+  await openManagement();
+  fireEvent.click(await screen.findByRole("button", { name: "Настройки лотерей" }));
 
   fireEvent.change(await screen.findByLabelText("Текущий джекпот, CAS"), { target: { value: "999999" } });
   fireEvent.change(screen.getByLabelText("Комментарий для истории изменений"), { target: { value: "Решение владельца" } });
@@ -293,7 +313,8 @@ it("adjusts the current jackpot through the ledger action", async () => {
 
 it("keeps lottery controls available after changing the current jackpot", async () => {
   render(<App />);
-  fireEvent.click(await screen.findByRole("button", { name: /Лотереи/ }));
+  await openManagement();
+  fireEvent.click(await screen.findByRole("button", { name: "Настройки лотерей" }));
 
   fireEvent.change(await screen.findByLabelText("Текущий джекпот, CAS"), { target: { value: "999999" } });
   fireEvent.click(screen.getByRole("button", { name: "ИЗМЕНИТЬ ДЖЕКПОТ" }));
@@ -309,23 +330,25 @@ it("keeps lottery controls available after changing the current jackpot", async 
 
 
 it("shows a lottery's last amount even when its event is outside the history window", async () => {
-  vi.mocked(adminApi.dashboard).mockResolvedValue({ ...dashboard, jackpots: { ...dashboard.jackpots,
+  vi.mocked(adminApi.overview).mockResolvedValue({ ...dashboard, jackpots: { ...dashboard.jackpots,
     total_wins: 90, total_paid: 99_000_000, largest_win: 88_000_000,
     lotteries: [{ lottery_id: "lottery", code: "weekly", name: "Weekly 5/20", win_count: 90, total_paid: 99_000_000, last_win_at: "2026-09-04T12:00:00Z", last_win_amount: 12_345, largest_win: 88_000_000, last_draw_number: 8, last_draw_id: "old-draw" }], history: [],
   } });
   render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: "Джекпоты" }));
   expect(await screen.findByText("12 345 CAS")).toBeInTheDocument();
   expect(screen.getByText("Открыть тираж №0008 →")).toBeInTheDocument();
   expect(screen.getAllByText("99 000 000 CAS")).toHaveLength(2);
-  fireEvent.click(screen.getByRole("button", { name: /Аналитика/ }));
+  fireEvent.click(screen.getByRole("button", { name: "Статистика" }));
   expect(await screen.findByText("88 млн CAS")).toBeInTheDocument();
 });
 
 it("keeps expanded jackpot history when the owner refreshes data", async () => {
   render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: "Джекпоты" }));
   fireEvent.click(await screen.findByRole("button", { name: /Показать последние выигрыши/ }));
   fireEvent.click(await screen.findByRole("button", { name: "Обновить данные" }));
-  await waitFor(() => expect(adminApi.dashboard).toHaveBeenCalledTimes(4));
+  await waitFor(() => expect(adminApi.overview).toHaveBeenCalledTimes(2));
   expect(screen.getByRole("button", { name: /Скрыть историю джекпотов/ })).toHaveAttribute("aria-expanded", "true");
 });
 
@@ -333,13 +356,14 @@ it("restores an old development URL inside System", async () => {
   window.history.replaceState({}, "", "/development");
   render(<App />);
   expect(await screen.findByText("Публичное изменение")).toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "Журналы" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Система" })).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: "Разработка" })).toHaveAttribute("aria-selected", "true");
 });
 
 it("reports a failed owner balance change without pretending it succeeded", async () => {
   vi.mocked(adminApi.setBalance).mockRejectedValueOnce(new Error("Не удалось сохранить баланс"));
   render(<App />);
+  await openManagement();
   fireEvent.click(await screen.findByRole("button", { name: /Игроки/ }));
   fireEvent.change(await screen.findByLabelText("Обязательная причина"), { target: { value: "Уточнение" } });
   fireEvent.click(screen.getByRole("button", { name: "ПРОВЕРИТЬ ИЗМЕНЕНИЕ" }));
@@ -349,7 +373,7 @@ it("reports a failed owner balance change without pretending it succeeded", asyn
 
 it.each([null, 200])("uses the recorded jackpot event in draw details, amount=%s", async (amount) => {
   const event = { id: "event", lottery_code: "weekly", lottery_name: "Weekly 5/20", draw_id: "draw", draw_number: 7, jackpot_amount: 200, winner_ticket_count: 1, winner_user_count: 1, base_jackpot_after: 500, occurred_at: "2026-09-04T12:00:00Z" };
-  vi.mocked(adminApi.dashboard).mockResolvedValue({ ...dashboard, jackpots: { ...dashboard.jackpots, last_win: event } });
+  vi.mocked(adminApi.overview).mockResolvedValue({ ...dashboard, jackpots: { ...dashboard.jackpots, last_win: event } });
   vi.mocked(adminApi.draw).mockResolvedValue({ draw: {
     id: "draw", lottery_id: "lottery", lottery_code: "weekly", lottery_name: "Weekly 5/20", public_number: 7, status: "COMPLETED", scheduled_at: event.occurred_at, sales_close_at: event.occurred_at, executed_at: event.occurred_at, winning_numbers: [1,2,3,4,5], ticket_count: 1, total_sales: 100, total_payout: 200, jackpot_opening: 200, jackpot_closing: amount ? 500 : 100, distribution_opening: 0, distribution_closing: 0, reserve_used: 0, kasper_fund_used: 0, correlation_id: "internal-correlation", jackpot_amount: amount,
   }, tickets: amount ? [{ id: "winner-ticket", public_number: 77, user_id: "player", player_name: "Jackpot Player", player_username: "jackpot", player_telegram_id: 777, is_jackpot_winner: true, numbers: [1,2,3,4,5], purchase_price: 100, matches: 5, prize_amount: 200 }] : [] });
@@ -357,8 +381,10 @@ it.each([null, 200])("uses the recorded jackpot event in draw details, amount=%s
     id: "draw", lottery_id: "lottery", lottery_code: "weekly", lottery_name: "Weekly 5/20", public_number: 7, status: "COMPLETED", scheduled_at: event.occurred_at, sales_close_at: event.occurred_at, executed_at: event.occurred_at, winning_numbers: [1,2,3,4,5], ticket_count: 1, total_sales: 100, total_payout: 200, jackpot_opening: 200, jackpot_closing: amount ? 500 : 100, distribution_opening: 0, distribution_closing: 0, reserve_used: 0, kasper_fund_used: 0, correlation_id: "internal-correlation", jackpot_amount: amount,
   }]);
   render(<App />);
+  await openManagement();
   fireEvent.click(await screen.findByRole("button", { name: /Тиражи/ }));
-  fireEvent.click(await screen.findByRole("row", { name: /Weekly 5\/20 №/ }));
+  const row = await screen.findByRole("row", { name: /Weekly 5\/20 №/ });
+  await act(async () => { fireEvent.click(row); });
   const dialog = await screen.findByRole("dialog");
   if (amount) {
     expect(within(dialog).getByText("ДЖЕКПОТ ЭТОГО ТИРАЖА СОРВАН")).toBeInTheDocument();
@@ -374,7 +400,7 @@ it.each([null, 200])("uses the recorded jackpot event in draw details, amount=%s
 it("does not present Bingo ball frequency as ordinary number statistics", async () => {
   vi.mocked(adminApi.lotteries).mockResolvedValue([{ ...lottery, id: "bingo-lottery", code: "bingo", name: "Casper Bingo", kind: "DAILY" }, lottery]);
   render(<App />);
-  fireEvent.click(await screen.findByRole("button", { name: /Аналитика/ }));
+  fireEvent.click(await screen.findByRole("button", { name: "Статистика" }));
   fireEvent.click(await screen.findByRole("tab", { name: "Числа" }));
   const selector = await screen.findByLabelText("Лотерея");
   expect(within(selector).queryByRole("option", { name: "Casper Bingo" })).not.toBeInTheDocument();
@@ -383,6 +409,7 @@ it("does not present Bingo ball frequency as ordinary number statistics", async 
 
 it("lets the owner choose the auto-play ticket count and shows its state", async () => {
   render(<App />);
+  await openManagement();
   fireEvent.click(await screen.findByRole("button", { name: /Игроки/ }));
   expect(await screen.findByText("АВТОУЧАСТИЕ · ОТКЛЮЧЕНО")).toBeInTheDocument();
   fireEvent.change(screen.getByLabelText("Билетов автоучастия на тираж"), { target: { value: "3" } });
@@ -404,6 +431,7 @@ it("summarizes Bingo by stages and keeps the full ball protocol collapsed", asyn
     { id: "loser", public_number: 102, user_id: "user-b", numbers: [1,2,3,4,5,6,7,8,9,10,59,60], purchase_price: 50_000, matches: 10, prize_amount: 0, bingo_result: { moves: [20, 61, 61], amounts: [0, 0, 0] } },
   ] });
   render(<App />);
+  await openManagement();
   fireEvent.click(await screen.findByRole("button", { name: /Тиражи/ }));
   fireEvent.click(await screen.findByRole("row", { name: /Casper Bingo №/ }));
   const dialog = await screen.findByRole("dialog");
@@ -418,12 +446,14 @@ it("summarizes Bingo by stages and keeps the full ball protocol collapsed", asyn
 
 it("opens the dedicated Fast control room and requests a bounded Fast draw page", async () => {
   render(<App />);
-  await screen.findByText("Всего сорвано джекпотов");
-  expect(adminApi.dashboard).toHaveBeenCalledWith("standard");
-  expect(adminApi.dashboard).toHaveBeenCalledWith("all");
-  fireEvent.click(screen.getByRole("button", { name: /^02Fast$/ }));
-  await waitFor(() => expect(adminApi.dashboard).toHaveBeenCalledWith("fast"));
+  await screen.findByText("Вся игра в цифрах");
+  expect(adminApi.overview).toHaveBeenCalledWith("all");
+  expect(adminApi.dashboard).not.toHaveBeenCalled();
+  await openManagement();
+  fireEvent.click(screen.getByRole("button", { name: "Fast" }));
+  await waitFor(() => expect(adminApi.overview).toHaveBeenCalledWith("fast"));
   expect(adminApi.ticketAnalytics).toHaveBeenCalledWith("fast");
+  await openManagement();
   fireEvent.click(screen.getByRole("button", { name: /Тиражи/ }));
   fireEvent.click(within(screen.getByRole("tablist", { name: "Тип игр" })).getByRole("tab", { name: "Fast" }));
   await waitFor(() => expect(adminApi.draws).toHaveBeenCalledWith("scope=fast&period=today&limit=100&offset=0"));
@@ -432,7 +462,7 @@ it("opens the dedicated Fast control room and requests a bounded Fast draw page"
 });
 
 it("opens the last Fast jackpot directly from the Fast control room", async () => {
-  vi.mocked(adminApi.dashboard).mockResolvedValue({
+  vi.mocked(adminApi.overview).mockResolvedValue({
     ...dashboard,
     jackpots: {
       ...dashboard.jackpots,
@@ -445,7 +475,8 @@ it("opens the last Fast jackpot directly from the Fast control room", async () =
     },
   });
   render(<App />);
-  fireEvent.click(await screen.findByRole("button", { name: /^02Fast$/ }));
+  await openManagement();
+  fireEvent.click(await screen.findByRole("button", { name: "Fast" }));
   fireEvent.click(await screen.findByRole("button", { name: /Тираж №0411/ }));
   expect(adminApi.draw).toHaveBeenCalledWith("fast-draw");
 });
@@ -459,6 +490,7 @@ it("opens a Fast jackpot from its own catalog and routes to the draw details", a
   render(<App />);
   fireEvent.click(await screen.findByRole("button", { name: /Джекпоты/ }));
   fireEvent.click(within(screen.getByRole("tablist", { name: "Тип игр" })).getByRole("tab", { name: "Fast" }));
+  fireEvent.click(await screen.findByText("Полная история джекпотов", { selector: "summary" }));
   await waitFor(() => expect(adminApi.jackpotEvents).toHaveBeenCalledWith("fast", "", 0));
   fireEvent.click(await screen.findByRole("button", { name: /Открыть детали/ }));
   expect(adminApi.draw).toHaveBeenCalledWith("flash-draw");
@@ -466,13 +498,15 @@ it("opens a Fast jackpot from its own catalog and routes to the draw details", a
 
 it("opens the separate archive on historical completed formats", async () => {
   render(<App />);
-  fireEvent.click(await screen.findByRole("button", { name: /История форматов/ }));
+  fireEvent.click(await screen.findByRole("button", { name: "Система" }));
+  fireEvent.click(await screen.findByRole("tab", { name: "История форматов" }));
   await waitFor(() => expect(adminApi.draws).toHaveBeenCalledWith("scope=all&period=archived&limit=100&offset=0"));
   expect(await screen.findByText("Архив завершённых лотерей")).toBeInTheDocument();
 });
 
 it("shows only the four agreed Casper Vault aggregates", async () => {
   render(<App />);
+  await openManagement();
   fireEvent.click(await screen.findByRole("button", { name: /Моментальные/ }));
   fireEvent.click(await screen.findByRole("tab", { name: "Casper Vault" }));
 
@@ -487,9 +521,9 @@ it("shows only the four agreed Casper Vault aggregates", async () => {
 
 it("queries number statistics only when the numbers tab is opened", async () => {
   render(<App />);
-  await screen.findByText("ПЛЮС ЛОТО ЗА ДЕНЬ");
+  await screen.findByText("Вся игра в цифрах");
   expect(adminApi.statistics).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole("button", { name: /Аналитика/ }));
+  fireEvent.click(screen.getByRole("button", { name: "Статистика" }));
   await waitFor(() => expect(adminApi.ticketAnalytics).toHaveBeenCalledTimes(2));
   expect(adminApi.statistics).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole("tab", { name: "Числа" }));
@@ -499,7 +533,7 @@ it("queries number statistics only when the numbers tab is opened", async () => 
 it("does not periodically poll heavy analytics and supports manual refresh", async () => {
   const interval = vi.spyOn(window, "setInterval");
   render(<App />);
-  await screen.findByText("ПЛЮС ЛОТО ЗА ДЕНЬ");
+  await screen.findByText("Вся игра в цифрах");
   expect(interval.mock.calls.some(call => call[1] === 30_000)).toBe(false);
   expect(adminApi.ticketAnalytics).toHaveBeenCalledTimes(1);
   fireEvent.click(screen.getByRole("button", { name: "Обновить данные" }));
@@ -514,6 +548,7 @@ it("loads CAS pages by cursor once and ignores a late response after a filter ch
     .mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }))
     .mockResolvedValueOnce([{ ...playerTransaction, id: "filtered", amount: 77 }]);
   render(<App />);
+  await openManagement();
   fireEvent.click(await screen.findByRole("button", { name: /Игроки/ }));
   expect(adminApi.playerTransactions).not.toHaveBeenCalled();
   fireEvent.click(await screen.findByRole("button", { name: "Показать движения CAS" }));
@@ -539,6 +574,7 @@ it("opens a draw summary without tickets and paginates tickets on demand", async
     .mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }))
     .mockResolvedValueOnce({ draw, tickets: [], has_more: false, next_after: null });
   render(<App />);
+  await openManagement();
   fireEvent.click(await screen.findByRole("button", { name: /Тиражи/ }));
   fireEvent.click(await screen.findByRole("row", { name: /Weekly 5\/20 №/ }));
   const dialog = await screen.findByRole("dialog");
@@ -609,13 +645,45 @@ it("loads project journals only when opened and keeps other system tabs idle", a
 
 it("switches all statistics to the old economy and back without retaining old details", async () => {
   render(<App />);
-  await screen.findByText("Всего сорвано джекпотов");
-  const calls = vi.mocked(adminApi.dashboard).mock.calls.length;
+  await screen.findByText("Вся игра в цифрах");
+  const calls = vi.mocked(adminApi.overview).mock.calls.length;
   fireEvent.click(screen.getByRole("button", { name: "Архив старой экономики" }));
   await screen.findByText(/Архив старой экономики · Только просмотр/);
   expect(setEconomyScope).toHaveBeenLastCalledWith("archive");
-  await waitFor(() => expect(vi.mocked(adminApi.dashboard).mock.calls.length).toBeGreaterThan(calls));
+  await waitFor(() => expect(vi.mocked(adminApi.overview).mock.calls.length).toBeGreaterThan(calls));
   fireEvent.click(screen.getByRole("button", { name: "Вернуться к новой экономике" }));
   expect(setEconomyScope).toHaveBeenLastCalledWith("current");
   await waitFor(() => expect(screen.queryByText(/Архив старой экономики · Только просмотр/)).not.toBeInTheDocument());
+});
+
+
+it("keeps diagnostics idle on business pages and stops refreshing them after leaving System", async () => {
+  render(<App />);
+  await screen.findByText("Вся игра в цифрах");
+  for (const request of [adminApi.dashboard, adminApi.monitoring, adminApi.transactions, adminApi.notifications, adminApi.audit, adminApi.releaseNotes]) expect(request).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Система" }));
+  await screen.findByText("Скорость мини-аппа и контроль сервера");
+  expect(adminApi.dashboard).toHaveBeenCalledOnce();
+  await waitFor(() => expect(adminApi.monitoring).toHaveBeenCalledOnce());
+  expect(adminApi.transactions).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Обзор" }));
+  await screen.findByText("Вся игра в цифрах");
+  fireEvent.click(screen.getByRole("button", { name: "Обновить данные" }));
+  await waitFor(() => expect(adminApi.overview).toHaveBeenCalledTimes(3));
+  expect(adminApi.dashboard).toHaveBeenCalledOnce();
+  expect(adminApi.monitoring).toHaveBeenCalledOnce();
+});
+
+it("does not display archived totals if returning to the new epoch fails", async () => {
+  const oldAnalytics = { ...analytics, overall: { ...analytics.overall, total_tickets: 777777 } };
+  render(<App />);
+  await screen.findByText("Вся игра в цифрах");
+  vi.mocked(adminApi.ticketAnalytics).mockResolvedValueOnce(oldAnalytics);
+  fireEvent.click(screen.getByRole("button", { name: "Архив старой экономики" }));
+  await screen.findByText((text) => text.replace(/\s/g, "") === "777777");
+  vi.mocked(adminApi.overview).mockRejectedValueOnce(new Error("Нет связи"));
+  fireEvent.click(screen.getByRole("button", { name: "Вернуться к новой экономике" }));
+  await screen.findByRole("alert");
+  expect(screen.queryByText((text) => text.replace(/\s/g, "") === "777777")).not.toBeInTheDocument();
+  expect(screen.queryByRole("status", { name: /Загружаем/ })).not.toBeInTheDocument();
 });

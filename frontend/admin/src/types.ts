@@ -259,6 +259,11 @@ export interface ReleaseNote {
   sequence: number | null;
 }
 
+export type Overview = Pick<Dashboard, "counts" | "lotteries" | "jackpots" | "recent_draws"> & {
+  operations: Pick<Dashboard["operations"], "today" | "next_draws">;
+  economy: { epoch: number; started_at: string | null; paused: boolean; scope: "current" | "archive" };
+};
+
 export interface TicketAnalyticsRow {
   lottery_id: string | null;
   lottery_name: string;

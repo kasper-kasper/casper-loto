@@ -302,6 +302,15 @@ class AuditResponse(ApiModel):
     created_at: datetime
 
 
+class OverviewResponse(BaseModel):
+    counts: dict[str, int]
+    lotteries: list[LotteryResponse]
+    recent_draws: list[DrawResponse]
+    operations: dict[str, Any]
+    jackpots: dict[str, Any]
+    economy: dict[str, Any]
+
+
 class DashboardResponse(BaseModel):
     version: str
     uptime_seconds: int
@@ -569,6 +578,34 @@ async def economy_report(
         return await EconomyReportService(session).daily(days=days, through=through)
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@router.get("/overview", response_model=OverviewResponse)
+async def overview(
+    _admin: Annotated[CurrentAdmin, Depends(get_current_admin)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    scope: LotteryScope = "all",
+) -> OverviewResponse:
+    """Business-only projection: diagnostics and journals load in System."""
+    service = AdminQueryService(session, scope=scope)
+    control = await control_state(session)
+    return OverviewResponse(
+        counts=await service.dashboard_counts(),
+        recent_draws=[
+            DrawResponse.model_validate(x) for x in await service.draws(limit=5)
+        ],
+        lotteries=[
+            LotteryResponse.model_validate(x) for x in await service.lotteries()
+        ],
+        operations=await service.operational_status(technical=False),
+        jackpots=await service.jackpot_analytics(),
+        economy={
+            "epoch": control.epoch,
+            "started_at": control.epoch_started_at,
+            "paused": control.paused,
+            "scope": session.info.get("economy_scope", (1, "current"))[1],
+        },
+    )
 
 
 @router.get("/dashboard", response_model=DashboardResponse)

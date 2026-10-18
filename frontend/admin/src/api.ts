@@ -6,6 +6,7 @@ import type {
   EconomyReport,
   AuditEntry,
   Dashboard,
+  Overview,
   Draw,
   DrawDetail,
   InterestingFact,
@@ -140,6 +141,7 @@ export const adminApi = {
   logout: () => request<void>("/auth/logout", { method: "POST" }),
   economy: (days: 7 | 30 = 7, through = "") => request<EconomyReport>(`/economy?days=${days}${through ? `&through=${encodeURIComponent(through)}` : ""}`),
   dashboard: (scope: LotteryScope = "all") => request<Dashboard>(`/dashboard?scope=${scope}`),
+  overview: (scope: LotteryScope = "all") => request<Overview>(`/overview?scope=${scope}`),
   vault: () => request<KasperLiveSummary>("/vault"),
   aurora: () => request<KasperLiveSummary>("/aurora"),
   kasperLive: () => request<KasperLiveSummary>("/kasper-live"),
@@ -170,8 +172,9 @@ export const adminApi = {
     if (before) { params.set("before_at", before.created_at); params.set("before_id", before.id); params.delete("offset"); }
     return request<Transaction[]>(`/transactions?${params.toString()}`);
   },
-  statistics: (lotteryId: string, limit = 20, dateFrom = "2026-08-31T21:00:00.000Z") => {
-    const params = new URLSearchParams({ limit: String(limit), date_from: dateFrom });
+  statistics: (lotteryId: string, limit = 20, dateFrom = "") => {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (dateFrom) params.set("date_from", dateFrom);
     return request<NumberStatisticsReport>(`/lotteries/${lotteryId}/number-statistics?${params.toString()}`);
   },
   ticketAnalytics: (scope: LotteryScope = "all") => request<TicketAnalytics>(`/ticket-analytics?scope=${scope}`),

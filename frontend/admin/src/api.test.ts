@@ -26,3 +26,12 @@ it("adds an explicit archive period to requests and defaults back to current", a
   await adminApi.lotteries();
   expect((fetch.mock.calls[1][1].headers as Headers).get("X-Economy-Scope")).toBe("current");
 });
+
+
+it("uses the business overview and leaves the number-history boundary to the economy scope", async () => {
+  const fetch = vi.fn().mockImplementation(async () => new Response("[]", { status: 200 }));
+  vi.stubGlobal("fetch", fetch);
+  await adminApi.overview("all");
+  await adminApi.statistics("pll", 20);
+  expect(fetch.mock.calls.map(call => call[0])).toEqual(["/api/v1/admin/overview?scope=all", "/api/v1/admin/lotteries/pll/number-statistics?limit=20"]);
+});

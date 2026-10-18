@@ -6,7 +6,7 @@ import "./economy-panel.css";
 const cash = (value: number) => `${value.toLocaleString("ru-RU")} CAS`;
 const signed = (value: number) => `${value > 0 ? "+" : ""}${cash(value)}`;
 
-export function EconomyPanel({ refreshedAt }: { refreshedAt: number }) {
+export function EconomyPanel({ refreshedAt, compact = false, onExpand }: { refreshedAt: number; compact?: boolean; onExpand?: () => void }) {
   const [days, setDays] = useState<7 | 30>(7);
   const [through, setThrough] = useState("");
   const [loaded, setLoaded] = useState<{ key: string; data: EconomyReport } | null>(null);
@@ -24,6 +24,16 @@ export function EconomyPanel({ refreshedAt }: { refreshedAt: number }) {
   const previous = report?.days.at(-2);
   const comparison = (value: number, prior: number | undefined) => previous?.included && prior !== undefined
     ? `${signed(value - prior)} к предыдущему дню` : "Предыдущий день вне выбранного этапа";
+  if (compact) return <section className="panel economy-panel economy-preview" aria-label="Экономика CAS">
+    <header><div><small>СЕГОДНЯ · ВСЕ ИГРЫ И НАЧИСЛЕНИЯ</small><h2>Движение CAS</h2></div><button className="text-action" onClick={onExpand}>Вся экономика →</button></header>
+    {failure?.key === key && <p role="alert">{failure.message}</p>}
+    {!report && failure?.key !== key && <p role="status">Загружаем движение CAS…</p>}
+    {selected && <div className="economy-preview-grid">
+      <article><small>Начислено игрокам</small><strong>{selected.included ? cash(selected.credited) : "—"}</strong><span>призы, бонусы и другие начисления</span></article>
+      <article><small>Списано у игроков</small><strong>{selected.included ? cash(selected.debited) : "—"}</strong><span>покупки и другие списания</span></article>
+      <article><small>Создано / сожжено</small><strong>{selected.included ? `${selected.issued.toLocaleString("ru-RU")} / ${cash(selected.burned)}` : "—"}</strong><span>изменение объёма CAS во всей системе</span></article>
+    </div>}
+  </section>;
   return <section className="panel economy-panel" aria-label="Экономика CAS">
     <header><div><small>ВСЕ ИГРЫ И НАЧИСЛЕНИЯ · МОСКОВСКОЕ ВРЕМЯ</small><h2>Экономика CAS</h2>
       <p>Сколько начислено и списано у игроков, как меняется объём валюты во всей системе.</p></div>
