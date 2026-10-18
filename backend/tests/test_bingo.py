@@ -224,9 +224,12 @@ async def test_missed_empty_draw_recovers_immediately_without_a_new_broadcast() 
         scalar_values=[lottery, draw, None, jackpot, lottery, draw, jackpot, fund],
         scalar_collections=[[], [], []],
     )
+    session.execute = AsyncMock()
     result = await LotterySettlementService(cast(AsyncSession, session)).settle(
         draw.id, now=now
     )
+    session.execute.assert_awaited_once()
+    assert "ticket_id IS NULL" in str(session.execute.call_args.args[0])
     assert not result.already_completed
     assert draw.status == DrawStatus.COMPLETED
     assert draw.executed_at == draw.scheduled_at

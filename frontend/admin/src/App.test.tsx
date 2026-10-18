@@ -419,15 +419,15 @@ it("lets the owner choose the auto-play ticket count and shows its state", async
   await waitFor(() => expect(adminApi.setAutoPlay).toHaveBeenCalledWith("player", true, 3, "Пожелание игрока"));
 });
 
-it("summarizes Bingo by stages and keeps the full ball protocol collapsed", async () => {
+it.each([false, true])("summarizes Bingo by stages and keeps the full ball protocol collapsed (current=%s)", async (current) => {
   const bingoLottery: Lottery = { ...lottery, id: "bingo-lottery", code: "bingo", name: "Casper Bingo", kind: "DAILY" };
   const bingoDraw = {
-    id: "bingo-draw", lottery_id: bingoLottery.id, lottery_code: "bingo", lottery_name: "Casper Bingo", public_number: 18, status: "COMPLETED", scheduled_at: "2026-09-14T19:00:00Z", sales_close_at: "2026-09-14T18:58:00Z", executed_at: "2026-09-14T19:03:00Z", winning_numbers: Array.from({ length: 58 }, (_, index) => index + 1), ticket_count: 2, total_sales: 100_000, total_payout: 600_000, jackpot_opening: 10_000_000, jackpot_closing: 10_100_000, distribution_opening: 0, distribution_closing: 0, reserve_used: 0, kasper_fund_used: 600_000, correlation_id: "bingo-correlation", jackpot_amount: null,
+    ruleset_code: current ? "bingo_12_60_economy_v2" : "bingo_12_60", id: "bingo-draw", lottery_id: bingoLottery.id, lottery_code: "bingo", lottery_name: "Casper Bingo", public_number: 18, status: "COMPLETED", scheduled_at: "2026-09-14T19:00:00Z", sales_close_at: "2026-09-14T18:58:00Z", executed_at: "2026-09-14T19:03:00Z", winning_numbers: Array.from({ length: 58 }, (_, index) => index + 1), ticket_count: 2, total_sales: 100_000, total_payout: 600_000, jackpot_opening: 10_000_000, jackpot_closing: 10_100_000, distribution_opening: 0, distribution_closing: 0, reserve_used: 0, kasper_fund_used: 600_000, correlation_id: "bingo-correlation", jackpot_amount: null,
   };
   vi.mocked(adminApi.lotteries).mockResolvedValue([lottery, bingoLottery]);
   vi.mocked(adminApi.draws).mockResolvedValue([bingoDraw]);
   vi.mocked(adminApi.draw).mockResolvedValue({ draw: bingoDraw, tickets: [
-    { id: "winner", public_number: 101, user_id: "user-a", numbers: [1,2,3,4,5,6,7,8,9,10,11,12], purchase_price: 50_000, matches: 12, prize_amount: 600_000, bingo_result: { moves: [16, 31, 40], amounts: [100_000, 500_000, 0] } },
+    { id: "winner", public_number: 101, user_id: "user-a", numbers: [1,2,3,4,5,6,7,8,9,10,11,12], purchase_price: 50_000, matches: 12, prize_amount: 600_000, bingo_result: { moves: [16, 31, 58], amounts: current ? [50_000, 100_000, 0, 20_000] : [100_000, 500_000, 0] } },
     { id: "loser", public_number: 102, user_id: "user-b", numbers: [1,2,3,4,5,6,7,8,9,10,59,60], purchase_price: 50_000, matches: 10, prize_amount: 0, bingo_result: { moves: [20, 61, 61], amounts: [0, 0, 0] } },
   ] });
   render(<App />);
@@ -438,6 +438,7 @@ it("summarizes Bingo by stages and keeps the full ball protocol collapsed", asyn
   expect(within(dialog).getByText("58 ходов")).toBeInTheDocument();
   expect(within(dialog).getByText("Не выпали: 59 · 60")).toBeInTheDocument();
   expect(within(dialog).getByText("РАННЯЯ СТРОКА")).toBeInTheDocument();
+  if (current) expect(within(dialog).getByText("ПОЛНАЯ КАРТОЧКА · 58")).toBeInTheDocument();
   expect(within(dialog).getByText("Выигрышные · 1")).toBeInTheDocument();
   expect(within(dialog).getByText("№0101")).toBeInTheDocument();
   expect(within(dialog).queryByText("№0102")).not.toBeInTheDocument();

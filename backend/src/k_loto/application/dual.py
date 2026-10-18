@@ -10,11 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from k_loto.application.weekly import KASPER_FUND_ID, SettlementResult, _ledger_entry
 from k_loto.domain.draw_state import ensure_draw_transition
 from k_loto.domain.dual import (
-    DUAL_JACKPOT,
     dual_match_code,
     dual_matches,
     dual_phase,
     dual_prize,
+    dual_terms,
 )
 from k_loto.domain.enums import (
     DrawStatus,
@@ -28,7 +28,6 @@ from k_loto.domain.errors import (
     InsufficientReserve,
     InvalidStateTransition,
 )
-from k_loto.domain.lottery_rules import DUAL_RULES
 from k_loto.infrastructure.database.models import (
     Balance,
     Draw,
@@ -56,8 +55,8 @@ async def settle_dual_draw(
             already_completed=True,
         )
     snapshot = draw.configuration_snapshot or {}
-    if snapshot.get("ruleset_code", lottery.ruleset_code) != DUAL_RULES.code:
-        raise ConfigurationError("Casper Dual draw rules snapshot is invalid.")
+    ruleset_code = snapshot.get("ruleset_code", lottery.ruleset_code)
+    _, max_prize = dual_terms(ruleset_code)
     phase = dual_phase(draw.scheduled_at)
     if draw.winning_numbers is None:
         raise ConfigurationError("Casper Dual outcome has not been committed.")
@@ -100,11 +99,17 @@ async def settle_dual_draw(
             completed.append(
                 (
                     ticket,
-                    dual_prize(ticket.dual_night_matches, ticket.dual_dawn_matches),
+                    dual_prize(
+                        ticket.dual_night_matches,
+                        ticket.dual_dawn_matches,
+                        ruleset_code=(first.configuration_snapshot or {}).get(
+                            "ruleset_code", ruleset_code
+                        ),
+                    ),
                 )
             )
     total_payout = sum(amount for _, amount in completed)
-    jackpot_winners = [ticket for ticket, amount in completed if amount == DUAL_JACKPOT]
+    jackpot_winners = [ticket for ticket, amount in completed if amount == max_prize]
     jackpot = await session.scalar(
         select(JackpotAccount)
         .where(JackpotAccount.lottery_id == lottery.id)
@@ -112,8 +117,8 @@ async def settle_dual_draw(
     )
     if (
         jackpot is None
-        or jackpot.balance != DUAL_JACKPOT
-        or jackpot.base_amount != DUAL_JACKPOT
+        or jackpot.balance != max_prize
+        or jackpot.base_amount != max_prize
     ):
         raise ConfigurationError("Casper Dual fixed jackpot account is invalid.")
     fund = await session.scalar(
@@ -156,7 +161,7 @@ async def settle_dual_draw(
         before = balance.amount
         balance.amount += amount
         balance.version += 1
-        is_jackpot = amount == DUAL_JACKPOT
+        is_jackpot = amount == max_prize
         session.add(
             _ledger_entry(
                 operation_id=operation_id,
@@ -215,13 +220,13 @@ async def settle_dual_draw(
                 draw_id=draw.id,
                 details={
                     "completed_tickets": len(completed),
-                    "fixed_jackpot": DUAL_JACKPOT,
+                    "fixed_jackpot": max_prize,
                 },
             )
         )
     if jackpot_winners:
         # The first jackpot is paid by its dedicated account, then restored from
-        # the Kasper Fund. Additional same-draw winners are fund-backed at 5m each.
+        # the Kasper Fund. Additional winners receive the same fixed maximum.
         session.add(
             _ledger_entry(
                 operation_id=operation_id,
@@ -229,7 +234,7 @@ async def settle_dual_draw(
                 account_kind=LedgerAccountKind.JACKPOT,
                 account_id=jackpot.id,
                 transaction_type=TransactionType.JACKPOT_PAYOUT,
-                before=DUAL_JACKPOT,
+                before=max_prize,
                 after=0,
                 lottery_id=lottery.id,
                 draw_id=draw.id,
@@ -244,7 +249,7 @@ async def settle_dual_draw(
                 account_id=jackpot.id,
                 transaction_type=TransactionType.SYSTEM_ADJUSTMENT,
                 before=0,
-                after=DUAL_JACKPOT,
+                after=max_prize,
                 lottery_id=lottery.id,
                 draw_id=draw.id,
                 details={"reason": "fixed Casper Dual jackpot refill"},
@@ -256,10 +261,10 @@ async def settle_dual_draw(
                 id=uuid4(),
                 draw_id=draw.id,
                 lottery_id=lottery.id,
-                jackpot_amount=DUAL_JACKPOT * len(jackpot_winners),
+                jackpot_amount=max_prize * len(jackpot_winners),
                 winner_ticket_count=len(jackpot_winners),
                 winner_user_count=len({ticket.user_id for ticket in jackpot_winners}),
-                base_jackpot_after=DUAL_JACKPOT,
+                base_jackpot_after=max_prize,
                 occurred_at=timestamp,
             )
         )
@@ -271,8 +276,8 @@ async def settle_dual_draw(
     draw.winning_numbers = list(winning)
     draw.executed_at = timestamp
     draw.total_payout = total_payout
-    draw.jackpot_opening = DUAL_JACKPOT
-    draw.jackpot_closing = DUAL_JACKPOT
+    draw.jackpot_opening = max_prize
+    draw.jackpot_closing = max_prize
     draw.distribution_opening = 0
     draw.distribution_closing = 0
     draw.reserve_used = 0

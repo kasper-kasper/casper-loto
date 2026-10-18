@@ -10,6 +10,23 @@ DUAL_PRICE = 20_000
 DUAL_JACKPOT = 5_000_000
 DUAL_PURCHASE_DRAW_WINDOW = 5
 DUAL_PAYOUTS = {11: 10_000, 12: 100_000, 21: 100_000, 22: DUAL_JACKPOT}
+DUAL_ECONOMY_CODE = "casper_dual_2_12_2_12_economy_v2"
+DUAL_ECONOMY_PRICE = 40_000
+DUAL_ECONOMY_MAX_PRIZE = 10_000_000
+DUAL_ECONOMY_PAYOUTS = {
+    11: 300_000,
+    12: 1_000_000,
+    21: 1_000_000,
+    22: DUAL_ECONOMY_MAX_PRIZE,
+}
+
+
+def dual_terms(ruleset_code: str) -> tuple[int, int]:
+    if ruleset_code == DUAL_ECONOMY_CODE:
+        return DUAL_ECONOMY_PRICE, DUAL_ECONOMY_MAX_PRIZE
+    if ruleset_code == "casper_dual_2_12_2_12":
+        return DUAL_PRICE, DUAL_JACKPOT
+    raise ConfigurationError("Unknown Casper Dual rules version.")
 
 
 def dual_phase(scheduled_at: datetime) -> str:
@@ -36,5 +53,14 @@ def dual_match_code(night_matches: int, dawn_matches: int) -> int:
     return night_matches * 10 + dawn_matches
 
 
-def dual_prize(night_matches: int, dawn_matches: int) -> int:
-    return DUAL_PAYOUTS.get(dual_match_code(night_matches, dawn_matches), 0)
+def dual_prize(
+    night_matches: int,
+    dawn_matches: int,
+    *,
+    ruleset_code: str = "casper_dual_2_12_2_12",
+) -> int:
+    dual_terms(ruleset_code)
+    payouts = (
+        DUAL_ECONOMY_PAYOUTS if ruleset_code == DUAL_ECONOMY_CODE else DUAL_PAYOUTS
+    )
+    return payouts.get(dual_match_code(night_matches, dawn_matches), 0)

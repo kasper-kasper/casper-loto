@@ -198,10 +198,13 @@ class Lottery(TimestampMixin, Base):
         CheckConstraint("next_ticket_number >= 1", name="next_ticket_number_positive"),
         CheckConstraint("char_length(ruleset_code) > 0", name="ruleset_code_not_empty"),
         CheckConstraint(
-            "(code <> 'dual' AND ruleset_code <> 'casper_dual_2_12_2_12') OR "
-            "(code = 'dual' AND ruleset_code = 'casper_dual_2_12_2_12' AND "
-            "ticket_price IS NOT NULL AND ticket_price = 20000 AND "
-            "numbers_to_pick = 4 AND max_number = 24)",
+            "(code <> 'dual' AND ruleset_code NOT IN "
+            "('casper_dual_2_12_2_12','casper_dual_2_12_2_12_economy_v2')) OR "
+            "(code = 'dual' AND numbers_to_pick = 4 AND max_number = 24 AND "
+            "ticket_price IS NOT NULL AND "
+            "((ruleset_code = 'casper_dual_2_12_2_12' AND ticket_price = 20000) OR "
+            "(ruleset_code = 'casper_dual_2_12_2_12_economy_v2' "
+            "AND ticket_price = 40000)))",
             name="dual_configuration",
         ),
         Index("ix_lotteries_ruleset_code", "ruleset_code"),

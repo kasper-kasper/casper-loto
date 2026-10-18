@@ -22,7 +22,7 @@ from sqlalchemy.dialects.postgresql import ARRAY, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from k_loto.application.query_scope import LotteryScope, lottery_scope
-from k_loto.domain.dual import DUAL_JACKPOT, DUAL_PRICE
+from k_loto.domain.dual import dual_terms
 from k_loto.domain.enums import (
     AuditAction,
     DrawStatus,
@@ -453,8 +453,13 @@ class AdminMutationService:
             )
             if lottery is None:
                 raise LookupError("Lottery does not exist.")
-            if lottery.code == "dual" and target_amount != DUAL_JACKPOT:
-                raise ValueError("Casper Dual jackpot is fixed at 5000000 CAS.")
+            if (
+                lottery.code == "dual"
+                and target_amount != dual_terms(lottery.ruleset_code)[1]
+            ):
+                raise ValueError(
+                    "Casper Dual maximum prize is fixed by its rules version."
+                )
             jackpot = await self._session.scalar(
                 select(JackpotAccount)
                 .where(JackpotAccount.lottery_id == lottery_id)
@@ -534,10 +539,10 @@ class AdminMutationService:
             if lottery is None or jackpot is None:
                 raise LookupError("Lottery or jackpot account does not exist.")
             if lottery.code == "dual" and (
-                ticket_price != DUAL_PRICE or base_jackpot != DUAL_JACKPOT
+                (ticket_price, base_jackpot) != dual_terms(lottery.ruleset_code)
             ):
                 raise ValueError(
-                    "Casper Dual price and jackpot are fixed at 20000 and 5000000 CAS."
+                    "Dual price and maximum prize are fixed by its rules version."
                 )
             rules = get_lottery_rules(lottery.ruleset_code)
             if ticket_price % rules.price_divisor:
@@ -1429,7 +1434,9 @@ class AdminQueryService:
             .subquery()
         )
 
-    async def draw_ticket_summary(self, draw_id: UUID, code: str) -> dict[str, Any]:
+    async def draw_ticket_summary(
+        self, draw_id: UUID, code: str, ruleset_code: str | None = None
+    ) -> dict[str, Any]:
         jackpot_ids = self._draw_jackpot_tickets(draw_id)
         columns = [
             func.count(Ticket.id),
@@ -1437,10 +1444,14 @@ class AdminQueryService:
             func.count(Ticket.id).filter(Ticket.prize_amount > 0),
             func.count(jackpot_ids.c.ticket_id),
         ]
+        stages = 0
         if code == "bingo":
-            for stage in range(3):
+            from k_loto.domain.bingo import BINGO_ECONOMY_CODE
+
+            stages = 4 if ruleset_code == BINGO_ECONOMY_CODE else 3
+            for stage in range(stages):
                 amount = cast(Ticket.bingo_result["amounts"][stage].astext, BigInteger)
-                move = cast(Ticket.bingo_result["moves"][stage].astext, Integer)
+                move = cast(Ticket.bingo_result["moves"][min(stage, 2)].astext, Integer)
                 columns.extend(
                     (
                         func.count(Ticket.id).filter(amount > 0),
@@ -1467,7 +1478,7 @@ class AdminQueryService:
                     "payout": int(row[5 + stage * 3]),
                     "first_move": row[6 + stage * 3],
                 }
-                for stage in range(3)
+                for stage in range(stages)
             ]
             if code == "bingo"
             else [],

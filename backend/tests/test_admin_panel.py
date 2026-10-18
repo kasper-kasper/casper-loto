@@ -172,13 +172,33 @@ async def test_draw_detail_exposes_bingo_stage_result() -> None:
     assert tickets[0].is_jackpot_winner is True
 
 
-async def test_draw_summary_counts_all_rows_without_hydrating_ticket_objects() -> None:
+@pytest.mark.parametrize("current", [False, True])
+async def test_draw_summary_counts_all_rows_without_hydrating_ticket_objects(
+    current,
+) -> None:
     fake = FakeSession(
         scalar_values=[],
-        execute_rows=[(1000, 12, 100, 1, 80, 8000, 10, 20, 4000, 30, 1, 5000, 45)],
+        execute_rows=[
+            (
+                1000,
+                12,
+                100,
+                1,
+                80,
+                8000,
+                10,
+                20,
+                4000,
+                30,
+                1,
+                5000,
+                45,
+                *([70, 1_400_000, 58] if current else []),
+            )
+        ],
     )
     summary = await AdminQueryService(cast(AsyncSession, fake)).draw_ticket_summary(
-        UUID(int=71), "bingo"
+        UUID(int=71), "bingo", "bingo_12_60_economy_v2" if current else None
     )
     assert summary["total"] == 1000 and summary["participants"] == 12
     assert summary["winners"] == 100 and summary["jackpot_winners"] == 1
@@ -187,6 +207,12 @@ async def test_draw_summary_counts_all_rows_without_hydrating_ticket_objects() -
         "payout": 5000,
         "first_move": 45,
     }
+    if current:
+        assert summary["bingo_stages"][3] == {
+            "winners": 70,
+            "payout": 1_400_000,
+            "first_move": 58,
+        }
 
 
 async def test_ledger_cursor_orders_timestamp_ties_and_preserves_owner_filter() -> None:
@@ -549,8 +575,11 @@ async def test_dual_rejects_invalid_configuration_without_mutation(price, base):
     assert not fake.added
 
 
-async def test_dual_rejects_arbitrary_jackpot_adjustment():
-    lottery = Lottery(id=UUID(int=37), code="dual")
+@pytest.mark.parametrize(
+    "ruleset", ["casper_dual_2_12_2_12", "casper_dual_2_12_2_12_economy_v2"]
+)
+async def test_dual_rejects_arbitrary_jackpot_adjustment(ruleset):
+    lottery = Lottery(id=UUID(int=37), code="dual", ruleset_code=ruleset)
     fake = FakeSession(scalar_values=[None, lottery])
     with pytest.raises(ValueError, match="fixed"):
         await AdminMutationService(cast(AsyncSession, fake), UUID(int=20)).set_jackpot(

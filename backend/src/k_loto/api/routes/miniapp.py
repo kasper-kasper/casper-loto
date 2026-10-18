@@ -312,8 +312,8 @@ class PurchaseRequest(BaseModel):
 
 class BingoPurchaseRequest(BaseModel):
     draw_id: UUID
-    ticket_ids: list[UUID] = Field(default_factory=list, max_length=50)
-    quantity: int | None = Field(default=None, ge=1, le=50)
+    ticket_ids: list[UUID] = Field(default_factory=list, max_length=75)
+    quantity: int | None = Field(default=None, ge=1, le=75)
     required_numbers: list[int] = Field(default_factory=list, max_length=5)
     idempotency_key: str = Field(min_length=1, max_length=100)
 

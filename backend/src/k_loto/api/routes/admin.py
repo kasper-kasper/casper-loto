@@ -999,7 +999,7 @@ async def draw_detail(
     except LookupError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from error
     summary = (
-        await service.draw_ticket_summary(draw_id, draw.lottery_code)
+        await service.draw_ticket_summary(draw_id, draw.lottery_code, draw.ruleset_code)
         if include_summary
         else None
     )

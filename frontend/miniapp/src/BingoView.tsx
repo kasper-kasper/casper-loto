@@ -15,7 +15,7 @@ import { broadcastPreviewConfig } from "./broadcastPreview";
 export interface BingoResult { moves: number[]; amounts: number[] }
 interface PrintedTicket { id: string; public_number?: number; pool_position?: number; numbers: number[]; price?: number; result?: BingoResult | null }
 export interface BingoInventory { draw_id: string; draw_number: number; scheduled_at: string; price: number; has_more: boolean; kasper_set_available: boolean; tickets: PrintedTicket[] }
-export interface BingoFeed { rules: { total_moves: number; jackpot_move: number; tour_moves: number[]; tour_prizes: number[]; pool_size: number }; server_time: string; draw: null | { draw_number: number; scheduled_at: string; complete: boolean; numbers: number[]; total_moves: number; jackpot_move: number; tour_prizes: number[]; stages: { move: number | null; winners: number }[]; tickets: PrintedTicket[] } }
+export interface BingoFeed { rules: { total_moves: number; jackpot_move: number; tour_moves: number[]; tour_prizes: number[]; stage_moves?: number[]; fixed_per_card?: boolean; pool_size: number }; server_time: string; draw: null | { draw_number: number; scheduled_at: string; complete: boolean; numbers: number[]; total_moves: number; jackpot_move: number; tour_prizes: number[]; stages: { move: number | null; winners: number }[]; tickets: PrintedTicket[] } }
 
 function serial(ticket: number) { return `KB-${String(ticket).padStart(6, "0")}`; }
 
@@ -40,7 +40,7 @@ function Paper({ ticket, draw, date, price, revealed = [], current, result, comp
     <footer><span><small>{ticket.public_number ? "СЕРИЙНЫЙ НОМЕР" : "ДО ПОКУПКИ"}</small><b>{ticket.public_number ? serial(ticket.public_number) : "ВАРИАНТ БИЛЕТА"}</b></span><span><small>СТОИМОСТЬ</small><b>{formatCas(price)}</b></span></footer>
     {!compact && <div className="bingo-paper-seal"><span>✦</span> Счастье любит присутствие <span>✦</span></div>}
     {!compact && !result && revealed.length > 0 && <div className="bingo-ticket-progress"><span>До строки <b>{missingRows[0]}</b></span><span>До двух <b>{missingRows[0] + missingRows[1]}</b></span><span>До полного <b>{missingRows.reduce((a, b) => a + b, 0)}</b></span></div>}
-    {result && <div className="bingo-ticket-result"><strong>{result.amounts.some(Boolean) ? `Ваш выигрыш · ${formatCas(result.amounts.reduce((a, b) => a + b, 0))}` : "В этот раз без выигрыша"}</strong><small>Совпало {ticket.numbers.filter(n => hits.has(n)).length} из 12</small>{result.amounts.map((amount, i) => amount > 0 && <p key={i}>{["Одна строка", "Две строки", "Джекпот"][i]} <b>{formatCas(amount)}</b></p>)}</div>}
+    {result && <div className="bingo-ticket-result"><strong>{result.amounts.some(Boolean) ? `Ваш выигрыш · ${formatCas(result.amounts.reduce((a, b) => a + b, 0))}` : "В этот раз без выигрыша"}</strong><small>Совпало {ticket.numbers.filter(n => hits.has(n)).length} из 12</small>{result.amounts.map((amount, i) => amount > 0 && <p key={i}>{["Одна строка", "Две строки", "Джекпот", "Полная карточка"][i]} <b>{formatCas(amount)}</b></p>)}</div>}
   </article>;
 }
 
@@ -84,7 +84,17 @@ export function BingoView({ lottery, initData, now, balance, onClose, onPurchase
   const [favoriteError, setFavoriteError] = useState("");
   const [retrySelection, setRetrySelection] = useState<{ ticketIds?: string[]; quantity?: number; requiredNumbers?: number[] } | null>(null);
   const pending = useRef<{ key: string; selection: { ticketIds?: string[]; quantity?: number; requiredNumbers?: number[] }; draw: string } | null>(null);
-  const refreshMine = useCallback(async () => { const page = await miniAppApi.tickets(initData, "active", "bingo"); setMine(page.tickets); }, [initData]);
+  const refreshMine = useCallback(async () => {
+    const tickets: Ticket[] = [];
+    let position: number | string = 0;
+    while (true) {
+      const page = await miniAppApi.tickets(initData, "active", "bingo", false, position);
+      tickets.push(...page.tickets);
+      if (!page.has_more || !page.tickets.length) break;
+      position = page.next_cursor ?? tickets.length;
+    }
+    setMine(tickets);
+  }, [initData]);
   useEffect(() => {
     const resolved = (event: Event) => {
       const detail = (event as CustomEvent<{ path: string }>).detail;
@@ -135,11 +145,11 @@ export function BingoView({ lottery, initData, now, balance, onClose, onPurchase
   const total = selected.length * price;
   const available = Math.max(0, lottery.max_tickets_per_user_per_draw - lottery.player_ticket_count);
   const affordable = price > 0 ? Math.floor(balance / price) : 0;
-  const quickAll = Math.min(available, affordable);
+  const quickAll = Math.min(available, affordable, lottery.max_tickets_per_purchase);
   const hasFavoriteNumber = favoriteInputs.some(value => value.trim() !== "");
   const toggle = (ticket: PrintedTicket) => {
     if (busy || pending.current) return;
-    setSelected(current => current.some(t => t.id === ticket.id) ? current.filter(t => t.id !== ticket.id) : current.length < available ? [...current, ticket] : current);
+    setSelected(current => current.some(t => t.id === ticket.id) ? current.filter(t => t.id !== ticket.id) : current.length < Math.min(available, lottery.max_tickets_per_purchase) ? [...current, ticket] : current);
   };
   const purchase = async (selection: { ticketIds?: string[]; quantity?: number; requiredNumbers?: number[] }) => {
     if (!inventory || busy) return;
@@ -208,11 +218,11 @@ export function BingoView({ lottery, initData, now, balance, onClose, onPurchase
       {live ? <>
         <div className="bingo-draw-stage"><span className="bingo-live-status">{live.complete ? "ТИРАЖ ЗАВЕРШЁН" : "● ЭФИР"}</span><div className="bingo-current-ball" key={live.numbers.length}>{live.numbers.at(-1) ?? "✦"}</div><p>ХОД <strong>{live.numbers.length}</strong> / {live.total_moves}</p><div className="bingo-live-progress"><i style={{ width: `${live.numbers.length / live.total_moves * 100}%` }} /></div><div className="bingo-last-balls">{live.numbers.slice(-6).reverse().map((number, index) => <span className={index === 0 ? "latest" : ""} key={number}>{String(number).padStart(2, "0")}</span>)}</div></div>
         {liveTicket ? <><div className="bingo-live-controls"><button type="button" onClick={() => { setAutoBest(false); setLiveIndex(Math.max(0, shownLiveIndex - 1)); }} disabled={shownLiveIndex === 0} aria-label="Предыдущий билет">←</button><span>Билет {shownLiveIndex + 1} / {live.tickets.length}</span><button type="button" aria-pressed={autoBest} onClick={() => setAutoBest(value => !value)}>Авто</button><button type="button" onClick={() => { setAutoBest(false); setLiveIndex(Math.min(live.tickets.length - 1, shownLiveIndex + 1)); }} disabled={shownLiveIndex >= live.tickets.length - 1} aria-label="Следующий билет">→</button></div><Paper ticket={liveTicket} draw={live.draw_number} date={live.scheduled_at} price={liveTicket.price ?? price} revealed={live.numbers} current={live.numbers.at(-1)} result={liveTicket.result} /></> : <div className="bingo-empty">В этом тираже у вас нет билетов. Смотреть эфир можно без покупки.</div>}
-        <div className="bingo-stage-results">{live.stages.map((stage, index) => { const cutoff = index === 2 ? live.jackpot_move : rules?.tour_moves[index] ?? [18, 34][index]; return <div key={index}><span>{["Строка", "Две строки", "Джекпот"][index]} · {cutoff}</span><b>{stage.winners ? `${stage.winners} бил.` : stage.move ? index === 2 ? "Перенос" : "Нет" : "В игре"}</b></div>; })}</div>
+        <div className="bingo-stage-results">{live.stages.map((stage, index) => { const cutoff = rules?.stage_moves?.[index] ?? (index === 2 ? live.jackpot_move : [18, 34, 28, 58][index]); return <div key={index}><span>{["Строка", "Две строки", "Джекпот", "Полная карточка"][index]} · {cutoff}</span><b>{stage.winners ? `${stage.winners} бил.` : stage.move ? index === 2 ? "Перенос" : "Нет" : "В игре"}</b></div>; })}</div>
         <details className="bingo-all-balls"><summary>Все выпавшие числа · {live.numbers.length}</summary><div>{live.numbers.map(number => <span key={number}>{number}</span>)}</div>{live.complete && <p>Не выпали: {Array.from({ length: 60 }, (_, index) => index + 1).filter(number => !live.numbers.includes(number)).join(" и ")}</p>}</details>
       </> : <div className="bingo-empty">Эфир начнётся по расписанию.</div>}
     </section>}
-    {tab !== "live" && <details className="bingo-rules"><summary>Коротко о правилах <span>+</span></summary><p>Строка до 18-го хода — 100 000 CAS. Две строки до 34-го — 500 000 CAS. Все подходящие билеты делят приз.</p><p>Полный билет до 28-го хода делит джекпот. Участвуют только купленные билеты.</p></details>}
+    {tab !== "live" && <details className="bingo-rules"><summary>Коротко о правилах <span>+</span></summary>{lottery.ruleset_code === "bingo_12_60_economy_v2" ? <><p>Строка до 18-го хода включительно — 50 000 CAS. Две строки до 34-го — 100 000 CAS. Все 12 чисел до 58-го — 20 000 CAS.</p><p>Каждая выигравшая карточка получает полную фиксированную выплату. Выплаты по категориям суммируются. 40% стоимости карточки пополняют джекпот, 60% сгорают.</p></> : <p>Строка до 18-го хода — 100 000 CAS. Две строки до 34-го — 500 000 CAS. Все подходящие билеты делят приз.</p>}<p>Полный билет до 28-го хода делит джекпот. Участвуют только купленные билеты.</p></details>}
     {opened && <PaperDialog onClose={() => setOpened(null)}><BingoEdition ticket={opened} draw={mine.find(t => t.id === opened.id)?.draw_number ?? inventory?.draw_number ?? lottery.draw_number ?? 0} date={mine.find(t => t.id === opened.id)?.scheduled_at ?? inventory?.scheduled_at ?? lottery.scheduled_at ?? new Date().toISOString()} price={opened.price ?? price} /></PaperDialog>}
   </main>;
 }

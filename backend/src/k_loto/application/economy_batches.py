@@ -33,6 +33,7 @@ class PausedEconomyBatchService:
     step: str
     terms: EconomyTerms
     per_draw_limit: int
+    per_purchase_limit: int | None = None
 
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
@@ -147,7 +148,7 @@ class PausedEconomyBatchService:
                 jackpot.base_amount = base
                 lottery.ticket_price = price
                 lottery.ruleset_code = rule.code
-                lottery.max_tickets_per_purchase = min(
+                lottery.max_tickets_per_purchase = self.per_purchase_limit or min(
                     lottery.max_tickets_per_purchase, self.per_draw_limit
                 )
                 lottery.max_tickets_per_user_per_draw = self.per_draw_limit
@@ -165,7 +166,10 @@ class PausedEconomyBatchService:
                         "per_purchase": lottery.max_tickets_per_purchase,
                         "per_draw": self.per_draw_limit,
                         "jackpot_share_cas": rule.jackpot_contribution(price),
-                        "burned_cas": price - rule.jackpot_contribution(price),
+                        "burned_cas": 0
+                        if code == "dual"
+                        else price - rule.jackpot_contribution(price),
+                        "kasper_fund_cas": price if code == "dual" else 0,
                     },
                 )
             result = {

@@ -12,7 +12,7 @@ from k_loto.application.economy import require_open, schedule_checkpoint
 from k_loto.application.ports import SecureNumberGenerator
 from k_loto.application.purchase_guard import bingo_purchase_key, guard_attempt
 from k_loto.domain.draw_state import ensure_draw_transition
-from k_loto.domain.dual import DUAL_PRICE, DUAL_PURCHASE_DRAW_WINDOW, dual_phase
+from k_loto.domain.dual import DUAL_PURCHASE_DRAW_WINDOW, dual_phase, dual_terms
 from k_loto.domain.enums import (
     DrawStatus,
     InAppNotificationType,
@@ -82,10 +82,13 @@ def draw_configuration_snapshot(lottery: Lottery, base_jackpot: int) -> dict[str
         "economy_epoch": lottery.economy_epoch or 1,
     }
     if lottery.code == "bingo":
-        from k_loto.domain.bingo import JACKPOT_MOVE, TOUR_MOVES
+        from k_loto.domain.bingo import public_rules
 
-        snapshot["bingo_tour_moves"] = list(TOUR_MOVES)
-        snapshot["bingo_jackpot_move"] = JACKPOT_MOVE
+        terms = public_rules(lottery.ruleset_code)
+        snapshot["bingo_tour_moves"] = terms["tour_moves"]
+        snapshot["bingo_jackpot_move"] = terms["jackpot_move"]
+        snapshot["bingo_tour_prizes"] = terms["tour_prizes"]
+        snapshot["bingo_fixed_per_card"] = terms["fixed_per_card"]
     return snapshot
 
 
@@ -462,12 +465,14 @@ class WeeklyTicketPurchaseService:
 
             dual_second_draw: Draw | None = None
             if lottery.code == "dual":
+                dual_code = _snapshot_value(draw, "ruleset_code", lottery.ruleset_code)
+                dual_price, _ = dual_terms(dual_code)
                 if (
                     int(_snapshot_value(draw, "ticket_price", lottery.ticket_price))
-                    != DUAL_PRICE
+                    != dual_price
                 ):
                     raise ConfigurationError(
-                        "Casper Dual ticket price snapshot must be 20,000 CAS."
+                        "Casper Dual ticket price does not match its rules version."
                     )
                 expected_at = next_draw_at(
                     lottery.kind, draw.scheduled_at, lottery.schedule
@@ -515,6 +520,15 @@ class WeeklyTicketPurchaseService:
                     dual_second_draw.scheduled_at
                 ):
                     raise ConfigurationError("Casper Dual rounds must alternate.")
+                if (
+                    _snapshot_value(
+                        dual_second_draw, "ruleset_code", lottery.ruleset_code
+                    )
+                    != dual_code
+                ):
+                    raise ConfigurationError(
+                        "Casper Dual rounds must share one economy version."
+                    )
                 if draw.sales_close_at <= timestamp:
                     raise NoAvailableDraw(
                         "Casper Dual sales are closed for this round."
@@ -1176,6 +1190,10 @@ class WeeklySettlementService:
             if sum(entry.amount for entry in ledger_entries) != 0:
                 raise ConfigurationError("Draw ledger does not balance.")
             self._session.add_all(ledger_entries)
+            if lottery.code == "bingo":
+                from k_loto.application.bingo import delete_unused_cards
+
+                await delete_unused_cards(self._session, draw)
             fast_lottery = is_fast_lottery(lottery.code)
             preferences = {
                 preference.user_id: preference

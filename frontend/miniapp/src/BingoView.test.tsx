@@ -50,6 +50,27 @@ test("the detailed ticket preserves three rows and marks only revealed numbers",
   expect(screen.getByText("Совпало 10 из 12")).toBeInTheDocument();
 });
 
+test("new Bingo cards show the full-card payout alongside the other categories", () => {
+  const ticket: Ticket = { id: "new", public_number: 75, lottery_code: "bingo", lottery_name: "Casper Bingo", draw_number: 2, scheduled_at: lottery.scheduled_at!, numbers, purchase_price: 50000, source: "MANUAL", status: "SETTLED", matches: 12, prize_amount: 170000, winning_numbers: numbers, bingo_result: { moves: [18, 34, 58], amounts: [50000, 100000, 0, 20000] } };
+  render(<BingoTicketDetail ticket={ticket} onClose={vi.fn()} />);
+  expect(screen.getByText("Ваш выигрыш · 170 000 CAS")).toBeInTheDocument();
+  expect(screen.getByText("Полная карточка")).toBeInTheDocument();
+  expect(screen.getByText("20 000 CAS")).toBeInTheDocument();
+  expect(screen.queryByText("Джекпот")).not.toBeInTheDocument();
+});
+
+test("new Bingo supports 75 cards and explains fixed stacking even when the feed is historical", async () => {
+  const current = { ...lottery, ruleset_code: "bingo_12_60_economy_v2", jackpot: 1000000000, player_ticket_count: 0, max_tickets_per_purchase: 75, max_tickets_per_user_per_draw: 75 };
+  vi.mocked(miniAppApi.bingoPurchase).mockResolvedValue({ operation_id: "op", draw_id: "draw", draw_ids: ["draw"], draw_count: 1, ticket_ids: ["ticket"], total_cost: 3750000, balance_after: 250000, already_processed: false });
+  render(<BingoView lottery={current} initData="auth" now={0} balance={4000000} onClose={vi.fn()} onPurchased={vi.fn()} />);
+  await screen.findAllByRole("button", { name: "Выбрать вариант билета" });
+  fireEvent.click(screen.getByText("Коротко о правилах"));
+  expect(screen.getByText(/Выплаты по категориям суммируются/)).toBeInTheDocument();
+  fireEvent.click(screen.getByText("Подбор по числам и наборы"));
+  fireEvent.click(screen.getByRole("button", { name: "Купить все доступные · 75" }));
+  await waitFor(() => expect(miniAppApi.bingoPurchase).toHaveBeenCalledWith("auth", "draw", { quantity: 75, requiredNumbers: [] }, expect.any(String)));
+});
+
 test("tapping a paper ticket selects it while inspect opens its detail", async () => {
   render(<BingoView lottery={lottery} initData="auth" now={0} balance={100000} onClose={vi.fn()} onPurchased={vi.fn()} />);
   const paper = (await screen.findAllByRole("button", { name: "Выбрать вариант билета" }))[0];

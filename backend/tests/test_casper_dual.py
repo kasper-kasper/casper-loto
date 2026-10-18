@@ -12,10 +12,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from k_loto.application.dual import settle_dual_draw
 from k_loto.application.weekly import LotteryTicketPurchaseService
 from k_loto.domain.dual import (
+    DUAL_ECONOMY_CODE,
     DUAL_JACKPOT,
     dual_matches,
     dual_phase,
     dual_prize,
+    dual_terms,
 )
 from k_loto.domain.enums import DrawStatus, LotteryKind, TicketSource, TicketStatus
 from k_loto.domain.errors import InvalidTicket, NoAvailableDraw
@@ -204,7 +206,19 @@ async def test_auto_play_cannot_create_an_unselected_draw() -> None:
 
 
 @pytest.mark.asyncio
-async def test_purchase_creates_one_ticket_for_two_draws_and_one_debit() -> None:
+@pytest.mark.parametrize(
+    "ruleset,counts,allowed",
+    [
+        (DUAL_RULES.code, (0, 0), True),
+        (DUAL_ECONOMY_CODE, (49, 49), True),
+        (DUAL_ECONOMY_CODE, (50, 0), False),
+        (DUAL_ECONOMY_CODE, (0, 50), False),
+    ],
+)
+async def test_purchase_creates_one_ticket_for_two_draws_and_one_debit(
+    ruleset, counts, allowed
+) -> None:
+    price, maximum = dual_terms(ruleset)
     now = datetime(2026, 9, 24, 0, 10, tzinfo=UTC)
     lottery_id = uuid4()
     user_id = uuid4()
@@ -215,15 +229,15 @@ async def test_purchase_creates_one_ticket_for_two_draws_and_one_debit() -> None
         code="dual",
         name="Casper Dual",
         kind=LotteryKind.DAILY,
-        ruleset_code=DUAL_RULES.code,
+        ruleset_code=ruleset,
         numbers_to_pick=4,
         max_number=24,
-        ticket_price=20_000,
+        ticket_price=price,
         timezone="Europe/Moscow",
         schedule={"slots": ["00:30", "07:30"]},
         sales_cutoff_minutes=2,
-        max_tickets_per_purchase=1000,
-        max_tickets_per_user_per_draw=5000,
+        max_tickets_per_purchase=50,
+        max_tickets_per_user_per_draw=50,
         is_active=True,
         next_draw_number=3,
         next_ticket_number=1,
@@ -242,7 +256,7 @@ async def test_purchase_creates_one_ticket_for_two_draws_and_one_debit() -> None
             total_sales=0,
             total_payout=0,
             reserve_used=0,
-            configuration_snapshot={"ruleset_code": DUAL_RULES.code},
+            configuration_snapshot={"ruleset_code": ruleset},
         )
 
     first = make_draw(1, first_at)
@@ -250,18 +264,29 @@ async def test_purchase_creates_one_ticket_for_two_draws_and_one_debit() -> None
     jackpot = JackpotAccount(
         id=uuid4(),
         lottery_id=lottery_id,
-        balance=DUAL_JACKPOT,
-        base_amount=DUAL_JACKPOT,
+        balance=maximum,
+        base_amount=maximum,
         version=1,
     )
     fund = KasperFundAccount(id=uuid4(), balance=10_000_000, version=1)
     balance = Balance(user_id=user_id, amount=100_000, version=1)
     session = PurchaseSession(
-        [None, lottery, jackpot, None, first, second, 0, 0, fund, balance]
+        [None, lottery, jackpot, None, first, second, *counts, fund, balance]
     )
-    result = await LotteryTicketPurchaseService(
+    service = LotteryTicketPurchaseService(
         cast(AsyncSession, session), lottery_code="dual"
-    ).purchase(
+    )
+    if not allowed:
+        with pytest.raises(InvalidTicket, match="per-player ticket limit"):
+            await service.purchase(
+                user_id=user_id,
+                combinations=[[3, 10, 15, 22]],
+                idempotency_key="overlap",
+                now=now,
+            )
+        assert not session.added and balance.amount == 100_000
+        return
+    result = await service.purchase(
         user_id=user_id,
         combinations=[[3, 10, 15, 22]],
         idempotency_key="dual-purchase",
@@ -274,12 +299,12 @@ async def test_purchase_creates_one_ticket_for_two_draws_and_one_debit() -> None
     assert tickets[0].numbers == [3, 10, 15, 22]
     assert result.draw_ids == (first.id, second.id)
     assert result.draw_count == 1
-    assert result.total_cost == 20_000
-    assert balance.amount == 80_000
-    assert fund.balance == 10_020_000
-    assert jackpot.balance == DUAL_JACKPOT
+    assert result.total_cost == price
+    assert balance.amount == 100_000 - price
+    assert fund.balance == 10_000_000 + price
+    assert jackpot.balance == maximum
     assert first.ticket_count == second.ticket_count == 1
-    assert first.total_sales == 20_000
+    assert first.total_sales == price
     assert second.total_sales == 0
 
 
@@ -329,22 +354,25 @@ def test_dual_schedule_and_two_minute_cutoff(first_phase: str) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("first_phase", ["NIGHT", "DAWN"])
+@pytest.mark.parametrize("ruleset", [DUAL_RULES.code, DUAL_ECONOMY_CODE])
 async def test_first_round_preserves_ticket_second_round_pays(
     first_phase: str,
+    ruleset: str,
 ) -> None:
+    _, maximum = dual_terms(ruleset)
     first_time = datetime(2026, 9, 23, 21, 30, tzinfo=UTC)
     if first_phase == "DAWN":
         first_time += timedelta(hours=7)
     second_time = next_draw_at(
         LotteryKind.DAILY, first_time, {"slots": ["00:30", "07:30"]}
     )
-    lottery = SimpleNamespace(id=uuid4(), ruleset_code=DUAL_RULES.code)
+    lottery = SimpleNamespace(id=uuid4(), ruleset_code=ruleset)
     first = SimpleNamespace(
         id=uuid4(),
         status=DrawStatus.DRAWING,
         winning_numbers=[3, 10],
         scheduled_at=first_time,
-        configuration_snapshot={"ruleset_code": DUAL_RULES.code},
+        configuration_snapshot={"ruleset_code": ruleset},
         public_number=1,
     )
     second = SimpleNamespace(
@@ -352,7 +380,7 @@ async def test_first_round_preserves_ticket_second_round_pays(
         status=DrawStatus.DRAWING,
         winning_numbers=[3, 10],
         scheduled_at=second_time,
-        configuration_snapshot={"ruleset_code": DUAL_RULES.code},
+        configuration_snapshot={"ruleset_code": ruleset},
         public_number=2,
     )
     ticket = SimpleNamespace(
@@ -368,9 +396,9 @@ async def test_first_round_preserves_ticket_second_round_pays(
         dual_dawn_matches=None,
     )
     jackpot = SimpleNamespace(
-        id=uuid4(), balance=DUAL_JACKPOT, base_amount=DUAL_JACKPOT, version=1
+        id=uuid4(), balance=maximum, base_amount=maximum, version=1
     )
-    fund = SimpleNamespace(id=uuid4(), balance=10_000_000, version=1)
+    fund = SimpleNamespace(id=uuid4(), balance=2 * maximum, version=1)
     first_session = SettlementSession([ticket], first, jackpot, fund)
     first_result = await settle_dual_draw(
         cast(AsyncSession, first_session),
@@ -392,12 +420,12 @@ async def test_first_round_preserves_ticket_second_round_pays(
         lottery,
         second_time,
     )
-    assert second_result.total_payout == DUAL_JACKPOT
+    assert second_result.total_payout == maximum
     assert ticket.status == TicketStatus.SETTLED
     assert ticket.matches == 22
-    assert ticket.prize_amount == DUAL_JACKPOT
-    assert jackpot.balance == DUAL_JACKPOT
-    assert fund.balance == 5_000_000
+    assert ticket.prize_amount == maximum
+    assert jackpot.balance == maximum
+    assert fund.balance == maximum
     assert second.status == DrawStatus.COMPLETED
     assert any(
         isinstance(item, LedgerTransaction)

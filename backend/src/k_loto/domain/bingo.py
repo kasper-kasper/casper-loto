@@ -7,14 +7,39 @@ from uuid import UUID
 from k_loto.domain.errors import InvalidTicket
 
 BINGO_CODE = "bingo_12_60"
+BINGO_ECONOMY_CODE = "bingo_12_60_economy_v2"
 POOL_SIZE = 2000
 DRAW_MOVES = 58
 JACKPOT_MOVE = 28
 TOUR_PRIZES = (100_000, 500_000)
 TOUR_MOVES = (18, 34)
+FIXED_TOUR_PRIZES = (50_000, 100_000, 20_000)
+FIXED_TOUR_MOVES = (18, 34, 58)
 KASPER_SET_NUMBERS = (2, 9, 16, 28)
 KASPER_SET_SIZE = 10
 KASPER_SET_INVENTORY = 100
+
+
+def stage_cutoffs(ruleset_code: str) -> tuple[int, ...]:
+    # Keep the historical jackpot slot (index 2); append the new full-card tour.
+    return (
+        (*TOUR_MOVES, JACKPOT_MOVE, DRAW_MOVES)
+        if ruleset_code == BINGO_ECONOMY_CODE
+        else (*TOUR_MOVES, JACKPOT_MOVE)
+    )
+
+
+def public_rules(ruleset_code: str) -> dict[str, object]:
+    fixed = ruleset_code == BINGO_ECONOMY_CODE
+    return {
+        "total_moves": DRAW_MOVES,
+        "jackpot_move": JACKPOT_MOVE,
+        "tour_moves": list(FIXED_TOUR_MOVES if fixed else TOUR_MOVES),
+        "tour_prizes": list(FIXED_TOUR_PRIZES if fixed else TOUR_PRIZES),
+        "stage_moves": list(stage_cutoffs(ruleset_code)),
+        "fixed_per_card": fixed,
+        "pool_size": POOL_SIZE,
+    }
 
 
 def validate_ticket(numbers: tuple[int, ...] | list[int]) -> tuple[int, ...]:
@@ -59,6 +84,8 @@ def outcomes(
     tickets: list[tuple[UUID, int, tuple[int, ...]]],
     sequence: tuple[int, ...],
     jackpot: int,
+    *,
+    fixed_per_card: bool = False,
 ) -> dict[UUID, BingoOutcome]:
     if (
         len(sequence) != DRAW_MOVES
@@ -67,19 +94,26 @@ def outcomes(
     ):
         raise InvalidTicket("Bingo draw must be an ordered permutation of 1–60.")
     moves = {tid: closing_moves(numbers, sequence) for tid, _, numbers in tickets}
-    amounts = {tid: [0, 0, 0] for tid, _, _ in tickets}
-    cutoffs = (*TOUR_MOVES, JACKPOT_MOVE)
-    for category, (pool, cutoff) in enumerate(
-        zip((*TOUR_PRIZES, jackpot), cutoffs, strict=True)
-    ):
+    amounts = {tid: [0] * (4 if fixed_per_card else 3) for tid, _, _ in tickets}
+    cutoffs = stage_cutoffs(BINGO_ECONOMY_CODE if fixed_per_card else BINGO_CODE)
+    prizes = (
+        (FIXED_TOUR_PRIZES[0], FIXED_TOUR_PRIZES[1], jackpot, FIXED_TOUR_PRIZES[2])
+        if fixed_per_card
+        else (*TOUR_PRIZES, jackpot)
+    )
+    for category, (pool, cutoff) in enumerate(zip(prizes, cutoffs, strict=True)):
         winners = sorted(
             (serial, tid)
             for tid, serial, _ in tickets
-            if moves[tid][category] <= cutoff
+            if moves[tid][min(category, 2)] <= cutoff
         )
         if not winners:
             continue
-        share, remainder = divmod(pool, len(winners))
+        share, remainder = (
+            (pool, 0)
+            if fixed_per_card and category != 2
+            else divmod(pool, len(winners))
+        )
         for index, (_, tid) in enumerate(winners):
             amounts[tid][category] = share + int(index < remainder)
     return {tid: BingoOutcome(moves[tid], tuple(amounts[tid])) for tid in moves}

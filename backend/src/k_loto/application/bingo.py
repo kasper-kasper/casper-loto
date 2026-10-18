@@ -5,26 +5,37 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from k_loto.domain.bingo import (
     DRAW_MOVES,
-    JACKPOT_MOVE,
     KASPER_SET_INVENTORY,
     KASPER_SET_NUMBERS,
     KASPER_SET_SIZE,
     POOL_SIZE,
-    TOUR_MOVES,
-    TOUR_PRIZES,
     closing_moves,
     generate_ticket,
+    public_rules,
+    stage_cutoffs,
 )
 from k_loto.domain.enums import DrawStatus
-from k_loto.domain.errors import InvalidTicket, NoAvailableDraw
+from k_loto.domain.errors import InvalidStateTransition, InvalidTicket, NoAvailableDraw
 from k_loto.infrastructure.database.models import BingoPoolTicket, Draw, Lottery, Ticket
 
 _STAGE_CACHE: dict[tuple[UUID, int], list[dict[str, int | None]]] = {}
+
+
+async def delete_unused_cards(session: AsyncSession, draw: Draw) -> None:
+    """Run under settlement locks, in the same transaction as the payouts."""
+    if draw.status != DrawStatus.COMPLETED:
+        raise InvalidStateTransition("Only completed Bingo inventory can be cleaned.")
+    await session.execute(
+        delete(BingoPoolTicket).where(
+            BingoPoolTicket.draw_id == draw.id,
+            BingoPoolTicket.ticket_id.is_(None),
+        )
+    )
 
 
 async def ensure_pool(session: AsyncSession, lottery: Lottery, draw: Draw) -> None:
@@ -158,13 +169,19 @@ class BingoQueryService:
             .order_by(Draw.scheduled_at.desc())
             .limit(1)
         )
-        rules = {
-            "total_moves": DRAW_MOVES,
-            "jackpot_move": JACKPOT_MOVE,
-            "tour_moves": list(TOUR_MOVES),
-            "tour_prizes": list(TOUR_PRIZES),
-            "pool_size": POOL_SIZE,
-        }
+        lottery = await self.session.scalar(
+            select(Lottery).where(Lottery.code == "bingo")
+        )
+        ruleset_code = (
+            (draw.configuration_snapshot or {}).get(
+                "ruleset_code", lottery.ruleset_code
+            )
+            if draw and lottery
+            else lottery.ruleset_code
+            if lottery
+            else "bingo_12_60"
+        )
+        rules = public_rules(ruleset_code)
         if draw is None:
             return {"server_time": now.isoformat(), "draw": None, "rules": rules}
         sequence = draw.winning_numbers or []
@@ -192,13 +209,13 @@ class BingoQueryService:
                 for ticket in all_tickets
             ]
             stages = []
-            for category, cutoff in enumerate((*TOUR_MOVES, JACKPOT_MOVE)):
+            for category, cutoff in enumerate(stage_cutoffs(ruleset_code)):
                 reached = count >= cutoff
                 stages.append(
                     {
                         "move": cutoff if reached else None,
                         "winners": (
-                            sum(move[category] <= cutoff for move in moves)
+                            sum(move[min(category, 2)] <= cutoff for move in moves)
                             if reached
                             else 0
                         ),
@@ -212,7 +229,7 @@ class BingoQueryService:
                     select(Ticket)
                     .where(Ticket.draw_id == draw.id, Ticket.user_id == user_id)
                     .order_by(Ticket.public_number)
-                    .limit(50)
+                    .limit(75)
                 )
             ).all()
         )
@@ -225,8 +242,8 @@ class BingoQueryService:
                 "complete": complete,
                 "numbers": sequence[:count],
                 "total_moves": DRAW_MOVES,
-                "jackpot_move": JACKPOT_MOVE,
-                "tour_prizes": list(TOUR_PRIZES),
+                "jackpot_move": rules["jackpot_move"],
+                "tour_prizes": rules["tour_prizes"],
                 "stages": stages,
                 "tickets": [
                     {

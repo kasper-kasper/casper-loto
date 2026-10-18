@@ -7,6 +7,7 @@ from types import MappingProxyType
 from typing import Protocol
 from uuid import UUID
 
+from k_loto.domain.dual import DUAL_ECONOMY_PAYOUTS
 from k_loto.domain.errors import (
     ConfigurationError,
     InsufficientBalance,
@@ -131,7 +132,7 @@ class LotteryRuleStrategy:
     def validate_combination(
         self, numbers: tuple[int, ...] | list[int]
     ) -> tuple[int, ...]:
-        if self.code == "bingo_12_60":
+        if self.code in ("bingo_12_60", "bingo_12_60_economy_v2"):
             from k_loto.domain.bingo import validate_ticket
 
             return validate_ticket(numbers)
@@ -223,7 +224,7 @@ class LotteryRuleStrategy:
         return generated[:-1] if self.server_code_max else generated
 
     def generate_combination(self, generator: NumberGenerator) -> tuple[int, ...]:
-        if self.code == "bingo_12_60":
+        if self.code in ("bingo_12_60", "bingo_12_60_economy_v2"):
             from k_loto.domain.bingo import generate_ticket
 
             return generate_ticket()
@@ -340,17 +341,18 @@ class LotteryRuleStrategy:
         reserve_balance: int,
         base_jackpot: int,
     ) -> SettlementPlan:
-        if self.code == "bingo_12_60":
-            from k_loto.domain.bingo import outcomes
+        if self.code in ("bingo_12_60", "bingo_12_60_economy_v2"):
+            from k_loto.domain.bingo import BINGO_ECONOMY_CODE, outcomes
 
             results = outcomes(
                 [(t.id, t.public_number, t.numbers) for t in tickets],
                 tuple(winning_numbers),
                 jackpot_balance,
+                fixed_per_card=self.code == BINGO_ECONOMY_CODE,
             )
             won = any(r.amounts[2] > 0 for r in results.values())
             reset = base_jackpot if won else 0
-            used = sum(sum(r.amounts[:2]) for r in results.values()) + reset
+            used = sum(sum(r.amounts) - r.amounts[2] for r in results.values()) + reset
             if used > reserve_balance:
                 raise InsufficientReserve("Kasper Fund cannot cover Bingo payouts.")
             payouts = tuple(
@@ -819,6 +821,16 @@ BINGO_RULES = LotteryRuleStrategy(
     12,
     jackpot_refill_from_reserve=True,
 )
+BINGO_ECONOMY_RULES = replace(
+    BINGO_RULES,
+    code="bingo_12_60_economy_v2",
+    jackpot_share=PayoutRatio(2, 5),
+)
+DUAL_ECONOMY_RULES = replace(
+    DUAL_RULES,
+    code="casper_dual_2_12_2_12_economy_v2",
+    fixed_payouts=MappingProxyType(DUAL_ECONOMY_PAYOUTS),
+)
 # Persisted draws continue resolving their original immutable payout versions.
 LEGACY_FLASH_V3_RULES = FAST_RULES
 LEGACY_PULSE_V4_RULES = PULSE_RULES
@@ -861,9 +873,7 @@ CLASSIC_ECONOMY_RULES = replace(
     price_divisor=1,
     jackpot_share=PayoutRatio(2, 5),
     guaranteed_payouts=MappingProxyType({}),
-    fixed_payouts=MappingProxyType(
-        {2: 30_000, 3: 140_000, 4: 1_000_000, 5: 7_000_000}
-    ),
+    fixed_payouts=MappingProxyType({2: 30_000, 3: 140_000, 4: 1_000_000, 5: 7_000_000}),
 )
 BALL_ECONOMY_RULES = replace(
     PSS_CASPER_BALL_RULES,
@@ -930,6 +940,7 @@ LOTTERY_RULES: Mapping[str, LotteryRuleStrategy] = MappingProxyType(
         rule.code: rule
         for rule in (
             BINGO_RULES,
+            BINGO_ECONOMY_RULES,
             WEEKLY_RULES,
             KASPER_GRAND_RULES,
             GRAND_FIXED_RULES,
@@ -941,6 +952,7 @@ LOTTERY_RULES: Mapping[str, LotteryRuleStrategy] = MappingProxyType(
             CLASSIC_6_36_RULES,
             CLASSIC_ECONOMY_RULES,
             DUAL_RULES,
+            DUAL_ECONOMY_RULES,
             SEPTEMBER_RULES,
             SEPTEMBER_ECONOMY_RULES,
             GROB_RULES,

@@ -21,6 +21,7 @@ from k_loto.domain.enums import DrawStatus, LedgerAccountKind, LotteryKind, Tick
 from k_loto.domain.errors import ConfigurationError, InsufficientReserve, InvalidTicket
 from k_loto.infrastructure.database.models import (
     Balance,
+    BingoPoolTicket,
     Draw,
     JackpotAccount,
     KasperFundAccount,
@@ -108,10 +109,12 @@ async def seed(now):
             code="bingo",
             name="Audit Bingo",
             kind=LotteryKind.DAILY,
-            ruleset_code="bingo_12_60",
+            ruleset_code="bingo_12_60_economy_v2",
             numbers_to_pick=12,
             max_number=60,
-            ticket_price=100_000,
+            ticket_price=50_000,
+            max_tickets_per_purchase=75,
+            max_tickets_per_user_per_draw=75,
             sales_cutoff_minutes=2,
             schedule={"slots": ["22:00"]},
             is_active=True,
@@ -123,15 +126,15 @@ async def seed(now):
         bingo_jackpot = JackpotAccount(
             id=uuid4(),
             lottery_id=bingo_lottery.id,
-            balance=1000,
-            base_amount=1000,
+            balance=1_000_000_000,
+            base_amount=1_000_000_000,
         )
         session.add(bingo_jackpot)
         session.add(
             ledger_credit(
                 account_kind=LedgerAccountKind.JACKPOT,
                 account_id=bingo_jackpot.id,
-                amount=1000,
+                amount=1_000_000_000,
                 lottery_id=bingo_lottery.id,
             )
         )
@@ -370,7 +373,34 @@ async def main():
             )
             == 0
         )
-    print("bingo: broadcast jackpot protection and balanced payout PASS")
+    async with session_factory() as session:
+        card = await session.get(Ticket, purchased.ticket_ids[0])
+        assert [card.bingo_result["amounts"][i] for i in (0, 1, 3)] == [
+            50_000,
+            100_000,
+            20_000,
+        ]
+        assert (
+            await session.scalar(
+                select(func.count(BingoPoolTicket.id)).where(
+                    BingoPoolTicket.draw_id == bingo_draw_id,
+                    BingoPoolTicket.ticket_id.is_(None),
+                )
+            )
+            == 0
+        )
+        assert (
+            await session.scalar(
+                select(func.count(BingoPoolTicket.id)).where(
+                    BingoPoolTicket.ticket_id == card.id,
+                )
+            )
+            == 1
+        )
+    print(
+        "bingo: stacked fixed prizes, jackpot protection, "
+        "unused cleanup and ledger PASS"
+    )
 
     await verify_dual(user, now)
 
@@ -414,8 +444,13 @@ async def main():
 
 
 async def verify_dual(user, now):
-    from k_loto.domain.dual import DUAL_JACKPOT, DUAL_PRICE
-    from k_loto.domain.lottery_rules import DUAL_RULES
+    from k_loto.domain.dual import (
+        DUAL_ECONOMY_MAX_PRIZE as DUAL_JACKPOT,
+    )
+    from k_loto.domain.dual import (
+        DUAL_ECONOMY_PRICE as DUAL_PRICE,
+    )
+    from k_loto.domain.lottery_rules import DUAL_ECONOMY_RULES as DUAL_RULES
 
     first_at = now.replace(hour=21, minute=30, second=0, microsecond=0) + timedelta(
         days=1
@@ -427,6 +462,8 @@ async def verify_dual(user, now):
             name="Audit Dual",
             kind=LotteryKind.DAILY,
             ruleset_code=DUAL_RULES.code,
+            max_tickets_per_purchase=50,
+            max_tickets_per_user_per_draw=50,
             numbers_to_pick=4,
             max_number=24,
             ticket_price=DUAL_PRICE,

@@ -24,7 +24,8 @@ def distribute_jackpot(
         return plan
     selected = []
     category = "all"
-    if rules.code == "bingo_12_60":
+    if rules.code in ("bingo_12_60", "bingo_12_60_economy_v2"):
+        # Preserve the approved roll-down priority: two rows, one row, all cards.
         for tour in (1, 0):
             ids = {
                 p.ticket_id

@@ -20,7 +20,7 @@ export function GameHeader({ lottery, balance, now, onClose, children, artworkOv
     <div className="play-topbar"><button className="play-back" type="button" onClick={onClose} aria-label="Вернуться к лотереям">←</button><div><h1>{lottery.name}</h1><small>{formatDrawLabel(lottery.code, lottery.draw_number ?? 0)}</small></div>{balance !== undefined && <span className="play-balance" aria-label="Баланс"><Money value={balance} compact /></span>}</div>
     <div className="play-prize-band">
       {(artworkOverride ?? artwork[lottery.code]) && <img src={artworkOverride ?? artwork[lottery.code]} alt="" decoding="async" />}
-      <div><small>Джекпот</small><strong><Money value={lottery.jackpot} compact /></strong></div>
+      <div><small>{lottery.code === "dual" ? "Максимальный выигрыш" : "Джекпот"}</small><strong><Money value={lottery.jackpot} compact /></strong></div>
       <div className="play-countdown"><small>До тиража</small><time>{countdown(lottery.scheduled_at, now)}</time></div>
     </div>
     <DistributionBadge active={lottery.is_distribution} /><div className="play-context"><time dateTime={lottery.scheduled_at ?? undefined}>{lottery.scheduled_at ? `${formatMoscow(lottery.scheduled_at)} МСК` : "Расписание готовится"}</time><div className="play-links">{children}</div></div>
