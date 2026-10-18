@@ -8,16 +8,16 @@ const result = { operation_id: "op", tickets: [
   { id: "one", public_number: 101, symbols: [4,4,4], prize_amount: 10000 },
   { id: "two", public_number: 102, symbols: [1,2,3], prize_amount: 0 },
   { id: "three", public_number: 103, symbols: [2,2,2], prize_amount: 3000 },
-], total_cost: 15000, total_prize: 13000, balance_after: 28000, already_processed: false };
+], total_cost: 90000, total_prize: 13000, balance_after: 43000, already_processed: false };
 it("shows restored safes without another purchase and clears stale retry state", async () => {
-  render(<VaultView initData="signed" balance={30000} onClose={vi.fn()} onSettled={vi.fn()} />);
+  render(<VaultView initData="signed" balance={120000} onClose={vi.fn()} onSettled={vi.fn()} />);
   await act(async () => { window.dispatchEvent(new CustomEvent("k-loto:purchase-recovered", { detail: { path: "/api/v1/miniapp/vault/purchases", receipt: result, cartIds: [] } })); });
   expect(screen.getByRole("button", { name: "Повернуть колесо сейфа № 101" })).toBeInTheDocument();
   expect(miniAppApi.vaultPurchase).not.toHaveBeenCalled();
 });
 beforeEach(() => { vi.clearAllMocks(); vi.mocked(miniAppApi.vaultHistory).mockResolvedValue([]); vi.mocked(miniAppApi.vaultPurchase).mockResolvedValue(result); });
 it("buys three once, retains partially unlocked wheel and reveals remaining without buying", async () => {
-  const settled=vi.fn(); render(<VaultView initData="signed" balance={30000} onClose={vi.fn()} onSettled={settled} />);
+  const settled=vi.fn(); render(<VaultView initData="signed" balance={120000} onClose={vi.fn()} onSettled={settled} />);
   fireEvent.click(screen.getByRole("button", {name:/3 билета.*Открыть вместе/}));
   await act(async()=>{fireEvent.click(screen.getByRole("button",{name:/Купить 3 билета/}));});
   expect(miniAppApi.vaultPurchase).toHaveBeenCalledWith("signed",3,expect.any(String));
@@ -36,15 +36,15 @@ it("buys three once, retains partially unlocked wheel and reveals remaining with
 });
 it("retries unknown purchase with original key and quantity",async()=>{
   vi.mocked(miniAppApi.vaultPurchase).mockRejectedValueOnce(new Error("timeout"));
-  render(<VaultView initData="signed" balance={30000} onClose={vi.fn()} onSettled={vi.fn()} />);
+  render(<VaultView initData="signed" balance={120000} onClose={vi.fn()} onSettled={vi.fn()} />);
   await act(async()=>{fireEvent.click(screen.getByRole("button",{name:/Купить билет/}));});
   const key=vi.mocked(miniAppApi.vaultPurchase).mock.calls[0][2];
   expect(screen.getByRole("button",{name:/3 билета.*Открыть вместе/})).toBeDisabled();
   await act(async()=>{fireEvent.click(screen.getByRole("button",{name:/Повторить запрос/}));});
   expect(miniAppApi.vaultPurchase).toHaveBeenLastCalledWith("signed",1,key);
 });
-it("requires full 15000 balance for three tickets",()=>{
-  render(<VaultView initData="signed" balance={14999} onClose={vi.fn()} onSettled={vi.fn()} />);
+it("requires full 90000 balance for three tickets",()=>{
+  render(<VaultView initData="signed" balance={89999} onClose={vi.fn()} onSettled={vi.fn()} />);
   fireEvent.click(screen.getByRole("button",{name:/3 билета.*Открыть вместе/}));
   expect(screen.getByRole("button",{name:/Купить 3 билета/})).toBeDisabled();
 });
