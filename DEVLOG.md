@@ -1,3 +1,640 @@
+## [English-first GitHub presentation and private publication preparation] - 2026-10-23
+
+Owner authorises the first private GitHub upload and revises target dates (OD-080). README.md is now English; README.ru.md retains the personal Russian text. Roadmap and documentation index have the same English/Russian navigation. Voting is split from the lottery builder; owner targets transparency Oct–Nov 2026, profiles Nov, season launch/voting Jan 2027, cooperative goals Feb–Mar, API May and builder summer. English social cover uses the unchanged approved logo/palette with “Luck costs nothing” / “Give it a try”; Russian cover/layout retained. Repository kasper-kasper/casper-loto created as Private; owner completed GitHub/Git Credential Manager sign-in. Local publication preparation preserves full source history, excludes secrets and unrelated output, and uses source/Git backups before committing/pushing. Prior 949-backend/319-frontend checks remain applicable: no runtime source changes; frontend source/artifact hashes reverified. Both language layouts and navigation checked at 320/390/1280px in light/dark. No licence assigned, public exposure or VPS release.
+
+## [Personal README, roadmap and GitHub readiness audit] - 2026-10-23
+
+Revised Russian README into the owner's own voice, added UTC+3, Best regards / Andrey Kasper, and a clearer server/SystemRandom explanation. Removed the contact-language restriction. Roadmap covers next-generation profiles, transparency, roughly three-month free seasons without daily-login pressure, cooperative goals, player lottery proposals/voting and a public API; dates through 2027 are proposals for owner review (OD-079). Added publication checklist and refreshed readiness report. Prepared a 1280x640 GitHub social image from the unchanged approved logo/palette; all nine brand-pack images present. Excluded unrelated output/ documents from Git/Docker, preserved files and archives; completed videos were already ignored and absent from reachable history. No broad filesystem/Git cleanup.
+
+Audit: about 60 MiB of prospective files, 393 commits; 5,705 reachable blobs and 831 then-current files scanned without current-secret or known token/key matches. No historical real .env/key/dump paths or files over 50 MiB. Git connectivity fsck and local documentation links passed. Two pre-existing failures came from test Lottery objects missing ruleset_code; corrected only those objects. Final clean Python environment from uv.lock passes Ruff/format/MyPy and runtime manifest (67 locked distributions); full backend with a fresh disposable PostgreSQL 16 database: 949 passed, one Windows symlink skip. Migrations through 0067 and alembic check passed. Clean npm installs: Mini App 251 tests, Admin 68 tests, both typecheck/lint/build and source/artifact hash checks pass. Existing Vite large-chunk warning remains non-blocking. CI now supplies a separate achievement template DB so PostgreSQL scenarios run; YAML parses and official v7 action tags resolve. GitHub-hosted Linux execution and final committed clean-clone verification remain prepublication steps. Temporary database container stopped/auto-removed; preview database and product runtime unchanged. Local GFM preview verified at 320/390/1280px in light/dark. No production release, version bump, GitHub push or assigned licence.
+
+## [Russian GitHub README and author story] - 2026-10-23
+
+Prepared the owner's requested Russian README for review: unchanged approved logo, exact five iPhone PNGs, responsive screenshot links, Telegram entry/channel/author contacts, navigation, existing technical documentation and a personal author story. Main slogan approved as «Удача ничего не стоит», with «Просто попробуй» as invitation. Game RU/EN support is distinguished from this Russian-only document. Added a public roadmap separating released features from undated ideas. Removed stale language/achievement plans, invented GitHub links and the draft's unapproved MIT promise. Brand guidance and OD-078 record the owner's statements and remaining decisions. Verification: local Markdown/image links and heading anchors resolve; all three supplied Telegram URLs returned HTTP 200; five copied image hashes match originals. Local GFM preview checked in light/dark at 320, 390 and 1280px with no page overflow or broken images; disclosures and author anchor work. Reports/screenshots under .tools/readme-review. Documentation/assets only; no product release, version bump, GitHub push or VPS deployment; runtime suites not applicable.
+
+## [English Mini App 1.70.0 — production verified] - 2026-10-23
+
+Published scoped snapshot ba6d8df after clean Mini App typecheck/lint/build and all 251 tests in 35 files. Existing cross-window cart test now waits for persistence as well as the UI update. RU/EN browser QA at 320×568/390×844, including New Year picker/result, passed without overflow; no persistent purchases. Exact baseline bytes retained for unrelated sources and the existing Admin build verified. Local source backup, remote database backup, gateway candidate, public HTTPS/hash/auth, independent monitoring and backup catalog gates passed under the operations lock. Only gateway recreated; API/bot stayed running. Evidence: docs/MINIAPP_LANGUAGES.md and archive/local/2026-10-22/miniapp-en-release. The published snapshot remains immutable; this completion report is local evidence.
+## [Mini App English localisation] - 2026-10-22
+
+Mini App 1.70.0 adds RU/EN message dictionaries across all player screens, all 93 achievement definitions and collection copy, and historical system notification presentation. Explicit per-account device choice overrides Telegram language, then browser/device language; unsupported languages use English. Locale changes re-render existing screens through LanguageRoot without remounting state or reissuing purchases. Integer CAS, API identifiers and Moscow schedules remain authoritative and unchanged. No backend/schema changes. Regression coverage includes priority, storage failure/account isolation/window sync, state preservation, exact amounts/timezones, source-message/placeholder coverage and an actual account/catalogue/picker RU → EN → RU flow. Isolated gateway release uses the existing locked backup/hash/health sequence. Full verification and publication evidence: docs/MINIAPP_LANGUAGES.md.
+
+## [Draw UI compact Telegram layout and standard purchase tools] - 2026-10-22
+
+Frontend-only Mini App 1.69.1. New Year restores common quick purchase/five-draw/favorite UI, symbol favorite previews and safe-area-aware four-row field sizing. Shared services unchanged. Audited all draw screens: normal games use common composer; Bingo already has quick card buys and favorite-number search; Dual retains one paired draw and now exposes its already-supported favorites. Seasonal catalog card owns a full row with a single full-bleed photo and lower gradient after owner rejected the side-by-side split. 47 focused UI tests, NewYear follow-up 11, typecheck/lint/build and mobile 320x568/390x700/844/430x932 checks. No backend/full-suite rerun. See docs/DRAW_UI_2026-10-22.md.
+
+## [Two lotteries — production verified] - 2026-10-22
+
+Published isolated snapshot 2706fbf: backend 1.59.0, Mini App 1.69.0, migrations through 0067. All candidate migration/financial/fresh-schema gates, restart, public hashes/auth and monitoring gates passed. Both lotteries active with five scheduled draws each; initial Mini jackpot ledger entry exactly once. 16 public game assets/chunks verified, zero monitor warnings, economy open. Detailed final evidence: docs/LOTTERY_RELEASE_2026-10-22.md and archive/local/2026-10-22/lotteries-release-retry. Published candidate remains immutable; this completion report is local release evidence.
+
+## [Two lottery production release preparation] - 2026-10-22
+
+Owner authorizes publishing Mini and New Year with focused checks. Isolated candidate starts from the exact current VPS source manifest (zero source mismatches), overlays only the two games and increments backend/Mini App to 1.59.0/1.69.0. Tests: 34 new-game cases including 7 PostgreSQL scenarios; 127 shared-engine/API/schedule/notification regressions; 37 affected frontend cases. No whole-project suite at owner request. Migration restore check permits only the new accounts and Mini initial ledger credit; fingerprints all old financial history and achievement runtime and repeats migrations. Standard locked backup/candidate/recovery release flow remains in place. See docs/LOTTERY_RELEASE_2026-10-22.md.
+
+## [New Year 2027 — paper receipt and disclosure, local only] - 2026-10-21
+
+Owner requested only the rules spacing and receipt refinement; catalog inspected without changes. Rules now use the shared ticket-options disclosure pattern: explicit 22px separation from the paper strip, quiet summary/plus, framed content only when expanded. Receipt is one aged cream paper surface with burgundy typography, double-line border and lightweight SVG engraved fir sprigs. Removed the solid burgundy masthead. Close control has an explicit 32px button/16px icon, zero padding and consistent right alignment in portrait/landscape.
+
+Focused checks: 9 NewYear UI tests; Mini App typecheck/lint/build. Mobile browser: pending/result receipts at 320x568 (408.89/516.89px, no overflow), result at 568x320 (292px, no overflow); close icon centered with 0px delta and closes correctly. Rules expanded/collapsed in the real local app. Temporary receipt-only fixture removed; no purchases or backend changes. Local only.
+
+## [New Year 2027 — visual corrections, local only] - 2026-10-21
+
+Replaced the 400% room-image crop with a dedicated fine walnut texture. Source-window clipping prevents neighbouring atlas objects from bleeding into the postcard, receipt and narrow slots; separately generated champagne and sparklers share the same assets across game surfaces. Catalog/home use a cohesive static still life instead of three enlarged sprites. Ivory titles, pale gold year and restrained shadow; compact receipt has a burgundy masthead and cream body. Built-in image_gen asset paths/prompts are recorded in `frontend/miniapp/src/assets/newyear/manifest-v2.json`.
+
+Purchase notices now render in a fixed overlay for this game, preserving the field and environment dimensions. Bulbs/candle overlays anchor to the original room image aspect ratio, animate only opacity/transforms and respect reduced motion. Fixed shared motion-budget resume after visibilitychange without requiring another IntersectionObserver event; offscreen scenes remain paused and removed nodes are unobserved.
+
+Focused verification: 21 tests (NewYear, TicketComposer, performance), Mini App typecheck/lint/build. Browser checks: real holiday catalog, picker and waiting broadcast; isolated home/receipt/revealed symbols and mock purchase without API/ledger mutations. Before/during/after notice: field y=316.15, scene height=873.15, scrollY=0 unchanged. Receipt fits 320x568 (pending 410.49px, result 518.49px) and 568x320 (292px), no internal overflow. Bulb opacity and flame transform change between samples. Temporary visual fixture removed. No backend/full-suite run, production publication or persistent test purchase.
+
+## [Casper Mini — independent visual identity, local only] - 2026-10-21
+
+## [New Year 2027 — local only] - 2026-10-21
+
+Added `newyear2027` using the existing transactional purchase, scheduling, recovery and settlement services. Owner confirmed daily 21:15 Moscow, cutoff 2 minutes and an indefinite series until another instruction; delegated economy routing and allowed burning. Ticket 10,000 CAS, 3 distinct IDs out of 12, cumulative 101 tickets/player/draw, no progressive allocation. The shared rule strategy now supports an optional fixed shared prize: 5,000 for one match, 30,000 for two, exactly 1,000,000 shared by full-match tickets in public-number order. All payouts remain fund-backed and ledgered. Zero compatibility accounts; no jackpot issuance, reset, carry or jackpot-win news. Migration 0067 adds independent identity/counters and zero accounts. Admin guards reject progressive configuration and distribution designation for this game.
+
+Created a transparent 12-item atlas and room plate with built-in image_gen; compressed WebP and exact prompts/provenance live under `frontend/miniapp/src/assets/newyear`. Separate interactive symbol grid, cream/red paper strip and receipt, holiday catalog/home cards, symbol live/replay/archive and notification names. Individual CSS bulbs/candle flame use calm opacity/transform animation; reduced motion and existing scene budget apply. No persistent animation of all game objects and no new renderer dependency.
+
+Validation limited by explicit owner request: 13 focused backend tests (3 disposable PostgreSQL scenarios), 18 UI tests for new game/shared composer, affected Python Ruff and Mini App typecheck/lint/build. Only the 8 New Year UI cases and build rechecked after final presentation changes. Receipt PURCHASED/SETTLED fits at 320x568 without internal overflow; settled landscape fits 568x320. Actual local catalog, picker and waiting live screen visually reviewed. Synthetic receipt/home QA fixture removed. No test purchases in the persistent preview DB. Backed up and migrated only loopback test/preview DBs, restarted the local preview. No production deployment, full suite, admin frontend build or existing-history reset. See `docs/NEW_YEAR_2027.md` and `.tools/newyear-2027`.
+
+
+Owner rejects recolouring the shared classic coupon and the scrolling receipt.
+Add dedicated MiniHeader/MiniCoupon, engraved cream paper, dimensional enamel
+number seals and layered emerald lighting/contour background. Draw a reusable
+four-leaf jewel in SVG (gold setting, faceted enamel, veins and central stone),
+replacing all Mini drum artwork in header, catalogue, home next-draw feature and
+live/replay scene. Other games retain their artwork and picker components.
+
+Receipt uses a viewport-height grid capped at 650px, flexible five-row number
+field and compact result/footer. Short portrait and landscape layouts preserve
+all 30 numbers, six chosen numbers, status, result and cost without clipping or
+internal scroll. Lock background scrolling while the receipt is open.
+
+Checks are intentionally frontend-only: 16 focused Mini/Today tests pass; affected
+frontend typecheck/lint/build. Browser QA verifies real local picker, random fill,
+catalogue and the Mini home feature. Temporary isolated visual fixture checks
+PURCHASED/SETTLED at 320x568, 360x640, 390x844 and 568x320: all eight fit the viewport,
+receipt/grid overflow zero. Fixture entry files removed after QA; screenshots and
+measurements retained in .tools/casper-mini-v2. No backend suite, economic edits,
+database migrations, clean-install checks, admin rebuild or VPS publication.
+
+## [Casper Mini — local implementation] - 2026-10-21
+
+Owner requests local-only permanent Classic 6/30, exact 10,000 CAS ticket,
+20,000,000 CAS base, 40% contribution, 100/500 caps and Moscow 10:30/19:15 slots.
+Add independent mini/casper_mini_6_30 identity and data migration 0066, with new
+accounts and ledgered opening jackpot, preserving all old history and epochs.
+Reuse transaction locks, draw snapshots, purchase receipts, settlement/reset,
+schedule recovery, notifications and reporting. The 100-ticket cap includes all
+five draws in a prepaid purchase. Mini gameplay is skipped by achievement
+projection; wallet game counters exclude Mini, actual wallet balances stay true.
+
+Reference-inspired emerald/cream/gold coupon, 30-number field, receipt and
+classic broadcast share existing picker controls and partial live highlighting.
+Add server-fed prize table and complete rules, catalogue identity, local design
+fixtures and responsive CSS. Local preview/test databases backed up before
+migration under .tools/casper-mini/backups; no production access or publication.
+Validation: 21 Mini backend tests pass including four real PostgreSQL scenarios
+(limits/concurrency, idempotency, five draws, settlement/notifications/achievement
+exclusion). Full backend suite: 935 passed, one skipped (Windows host cannot
+create a symlink for the Linux-only maintenance retention regression), no
+failures. Mini App: 216 tests in 33 files, including nine Mini tests; Admin: 68
+tests in eight files. Both clients pass clean-install typecheck/lint/test/build;
+backend mypy, ruff and format pass. After mobile QA, fix lazy stylesheet priority
+so the Mini quick controls, checkout and entire live stage stay emerald, and
+retain the Mini Classic header when switching to live.
+
+Real loopback browser smoke at 390x844 and 320x720 verifies selection/removal,
+one completed test purchase, Mini-filtered tickets and receipt, six selected
+balls, thirty-number field and live waiting. Exactly 10,000 CAS debited and
+4,000 CAS added to Mini jackpot; test ticket #0001 remains in local history.
+No horizontal overflow. Screenshots: .tools/casper-mini/picker-390.png,
+receipt-390.png and live-390.png. Preview API/database health is ok, five Mini
+future draws prepared. Final Mini clean rebuild and both client source/artifact
+hashes verified. Additional focused Mini/live tests pass (15); parallel App
+recheck had one existing catalogue-loading timeout during a concurrent build,
+then the isolated complete App file passes 46/46 without source changes. Final
+lint/typecheck/build pass. Source snapshot and test logs retained privately under
+.tools/casper-mini. Production, VPS and existing economic launch state were not
+touched.
+
+## [Remove maintenance styling from startup] - 2026-10-21
+
+Owner still observed the maintenance splash after the earlier text correction.
+Use the existing app Skeleton during the availability check; the maintenance
+layout is mounted only for a confirmed pause or connection error. Mini App HTML
+and version response use no-store; hashed assets retain immutable caching.
+Frontend-only patch 1.68.2, API/bot unchanged at 1.58.2. Focused gate regression,
+affected frontend typecheck/lint/build and startup browser smoke only; no broad
+backend/database tests or API/bot restart. Three gate tests, Mini App typecheck,
+lint and clean production build pass. Browser smoke holds the status response
+at 390px: regular skeleton present, maintenance layout absent both while waiting
+and after opening, no horizontal overflow. Gateway-only publication completed
+at 02:08 Moscow, with backup/operations lock, Caddy validation and public health/
+hash/auth checks passing; monitor warnings empty. API/bot uptime preserved.
+Post-publication mobile browser smoke on the actual public URL verifies version
+1.68.2, HTML no-store and zero maintenance layouts while checking and after
+opening. Owner can reload an existing Telegram tab with its Update button.
+Read-only preflight also confirms achievements activated automatically at
+02:00:01.857 Moscow and remain unpaused; this frontend patch changes no runtime
+or financial state. Source snapshot and verified archive retained privately in
+archive/local/2026-10-21/startup-skeleton-release.
+
+## [Owner digest clarity and neutral Mini App startup] - 2026-10-21
+
+Replace the checking-state economy-maintenance headline with neutral loading;
+real pauses and network failures still keep gameplay unmounted. The public open
+status no longer advertises an economy update. Regression covers a deferred
+status response, confirmed pause, failed connection and runtime pause event.
+
+Owner requested a readable daily report after inspecting the actual delivered
+20 October digest. Classify tickets using authoritative FAST codes and one row
+per purchase (Dual counted once). Paid gross purchases match purchase ledger
+flows; gifts and later refunded tickets are separate. Count distinct buyers
+across draw and instant tickets, newly registered Telegram players within the
+same Moscow/epoch interval, and current player/jackpot account totals. Add a
+separate ledger achievement-reward metric; preserve existing Admin other-credit
+semantics. Report actual operation-net issuance/burning, multiple factual
+warnings and observed net fund expense with a readable long-horizon estimate.
+No economy changes, new background loops, schema changes or resend of delivered
+reports. Durable achievement launch schedule remains untouched.
+
+Validation: full required backend 913 passed, one Windows symlink skip (covered
+by the Linux release candidate); Mini App 207 passed, clean typecheck/lint/build,
+Ruff/format and strict mypy 112 sources pass. Real PostgreSQL checks date/epoch
+boundaries, FAST/instant/draw separation, gifts, refunds, distinct buyers and
+Dual's single purchase. Ledger tests prove funded achievement rewards are not
+issuance. Mobile browser smoke at 390px holds the status response, confirms no
+maintenance copy during loading, then opens the app without horizontal overflow.
+Published API/bot 1.58.2 and Mini App 1.68.1 at 01:37 Moscow; Admin stays
+1.61.2 and schema stays 0065. Standard operations lock covers backup, exact
+snapshot upload/build, full production restore/history fingerprint verification,
+76 Linux candidate tests (including symlinks), financial/integration/profile/
+retirement smokes, empty DB recovery, diagnostic archive, selected restarts and
+public HTTPS/hash/auth/independent health checks. All pass; monitor has no
+warnings. Snapshot 70f7107, 649-file verified source ZIP v3 and rollback archive
+release-before-1792535719018629690.tar.gz retained privately. The initial local
+artifact guard caught clone checkout line-ending differences before any SSH
+publication; restoring the exact tested frontend bytes resolves it.
+
+At 01:38, an explicitly READ ONLY production transaction renders the new digest
+without queuing/sending anything: previous day 16,530 paid tickets = 15,895 FAST
++ 0 instant + 635 ordinary draw, 10 distinct buyers and 0 new Telegram users.
+Gross purchase/prize/burn/issuance totals match the delivered report. Public
+maintenance status is open with no stale message. All 93 definitions remain
+prepared, unstarted/unpaused, worker/scheduler enabled, original 02:00 Moscow
+schedule preserved. New copy applies to the next normal daily report; delivered
+messages remain untouched.
+
+## [No-wait launch barrier follow-up] - 2026-10-21
+
+Published API/bot 1.58.1; Mini App remains 1.68.0, schema 0065 and the original
+02:00 Moscow schedule preserved. Latest full required backend run: 908 pass,
+one Windows symlink skip; Linux candidate 76 tests and financial/integration/
+empty DB smokes pass. Full prepared production restore preserves all history
+fingerprints and runtime schedule, public hashes/auth/health pass. A Debian 502
+failed one candidate build before production changes; unchanged retry succeeds.
+At 01:04 Moscow, prepared backup + explicit live verification confirm 93
+definitions, zero awards/unlocks/local test users, disabled/unstarted, scheduled
+23:00 UTC, worker/scheduler enabled, no worker errors. Snapshot e3e5d55 and
+verified 648-file source ZIP v3 retained in the private archive. No GitHub work.
+
+Final overlapping-source test reproduced a 2.07s activation wait on a busy
+balance-table write. Add NOWAIT to the atomic source barrier: failed acquisition
+rolls back the whole launch immediately, releases partial locks and yields to
+ongoing gameplay; next scheduler tick retries. New PostgreSQL regression checks
+fast deferral, unchanged unstarted state and successful later activation.
+API/bot patch 1.58.1 leaves catalog, rewards, frontend and durable 02:00 schedule
+unchanged. The full-restore verifier now preserves an already prepared runtime
+instead of assuming an initial empty catalog; history digests stream in bounded
+batches and engine disposal stays on its owning event loop.
+
+## [Achievements published and 02:00 Moscow launch armed] - 2026-10-21
+
+API/bot 1.58.0 and Mini App 1.68.0 published; schema 0065. Full production
+restore migration/catalog verification preserves financial/history fingerprints;
+76 Linux candidate tests, financial/integration/profile/recovery/retirement
+smokes, empty bootstrap/index recovery and schema checks pass. Exact public
+client hashes/auth boundaries and independent health pass, no worker errors.
+After all gates, schedule persisted for 2026-10-21 02:00 Europe/Moscow
+(2026-10-20 23:00 UTC); verified at 00:40 Moscow still disabled/unstarted,
+93 definitions, zero awards/unlocks/local fixture users. Back up prepared state
+under operations lock; database/source rollback and diagnostic archives retained.
+Initial package omitted frontend image recipes; it stopped before production
+changes, corrected source inventory and successful repeat recorded. Clean source
+snapshot commits 6c965eb/e8d62e0 preserve owner worktree; no GitHub publication.
+Source ZIP 648 verified files, SHA-256 and logs retained in private local archive.
+Actual timed activation remains future and is monitored on server; notebook is
+not required. Details in ACHIEVEMENTS_PRODUCTION_RELEASE_2026-10-21.md.
+
+## [Achievement production launch preparation — owner authorized] - 2026-10-21
+
+OD-076 authorizes publication after final checks with achievement tracking kept
+disabled until 02:00 Europe/Moscow, 21 October. Migration 0065 adds a durable
+scheduled time/catalog revision and processing-only emergency pause. Guarded
+production CLI validates and imports exactly the approved 93 entries, rejects
+past/naive start times, fixture awards, double starts and changed catalogs.
+The existing scheduler checks the singleton and establishes the once-only UTC
+boundary with a short transactional source-write barrier at activation. No
+long maintenance window, no local data transfer or historical reward replay.
+Pause stops work while capture stays enabled; cancellation is prelaunch only.
+Runtime monitoring reports ready work, lag, exhausted events and overdue start.
+API 1.58.0 / Mini App 1.68.0. Release verification/results are recorded in
+docs/achievements/ACHIEVEMENTS_PRODUCTION_RELEASE_2026-10-21.md.
+
+## [Compact profile heading and category titles — local only] - 2026-10-21
+
+Remove the large duplicate «Моё» heading; keep a semantic compact «Личный
+кабинет» h1 and reduce header height from 59 (+4 margin) to 45px. Preserve
+the notification button and bottom navigation. Balance and following blocks
+move upward by 18px. Remove ticket delivery/limit/waiting explanations and
+verbose case activation footnotes from shared achievement presentation; retain
+actual condition descriptions. A subsequent owner instruction hides all case
+information in the UI while preserving reward configuration.
+Shared achievement title component applies Cormorant Garamond 600 in the
+badge's gold, with distinct Prata 400/platinum for «Каспер, подвинься», across
+cards, details, profile summary, notices and master collection previews.
+Extend the same title font to uncommon/rare/epic with their existing category
+colors; keep common typography unchanged.
+Self-host four Cyrillic/Latin WOFF2 subsets (68,768 bytes total) with SIL OFL
+licenses, font-display swap and local fallbacks; no runtime third-party font
+requests. Backend rules, rewards and fixtures unchanged. Mini App lint and
+typecheck/build pass. App/achievement/collection focused run: 60 pass; final
+case-hiding/category-color update: 14 affected tests pass. Initial concurrent
+build/test run had one catalog wait timeout; sequential focused run passes.
+Browser smoke at 320/390px confirms compact h1, all category fonts/colors,
+ordinary titles inheriting prior style, exact title/emblem platinum match,
+loaded local fonts, no case/delivery copy or horizontal page/dialog overflow.
+No VPS or GitHub publication.
+
+## [Legendary visual unlocks for the laptop account — local only] - 2026-10-20
+
+At the owner's request, unlock all eleven legendary entries and thirteen
+collectibles (eleven badges, two themes) for isolated preview Telegram ID
+900000002. Back up the preview database first. Explicit visual-fixture award
+and reward status `preview` preserves catalog reward descriptions while keeping
+CAS/ticket/case parts outside processing queues. Grant cosmetics through the
+existing application adapter; retain current cosmetic selection and all other
+progress. No invented jackpot results, ledger movements or ticket purchases.
+The isolated helper refuses other environments/databases/users and leaves an
+audit correction identifying the visual fixture. Repeated execution adds zero
+duplicates. Verify eleven awards, thirteen unlocks, unchanged balance/tickets
+and the authenticated read API. No application code or production changes.
+
+## [Legendary achievements, compact gifts and collection — local only] - 2026-10-20
+
+Owner approves the ten jackpot entries and final «Каспер, подвинься», raising
+CAS to a 40m floor, matching-game gifts 100–500, ordinary future cases 20–100.
+Final allocation 40m–350m: base total 1.13bn CAS, 2,825 gifts, 565 future cases.
+Fixed-ten final awards 1bn CAS, 300 of each ten games (3,000), 200 ordinary
+future cases, unique platinum/gold badge and «За гранью». No legendary cases.
+Catalogue now 93. Preserve prior categories/rewards, epoch and immutable snapshots.
+Explicit exact result filters fence legacy CODE/PULSE/other formats; Bingo <=28
+and natural payout required, technical distribution and Dual excluded.
+
+New earned_set validates fixed IDs/cycles, initializes once at management import
+and advances only on dependent awards. New ticket_pack stores one entitlement,
+issues one standard funded ticket per transaction and lazily records deterministic
+child parts. Existing unique Ticket reward references remain. Parent reads use
+the existing (award_id,position) index with root positions <16, independent of
+the number of issued children. Yield/retry between units; no synchronous 3,000
+ticket loop in gameplay/HTTP reads. Extend existing gift whitelist to three FAST
+codes; retain ordinary purchase accounting/RNG/caps. Extra gift-only ceiling is
+outcome-space minus one (and finite Bingo pool minus one). All final packages
+300 are below combination coverage; occupancy/per-draw limits spill to future
+eligible draws. Missing fund/draw/season stays waiting without substitution.
+
+Migration 0064 adds parent/progress fields, sparse immutable cosmetic unlocks and
+opt-in preferences with composite ownership FKs. Gold unlock is once, choice is
+never automatic. Authenticated collection GET/PUT delegates to application rules;
+unknown/locked/wrong-slot choices and client grant fields rejected. Add profile
+collection, selected badge, two private themes, locked-item/theme previews and
+actual approved Casper artwork/wordmarks; no heavy renderer/dependency. Batch
+selected_badges projection is ready for future rankings (no ranking UI exists).
+
+Checks: 894 backend pass in corrected full run, one Windows symlink skip, two
+previously passed expensive load tests deselected on repeat; new HTTP test also
+passes separately, total 897 unique successful checks. Final legendary suite
+22 passed. Early full-run failures came from disabled editorial mock flag, one
+unknown-cosmetic error expectation and retired fixture paths; test-only setup
+now mirrors conftest opt-in, compiler test reads local archived libraries and
+skips when that private archive is unavailable. Runtime publications stay off.
+Mini App 206 / Admin 68 tests pass; parallel UI timing failures under load pass
+in full single-worker rerun. Full Ruff/format/mypy and both client builds/lint
+pass; Alembic check clean. Browser 390/320 verifies profile 15/93, legendary 0/11,
+1bn/ten 300-packs/200 cases, collection and full-color previews without fake grants.
+No JS errors or horizontal overflow; local event errors 0, actual unlocks 0.
+
+Pre-change preview/test/fresh dumps and SHA-verified source archive stored under
+archive/local/2026-10-20. Docs index, exact reward/cap table, report and OD-075
+updated. No VPS deployment, GitHub upload, fabricated local awards, resets or
+changes to ticket prices/jackpots/winnings/probabilities. Case issuance/opening
+and separately authorized production activation remain future stages.
+
+## [Workspace organization and GitHub readiness — local only] - 2026-10-20
+
+Owner requested a reversible folder cleanup, documentation organization and a
+GitHub readiness assessment; no upload/deployment was requested. Created archive
+with reference sources and ignored private local evidence. Moved retired Web,
+channel/stories designs/media/builders, old Grand/Halloween variants, .tmp,
+browser evidence, 207 one-off helper scripts and historical .tools artifacts.
+570 move records preserve 66,120 accessible files / 2,178,719,650 bytes; SHA-256
+checked 12,079 files before/after, excluding installed dependencies and caches.
+Directories are moved whole; inaccessible old test-cache children remain inside
+the archived directory rather than being deleted or having permissions reset.
+24 documentation/catalogue files reorganized: 16 achievement docs/JSON files in
+docs/achievements, eight historical docs alongside archived features. Repaired
+links and the active preview catalogue path. Runtime tools, .env, local DB,
+backups, .maintenance, active app sources and immutable financial history stay.
+
+Retired publication assets and archive/local are ignored; all archive content
+is excluded from Docker/git archive/VPS releases and rejected by release-snapshot
+validation. Legacy Web source stays available for local Git history/reference.
+Updated root README; added docs index, folder map and GitHub readiness assessment.
+Known existing business changes were not staged, committed, reverted or pushed.
+
+Read-only Git audit: 401 commits, 12,700 reachable blobs; no exact current .env
+secret matches, no tracked historical .env/private-key/dump paths, no files over
+50 MiB. Five token-like JPEG matches are verified standard DHT Huffman bytes;
+historical object hashes match those same images. Connectivity fsck passed.
+Audit is preliminary, not a guarantee concerning unknown historical secrets or
+personal information. No remote is configured. Recommend private GitHub first;
+review/commit accumulated changes and run full release checks before upload.
+Existing GitHub CI needs explicit achievement test database wiring: opt-in
+PostgreSQL tests currently skip without ACHIEVEMENT_TEST_DATABASE_URL.
+
+Passed 38 focused release/snapshot/editorial-retirement/launcher checks, Ruff and
+format for affected scripts/tests, both client TypeScript/builds, isolated preview
+setup with preserved epoch/progress, 15-document link check and browser smoke
+(profile 15/82, epic 0/17). No gameplay, CAS, draw rules or VPS state changed.
+Private move/audit manifests and organization source ZIP live in
+archive/local/2026-10-20. Full unrelated project suite was not rerun for this
+non-release organization task; future publication still requires a clean check.
+
+## [Epic achievements — implemented locally] - 2026-10-20
+
+Owner approved the 17 epic entries and interpretations, raising CAS to 3m–8m
+and 20m for 100k paid tickets; five adjacent winning draws award ten Grand
+tickets. Announced four planned cases on fifteen entries, one on Big Collection
+and Human Orchestra. Final totals: 98,500,000 CAS, 165 gifts, 62 planned cases.
+Added epic catalogue/CLI/preview and violet outline artwork; shared catalogue 82.
+Bounded matches_any filter combines mixed Dual results into one counter. Adjacent
+completed draw checks inspect up to four neighbours each side and saturate at
+five. Revision-3 management replay rebuilds derived post-launch win projections
+without duplicating purchases/day counts or losing a partial draw cursor.
+Existing categories, launch epoch, immutable history and award snapshots remain.
+No physical schema change; Alembic check confirms no upgrade operations.
+
+Passed 144 focused backend checks and 14 UI tests, Mini App typecheck/lint/build,
+Ruff and targeted mypy (six modules, follow-imports=silent). Unrelated existing
+launcher type errors were not changed. Browser verified 390/320px, 17 epic cards,
+filters/details, 10 Grand and four-case text, six-digit badge, profile 15/82 and
+no horizontal overflow or JS errors. Local worker has zero failed events and
+projection revision 3. Original local progress retained; no fabricated awards.
+Saved local pre-epic DB dumps and verified explicit source ZIP without secrets.
+Updated OD-073 and final reward table; details in
+docs/achievements/ACHIEVEMENTS_EPIC_LOCAL_REPORT.md. No VPS publication, per owner request.
+
+## [Epic achievements — reward proposal only] - 2026-10-20
+
+Owner supplied 17 epic entries and asked whether rewards should be more generous.
+Prepared docs/achievements/ACHIEVEMENTS_EPIC_PROPOSAL.md and pending OD-073: 2m–15m CAS,
+75,500,000 CAS total, 160 gift tickets/cards and seventeen single planned cases.
+Read current local rules/registry and active local IDs: Ball 5+0, Grand 5+0/5+1
+are valid; 11 draw games plus three instant games make the exact 14-game goal
+possible. Preserve prior Ball identity and CODE four-of-five interpretation.
+Explicitly propose combining the two eligible Dual results toward three wins.
+No catalogue/schema/runtime/reward changes or tests for this documentation-only
+proposal; existing common/uncommon/rare conditions stay intact.
+
+## [Rare achievements — implemented locally] - 2026-10-20
+
+Owner approved the 20-entry rare proposal and interpretations, raising CAS to
+400k–900k. Final rare totals: 12,300,000 CAS, 80 gift tickets/cards, ten planned
+one-case rewards. Added rare catalogue/CLI/preview integration and blue outline
+artwork, retaining common/uncommon conditions, immutable awards and epoch.
+
+Migration 0063 adds a winning-ticket count to existing sparse player/draw rows.
+The worker caches/upserts each player/draw per page, derives maximum wins in one
+draw and checks at most two completed neighbouring draws on each side for a run
+of three. Daily FAST uses the saved daily lottery set. Full-card Bingo reads
+all three saved row-closing moves, while CODE remains four of five equal positions.
+Repeated results reuse existing filtered counters and distinct paid ticket events.
+
+Management projection revision 2 rebuilds derived winning rows from already
+projected post-launch facts, respecting a partially processed draw cursor; it does
+not replay purchase/day counters a second time or alter immutable business data.
+Runtime/profile reads do no replay. The old uncommon adjacency regression now
+expects the true length-three result after inserting the late middle winner;
+the uncommon award threshold remains two.
+
+Necessary validation: 120 backend achievement/common/uncommon/gift tests passed,
+12 targeted frontend tests passed, Mini App lint/typecheck/build, Ruff/mypy and
+Alembic check passed. Browser 320/390 px verified all 20 cards, filters, earned
+blue badge, full-card Bingo reward detail, numeric 1000 mark and overflow absence.
+Evidence and exact files are in docs/achievements/ACHIEVEMENTS_RARE_LOCAL_REPORT.md. Local DB
+backups precede the migration. No release or VPS publication for this task.
+
+## [Rare achievements — proposal history] - 2026-10-20
+
+Owner supplied 20 rare achievements and asked for proposed rewards. Prepared
+docs/achievements/ACHIEVEMENTS_RARE_PROPOSAL.md and pending OD-072: 300k–750k CAS per entry,
+9,650,000 CAS total, 80 gift tickets/cards and ten planned cases. Inspected actual
+CODE rules/UI: five equal ordered digits and no separate cipher; proposed exactly
+four matching positions of five without changing the lottery. Reused prior owner
+confirmation that Bell means Ball. Preserved uncommon activity conditions and
+recorded explicit PULSE/repeat-result interpretations for approval. No catalogue,
+runtime, DB or payout changes; no tests for this documentation-only proposal.
+
+## [Uncommon achievements and gift packs — implemented locally] - 2026-10-20
+
+Owner approved the revised 23 uncommon entries and all condition interpretations,
+confirmed Casper Ball, and added September x3 for calendar flip, Grand x1 for Rich
+and PLL x2 for Little by little. Final category totals: 3,575,000 CAS, 50 tickets/cards,
+eight planned cases. Added versioned uncommon catalogue, preserved player-facing
+flavor copy, shared post-launch counters and mint outline artwork. Original 22
+common rewards and immutable award snapshots retain their economic meaning.
+
+Migration 0062 adds sparse indexed daily/paid-winning-draw projections and flavor
+copy. Purchase/refund capture persists original Moscow purchase day. New calendar
+and neighbouring-completed-draw conditions update on events; only affected result
+conditions are checked. Management performs one explicit paged initialization
+from already processed post-launch events, including a partially projected draw's
+cursor; runtime revision prevents a second replay. API reads do no replay or grant.
+
+Funded gifts now support weekly Grand and standard Bingo pool allocation. Packs
+reuse separate immutable one-ticket reward parts, unique ticket origin, ledger
+transactions and waiting retries; UI groups them into the actual ticket/card count.
+Unfulfilled parts may continue in a later eligible draw without duplicating paid
+parts. No case inventory, lottery economic changes or production publication.
+
+Necessary checks and local evidence are recorded in
+docs/achievements/ACHIEVEMENTS_UNCOMMON_LOCAL_REPORT.md. The desktop preview has the migrated
+database and 45 definitions with its original epoch/player history retained.
+
+## [Uncommon achievements — proposal history, local] - 2026-10-20
+
+Owner supplied 23 uncommon achievements and requested rewards before local
+implementation. Prepared docs/achievements/ACHIEVEMENTS_UNCOMMON_PROPOSAL.md and pending OD-071:
+2,925,000 CAS across 23 entries, eight optional daily-draw tickets, four optional
+planned cases. Inspected existing conditions/results/rules: Bingo already stores
+row closing moves with the 18-move first-tour cutoff; Casper Bell was not found,
+whereas Casper Ball supports 2+0. Presented that naming question and precise
+PULSE/Grand, consecutive-draw, day-boundary and participation-group interpretations
+for owner approval. No runtime/catalog/DB changes, reward assignment or publication;
+tests were not run for this documentation-only proposal.
+
+Owner subsequently raised the uncommon range to 100k–300k CAS and ticket packs
+to 3–5, requested additional cases and Grand/Bingo/matching 6/36 tickets.
+Revised the proposed allocation to 3,575,000 CAS, 44 tickets/cards and eight planned
+cases. Inspected delivery constraints: retain one ticket per idempotent reward
+part and group them for display; Grand needs weekly eligibility, Bingo standard
+pool selection. Those adapter changes have not yet been implemented. Updated
+OD-071 and the proposal only; common rewards stay intact and no tests were run.
+
+## [Approved achievement icons and rarity colors — local only] - 2026-10-20
+
+Owner approved direction 1, "Контур с характером", and delegated rarity colors.
+Applied the 22 approved outline glyphs, small marks and selected asymmetric tiles
+through a shared AchievementBadge in profile, catalogue, details and notices.
+An ID-based presentation mapping updates old award artwork without mutating
+immutable award snapshots, catalogue conditions, rewards, player data or schema.
+
+Centralized common silver-lilac, uncommon mint, rare blue, epic violet and
+legendary gold. Locked icons are muted; locked secrets reveal only a lock and no
+threshold/shape hints. Earned secrets retain their actual rarity. Embedded only
+26 selected static Lucide 1.17.0 glyphs with ISC/MIT notices; no external icon
+request, full icon library, polling or backend computation was introduced.
+
+Validation: Mini App lint/typecheck/build and all 197 frontend tests pass, including
+three focused badge regressions. One initial parallel-suite navigation timeout
+passed in isolation and on the complete rerun with two workers. Browser smoke at
+320/390 px covered profile, all 22 glyphs, pagination, details open/close and no
+horizontal overflow; checked all five colors using temporary DOM-only samples.
+No browser errors; Telegram's existing browser-mode haptics warning remains.
+Evidence and files are in docs/achievements/ACHIEVEMENT_ICONS_LOCAL_REPORT.md. Changes remain
+local per owner instruction; no release or VPS operation for this icon work.
+
+## [Owner digest delivery and distribution visibility] - 2026-10-20
+
+Read-only production audit identified API/bot owner-recipient configuration drift:
+both 18/19 October digests were cancelled as owner_report_recipient_changed.
+Forward OWNER_TELEGRAM_ID to both services. The application service can requeue
+only the currently due, definitively unsent cancelled report with that exact
+reason, same active owner and a row lock. SENT/UNCERTAIN/expired reports stay intact.
+
+Pulse #7276, 20 October 03:42 MSK: recomputed all 120 purchased combinations with
+the saved rules and verified every prize and distribution share against the
+immutable player ledger. No discrepancies. Four 2+0/cipher-no tickets each received
+10,054,000 distribution + 14,000 ordinary = 10,068,000 CAS. Distributed pool:
+40,216,000; ordinary prizes: 204,000; all prizes: 40,420,000 CAS.
+Admin decoded cipher match codes below 100 as legacy two-field codes: code 20
+incorrectly appeared as 2+0 instead of 0+2. Decode with the recorded ruleset.
+
+Expose existing distribution metadata through admin DTO/API, completed history
+filter and paginated draw lists. Show bounded last-50 history in designation view,
+with links to immutable results and explicit roll-down summary/recipient labels.
+Remove retired channel-post confirmation copy. No draw/ticket/ledger/schema changes.
+Release is isolated from the owner's unshipped local achievement work.
+
+Validation and production completion are recorded in docs/OWNER_DISTRIBUTION_AUDIT_2026-10-20.md.
+
+## [Laptop preview launcher — local only] - 2026-10-19
+
+Owner requested a desktop shortcut for the latest local version. Added a Windows
+launcher with loopback-only API/Vite/PostgreSQL, a persistent dedicated sandbox,
+automatic Docker readiness, single-instance locking and process-tree cleanup on
+console closure. The sandbox uses approved current lottery terms on initial empty
+database setup, ledgered fund movements, the 22-entry achievement catalog and the
+existing browser development authentication. No historical economy transition is
+replayed. Subsequent starts retain tickets, balances, awards and launch timestamp.
+
+Python children use a separate working directory and an allowlisted environment;
+the production .env, bot credentials and VPS credentials are not loaded. Bot,
+editorial, owner summary and Telegram achievement delivery stay off. Created the
+explicitly requested desktop shortcut; instructions are in docs/LOCAL_PREVIEW.md.
+No VPS connection or publication.
+
+Validation: full backend suite 793 passed / 1 Windows symlink skip, plus all three
+focused launcher tests after the Windows lock regression check was added. Ruff
+and diff whitespace checks pass. Real local HTTP/browser smoke covered profile,
+22 definitions, a paid instant purchase and four resulting achievements, hard
+supervisor termination with API/Vite cleanup, restart through the actual desktop
+shortcut, retained progress and single-instance reuse. The preview remains open
+for the owner; local test data is intentionally retained.
+
+## [Common achievements and profile — local only] - 2026-10-19
+
+Implemented the owner's 22 common achievement definitions without assigning reward
+amounts. Confirmed custom games are september/pll/grob; owner explicitly reiterated
+local-only work. Added pending reward configuration, paid-price payout comparisons,
+immutable ticket selection provenance and purchase operation UUID, manual/bulk/
+successful reward metrics, post-launch paid result filtering and instant-game
+distinct counts. Refund corrections preserve purchase milestones consistently
+regardless of worker delay; ledger and lottery economic rules are unchanged.
+
+Added bounded summary/filter/pagination reads and indexed unread award notices.
+Compact profile balance, summary with the actual latest three, one rarity at a
+time, progressive list loading, native accessible details, matching SVG icons and
+sequential notices. Pagination refreshes if progress or catalog revision changes;
+there is no achievement polling loop or source-history scan on a screen open.
+Manual origin is reset after each confirmed purchase, including repeated CODE
+entries. Retired channel publications/stories remain retired.
+
+Prepared an isolated local database k_loto_achievement_common_20261019 with exactly
+22 definitions and zero users/awards. Amounts/funding/production launch still need
+owner approval (OD-066/OD-068). Full details and verification evidence are in
+docs/achievements/ACHIEVEMENTS_COMMON_LOCAL_REPORT.md. No production deployment or connection.
+
+Validation: backend 791 passed / 1 Windows symlink skip, Mini App 191 passed,
+Admin 66 passed, both client lint/typecheck/builds, Ruff and mypy (102 files).
+Local Alembic upgrade/check matched the ORM. Browser QA covered narrow screens,
+larger text, billion-CAS balance, dialog focus, filtering/pagination and the
+lightweight toast fade. Source backup with SHA-256 manifest saved under .tools.
+
+## [Editorial retirement and server optimization] - 2026-10-19
+
+Owner explicitly approved off-host archiving followed by irreversible removal of
+channel publications and related Mini App stories/feed. Production editorial work
+is disabled by default and in both compose backend services. Scheduler and queue
+entry points return before SQL; publication routes return 410; stories and admin
+editorial navigation removed. Distribution assignment and money/draw logic remain
+available without channel announcements. Assets excluded from clean client builds,
+release inventories and backend images.
+
+Off-host exports and SHA-256 receipts precede deletion. The explicit maintenance
+operation truncates only five editorial tables and deletes only PUBLICATION audit
+rows with the immutable-audit trigger restored in the same locked transaction.
+Counts of tickets, draws, ledger and non-editorial audit must match. Financial
+guards remain active. Cleanup stays in server_maintenance.py and exact archived
+paths/images are used; no broad Docker pruning or volume removal.
+
+Release work is isolated from the unshipped achievement foundation; migration 0059
+and achievement API/worker/client changes must not enter this publication.
+Validation and production measurements: docs/EDITORIAL_RETIREMENT_2026-10-19.md.
+
+Production completion: all editorial tables/audit empty; old publication assets,
+archives, seven historical app images and two exact BuildKit cache records removed
+after verified off-host copies. API/bot/gateway healthy; editorial API returns 410.
+CPU in two 41.3s windows: 17.14% / 18.30% (previously 81–82%);
+publication scan deltas zero. Disk now 40% used, about 24.3 GB available.
+Live schema stays 0058; achievement tables absent. Fixed pg_dump nonce comparison
+and verified stable schema hashes. Full evidence and validation limits in report.
+
+## [Read-only VPS capacity audit] - 2026-10-18
+
+- Owner requests an approximate audience/capacity assessment and upgrade signals. Read-only SSH inventory, two short passive observation windows and eight bounded sequential application-service reads; no deployment, production settings/history/money changes, notifications, test users/purchases or saturation load. Own probe connections enforce read-only transactions and short timeouts. Added docs/CAPACITY_AUDIT_2026-10-18.md and private local aggregate artifacts.
+- Host has one vCPU, 1.76 GiB usable RAM, approximately 40 GB storage, and shares resources with VPN containers. First 42.3-second window averages 82.42% CPU across samples (50–100%); PostgreSQL averages 57.26% and API 10.04% of one core. A second 23.1-second window again shows high CPU. Available memory remains roughly 764–795 MiB with no swap-out during either observation; disk 56% used. Health checks succeed and the observed scheduler heartbeat has no current error. These are short windows, not daily percentiles or verified audience limits.
+- Active SQL repeatedly comes from publication expiration/queue checks. During the second window publications adds 31 sequential scans / 538,594 scanned rows, no added index scans, over approximately 17,374 publication rows. Existing two-second background dispatch performs these checks; the report records the exact optimization target without modifying it. Achievement foundation remains local/inactive and is not the source of this production observation.
+- No claim that 1,000/5,000/10,000 concurrent users are supported. Distinguish registrations from simultaneous activity and show the current two-second live-snapshot demand calculation. Recommend addressing background query work before final sizing, a separate 4-vCPU/8-GB candidate as planning headroom (not a tested capacity promise), and sustained CPU/latency/memory/disk/lag triggers rather than a registration-count cutoff. Full product checks/release are inapplicable to this diagnostic/document-only task; remote read-only guards, artifact validation and final health checks cover the actual scope.
+
+## [Local foundation — achievements, OD-066] - 2026-10-18
+
+- Owner explicitly authorizes a concrete specification and local implementation, delegates technical choices and prohibits production publication/activation and a real catalog. Added docs/achievements/ACHIEVEMENTS_SPEC.md, the local delivery/operations report and a generated JSON catalog schema. Preserve the completed economy transition and existing unrelated worktree material.
+- Migration 0059 adds a disabled singleton, sparse per-player metrics, unique draw participation, a transactionally captured PostgreSQL queue, immutable award/reward snapshots and refund corrections. Capture coalesces ticket/ledger facts over the entire transaction even with SQLAlchemy executemany. A completed nonempty draw creates one resumable marker, not one event per ticket; indexed pages hold at most 100 results. No payout rules, source business history or real balances are changed.
+- A revision-cached catalog indexes changed metrics and lottery filters; one-time acquisition, ledgered CAS reward parts and balance/meta cascades are retry-safe and run in separate background transactions. A processor-only advisory lock, short SQL/lock timeouts, per-player ordering, bounded tick work and eight-attempt quarantine keep failures isolated. Reintroduced/new filters rebuild only already processed post-launch facts in an explicit local management operation. No prelaunch history backfill.
+- Added authenticated catalog/progress/preferences/featured/activity APIs. Secret locked entries omit identifying content/conditions/rewards. Period checks reuse loaded award timestamps with binary search. Mini App records opening independently of first-screen rendering; no page design or polling. Existing inbox/outbox and conservative Telegram UNCERTAIN policy are reused, with separate opt-in and a disabled transport switch. Gift/cosmetic adapters cannot activate before implementation; trusted source/metric/reward registries support later cases/inventory work.
+- Required local backend suite: 752 passed / one Windows symlink skip (Linux-only check remains unavailable locally), including 53 achievement tests and ten disposable PostgreSQL scenarios. Ruff lint/format and mypy (101 modules) pass; Alembic schema comparison reports no pending operations. The complete empty-database bootstrap also passes with collection disabled and no definitions/events/awards. Clean npm-ci/typecheck/lint/test/build pass: Mini App 183 tests, Admin 66 tests, both source/artifact manifests verified. A private source-only local ZIP/hash/manifest excludes secrets; the task's local PostgreSQL container is stopped and test scenario databases are removed. No product version/CHANGELOG release is published because the catalog and feature remain off.
+- Separate Windows/Docker load sample: 500 fixture definitions, 10,000 results, one draw marker, 500 awards, complete drain in 25.76 s while 50 balance reads continued (read p95 64.23 ms). Existing purchase service retains two queue rows for 1,000 tickets. Three disabled samples: 3023.35/1527.38/1296.60 ms; enabled: 1602.36/1534.69/1271.21 ms. Cold/short local samples are not production latency, p95 purchase capacity or a VPS guarantee. Final catalog, real CAS funding, notification copy/UI and explicit production launch remain later decisions; no release/deploy, real Telegram send or reward occurs in this task.
+
 ## [API 1.57.0 / Mini App 1.67.0 / Admin 1.61.0 — combined economy release] - 2026-10-18
 
 - Owner explicitly ends the local accumulation window and authorizes full checks, backup, publication and reopening. Consolidates OD-057 through OD-064: Vault/LIVE, Fast, thematic games, Classic/Ball/Grand, Dual/Bingo, Admin simplification and the private daily owner digest. No collection, leaderboard or case implementation is included.
@@ -14,7 +651,7 @@
 - Restored the real pre-release backup into a disposable database: 12 users, 22,036 draws, 724,837 tickets and 364,872 ledger rows; all five account families reconcile and indexes validate. A separate PostgreSQL pause/refund/archive/resume regression passed. A full production clone passed all four approved batches, repeat application without new ledger entries, exact rules/base/limit checks, unchanged historical row/wallet/counter hashes, zero current-era game/CAS activity, readable old archive and reopening with no maintenance backlog. All owned rehearsal databases were removed.
 - Applied the four batches once in production and repeated the same history/account/idempotency/archive checks successfully. Kept the original epoch 2; no repeated refunds, wallet resets or extra Fund issuance. Before reopening, current analytics contained zero tickets/completed/pending draws; archive retained 724,837 tickets and 21,877 completed draws. Enabled the actual Compose setting `K_LOTO_SCHEDULER_ENABLED`, with the maintenance gate still closed during restart.
 - Explicitly reopened at **2026-10-18T01:29:27.659387Z (04:29 Moscow)**, recording the same recovery checkpoint. Public Mini App/Admin checks and independent monitoring passed with no warnings. Telegram getMe verified `Kasper_loto_bot`; authenticated current/archive overview, economy, ticket analytics and jackpots returned successfully. Scheduler heartbeat advanced beyond reopening with no error; all eleven scheduled games have upcoming draws and no non-cancelled draw falls inside the maintenance interval. Existing bot auto-play resumed: the new epoch already records fresh purchases, separate from the unchanged old archive. The private daily summary is enabled for the configured active owner, from 00:05 Moscow after the report day; no manual channel announcement was sent.
-- Prepared `docs/publications/economy-update-2026-10-18.md` for the owner's player announcement. Normal release rules are restored in AGENTS.md. Final evidence/text-only source publication does not rebuild or restart the running services. Unrelated OD-054 worktree changes and design files are preserved.
+- Prepared `archive/reference/retired-publications/docs/publications/economy-update-2026-10-18.md` for the owner's player announcement. Normal release rules are restored in AGENTS.md. Final evidence/text-only source publication does not rebuild or restart the running services. Unrelated OD-054 worktree changes and design files are preserved.
 
 ## [Planning — Production economy baseline and proposals] - 2026-10-17
 
@@ -197,20 +834,20 @@
 
 ## Casper Grand concept study — 2026-10-09
 
-- Discussion only at the owner's request: recorded lower payout preferences and unresolved senior tiers in OD-047 and `docs/CASPER_GRAND_CONCEPTS.md`. Evaluated the proposed fixed table's ordinary payout expectation (7,320.60 CAS / 14.64% of a 50k ticket), excluding jackpot and refill; fund coverage is not approved by this calculation.
-- Generated three full number-selection screen concepts with imagegen: Grand Hall, official Casper Loto brand reference, Golden Orbit. Saved previews in `design/grand-concepts-2026-10-09/`; inspected all main grids (1–35) and secondary fields (1–5). These are nonfunctional design studies. The production logo asset remains unchanged. Owner requests a 3D animated draw with no video inserts; no implementation or production release is authorized in this study.
+- Discussion only at the owner's request: recorded lower payout preferences and unresolved senior tiers in OD-047 and `archive/reference/design-studies/archive/reference/design-studies/docs/CASPER_GRAND_CONCEPTS.md`. Evaluated the proposed fixed table's ordinary payout expectation (7,320.60 CAS / 14.64% of a 50k ticket), excluding jackpot and refill; fund coverage is not approved by this calculation.
+- Generated three full number-selection screen concepts with imagegen: Grand Hall, official Casper Loto brand reference, Golden Orbit. Saved previews in `archive/reference/design-studies/grand-concepts-2026-10-09/`; inspected all main grids (1–35) and secondary fields (1–5). These are nonfunctional design studies. The production logo asset remains unchanged. Owner requests a 3D animated draw with no video inserts; no implementation or production release is authorized in this study.
 
 ## Halloween production grid cascade regression — 2026-10-09
 
 - Owner screenshot exposed one-column stretched number controls despite the deployed 1.61.1 assets. Vite production CSS ordering let the equal-specificity generic `.ticket-number-grid` rule override Halloween's seven columns with an unset `--columns`. Development screenshots missed this cascade.
 - Raised the Halloween field selector specificity, made its grid display explicit and supplied `--columns:7` defensively. Verification uses the built production preview, including a late generic stylesheet injection to reproduce the original cascade, at 320/390/430 px.
-- Mini App 1.61.2 / Web 1.55.2 lint/typecheck/build passed. Published implementation 7f58680 with gateway-only restart, operations lock and database/source/image backups; API/bot/database identities and Admin assets are unchanged. Browser verified the actual public 1.61.2 build at 320/390/430 px with a late generic grid rule: all 28 buttons occupy seven columns without overflow, and three selections render as pumpkins. Screenshot `.tools/halloween-production-1612-confirmed.png` comes from production in the isolated broadcast preview (no real purchase). Internal health passed; release helper additionally verifies public HTML, bundles, version and HTTPS health.
+- Mini App 1.61.2 / Web 1.55.2 lint/typecheck/build passed. Published implementation 7f58680 with gateway-only restart, operations lock and database/source/image backups; API/bot/database identities and Admin assets are unchanged. Browser verified the actual public 1.61.2 build at 320/390/430 px with a late generic grid rule: all 28 buttons occupy seven columns without overflow, and three selections render as pumpkins. Screenshot `archive/local/2026-10-20/check-artifacts/halloween-production-1612-confirmed.png` comes from production in the isolated broadcast preview (no real purchase). Internal health passed; release helper additionally verifies public HTML, bundles, version and HTTPS health.
 - First publication automatically rolled back after external HTTPS handshake timeouts during the file sweep, with no asset mismatch found. Repeated the locked publication with bounded per-request transport retries; all public Mini App/Web HTML and JS/CSS hashes, version 1.61.2 and health 200 passed. Rechecked the seven-column grid on the final public build.
 
 ## Halloween pumpkin number field correction — 2026-10-09
 
 - Replaced the selected-circle CSS approximation with decorative SVG pumpkin bodies: sculpted ribs, curved stems, warm highlights and glow. Shared ticket component updates Mini App and Web; added an inset field matching the approved first concept. Number text, accessible button state, keyboard operation and selection/purchase services remain unchanged.
-- Scoped verification: affected frontends lint/typecheck/build; TicketComposer regression (8 tests), Web Halloween host regression (2 tests); browser smoke at 320/390/430 px confirms seven columns, no horizontal overflow, three pumpkins in the field and removable selected pumpkins. Actual screen: `.tools/halloween-pumpkin-fix-390.png`. The decorative component uses parent-supplied SVG IDs so the Web shared-source import does not load a second React hook dispatcher.
+- Scoped verification: affected frontends lint/typecheck/build; TicketComposer regression (8 tests), Web Halloween host regression (2 tests); browser smoke at 320/390/430 px confirms seven columns, no horizontal overflow, three pumpkins in the field and removable selected pumpkins. Actual screen: `archive/local/2026-10-20/check-artifacts/halloween-pumpkin-fix-390.png`. The decorative component uses parent-supplied SVG IDs so the Web shared-source import does not load a second React hook dispatcher.
 - Published implementation 90a5888 as Mini App 1.61.1 / Web 1.55.1 under the operations lock with database/source/image backups. Only gateway restarted. Public HTTPS verified version 1.61.1, exact Mini App/Web HTML and every built JS/CSS bundle, brand asset and health 200. Admin fingerprint and API/bot/database container identities are unchanged.
 
 ## Casper Halloween format and pumpkin experience — 2026-10-09
@@ -222,7 +859,7 @@
 - Checks: backend 426 passed / 1 Windows symlink check skipped; Mini App 136 passed; Admin 38 passed; Web 34 passed; backend mypy passed. Existing publication-channel unit tests now stub transport-state storage rather than unexpectedly requiring local PostgreSQL. Changed-file Ruff passes; full `scripts/check.ps1` stops on 759 pre-existing Ruff findings outside this change. All frontend typecheck/lint/build passed; isolated VPS PostgreSQL checks precede financial activation.
 - Stabilized the Web balance callback so parent renders cannot restart dashboard polling; regression verifies callback replacement. First isolated PostgreSQL run caught a keyword-only invocation error in the smoke script; source/images rolled back before any production transition. Corrected the script and repeated the locked release.
 - Web 1.55.0 shares the React pumpkin presentation while retaining its existing durable pending-purchase hook. Removed the fixed 16-number compatibility guard in favor of comparing refreshed server parameters with the opened draw; original legacy Phaser code/assets remain in source for historical reference. Web smoke verified 390/1240 px, three-number purchase containing 28; CSS explicitly protects the seven-column grid and checkout positioning from shared-style import order.
-- Browser smoke: 320/390/430 px, seven columns without overflow, three-number cap, removable lanterns, random ×25 purchases, reduced motion and festive catalogue return. `.tools/halloween-selected-390.png` and `.tools/halloween-catalog-390.png` capture the actual UI.
+- Browser smoke: 320/390/430 px, seven columns without overflow, three-number cap, removable lanterns, random ×25 purchases, reduced motion and festive catalogue return. `archive/local/2026-10-20/check-artifacts/halloween-selected-390.png` and `archive/local/2026-10-20/check-artifacts/halloween-catalog-390.png` capture the actual UI.
 - Published implementation f43c840: API 1.51.0 / Mini App 1.61.0 / Web 1.55.0 under `/run/lock/k-loto-operations.lock`, with source/image/database backups and archived API/bot diagnostics. Isolated PostgreSQL rollback, concurrent idempotency, balanced refunds, unchanged completed history and new 3/28 purchase all passed before activation. Production refunded 90 tickets / 599,940 CAS and converted two future draws; 180 compensating ledger records sum to zero, refunded tickets remain stored. Production API confirms 3/28, 6,666 CAS and {2: 28,000}; future snapshots use the new rules. Alembic check reports no schema drift; API/database are healthy, HTTPS health 200, exact Mini App/Web HTML and pumpkin asset verified. Admin asset fingerprint and database container identity are unchanged. Release archive/backups are retained in `backups/halloween-1791501206` and the configured VPS backup directories.
 
 ## Compact visual catalogue and festive filter — 2026-10-09
@@ -296,13 +933,13 @@
 
 ## Expanded editable Telegram copy bank — 2026-10-05
 
-- Expanded `docs/publications/block-a/telegram-posts.v1.txt` from 30 to 80 Telegram caption variants: eight for each A1/A4 block, with different lengths and sentence rhythm while preserving the existing placeholders and A4.4/A4.5 status labels.
+- Expanded `archive/reference/retired-publications/docs/publications/block-a/telegram-posts.v1.txt` from 30 to 80 Telegram caption variants: eight for each A1/A4 block, with different lengths and sentence rhythm while preserving the existing placeholders and A4.4/A4.5 status labels.
 - Verification: 80 unique caption IDs, eight variants in each of the ten blocks, UTF-8-readable text, and no runtime or schema changes.
 
 ## Editable Telegram post bank and launch checklist — 2026-10-05
 
 - Created UTF-8 text file docs/publications/block-a/telegram-posts.v1.txt with all 30 prepared A1/A4 Telegram captions, stable variant IDs and explicit pending/excluded labels for A4.4/A4.5. No Story fields; no new editorial claims or automatic rules. Owner can edit and return this file for review; A2/A3/A5/A8 bank remains outstanding.
-- Updated docs/PUBLICATIONS.md with actual delivery status, the single authorized channel test and approved-but-unimplemented Story lifetime. Added concrete manual-delivery and automatic-event launch checklist based on current service/renderer/scheduler code.
+- Updated archive/reference/retired-publications/docs/PUBLICATIONS.md with actual delivery status, the single authorized channel test and approved-but-unimplemented Story lifetime. Added concrete manual-delivery and automatic-event launch checklist based on current service/renderer/scheduler code.
 - Verification: exactly 30 caption IDs exported, readable UTF-8 file, documentation diff checked. No runtime change, channel send or production release.
 
 ## Block A participant-record threshold — 2026-10-05
@@ -321,7 +958,7 @@
 - Owner authorizes implementation in Admin/Mini App and explicitly postpones automatic rules. Added PublicationService, authenticated/CSRF-protected editorial endpoints and migration 0048. Server-owned template snapshots, field bounds, revision checks, transactional row locks, idempotent UUID draft creation/state retries and existing admin audit records. Published content cannot be edited in place; archive preserves content/history. No money/draw/auth rules, scheduler callbacks or personal notifications changed.
 - Integrated all 758 pairs as hashed runtime WebP backgrounds (71.68 MiB per client, 143.35 MiB for both static bundles; catalog 0.71 MiB). Editable masters, full design sheets and visual experiments stay local. Old background hashes are retained when adding templates; Mini App receives only bounded published pages, not the full catalog. Draft edits/preview use shared safe-zone metadata and deterministic text layout, with independent Story/Post compositions and browser PNG export.
 - Admin adds Stories/posts editor, save/publish/archive/copy workflow, independent channel caption and read-only permission check. Mini App rectangular news strip appears above the nearest draw, with native accessible Story dialog, swipe/arrows/manual controls and existing game navigation CTA (44px minimum touch region). Feed loads on Home mount and on explicit pagination/retry; no polling/publication job or automatic expiry.
-- Owner supplied @casper_loto; existing @Kasper_loto_bot post/edit permissions verified and destination stored under VPS operations lock. No messages sent, second polling consumer, token duplication or channel delivery added. docs/PUBLICATIONS.md describes usage, connection inputs, snapshot architecture and deferred channel adapter; OD-036 records the current scope.
+- Owner supplied @casper_loto; existing @Kasper_loto_bot post/edit permissions verified and destination stored under VPS operations lock. No messages sent, second polling consumer, token duplication or channel delivery added. archive/reference/retired-publications/docs/PUBLICATIONS.md describes usage, connection inputs, snapshot architecture and deferred channel adapter; OD-036 records the current scope.
 - Verification: full backend suite passed 314 tests with one existing Windows symlink skip after assigning a repository-local temp directory; 13 focused publication/channel checks passed. Full Admin suite 35 and Mini App suite 118 tests passed; both affected lint/typechecks passed. New Python paths pass Ruff and strict mypy; whole backend Ruff retains the pre-existing telegram_bot.py line-length violation and full-project mypy retains three pre-existing dual.py findings. Browser smoke uses synthetic data only: server draft/publish preview, read-only published fields, 1200×900 PNG export, mobile news placement, keyboard/Escape/navigation, CODE CTA and no horizontal overflow at 390/320 px. Real Telegram-device smoke unavailable. No synthetic content published to production/channel.
 
 - Published Mini App 1.58.0 / Admin 1.55.0 / API 1.48.0 from e40db88 with local source backup and VPS database/rollback backups. Shared operations lock held across upload/build/migration/diagnostic archival/restart/health; only API and gateway recreated. Alembic 0048 is head and schema check reports no pending operations. Public HTTPS HTML and sample Story asset match local builds exactly on both hosts; authenticated API returns 758 templates and zero publication rows, rejects anonymous feed access and confirms channel permission with delivery disabled. Runtime background directories allocate about 75 MiB per client; VPS has 24 GiB free. Bot/database containers were not recreated.
@@ -689,7 +1326,7 @@
 - Playwright MCP подтверждён реальным входом владельца и исходными desktop/mobile скриншотами production Fast. Редизайн начат только после подтверждения доступа.
 - FastBroadcast перенесён внутрь station-scene; idle, prelive, starting, revealing и result не создают дополнительного блока под покупкой. Ручной выбор использует ту же сцену, не теряет комбинацию при эфире. Фоновый арт из 1.39.0 раскрыт крупно; отдельные визуальные обработки чисел и motion для каждой игры. Нет новых bitmap assets и заимствований из Mini App.
 - Для фазовой визуальной проверки использован отдельный localhost preview с перехваченными API-ответами и тестовым пользователем. Все не-GET запросы preview блокируются; production-покупки не выполнялись, реальные credentials в fixtures не переносились.
-- Playwright проверил пять фаз на ширинах 1440/1024/390/360: координаты покупки и высоты каждой секции неизменны между фазами, горизонтального overflow нет. Просмотрены скриншоты desktop, мобильного эфира и ручного PULSE. Дополнительно проверен компактный 1366×768: все три кнопки покупки видны без прокрутки. Артефакты локально в `.playwright-mcp/` и не входят в релиз.
+- Playwright проверил пять фаз на ширинах 1440/1024/390/360: координаты покупки и высоты каждой секции неизменны между фазами, горизонтального overflow нет. Просмотрены скриншоты desktop, мобильного эфира и ручного PULSE. Дополнительно проверен компактный 1366×768: все три кнопки покупки видны без прокрутки. Артефакты локально в `archive/local/2026-10-20/browser-checks/` и не входят в релиз.
 - Добавлены регрессии вложенности эфира, сохранения DOM-сцены и ручных чисел после эфира. Релиз web-only: версия API остаётся 1.39.0, backend и база не изменены.
 - Проверки: Ruff, format, mypy; 224 backend, 71 Mini App, 25 admin и 18 web тестов; lint/typecheck/build всех frontend. Общий запуск остановился на существующем нестабильном admin-тесте Escape (`amount=null`); ошибка повторилась в полном admin-наборе, изолированные два случая и последующий полный admin-набор прошли без изменений кода. Остальные шаги после остановки выполнены отдельно. Web console без ошибок, reduced-motion отключает анимацию.
 - Production: `46d9182` опубликован через `release_vps.py --services gateway` после успешного backup. API/бот не перезапускались, API/DB healthy, публичный `/health` — 200. JS/CSS побайтово совпадают со сборкой. После публикации просмотрены production-скриншоты 1366×768 и 390×844: три встроенных эфира, ноль нижних панелей, без horizontal overflow и ошибок console. Локальный preview закрыт; реальных покупок в ходе проверки не было.
@@ -697,7 +1334,7 @@
 ## [1.39.0] - 2026-09-21
 
 - Fast web вынесен в отдельный компонент с тремя стабильными колонками и локальными live-потоками. Покупка случайного билета — один существующий API-запрос; ручной выбор раскрывается без модального перехода. Проверяются текущий тираж/цена, баланс и закрытие продаж; неопределённая покупка сохраняется в sessionStorage по UUID игрока и игре, повтор использует тот же ключ/числа. Смена тиража или цены блокирует автоматическую новую покупку до проверки пользователем.
-- Новая графика создана встроенным imagegen: отдельные FLASH, CODE, PULSE; production JPEG всего около 503 KB. Промпты и происхождение: `docs/FAST_WEB_ART.md`. Старые Fast-сцена и общий крупный SVG-пульс web удалены; остальные экраны не редизайнились.
+- Новая графика создана встроенным imagegen: отдельные FLASH, CODE, PULSE; production JPEG всего около 503 KB. Промпты и происхождение: `archive/reference/legacy-web/archive/reference/legacy-web/docs/FAST_WEB_ART.md`. Старые Fast-сцена и общий крупный SVG-пульс web удалены; остальные экраны не редизайнились.
 - Эфир использует существующий `lottery_code` фильтр, опрашивается раз в три секунды, не перекрывает незавершённые запросы, не опрашивается в скрытой вкладке. Числа и призы скрыты до серверных этапов; удержание результата шесть секунд, prelive восемь секунд, как в Mini App. Устаревший поток показывает переподключение. CSS-анимации отключаются вручную и через reduced-motion.
 - Read-only live-модель дополнена `primary_numbers_to_pick` и `secondary_storage_offset` из snapshot правил тиража, с fallback на действующий ruleset для старых записей без snapshot. Нет изменений схемы, ledger, scheduler или правил розыгрыша.
 - Подключённый браузер снова недоступен (`apps: [], browsers: []`), поэтому визуальная браузерная приёмка не заявляется. Арт-сцены просмотрены непосредственно после генерации.
@@ -3653,3 +4290,34 @@ recorded as follow-up in docs/TECHNICAL_AUDIT_2026-10-11.md. Before/after integr
 checks found zero balance-ledger discrepancies, overdue draws >10m or invalid
 indexes. Disk after backup/build: 92%, 3.2 GiB free; increase capacity is priority.
 Parallel unrelated Caddy/Dockerfile/legal-miniapp changes were left untouched.
+## [Approved achievement rewards and automatic gifts — local only] - 2026-10-20
+
+Owner approved the complete 22-row table: 930,000 CAS, eight daily-draw gift
+tickets and four planned cases; requires a neat gift marker and no case system.
+Recorded OD-069. CAS now transfers from Kasper Fund with a balanced two-row ledger
+operation per reward part. Automatic tickets reuse the authoritative purchase and
+settlement services, zero user cost, GIFT provenance/unique reward FK, usual funded
+jackpot/burn allocation and frozen nominal price for payouts. Paid-only conditions
+exclude gifts, while real prize payments still update the balance.
+
+Migration 0061 preserves immutable history and adds bounded indexed deferred
+delivery. Each payable part commits separately to avoid fund/lottery lock inversion;
+unavailable draws/funding wait five minutes without blocking player events. Cases
+stay planned catalog/award metadata, outside retry scans, with no inventory or
+delivery. Existing unpriced awards remain frozen; a new local preview profile
+exercises approved rewards while retaining the prior profile and both DB backups.
+
+Gift icon and label appear on ticket rows/full tickets. Mixed rewards appear in
+cards/details/notices, future cases are explicit, and finite event-driven refresh
+updates balances/progress. Local launcher tolerates offline draw recovery with a
+visible progress message. No production connection or publication in this task.
+
+Validation: backend 807 passed / 1 Windows symlink skip; Mini App 194 passed;
+Admin 68 passed; both client lint/typecheck/builds, Ruff, mypy 102 files, Alembic
+schema check. Real PostgreSQL coverage includes conservation, odd-price burning,
+duplicates/concurrency, unavailable funds/draws, recovery and gift settlement.
+Live local browser smoke produced six achievements and one gift through three
+paid purchases. 320/390 px visual QA passed. Full report:
+docs/achievements/ACHIEVEMENT_REWARDS_LOCAL_REPORT.md.
+
+Candidate gate caught an empty-database initialization regression before promotion: economy_control may have no row during bootstrap. Both lottery migrations now coalesce the missing epoch to the schema default 1; an existing production epoch remains unchanged. Fresh local bootstrap through 0067 and alembic check pass. Restore verification computes deterministic bucketed row hashes on PostgreSQL, comparing every old financial row without repeatedly transferring the full archive into Python. First failed attempt preserved at archive/local/2026-10-22/lotteries-release; corrected attempt has a separate archive.

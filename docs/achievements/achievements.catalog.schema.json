@@ -1,0 +1,476 @@
+{
+  "$defs": {
+    "CatalogEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "pattern": "^[a-z0-9][a-z0-9_.-]{0,79}$",
+          "title": "Code",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        },
+        "rarity": {
+          "enum": [
+            "common",
+            "uncommon",
+            "rare",
+            "epic",
+            "legendary"
+          ],
+          "title": "Rarity",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 512,
+          "title": "Description",
+          "type": "string"
+        },
+        "flavor": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Flavor"
+        },
+        "secret": {
+          "default": false,
+          "title": "Secret",
+          "type": "boolean"
+        },
+        "active": {
+          "default": false,
+          "title": "Active",
+          "type": "boolean"
+        },
+        "visible": {
+          "default": true,
+          "title": "Visible",
+          "type": "boolean"
+        },
+        "sort_order": {
+          "default": 0,
+          "title": "Sort Order",
+          "type": "integer"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "condition": {
+          "$ref": "#/$defs/Rule"
+        },
+        "rewards": {
+          "items": {
+            "$ref": "#/$defs/RewardSpec"
+          },
+          "maxItems": 16,
+          "title": "Rewards",
+          "type": "array"
+        },
+        "reward_pending": {
+          "default": false,
+          "title": "Reward Pending",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "version",
+        "rarity",
+        "title",
+        "description",
+        "condition"
+      ],
+      "title": "CatalogEntry",
+      "type": "object"
+    },
+    "Condition": {
+      "additionalProperties": false,
+      "properties": {
+        "metric": {
+          "title": "Metric",
+          "type": "string"
+        },
+        "op": {
+          "default": "gte",
+          "enum": [
+            "gte",
+            "gt",
+            "eq",
+            "lte",
+            "lt"
+          ],
+          "title": "Op",
+          "type": "string"
+        },
+        "target": {
+          "maximum": 9000000000000000000,
+          "minimum": 0,
+          "title": "Target",
+          "type": "integer"
+        },
+        "lottery": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z0-9-]{1,64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lottery"
+        },
+        "scope": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9_.:-]{1,80}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scope"
+        },
+        "category": {
+          "anyOf": [
+            {
+              "enum": [
+                "common",
+                "uncommon",
+                "rare",
+                "epic",
+                "legendary"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Category"
+        },
+        "period_days": {
+          "anyOf": [
+            {
+              "maximum": 366,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Period Days"
+        },
+        "achievement_codes": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 32,
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Achievement Codes"
+        },
+        "min_prize": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min Prize"
+        },
+        "multiplier_numerator": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Multiplier Numerator"
+        },
+        "multiplier_denominator": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Multiplier Denominator",
+          "type": "integer"
+        },
+        "matches": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Matches"
+        },
+        "matches_any": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "integer"
+              },
+              "maxItems": 16,
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Matches Any"
+        },
+        "primary_matches": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Primary Matches"
+        },
+        "secondary_matches": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Secondary Matches"
+        },
+        "bingo_row_move_lte": {
+          "anyOf": [
+            {
+              "maximum": 60,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bingo Row Move Lte"
+        },
+        "bingo_full_move_lte": {
+          "anyOf": [
+            {
+              "maximum": 60,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bingo Full Move Lte"
+        },
+        "natural_jackpot": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Natural Jackpot"
+        },
+        "payout_vs_price": {
+          "anyOf": [
+            {
+              "enum": [
+                "eq",
+                "gt"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Payout Vs Price"
+        },
+        "prize_category": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z0-9_.+-]{1,64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prize Category"
+        }
+      },
+      "required": [
+        "metric",
+        "target"
+      ],
+      "title": "Condition",
+      "type": "object"
+    },
+    "RewardSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "cas",
+            "ticket_entitlement",
+            "cosmetic",
+            "ticket",
+            "ticket_pack",
+            "case"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "amount": {
+          "anyOf": [
+            {
+              "maximum": 9000000000000000000,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Amount"
+        },
+        "lottery": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lottery"
+        },
+        "item": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Item"
+        },
+        "planned": {
+          "default": false,
+          "title": "Planned",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "RewardSpec",
+      "type": "object"
+    },
+    "Rule": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "default": "all",
+          "enum": [
+            "all",
+            "any"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "conditions": {
+          "items": {
+            "$ref": "#/$defs/Condition"
+          },
+          "maxItems": 16,
+          "minItems": 1,
+          "title": "Conditions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "conditions"
+      ],
+      "title": "Rule",
+      "type": "object"
+    }
+  },
+  "items": {
+    "$ref": "#/$defs/CatalogEntry"
+  },
+  "type": "array"
+}

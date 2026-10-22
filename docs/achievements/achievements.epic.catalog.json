@@ -1,0 +1,2133 @@
+[
+  {
+    "code": "epic_fifteen_thousand_tickets",
+    "version": 1,
+    "rarity": "epic",
+    "title": "Ветеран Каспера",
+    "description": "Купить суммарно 15 000 платных билетов",
+    "flavor": "Пятнадцать тысяч билетов. Кажется, ты знаешь здесь каждый уголок!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 300,
+    "icon": "tickets",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "paid_tickets",
+          "op": "gte",
+          "target": 15000,
+          "lottery": null,
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "matches_any": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 6000000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 4,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "epic_thousand_wins",
+    "version": 1,
+    "rarity": "epic",
+    "title": "Любимчик фортуны",
+    "description": "Получить 1 000 выигрышных платных билетов",
+    "flavor": "Тысяча побед! Удача уже здоровается с тобой за руку.",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 301,
+    "icon": "clover",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "winning_tickets",
+          "op": "gte",
+          "target": 1000,
+          "lottery": null,
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "matches_any": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 6000000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 4,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "epic_classic_five",
+    "version": 1,
+    "rarity": "epic",
+    "title": "Шаг до легенды",
+    "description": "Угадать ровно 5 чисел в «6 из 36» по платному билету",
+    "flavor": "Пять из шести. До легенды оставался всего один шаг!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 302,
+    "icon": "clover",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 1,
+          "lottery": "khan",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": 5,
+          "matches_any": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 4000000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 4,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "epic_ball_five_zero",
+    "version": 1,
+    "rarity": "epic",
+    "title": "Потерянный шар",
+    "description": "Получить призовую комбинацию 5+0 в Casper Ball по платному билету",
+    "flavor": "Пять шаров на месте. А последний где-то гуляет!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 303,
+    "icon": "circle-dot",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 1,
+          "lottery": "pss",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": 1,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "matches_any": null,
+          "primary_matches": 5,
+          "secondary_matches": 0,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 6000000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 4,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "epic_grand_near_crown",
+    "version": 1,
+    "rarity": "epic",
+    "title": "Почти король",
+    "description": "Получить призовую комбинацию 5+0 или 5+1 в Casper Grand по платному билету",
+    "flavor": "Корона уже близко. Осталось совсем чуть-чуть!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 304,
+    "icon": "castle",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 1,
+          "lottery": "weekly",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": 1,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "matches_any": null,
+          "primary_matches": 5,
+          "secondary_matches": 0,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        },
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 1,
+          "lottery": "weekly",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": 1,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "matches_any": null,
+          "primary_matches": 5,
+          "secondary_matches": 1,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 8000000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 4,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "epic_fourteen_winning_games",
+    "version": 1,
+    "rarity": "epic",
+    "title": "Мастер четырнадцати",
+    "description": "Получить выигрыш по платному билету в 14 разных лотереях, включая мгновенные",
+    "flavor": "Четырнадцать лотерей, четырнадцать побед. Да ты универсал!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 305,
+    "icon": "map-pinned",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "winning_lotteries",
+          "op": "gte",
+          "target": 14,
+          "lottery": null,
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "matches_any": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 8000000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "bingo",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "bingo",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "bingo",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "bingo",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "bingo",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "bingo",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "bingo",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "bingo",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "bingo",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "bingo",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 4,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "epic_ten_tenfold_wins",
+    "version": 1,
+    "rarity": "epic",
+    "title": "Большая коллекция",
+    "description": "Получить 10 выигрышей по разным платным билетам, каждый не меньше 10 цен своего билета",
+    "flavor": "Десять солидных выигрышей. Красиво собрал коллекцию!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 306,
+    "icon": "hand-coins",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "qualifying_wins",
+          "op": "gte",
+          "target": 10,
+          "lottery": null,
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": 10,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "matches_any": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 3000000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 1,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "epic_hundred_thousand_tickets",
+    "version": 1,
+    "rarity": "epic",
+    "title": "Тут всё моё",
+    "description": "Купить суммарно 100 000 платных билетов",
+    "flavor": "Сто тысяч билетов. Ты тут уже всё выкупил?",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 307,
+    "icon": "package-open",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "paid_tickets",
+          "op": "gte",
+          "target": 100000,
+          "lottery": null,
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "matches_any": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 20000000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 4,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "epic_fifty_day_streak",
+    "version": 1,
+    "rarity": "epic",
+    "title": "Ты ещё здесь?!",
+    "description": "Открывать приложение 50 календарных дней подряд по Москве",
+    "flavor": "Пятьдесят дней подряд?! Мы уже начали волноваться, когда тебя не видно.",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 308,
+    "icon": "calendar-heart",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "max_streak",
+          "op": "gte",
+          "target": 50,
+          "lottery": null,
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "matches_any": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 4000000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "september",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "september",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "september",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "september",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "september",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "september",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "september",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "september",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "september",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "september",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 4,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "epic_hundred_days",
+    "version": 1,
+    "rarity": "epic",
+    "title": "Старые знакомые",
+    "description": "Открыть приложение в 100 разных календарных дней по Москве",
+    "flavor": "Сто встреч. Нам уже и представляться не нужно.",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 309,
+    "icon": "calendar-heart",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "active_days",
+          "op": "gte",
+          "target": 100,
+          "lottery": null,
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "matches_any": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 4000000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 4,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "epic_hundred_million_prizes",
+    "version": 1,
+    "rarity": "epic",
+    "title": "Теперь серьёзно",
+    "description": "Накопить 100 000 000 CAS призовых выплат по платным билетам",
+    "flavor": "Сто миллионов призовых CAS. Тут уже без шуток!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 310,
+    "icon": "coins",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "won_cas",
+          "op": "gte",
+          "target": 100000000,
+          "lottery": null,
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "matches_any": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 6000000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 4,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "epic_code_four_thrice",
+    "version": 1,
+    "rarity": "epic",
+    "title": "Тройной взлом",
+    "description": "Трижды угадать ровно 4 позиции из 5 в CODE по разным платным билетам",
+    "flavor": "Три взлома. Кажется, пора менять пароли!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 311,
+    "icon": "fingerprint",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 3,
+          "lottery": "shadow",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": 4,
+          "matches_any": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 3500000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 4,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "epic_flash_four_five_times",
+    "version": 1,
+    "rarity": "epic",
+    "title": "Молния дважды не бьёт?",
+    "description": "Пять раз угадать ровно 4 числа в FLASH по разным платным билетам",
+    "flavor": "Пять разрядов! Кажется, молния выбрала тебя.",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 312,
+    "icon": "zap",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 5,
+          "lottery": "flash",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": 4,
+          "matches_any": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 3500000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "grob",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "grob",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "grob",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "grob",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "grob",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "grob",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "grob",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "grob",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "grob",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "grob",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 4,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "epic_pulse_two_two_twice",
+    "version": 1,
+    "rarity": "epic",
+    "title": "Кардиограмма",
+    "description": "Дважды получить 2+2 в PULSE по разным платным билетам, с любым шифром",
+    "flavor": "Два идеальных импульса. Кардиолог бы удивился!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 313,
+    "icon": "flame",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 2,
+          "lottery": "pulse",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "matches_any": null,
+          "primary_matches": 2,
+          "secondary_matches": 2,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 5000000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 4,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "epic_dual_mixed_thrice",
+    "version": 1,
+    "rarity": "epic",
+    "title": "Две стороны медали",
+    "description": "Трижды суммарно получить призовые комбинации 1+2 или 2+1 в Casper Dual по разным платным билетам",
+    "flavor": "Трижды нашёл баланс. Между прочим, не каждому дано!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 314,
+    "icon": "eclipse",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 3,
+          "lottery": "dual",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": 1,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "matches_any": [
+            12,
+            21
+          ],
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 3500000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 4,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "epic_five_consecutive_wins",
+    "version": 1,
+    "rarity": "epic",
+    "title": "Без права на ошибку",
+    "description": "Выиграть по платным билетам в 5 соседних завершённых тиражах одной лотереи",
+    "flavor": "Пять тиражей подряд с выигрышем. Это было красиво!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 315,
+    "icon": "history",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "consecutive_winning_draws",
+          "op": "gte",
+          "target": 5,
+          "lottery": null,
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "matches_any": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 5000000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 4,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "epic_five_daily_winning_games",
+    "version": 1,
+    "rarity": "epic",
+    "title": "Человек-оркестр",
+    "description": "Выиграть по платным билетам в 5 разных лотереях за один день по Москве",
+    "flavor": "Пять лотерей, пять побед. Сегодня ты дирижируешь удачей!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 316,
+    "icon": "compass",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "daily_winning_lotteries",
+          "op": "gte",
+          "target": 5,
+          "lottery": null,
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "matches_any": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 3000000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 1,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  }
+]

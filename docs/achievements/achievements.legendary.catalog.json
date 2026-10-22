@@ -1,0 +1,934 @@
+[
+  {
+    "code": "legendary_flash_jackpot",
+    "version": 1,
+    "rarity": "legendary",
+    "title": "Удар молнии",
+    "description": "Угадать 5 чисел из 20 по оплаченному билету с подтверждённой выплатой джекпота",
+    "flavor": "Пять из пяти. Кажется, молния попала точно в тебя!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 400,
+    "icon": "lottery:flash",
+    "condition": {
+      "mode": "all",
+      "conditions": [
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 1,
+          "lottery": "flash",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "achievement_codes": null,
+          "min_prize": 1,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": 5,
+          "matches_any": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": true,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 40000000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "cosmetic",
+        "amount": null,
+        "lottery": null,
+        "item": "badge:flash",
+        "planned": false
+      },
+      {
+        "type": "cosmetic",
+        "amount": null,
+        "lottery": null,
+        "item": "theme:gold",
+        "planned": false
+      },
+      {
+        "type": "ticket_pack",
+        "amount": 200,
+        "lottery": "flash",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 40,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "legendary_shadow_jackpot",
+    "version": 1,
+    "rarity": "legendary",
+    "title": "Код принят!",
+    "description": "Угадать все 5 цифр CODE на своих позициях по оплаченному билету с подтверждённой выплатой джекпота",
+    "flavor": "Код совпал. Шифр разгадан. Доступ к легендам разрешён!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 401,
+    "icon": "lottery:shadow",
+    "condition": {
+      "mode": "all",
+      "conditions": [
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 1,
+          "lottery": "shadow",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "achievement_codes": null,
+          "min_prize": 1,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": 5,
+          "matches_any": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": true,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 60000000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "cosmetic",
+        "amount": null,
+        "lottery": null,
+        "item": "badge:shadow",
+        "planned": false
+      },
+      {
+        "type": "cosmetic",
+        "amount": null,
+        "lottery": null,
+        "item": "theme:gold",
+        "planned": false
+      },
+      {
+        "type": "ticket_pack",
+        "amount": 300,
+        "lottery": "shadow",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 60,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "legendary_pulse_jackpot",
+    "version": 1,
+    "rarity": "legendary",
+    "title": "Сердце Каспера",
+    "description": "Угадать 2 из 12, 2 из 6 и автоматический шифр 001–199 по оплаченному билету с подтверждённой выплатой джекпота",
+    "flavor": "Пульс зашкаливает. Даже Каспер почувствовал!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 402,
+    "icon": "lottery:pulse",
+    "condition": {
+      "mode": "all",
+      "conditions": [
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 1,
+          "lottery": "pulse",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "achievement_codes": null,
+          "min_prize": 1,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": 221,
+          "matches_any": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": true,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 90000000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "cosmetic",
+        "amount": null,
+        "lottery": null,
+        "item": "badge:pulse",
+        "planned": false
+      },
+      {
+        "type": "cosmetic",
+        "amount": null,
+        "lottery": null,
+        "item": "theme:gold",
+        "planned": false
+      },
+      {
+        "type": "ticket_pack",
+        "amount": 350,
+        "lottery": "pulse",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 70,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "legendary_khan_jackpot",
+    "version": 1,
+    "rarity": "legendary",
+    "title": "Шесть из шести",
+    "description": "Угадать все 6 чисел из 36 по оплаченному билету с подтверждённой выплатой джекпота",
+    "flavor": "Шесть чисел. Шесть попаданий. Добро пожаловать в историю Каспера!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 403,
+    "icon": "lottery:khan",
+    "condition": {
+      "mode": "all",
+      "conditions": [
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 1,
+          "lottery": "khan",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "achievement_codes": null,
+          "min_prize": 1,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": 6,
+          "matches_any": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": true,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 150000000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "cosmetic",
+        "amount": null,
+        "lottery": null,
+        "item": "badge:khan",
+        "planned": false
+      },
+      {
+        "type": "cosmetic",
+        "amount": null,
+        "lottery": null,
+        "item": "theme:gold",
+        "planned": false
+      },
+      {
+        "type": "ticket_pack",
+        "amount": 400,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 80,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "legendary_pss_jackpot",
+    "version": 1,
+    "rarity": "legendary",
+    "title": "Последний звонок",
+    "description": "Угадать 5 чисел из 36 и дополнительный шар из 8 по оплаченному билету с подтверждённой выплатой джекпота",
+    "flavor": "Этот звонок ты запомнишь надолго. Каспер звонит лично тебе!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 404,
+    "icon": "lottery:pss",
+    "condition": {
+      "mode": "all",
+      "conditions": [
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 1,
+          "lottery": "pss",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "achievement_codes": null,
+          "min_prize": 1,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "matches_any": null,
+          "primary_matches": 5,
+          "secondary_matches": 1,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": true,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 220000000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "cosmetic",
+        "amount": null,
+        "lottery": null,
+        "item": "badge:pss",
+        "planned": false
+      },
+      {
+        "type": "cosmetic",
+        "amount": null,
+        "lottery": null,
+        "item": "theme:gold",
+        "planned": false
+      },
+      {
+        "type": "ticket_pack",
+        "amount": 450,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 90,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "legendary_weekly_jackpot",
+    "version": 1,
+    "rarity": "legendary",
+    "title": "Ваше величество",
+    "description": "Угадать 5 чисел из 35 и 2 дополнительных числа из 5 по оплаченному билету с подтверждённой выплатой джекпота",
+    "flavor": "Корона твоя. Сегодня в Casper Grand появился новый король!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 405,
+    "icon": "lottery:weekly",
+    "condition": {
+      "mode": "all",
+      "conditions": [
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 1,
+          "lottery": "weekly",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "achievement_codes": null,
+          "min_prize": 1,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "matches_any": null,
+          "primary_matches": 5,
+          "secondary_matches": 2,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": true,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 350000000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "cosmetic",
+        "amount": null,
+        "lottery": null,
+        "item": "badge:weekly",
+        "planned": false
+      },
+      {
+        "type": "cosmetic",
+        "amount": null,
+        "lottery": null,
+        "item": "theme:gold",
+        "planned": false
+      },
+      {
+        "type": "ticket_pack",
+        "amount": 500,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 100,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "legendary_bingo_jackpot",
+    "version": 1,
+    "rarity": "legendary",
+    "title": "Легендарное БИНГООО",
+    "description": "Закрыть все 12 чисел карточки не позднее 28-го хода по оплаченному билету с подтверждённой выплатой джекпота",
+    "flavor": "Это БИНГО, которое войдёт в историю!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 406,
+    "icon": "lottery:bingo",
+    "condition": {
+      "mode": "all",
+      "conditions": [
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 1,
+          "lottery": "bingo",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "achievement_codes": null,
+          "min_prize": 1,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": 12,
+          "matches_any": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": 28,
+          "natural_jackpot": true,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 90000000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "cosmetic",
+        "amount": null,
+        "lottery": null,
+        "item": "badge:bingo",
+        "planned": false
+      },
+      {
+        "type": "cosmetic",
+        "amount": null,
+        "lottery": null,
+        "item": "theme:gold",
+        "planned": false
+      },
+      {
+        "type": "ticket_pack",
+        "amount": 250,
+        "lottery": "bingo",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 50,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "legendary_pll_jackpot",
+    "version": 1,
+    "rarity": "legendary",
+    "title": "Время пришло",
+    "description": "Угадать 4 числа из 15 по оплаченному билету с подтверждённой выплатой джекпота",
+    "flavor": "2.22, это время неизбежно.",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 407,
+    "icon": "lottery:pll",
+    "condition": {
+      "mode": "all",
+      "conditions": [
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 1,
+          "lottery": "pll",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "achievement_codes": null,
+          "min_prize": 1,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": 4,
+          "matches_any": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": true,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 40000000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "cosmetic",
+        "amount": null,
+        "lottery": null,
+        "item": "badge:pll",
+        "planned": false
+      },
+      {
+        "type": "cosmetic",
+        "amount": null,
+        "lottery": null,
+        "item": "theme:gold",
+        "planned": false
+      },
+      {
+        "type": "ticket_pack",
+        "amount": 100,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 20,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "legendary_september_jackpot",
+    "version": 1,
+    "rarity": "legendary",
+    "title": "Календарь на репите",
+    "description": "Угадать 3 числа из 33 по оплаченному билету с подтверждённой выплатой джекпота",
+    "flavor": "Та самая дата, та самая песня. Только теперь у тебя ещё и джекпот!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 408,
+    "icon": "lottery:september",
+    "condition": {
+      "mode": "all",
+      "conditions": [
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 1,
+          "lottery": "september",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "achievement_codes": null,
+          "min_prize": 1,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": 3,
+          "matches_any": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": true,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 50000000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "cosmetic",
+        "amount": null,
+        "lottery": null,
+        "item": "badge:september",
+        "planned": false
+      },
+      {
+        "type": "cosmetic",
+        "amount": null,
+        "lottery": null,
+        "item": "theme:gold",
+        "planned": false
+      },
+      {
+        "type": "ticket_pack",
+        "amount": 150,
+        "lottery": "september",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 30,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "legendary_grob_jackpot",
+    "version": 1,
+    "rarity": "legendary",
+    "title": "Бу! Испугался?",
+    "description": "Угадать 3 числа из 28 по оплаченному билету с подтверждённой выплатой джекпота",
+    "flavor": "Даже привидения не ожидали такого исхода!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 409,
+    "icon": "lottery:grob",
+    "condition": {
+      "mode": "all",
+      "conditions": [
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 1,
+          "lottery": "grob",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "achievement_codes": null,
+          "min_prize": 1,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": 3,
+          "matches_any": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": true,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 40000000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "cosmetic",
+        "amount": null,
+        "lottery": null,
+        "item": "badge:grob",
+        "planned": false
+      },
+      {
+        "type": "cosmetic",
+        "amount": null,
+        "lottery": null,
+        "item": "theme:gold",
+        "planned": false
+      },
+      {
+        "type": "ticket_pack",
+        "amount": 125,
+        "lottery": "grob",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 25,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "legendary_casper_move_over",
+    "version": 1,
+    "rarity": "legendary",
+    "title": "Каспер, подвинься",
+    "description": "Получить все 10 исходных легендарных достижений за джекпоты разных лотерей",
+    "flavor": "Все десять джекпотов. Каспер, кажется, уступает тебе место.",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 410,
+    "icon": "casper-master",
+    "condition": {
+      "mode": "all",
+      "conditions": [
+        {
+          "metric": "earned_set",
+          "op": "gte",
+          "target": 10,
+          "lottery": null,
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "achievement_codes": [
+            "legendary_flash_jackpot",
+            "legendary_shadow_jackpot",
+            "legendary_pulse_jackpot",
+            "legendary_khan_jackpot",
+            "legendary_pss_jackpot",
+            "legendary_weekly_jackpot",
+            "legendary_bingo_jackpot",
+            "legendary_pll_jackpot",
+            "legendary_september_jackpot",
+            "legendary_grob_jackpot"
+          ],
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "matches_any": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 1000000000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "cosmetic",
+        "amount": null,
+        "lottery": null,
+        "item": "badge:casper-master",
+        "planned": false
+      },
+      {
+        "type": "cosmetic",
+        "amount": null,
+        "lottery": null,
+        "item": "theme:beyond",
+        "planned": false
+      },
+      {
+        "type": "ticket_pack",
+        "amount": 300,
+        "lottery": "flash",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket_pack",
+        "amount": 300,
+        "lottery": "shadow",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket_pack",
+        "amount": 300,
+        "lottery": "pulse",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket_pack",
+        "amount": 300,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket_pack",
+        "amount": 300,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket_pack",
+        "amount": 300,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket_pack",
+        "amount": 300,
+        "lottery": "bingo",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket_pack",
+        "amount": 300,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket_pack",
+        "amount": 300,
+        "lottery": "september",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket_pack",
+        "amount": 300,
+        "lottery": "grob",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 200,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  }
+]

@@ -1,0 +1,1612 @@
+[
+  {
+    "code": "rare_thousand_tickets",
+    "version": 1,
+    "rarity": "rare",
+    "title": "Косарь",
+    "description": "Купить суммарно 1 000 платных билетов",
+    "flavor": "Тысяча билетов! Да ты серьёзно взялся за дело.",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 200,
+    "icon": "tickets",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "paid_tickets",
+          "op": "gte",
+          "target": 1000,
+          "lottery": null,
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 900000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 1,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "rare_hundred_fifty_wins",
+    "version": 1,
+    "rarity": "rare",
+    "title": "Охотник за удачей",
+    "description": "Получить 150 выигрышных платных билетов",
+    "flavor": "Сто пятьдесят побед. Удача знает тебя в лицо!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 201,
+    "icon": "clover",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "winning_tickets",
+          "op": "gte",
+          "target": 150,
+          "lottery": null,
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 800000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 1,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "rare_hundredfold_win",
+    "version": 1,
+    "rarity": "rare",
+    "title": "Умножить",
+    "description": "Получить по одному платному билету выплату не меньше 100 его цен",
+    "flavor": "Вот это умножение! Математика сегодня на твоей стороне.",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 202,
+    "icon": "trending-up",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "qualifying_wins",
+          "op": "gte",
+          "target": 1,
+          "lottery": null,
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": 100,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 650000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 1,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "rare_flash_four",
+    "version": 1,
+    "rarity": "rare",
+    "title": "В шаге от молнии",
+    "description": "Угадать ровно 4 числа в FLASH по платному билету",
+    "flavor": "Четыре попадания! Ещё одно, и сверкнула бы настоящая молния.",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 203,
+    "icon": "zap",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 1,
+          "lottery": "flash",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": 4,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 450000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "rare_code_four",
+    "version": 1,
+    "rarity": "rare",
+    "title": "Почти взломал!",
+    "description": "Угадать ровно 4 позиции из 5 в CODE по платному билету",
+    "flavor": "Код подобран. Осталось разобраться с шифром!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 204,
+    "icon": "fingerprint",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 1,
+          "lottery": "shadow",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": 4,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 500000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "rare_pulse_two_two",
+    "version": 1,
+    "rarity": "rare",
+    "title": "Пульс зашкаливает",
+    "description": "Получить 2+2 в PULSE по платному билету, с любым результатом шифра",
+    "flavor": "Два плюс два. Кажется, у кого-то сейчас сердце выпрыгнет!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 205,
+    "icon": "flame",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 1,
+          "lottery": "pulse",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "primary_matches": 2,
+          "secondary_matches": 2,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 750000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 1,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "rare_classic_four_twice",
+    "version": 1,
+    "rarity": "rare",
+    "title": "Шестёрка",
+    "description": "Дважды угадать ровно 4 числа в «6 из 36» по разным платным билетам",
+    "flavor": "Четыре из шести. И так дважды! Это уже красиво.",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 206,
+    "icon": "clover",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 2,
+          "lottery": "khan",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": 4,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 650000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 1,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "rare_ball_two_zero_thrice",
+    "version": 1,
+    "rarity": "rare",
+    "title": "Третий звонок",
+    "description": "Трижды получить призовую комбинацию 2+0 в Casper Ball по разным платным билетам",
+    "flavor": "Каспер звонит уже в третий раз. Возьми трубку!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 207,
+    "icon": "circle-dot",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 3,
+          "lottery": "pss",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": 1,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "primary_matches": 2,
+          "secondary_matches": 0,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 500000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "rare_dual_mixed",
+    "version": 1,
+    "rarity": "rare",
+    "title": "Между двух миров",
+    "description": "Получить призовую комбинацию 1+2 или 2+1 в Casper Dual по платному билету",
+    "flavor": "Две стороны, один счастливчик. И это ты!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 208,
+    "icon": "eclipse",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 1,
+          "lottery": "dual",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": 1,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "primary_matches": 1,
+          "secondary_matches": 2,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        },
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 1,
+          "lottery": "dual",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": 1,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "primary_matches": 2,
+          "secondary_matches": 1,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 600000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "rare_bingo_forty",
+    "version": 1,
+    "rarity": "rare",
+    "title": "Сороковка",
+    "description": "Закрыть всю платную карточку Casper Bingo не позднее 40-го хода",
+    "flavor": "Вся карточка закрыта за сорок ходов. БИНГООО!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 209,
+    "icon": "grid-2x2",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 1,
+          "lottery": "bingo",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": 40,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 650000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "bingo",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "bingo",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "bingo",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "bingo",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "bingo",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 1,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "rare_twenty_one_streak",
+    "version": 1,
+    "rarity": "rare",
+    "title": "Прописался",
+    "description": "Открывать приложение 21 календарный день подряд по Москве",
+    "flavor": "Ты там случайно вещи к нам не перевёз?",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 210,
+    "icon": "calendar-heart",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "max_streak",
+          "op": "gte",
+          "target": 21,
+          "lottery": null,
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 650000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "september",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "september",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "september",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "september",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "september",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 1,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "rare_thirty_days",
+    "version": 1,
+    "rarity": "rare",
+    "title": "Мы знакомы?",
+    "description": "Открыть приложение в 30 разных календарных дней по Москве",
+    "flavor": "Тридцать встреч. Кажется, пора знакомиться поближе.",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 211,
+    "icon": "calendar-heart",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "active_days",
+          "op": "gte",
+          "target": 30,
+          "lottery": null,
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 600000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "rare_eight_winning_games",
+    "version": 1,
+    "rarity": "rare",
+    "title": "Удача без границ",
+    "description": "Получить хотя бы один выигрыш по платному билету в 8 разных лотереях",
+    "flavor": "Восемь разных лотерей, и в каждой победа. Универсал!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 212,
+    "icon": "map-pinned",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "winning_lotteries",
+          "op": "gte",
+          "target": 8,
+          "lottery": null,
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 800000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 1,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "rare_five_draw_wins",
+    "version": 1,
+    "rarity": "rare",
+    "title": "Счастливая пятёрка",
+    "description": "Получить 5 выигрышных платных билетов в одном тираже",
+    "flavor": "Один тираж, пять поводов улыбнуться.",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 213,
+    "icon": "hand-coins",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "max_draw_winning_tickets",
+          "op": "gte",
+          "target": 5,
+          "lottery": null,
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 600000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "grob",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "grob",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "grob",
+        "item": null,
+        "planned": false
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "rare_three_consecutive_wins",
+    "version": 1,
+    "rarity": "rare",
+    "title": "Трижды повезло",
+    "description": "Выиграть по платным билетам в 3 соседних завершённых тиражах одной лотереи",
+    "flavor": "Три тиража подряд! Совпадение? Конечно, но красивое.",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 214,
+    "icon": "history",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "consecutive_winning_draws",
+          "op": "gte",
+          "target": 3,
+          "lottery": null,
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 700000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "weekly",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 1,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "rare_million_prizes",
+    "version": 1,
+    "rarity": "rare",
+    "title": "Миллионер",
+    "description": "Накопить 1 000 000 CAS призовых выплат по платным билетам",
+    "flavor": "Первый миллион выигрышей! Звучит солидно.",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 215,
+    "icon": "coins",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "won_cas",
+          "op": "gte",
+          "target": 1000000,
+          "lottery": null,
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 400000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pss",
+        "item": null,
+        "planned": false
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "rare_daily_fast_wins",
+    "version": 1,
+    "rarity": "rare",
+    "title": "Быстрый набор",
+    "description": "Выиграть по платным билетам в FLASH, CODE и PULSE за один день по Москве",
+    "flavor": "Три быстрые лотереи, три победы. Неплохо!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 216,
+    "icon": "rabbit",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "daily_fast_winning_games",
+          "op": "gte",
+          "target": 3,
+          "lottery": null,
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 500000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "pll",
+        "item": null,
+        "planned": false
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "rare_flash_four_twice",
+    "version": 1,
+    "rarity": "rare",
+    "title": "Четыре ещё раз!",
+    "description": "Дважды угадать ровно 4 числа в FLASH по разным платным билетам",
+    "flavor": "Первый раз повезло. А второй?",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 217,
+    "icon": "zap",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 2,
+          "lottery": "flash",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": 4,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 650000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "grob",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "grob",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "grob",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "grob",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "grob",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "case",
+        "amount": 1,
+        "lottery": null,
+        "item": null,
+        "planned": true
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "rare_pulse_one_two_twice",
+    "version": 1,
+    "rarity": "rare",
+    "title": "Два сердца",
+    "description": "Дважды получить 1+2 в PULSE по разным платным билетам, с любым шифром",
+    "flavor": "Сердечко снова ёкнуло. И снова не зря!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 218,
+    "icon": "flame",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "result_count",
+          "op": "gte",
+          "target": 2,
+          "lottery": "pulse",
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "primary_matches": 1,
+          "secondary_matches": 2,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 500000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "september",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "september",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "september",
+        "item": null,
+        "planned": false
+      }
+    ],
+    "reward_pending": false
+  },
+  {
+    "code": "rare_ten_games",
+    "version": 1,
+    "rarity": "rare",
+    "title": "Играю во всё",
+    "description": "Поучаствовать хотя бы раз в 10 разных лотереях с платным билетом",
+    "flavor": "Кажется, ты решил проверить весь ассортимент!",
+    "secret": false,
+    "active": true,
+    "visible": true,
+    "sort_order": 219,
+    "icon": "compass",
+    "condition": {
+      "mode": "any",
+      "conditions": [
+        {
+          "metric": "lotteries_count",
+          "op": "gte",
+          "target": 10,
+          "lottery": null,
+          "scope": null,
+          "category": null,
+          "period_days": null,
+          "min_prize": null,
+          "multiplier_numerator": null,
+          "multiplier_denominator": 1,
+          "matches": null,
+          "primary_matches": null,
+          "secondary_matches": null,
+          "bingo_row_move_lte": null,
+          "bingo_full_move_lte": null,
+          "natural_jackpot": null,
+          "payout_vs_price": null,
+          "prize_category": null
+        }
+      ]
+    },
+    "rewards": [
+      {
+        "type": "cas",
+        "amount": 450000,
+        "lottery": null,
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      },
+      {
+        "type": "ticket",
+        "amount": 1,
+        "lottery": "khan",
+        "item": null,
+        "planned": false
+      }
+    ],
+    "reward_pending": false
+  }
+]
