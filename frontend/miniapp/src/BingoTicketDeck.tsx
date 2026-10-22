@@ -1,3 +1,4 @@
+import { tr } from "./i18n";
 import { useRef, useState } from "react";
 import { BingoEdition } from "./BingoEdition";
 import type { BingoInventory } from "./BingoView";
@@ -18,16 +19,16 @@ export function BingoTicketDeck({ inventory, selected, offset, price, busy, retr
     setVisibleIndex(distances.indexOf(Math.min(...distances)));
   };
   return <div className="bingo-deck">
-    <div className="bingo-ticket-list bingo-deck-track" ref={track} onScroll={observe} aria-label="Варианты билетов Casper Bingo">{inventory.tickets.map((ticket, index) => {
+    <div className="bingo-ticket-list bingo-deck-track" ref={track} onScroll={observe} aria-label={tr("Варианты билетов Casper Bingo")}>{inventory.tickets.map((ticket, index) => {
       const chosen = selected.some(t => t.id === ticket.id);
       return <div className={`bingo-choice ${chosen ? "chosen" : ""}`} key={ticket.id}>
-        <button className="bingo-ticket-preview" type="button" disabled={busy || retry || (!chosen && selected.length >= available)} onClick={() => onToggle(ticket)} aria-pressed={chosen} aria-label="Выбрать вариант билета">
-          <span className="bingo-choice-label"><span>Вариант {String(offset + index + 1).padStart(2, "0")}</span><span className="bingo-choice-check">{chosen ? "Выбран" : "Выбрать"}<i aria-hidden="true">{chosen ? "✓" : "+"}</i></span></span>
+        <button className="bingo-ticket-preview" type="button" disabled={busy || retry || (!chosen && selected.length >= available)} onClick={() => onToggle(ticket)} aria-pressed={chosen} aria-label={tr("Выбрать вариант билета")}>
+          <span className="bingo-choice-label"><span>{tr("Вариант")} {tr(String(offset + index + 1).padStart(2, "0"))}</span><span className="bingo-choice-check">{chosen ? tr("Выбран") : tr("Выбрать")}<i aria-hidden="true">{chosen ? "✓" : "+"}</i></span></span>
           <BingoEdition ticket={ticket} draw={inventory.draw_number} date={inventory.scheduled_at} price={price} compact />
         </button>
-        <button className="bingo-inspect" type="button" onClick={() => onInspect(ticket)}>Рассмотреть билет <span aria-hidden="true">↗</span></button>
+        <button className="bingo-inspect" type="button" onClick={() => onInspect(ticket)}>{tr("Рассмотреть билет")} <span aria-hidden="true">↗</span></button>
       </div>;
     })}</div>
-    <nav className="bingo-deck-controls" aria-label="Листать билеты"><button type="button" aria-label="Предыдущий вариант билета" disabled={visibleIndex <= 0} onClick={() => move(visibleIndex - 1)}>←</button><span>{visibleIndex + 1} <i>/ {inventory.tickets.length}</i><small>Листайте билеты</small></span><button type="button" aria-label="Следующий вариант билета" disabled={visibleIndex >= inventory.tickets.length - 1} onClick={() => move(visibleIndex + 1)}>→</button></nav>
+    <nav className="bingo-deck-controls" aria-label={tr("Листать билеты")}><button type="button" aria-label={tr("Предыдущий вариант билета")} disabled={visibleIndex <= 0} onClick={() => move(visibleIndex - 1)}>←</button><span>{visibleIndex + 1} <i>/ {inventory.tickets.length}</i><small>{tr("Листайте билеты")}</small></span><button type="button" aria-label={tr("Следующий вариант билета")} disabled={visibleIndex >= inventory.tickets.length - 1} onClick={() => move(visibleIndex + 1)}>→</button></nav>
   </div>;
 }

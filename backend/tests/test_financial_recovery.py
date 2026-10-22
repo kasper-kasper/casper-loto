@@ -26,6 +26,7 @@ from k_loto.domain.errors import (
     NoAvailableDraw,
 )
 from k_loto.domain.instant import INSTANT_GAMES
+from k_loto.domain.lottery_rules import WEEKLY_RULES
 from k_loto.infrastructure.database.models import (
     KasperFundAccount,
     LedgerTransaction,
@@ -121,6 +122,7 @@ async def test_later_draw_cannot_overtake_unpaid_earlier_outcome() -> None:
 async def test_admin_cannot_spend_committed_jackpot() -> None:
     now = datetime(2026, 10, 14, 12, tzinfo=UTC)
     _, lottery, _, _, jackpot, _ = build_purchase_accounts(now)
+    lottery.ruleset_code = WEEKLY_RULES.code
     session = FakeSession(scalar_values=[None, lottery, jackpot, 2000])
     with pytest.raises(ValueError, match="committed"):
         await AdminMutationService(

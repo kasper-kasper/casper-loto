@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { FastPicker, FastView } from "./FastView";
@@ -138,7 +138,7 @@ describe("PULSE picker", () => {
     fireEvent.click(screen.getByRole("button", { name: "Pulse-число 6" }));
     fireEvent.click(screen.getByRole("button", { name: "Pulse-число 2" }));
     fireEvent.click(screen.getByRole("button", { name: /Запустить пульс/i }));
-    expect(onBuy).toHaveBeenCalledWith([1, 12, 14, 18]);
+    expect(onBuy).toHaveBeenCalledWith([1, 12, 14, 18], "manual");
   });
 });
 
@@ -156,7 +156,7 @@ describe("CODE picker", () => {
     expect(Array.from(container.querySelectorAll(".code-keypad button:not(.code-backspace)"), (button) => button.textContent)).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]);
   });
 
-  it("submits four ordered digits including zero and repeats", () => {
+  it("submits four ordered digits including zero and repeats", async () => {
     const onBuy = vi.fn().mockResolvedValue(true);
     render(
       <FastPicker
@@ -178,6 +178,11 @@ describe("CODE picker", () => {
     fireEvent.click(screen.getByRole("button", { name: "Цифра 0" }));
     fireEvent.click(screen.getByRole("button", { name: "Цифра 3" }));
     fireEvent.click(screen.getByRole("button", { name: /Подтвердить код/i }));
-    expect(onBuy).toHaveBeenCalledWith([0, 7, 0, 3]);
+    expect(onBuy).toHaveBeenCalledWith([0, 7, 0, 3], "manual");
+    await waitFor(() => expect(screen.getByRole("button", { name: /Подтвердить код/i })).toBeDisabled());
+    for (const n of [1, 2, 3, 4]) fireEvent.click(screen.getByRole("button", { name: `Цифра ${n}` }));
+    fireEvent.click(screen.getByRole("button", { name: /Подтвердить код/i }));
+    expect(onBuy).toHaveBeenLastCalledWith([1, 2, 3, 4], "manual");
+    await waitFor(() => expect(screen.getByRole("button", { name: /Подтвердить код/i })).toBeDisabled());
   });
 });

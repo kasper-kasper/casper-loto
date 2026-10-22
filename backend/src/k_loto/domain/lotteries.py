@@ -22,6 +22,10 @@ LOTTERY_DEFINITIONS = (
     LotteryDefinition("pll", "ПЛЛ-лото", LotteryKind.DAILY, "02:22 / 13:45"),
     LotteryDefinition("pss", "Casper Ball", LotteryKind.DAILY, "12:00 / 20:30"),
     LotteryDefinition("khan", "6 из 36", LotteryKind.DAILY, "09:00 / 18:00"),
+    LotteryDefinition("mini", "Casper Mini", LotteryKind.DAILY, "10:30 / 19:15"),
+    LotteryDefinition(
+        "newyear2027", "Новогоднее лото 2027", LotteryKind.DAILY, "21:15"
+    ),
     LotteryDefinition("september", "3 СЕНТЯБРЯ", LotteryKind.DAILY, "03:33 / 15:33"),
     LotteryDefinition("grob", "Casper Halloween", LotteryKind.DAILY, "06:06 / 23:06"),
     LotteryDefinition("flash", "FLASH", LotteryKind.DAILY, "каждые 9 минут"),
@@ -43,6 +47,7 @@ AUTO_PLAY_ALLOWED_CODES = frozenset(
         "flash",
         "grob",
         "khan",
+        "mini",
         "pll",
         "pss",
         "pulse",

@@ -1,3 +1,4 @@
+import { tr } from "./i18n";
 import type { Lottery } from "./types";
 import { randomCombination } from "./random";
 
@@ -32,17 +33,17 @@ export function lotteryCombination(lottery: Lottery): number[] {
 export function lotteryFormat(lottery: Lottery): string {
   if (isGrandLottery(lottery)) {
     const specialLabel = lottery.code === "pss" ? "CASPER BALL " : "";
-    return `${lottery.primary_numbers_to_pick ?? 5} ИЗ ${lottery.primary_max_number ?? 35} + ${specialLabel}${lottery.secondary_numbers_to_pick ?? 2} ИЗ ${lottery.secondary_max_number ?? 5}`;
+    return tr("{0} ИЗ {1} + {2}{3} ИЗ {4}", lottery.primary_numbers_to_pick ?? 5, lottery.primary_max_number ?? 35, specialLabel, lottery.secondary_numbers_to_pick ?? 2, lottery.secondary_max_number ?? 5);
   }
-  return `${lottery.numbers_to_pick} ИЗ ${lottery.max_number}`;
+  return tr("{0} ИЗ {1}", lottery.numbers_to_pick, lottery.max_number);
 }
 
 export function lotteryKindLabel(lottery: Lottery): string {
-  return lottery.kind === "WEEKLY" ? "Еженедельная" : "Ежедневная";
+  return lottery.kind === "WEEKLY" ? tr("Еженедельная") : tr("Ежедневная");
 }
 
 export function matchLabel(code: string, matches: number, grandFormat = matches >= 10): string {
-  if (code === "pulse" && matches >= 100) return `${Math.floor(matches / 100)}+${Math.floor(matches / 10) % 10}, шифр ${matches % 10 ? "совпал" : "не совпал"}`;
+  if (code === "pulse" && matches >= 100) return tr("{0}+{1}, шифр {2}", Math.floor(matches / 100), Math.floor(matches / 10) % 10, matches % 10 ? tr("совпал") : tr("не совпал"));
   if (!isGrandLottery(code) || !grandFormat) return String(matches);
   return `${Math.floor(matches / 10)}+${matches % 10}`;
 }

@@ -1,3 +1,4 @@
+import { tr } from "./i18n";
 import { configuredCartTtl, containsPurchasedCartIds, loadCart, markCartPurchased, saveCart } from "./cart";
 import { withPurchaseLock } from "./purchaseLock";
 import type { InstantPurchaseResult, PurchaseResult } from "./types";
@@ -25,7 +26,7 @@ export function setPurchaseOwner(value: string): void {
 }
 export function purchaseActive(): boolean { return active; }
 async function withActiveLock<T>(ownerId: string, run: () => Promise<T>): Promise<T> {
-  if (active) throw new Error("Покупка уже проверяется. Дождитесь результата.");
+  if (active) throw new Error(tr("Покупка уже проверяется. Дождитесь результата."));
   active = true;
   try { return await withPurchaseLock(ownerId, run); }
   finally { active = false; window.dispatchEvent(new Event(journalEvent)); }
@@ -40,11 +41,11 @@ function readForOwner(ownerId: string): PendingPurchase | null {
   const body = JSON.parse(value.body) as { idempotency_key?: string };
   if (!/^\/api\/v1\/miniapp\/(?:lotteries\/[a-z0-9-]+|bingo|kasper-live|aurora|vault)\/purchases$/.test(value.path)
     || typeof value.key !== "string" || body.idempotency_key !== value.key
-    || value.ownerId !== ownerId || !Array.isArray(value.cartIds)) throw new Error("Не удалось прочитать незавершённую покупку. Обратитесь в поддержку.");
+    || value.ownerId !== ownerId || !Array.isArray(value.cartIds)) throw new Error(tr("Не удалось прочитать незавершённую покупку. Обратитесь в поддержку."));
   return value;
 }
 function writePurchase(value: PendingPurchase): void {
-  if (!owner) throw new Error("Дождитесь загрузки аккаунта перед покупкой.");
+  if (!owner) throw new Error(tr("Дождитесь загрузки аккаунта перед покупкой."));
   localStorage.setItem(prefix + value.ownerId, JSON.stringify(value));
   window.dispatchEvent(new Event(journalEvent));
 }
@@ -75,7 +76,7 @@ export async function cancelPurchase(
   send: () => Promise<{ cancelled: boolean; receipt: Receipt | null }>,
 ): Promise<{ cancelled: boolean; receipt: Receipt | null }> {
   return withActiveLock(value.ownerId, async () => {
-    if (readForOwner(value.ownerId)?.key !== value.key) throw new Error("Покупка уже проверена в другом окне. Обновите её состояние.");
+    if (readForOwner(value.ownerId)?.key !== value.key) throw new Error(tr("Покупка уже проверена в другом окне. Обновите её состояние."));
     const response = await send();
     if (!response.receipt && response.cancelled && readForOwner(value.ownerId)?.key === value.key) {
       localStorage.removeItem(prefix + value.ownerId);
@@ -90,18 +91,18 @@ export async function durablePurchase<T extends Receipt>(
   path: string, body: string, send: () => Promise<T>, definitive: (reason: unknown) => boolean,
   cartIds: string[] = [], recovered = false,
 ): Promise<T> {
-  if (!owner) throw new Error("Дождитесь загрузки аккаунта перед покупкой.");
+  if (!owner) throw new Error(tr("Дождитесь загрузки аккаунта перед покупкой."));
   const ownerId = owner;
   return withActiveLock(ownerId, async () => {
-    if (owner !== ownerId) throw new Error("Аккаунт изменился. Обновите страницу перед покупкой.");
+    if (owner !== ownerId) throw new Error(tr("Аккаунт изменился. Обновите страницу перед покупкой."));
     // Recheck shared state inside the cross-tab lock, immediately before sending.
     const previous = readForOwner(ownerId);
     if (!previous && cartIds.length && containsPurchasedCartIds(cartIds, configuredCartTtl())) {
-      throw new Error("Часть позиций уже куплена. Корзина обновлена — проверьте оставшиеся билеты.");
+      throw new Error(tr("Часть позиций уже куплена. Корзина обновлена — проверьте оставшиеся билеты."));
     }
     const key = (JSON.parse(body) as { idempotency_key: string }).idempotency_key;
     if (previous && (previous.key !== key || previous.path !== path || previous.body !== body)) {
-      throw new Error("Сначала проверьте результат предыдущей покупки — она могла уже пройти.");
+      throw new Error(tr("Сначала проверьте результат предыдущей покупки — она могла уже пройти."));
     }
     const pending = previous ?? { ownerId, path, body, key, cartIds, uncertain: false };
     try {

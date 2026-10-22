@@ -1,3 +1,4 @@
+import { tr } from "./i18n";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, miniAppApi } from "./api";
 import { logoSymbol } from "./brand";
@@ -23,10 +24,10 @@ function BingoMark() { return <span className="bingo-mark" aria-hidden="true"><i
 
 export function BingoInvitation({ lottery, now, onOpen }: { lottery: Lottery; now: number; onOpen: () => void }) {
   return <button className="bingo-invitation" type="button" onClick={onOpen}>
-    <span className="bingo-invite-top"><span>КАЖДЫЙ ВЕЧЕР · 22:00 МСК</span><span>ДЖЕКПОТ ВЕЧЕРА</span></span>
-    <span className="bingo-invite-main"><span><strong>Casper <em>Bingo</em></strong><small>Ваш вечерний ритуал</small></span><BingoMark /></span>
-    <span className="bingo-invite-bottom"><span><small>ДЖЕКПОТ</small><b><Money value={lottery.jackpot} compact /></b></span><span className="bingo-arrow">↗</span></span>
-    <span className="bingo-invite-date">{lottery.scheduled_at ? `${formatMoscow(lottery.scheduled_at)} МСК · ${countdown(lottery.scheduled_at, now)}` : "Открыть билеты и эфир"}</span>
+    <span className="bingo-invite-top"><span>{tr("КАЖДЫЙ ВЕЧЕР · 22:00 МСК")}</span><span>{tr("ДЖЕКПОТ ВЕЧЕРА")}</span></span>
+    <span className="bingo-invite-main"><span><strong>Casper <em>Bingo</em></strong><small>{tr("Ваш вечерний ритуал")}</small></span><BingoMark /></span>
+    <span className="bingo-invite-bottom"><span><small>{tr("ДЖЕКПОТ")}</small><b><Money value={lottery.jackpot} compact /></b></span><span className="bingo-arrow">↗</span></span>
+    <span className="bingo-invite-date">{lottery.scheduled_at ? tr("{0} МСК · {1}", formatMoscow(lottery.scheduled_at), countdown(lottery.scheduled_at, now)) : tr("Открыть билеты и эфир")}</span>
   </button>;
 }
 
@@ -34,13 +35,13 @@ function Paper({ ticket, draw, date, price, revealed = [], current, result, comp
   const hits = new Set(revealed);
   const missingRows = [0, 1, 2].map(row => ticket.numbers.slice(row * 4, row * 4 + 4).filter(n => !hits.has(n)).length).sort((a, b) => a - b);
   return <article className={`bingo-paper ${compact ? "is-compact" : ""}`}>
-    <header><BingoMark /><span>CASPER<strong>BINGO</strong></span><small>ТИРАЖ<b>№{String(draw).padStart(4, "0")}</b></small></header>
-    {!compact && <div className="bingo-paper-date">{formatMoscow(date)} МСК <span>12 чисел · 3 строки</span></div>}
-    <div className="bingo-grid">{[0, 1, 2].map(row => <div className={ticket.numbers.slice(row * 4, row * 4 + 4).every(n => hits.has(n)) ? "closed-row" : ""} key={row}>{ticket.numbers.slice(row * 4, row * 4 + 4).map(n => <span key={n} className={`${hits.has(n) ? "hit" : ""} ${current === n ? "current" : ""}`} aria-label={`${n}${hits.has(n) ? ", совпало" : ""}${current === n ? ", текущее число" : ""}`}><b>{String(n).padStart(2, "0")}</b>{hits.has(n) && <i aria-hidden="true">✓</i>}</span>)}</div>)}</div>
-    <footer><span><small>{ticket.public_number ? "СЕРИЙНЫЙ НОМЕР" : "ДО ПОКУПКИ"}</small><b>{ticket.public_number ? serial(ticket.public_number) : "ВАРИАНТ БИЛЕТА"}</b></span><span><small>СТОИМОСТЬ</small><b>{formatCas(price)}</b></span></footer>
-    {!compact && <div className="bingo-paper-seal"><span>✦</span> Счастье любит присутствие <span>✦</span></div>}
-    {!compact && !result && revealed.length > 0 && <div className="bingo-ticket-progress"><span>До строки <b>{missingRows[0]}</b></span><span>До двух <b>{missingRows[0] + missingRows[1]}</b></span><span>До полного <b>{missingRows.reduce((a, b) => a + b, 0)}</b></span></div>}
-    {result && <div className="bingo-ticket-result"><strong>{result.amounts.some(Boolean) ? `Ваш выигрыш · ${formatCas(result.amounts.reduce((a, b) => a + b, 0))}` : "В этот раз без выигрыша"}</strong><small>Совпало {ticket.numbers.filter(n => hits.has(n)).length} из 12</small>{result.amounts.map((amount, i) => amount > 0 && <p key={i}>{["Одна строка", "Две строки", "Джекпот", "Полная карточка"][i]} <b>{formatCas(amount)}</b></p>)}</div>}
+    <header><BingoMark /><span>CASPER<strong>BINGO</strong></span><small>{tr("ТИРАЖ")}<b>№{tr(String(draw).padStart(4, "0"))}</b></small></header>
+    {!compact && <div className="bingo-paper-date">{tr(formatMoscow(date))}  {tr("МСК")} <span>{tr("12 чисел · 3 строки")}</span></div>}
+    <div className="bingo-grid">{[0, 1, 2].map(row => <div className={ticket.numbers.slice(row * 4, row * 4 + 4).every(n => hits.has(n)) ? "closed-row" : ""} key={row}>{ticket.numbers.slice(row * 4, row * 4 + 4).map(n => <span key={n} className={`${hits.has(n) ? "hit" : ""} ${current === n ? "current" : ""}`} aria-label={tr(`${n}${hits.has(n) ? tr(", совпало") : ""}${current === n ? tr(", текущее число") : ""}`)}><b>{tr(String(n).padStart(2, "0"))}</b>{hits.has(n) && <i aria-hidden="true">✓</i>}</span>)}</div>)}</div>
+    <footer><span><small>{ticket.public_number ? tr("СЕРИЙНЫЙ НОМЕР") : tr("ДО ПОКУПКИ")}</small><b>{tr(ticket.public_number ? serial(ticket.public_number) : tr("ВАРИАНТ БИЛЕТА"))}</b></span><span><small>{tr("СТОИМОСТЬ")}</small><b>{tr(formatCas(price))}</b></span></footer>
+    {!compact && <div className="bingo-paper-seal"><span>✦</span>  {tr("Счастье любит присутствие")} <span>✦</span></div>}
+    {!compact && !result && revealed.length > 0 && <div className="bingo-ticket-progress"><span>{tr("До строки")} <b>{missingRows[0]}</b></span><span>{tr("До двух")} <b>{missingRows[0] + missingRows[1]}</b></span><span>{tr("До полного")} <b>{missingRows.reduce((a, b) => a + b, 0)}</b></span></div>}
+    {result && <div className="bingo-ticket-result"><strong>{result.amounts.some(Boolean) ? tr("Ваш выигрыш · {0}", formatCas(result.amounts.reduce((a, b) => a + b, 0))) : tr("В этот раз без выигрыша")}</strong><small>{tr("Совпало")} {ticket.numbers.filter(n => hits.has(n)).length}  {tr("из 12")}</small>{result.amounts.map((amount, i) => amount > 0 && <p key={i}>{tr([tr("Одна строка"), tr("Две строки"), tr("Джекпот"), tr("Полная карточка")][i])} <b>{tr(formatCas(amount))}</b></p>)}</div>}
   </article>;
 }
 
@@ -59,7 +60,7 @@ function PaperDialog({ children, onClose }: { children: React.ReactNode; onClose
     document.body.style.overflow = "hidden";
     return () => { document.removeEventListener("keydown", key); document.body.style.overflow = overflow; prior?.focus(); };
   }, [onClose]);
-  return <div className="bingo-dialog-backdrop" role="presentation" onClick={onClose}><section className="bingo-dialog" role="dialog" aria-modal="true" aria-label="Билет Casper Bingo" onClick={e => e.stopPropagation()}><button ref={ref} type="button" className="bingo-dialog-close" onClick={onClose} aria-label="Закрыть билет">×</button>{children}</section></div>;
+  return <div className="bingo-dialog-backdrop" role="presentation" onClick={onClose}><section className="bingo-dialog" role="dialog" aria-modal="true" aria-label={tr("Билет Casper Bingo")} onClick={e => e.stopPropagation()}><button ref={ref} type="button" className="bingo-dialog-close" onClick={onClose} aria-label={tr("Закрыть билет")}>×</button>{tr(children)}</section></div>;
 }
 
 export function BingoView({ lottery, initData, now, balance, onClose, onPurchased, initialTab = "choose" }: { initialTab?: "choose" | "live"; lottery: Lottery; initData: string; now: number; balance: number; onClose: () => void; onPurchased: (result: PurchaseResult) => void }) {
@@ -108,7 +109,7 @@ export function BingoView({ lottery, initData, now, balance, onClose, onPurchase
   }, [refreshMine]);
   useEffect(() => {
     let active = true;
-    void miniAppApi.bingoInventory(initData, offset, favoriteNumbers).then(data => { if (active) { setInventory(data); setFavoriteError(""); if (inventoryDraw.current && inventoryDraw.current !== data.draw_id) setSelected([]); inventoryDraw.current = data.draw_id; } }).catch((reason: unknown) => { if (active) { if (favoriteNumbers.length > 0) setFavoriteError("Поиск не сработал. Попробуйте ещё раз."); else setError(reason instanceof Error ? reason.message : "Не удалось загрузить билеты"); } }).finally(() => { if (active) setLoading(false); });
+    void miniAppApi.bingoInventory(initData, offset, favoriteNumbers).then(data => { if (active) { setInventory(data); setFavoriteError(""); if (inventoryDraw.current && inventoryDraw.current !== data.draw_id) setSelected([]); inventoryDraw.current = data.draw_id; } }).catch((reason: unknown) => { if (active) { if (favoriteNumbers.length > 0) setFavoriteError(tr("Поиск не сработал. Попробуйте ещё раз.")); else setError(reason instanceof Error ? reason.message : tr("Не удалось загрузить билеты")); } }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [favoriteNumbers, initData, offset, revision]);
   useEffect(() => { const timer = window.setTimeout(() => void refreshMine().catch(() => undefined), 0); return () => window.clearTimeout(timer); }, [refreshMine, feed?.draw?.complete]);
@@ -123,7 +124,7 @@ export function BingoView({ lottery, initData, now, balance, onClose, onPurchase
     const poll = async () => {
       if (!document.hidden) {
         try { const data = await miniAppApi.bingoLive(initData); if (active) setFeed(data); }
-        catch { if (active && tab === "live") setError("Эфир переподключается. Выпавшие числа сохраняются."); }
+        catch { if (active && tab === "live") setError(tr("Эфир переподключается. Выпавшие числа сохраняются.")); }
       }
       if (active) timer = setTimeout(() => void poll(), broadcastPreviewConfig() ? 700 : tab === "live" ? 2000 : 10000);
     };
@@ -158,7 +159,7 @@ export function BingoView({ lottery, initData, now, balance, onClose, onPurchase
     try {
       const result = await miniAppApi.bingoPurchase(initData, pending.current.draw, pending.current.selection, pending.current.key);
       pending.current = null; setRetry(false); setRetrySelection(null); setSelected([]);
-      setNotice(`Куплено: ${result.ticket_ids.length} · ${formatCas(result.total_cost)}`);
+      setNotice(tr("Куплено: {0} · {1}", result.ticket_ids.length, formatCas(result.total_cost)));
       onPurchased(result);
       void Promise.allSettled([refreshMine(), miniAppApi.bingoInventory(initData, 0, favoriteNumbers)]).then(([, inventoryRefresh]) => {
         if (inventoryRefresh.status === "fulfilled") { setInventory(inventoryRefresh.value); setOffset(0); }
@@ -168,7 +169,7 @@ export function BingoView({ lottery, initData, now, balance, onClose, onPurchase
         pending.current = null; setRetry(false); setRetrySelection(null);
         if (reason.status === 409) { setSelected([]); setRevision(v => v + 1); }
       } else { setRetry(true); setRetrySelection(pending.current?.selection ?? selection); }
-      setError(reason instanceof ApiError && reason.status === 409 ? "Один из билетов уже купили или продажи завершены. Подборка обновлена — выберите свободные билеты." : reason instanceof Error ? reason.message : "Не удалось подтвердить покупку. Нажмите ещё раз — повторного списания не будет.");
+      setError(reason instanceof ApiError && reason.status === 409 ? tr("Один из билетов уже купили или продажи завершены. Подборка обновлена — выберите свободные билеты.") : reason instanceof Error ? reason.message : tr("Не удалось подтвердить покупку. Нажмите ещё раз — повторного списания не будет."));
     } finally { setBusy(false); }
   };
   const buy = () => purchase({ ticketIds: selected.map(t => t.id) });
@@ -178,51 +179,51 @@ export function BingoView({ lottery, initData, now, balance, onClose, onPurchase
   const searchFavorites = () => {
     const values = favoriteInputs.filter(value => value.trim() !== "").map(Number);
     if (values.length === 0 || values.some(value => !Number.isInteger(value) || value < 1 || value > 60) || new Set(values).size !== values.length) {
-      setFavoriteError("Введите до трёх разных чисел от 1 до 60.");
+      setFavoriteError(tr("Введите до трёх разных чисел от 1 до 60."));
       return;
     }
     setFavoriteError(""); setError(""); setSelected([]); setOffset(0); setLoading(true); setFavoriteNumbers(values);
   };
   return <main className={`app-shell bingo-page play-room play-bingo game-bingo${tab !== "live" ? " bingo-salon" : ""}`}>
     <GameHeader lottery={lottery} balance={balance} now={now} onClose={onClose} artworkOverride={tab !== "live" ? editionArt : undefined}>
-      {tab !== "choose" && <button type="button" onClick={() => setTab("choose")}>К билетам</button>}
-      {tab !== "mine" && <button type="button" onClick={() => setTab("mine")}>Мои билеты</button>}
-      {tab !== "live" && <button type="button" onClick={() => setTab("live")}>Эфир ↗</button>}
+      {tab !== "choose" && <button type="button" onClick={() => setTab("choose")}>{tr("К билетам")}</button>}
+      {tab !== "mine" && <button type="button" onClick={() => setTab("mine")}>{tr("Мои билеты")}</button>}
+      {tab !== "live" && <button type="button" onClick={() => setTab("live")}>{tr("Эфир ↗")}</button>}
     </GameHeader>
-    {error && <div className="bingo-message is-error" role="alert"><span>{error}</span>{retry && retrySelection && <button type="button" onClick={() => void purchase(retrySelection)}>Проверить покупку</button>}<button type="button" onClick={() => setError("")} aria-label="Закрыть сообщение">×</button></div>}
-    {notice && <div className="bingo-message" role="status"><span>{notice}</span><button type="button" onClick={() => { setNotice(""); setTab("mine"); }}>Мои билеты →</button></div>}
+    {error && <div className="bingo-message is-error" role="alert"><span>{tr(error)}</span>{retry && retrySelection && <button type="button" onClick={() => void purchase(retrySelection)}>{tr("Проверить покупку")}</button>}<button type="button" onClick={() => setError("")} aria-label={tr("Закрыть сообщение")}>×</button></div>}
+    {notice && <div className="bingo-message" role="status"><span>{tr(notice)}</span><button type="button" onClick={() => { setNotice(""); setTab("mine"); }}>{tr("Мои билеты →")}</button></div>}
     {tab === "choose" && <section className="bingo-selection">
-      <section className="play-quick" aria-label="Быстрая покупка"><div><strong>Быстрая покупка</strong><small>Случайные билеты</small></div><div>{[1, 5, 25].map(quantity => <button key={quantity} type="button" aria-label={`Купить ${quantity} ${quantity === 1 ? "случайный билет" : "случайных билетов"}`} disabled={busy || loading || quantity > quickAll} onClick={() => quickBuy(quantity)}>×{quantity}</button>)}</div></section>
-      <div className="bingo-selection-meta"><span>{favoriteNumbers.length ? `Билеты с числами ${favoriteNumbers.join(" · ")}` : `Можно купить ещё ${available}`}</span><button type="button" disabled={loading || busy} onClick={() => { setLoading(true); setOffset(inventory?.has_more ? offset + 6 : 0); setRevision(v => v + 1); setError(""); }}>Другие билеты ↻</button></div>
-      {loading ? <div className="bingo-loading">Подбираем билеты…</div> : inventory?.tickets.length ? <BingoTicketDeck key={`${inventory.draw_id}:${offset}:${revision}:${favoriteNumbers.join(",")}`} inventory={inventory} selected={selected} offset={offset} price={price} busy={busy} retry={retry} available={available} onToggle={toggle} onInspect={setOpened} /> : <div className="bingo-empty">Подходящих свободных билетов нет.</div>}
-      <details className="ticket-options bingo-more-options"><summary>Подбор по числам и наборы <span>＋</span></summary><div className="bingo-buy-studio">
+      <section className="play-quick" aria-label={tr("Быстрая покупка")}><div><strong>{tr("Быстрая покупка")}</strong><small>{tr("Случайные билеты")}</small></div><div>{[1, 5, 25].map(quantity => <button key={quantity} type="button" aria-label={tr("Купить {0} {1}", quantity, quantity === 1 ? tr("случайный билет") : tr("случайных билетов"))} disabled={busy || loading || quantity > quickAll} onClick={() => quickBuy(quantity)}>×{quantity}</button>)}</div></section>
+      <div className="bingo-selection-meta"><span>{favoriteNumbers.length ? tr("Билеты с числами {0}", favoriteNumbers.join(" · ")) : tr("Можно купить ещё {0}", available)}</span><button type="button" disabled={loading || busy} onClick={() => { setLoading(true); setOffset(inventory?.has_more ? offset + 6 : 0); setRevision(v => v + 1); setError(""); }}>{tr("Другие билеты ↻")}</button></div>
+      {loading ? <div className="bingo-loading">{tr("Подбираем билеты…")}</div> : inventory?.tickets.length ? <BingoTicketDeck key={`${inventory.draw_id}:${offset}:${revision}:${favoriteNumbers.join(",")}`} inventory={inventory} selected={selected} offset={offset} price={price} busy={busy} retry={retry} available={available} onToggle={toggle} onInspect={setOpened} /> : <div className="bingo-empty">{tr("Подходящих свободных билетов нет.")}</div>}
+      <details className="ticket-options bingo-more-options"><summary>{tr("Подбор по числам и наборы")} <span>＋</span></summary><div className="bingo-buy-studio">
         <button className="bingo-kasper-set" type="button" disabled={busy || available < 10 || affordable < 10 || !inventory?.kasper_set_available} onClick={() => quickBuy(10, [28, 16, 2, 9])}>
-          <span>✦ НАБОР КАСПЕРА</span><strong>10 случайных билетов</strong><small>В каждом: 2 · 9 · 16 · 28</small><b>{inventory?.kasper_set_available ? formatCas(price * 10) : "Уже выбран"}</b>
+          <span>{tr("✦ НАБОР КАСПЕРА")}</span><strong>{tr("10 случайных билетов")}</strong><small>{tr("В каждом: 2 · 9 · 16 · 28")}</small><b>{tr(inventory?.kasper_set_available ? formatCas(price * 10) : tr("Уже выбран"))}</b>
         </button>
         <form className="bingo-favorite-search" onSubmit={event => { event.preventDefault(); searchFavorites(); }}>
-          <span>ЛЮБИМЫЕ ЧИСЛА · ДО ТРЁХ</span>
-          <div>{favoriteInputs.map((value, index) => <input key={index} type="number" min="1" max="60" inputMode="numeric" aria-label={`Любимое число ${index + 1}`} value={value} onChange={event => { setFavoriteError(""); setFavoriteInputs(current => current.map((item, itemIndex) => itemIndex === index ? event.target.value : item)); }} />)}</div>
-          <button type="submit" disabled={busy || !hasFavoriteNumber}>Найти билеты</button>
-          {favoriteError && <small className="bingo-search-feedback is-error" role="alert">{favoriteError}</small>}
-          {favoriteNumbers.length > 0 && !loading && !favoriteError && <small className={`bingo-search-feedback ${inventory?.tickets.length ? "" : "is-error"}`}>{inventory?.tickets.length ? `Нашли варианты: ${inventory.tickets.length}` : "Свободных билетов с этими числами нет. Измените выбор."}</small>}
-          {favoriteNumbers.length > 0 && <button className="bingo-search-reset" type="button" onClick={() => { setFavoriteError(""); setFavoriteNumbers([]); setFavoriteInputs(["", "", ""]); setOffset(0); setLoading(true); }}>Показать все</button>}
+          <span>{tr("ЛЮБИМЫЕ ЧИСЛА · ДО ТРЁХ")}</span>
+          <div>{favoriteInputs.map((value, index) => <input key={index} type="number" min="1" max="60" inputMode="numeric" aria-label={tr("Любимое число {0}", index + 1)} value={value} onChange={event => { setFavoriteError(""); setFavoriteInputs(current => current.map((item, itemIndex) => itemIndex === index ? event.target.value : item)); }} />)}</div>
+          <button type="submit" disabled={busy || !hasFavoriteNumber}>{tr("Найти билеты")}</button>
+          {favoriteError && <small className="bingo-search-feedback is-error" role="alert">{tr(favoriteError)}</small>}
+          {favoriteNumbers.length > 0 && !loading && !favoriteError && <small className={`bingo-search-feedback ${inventory?.tickets.length ? "" : "is-error"}`}>{inventory?.tickets.length ? tr("Нашли варианты: {0}", inventory.tickets.length) : tr("Свободных билетов с этими числами нет. Измените выбор.")}</small>}
+          {favoriteNumbers.length > 0 && <button className="bingo-search-reset" type="button" onClick={() => { setFavoriteError(""); setFavoriteNumbers([]); setFavoriteInputs(["", "", ""]); setOffset(0); setLoading(true); }}>{tr("Показать все")}</button>}
         </form>
-        <button className="bingo-buy-all" type="button" disabled={busy || quickAll < 1} onClick={() => quickBuy(quickAll)}>Купить все доступные · {quickAll}</button>
+        <button className="bingo-buy-all" type="button" disabled={busy || quickAll < 1} onClick={() => quickBuy(quickAll)}>{tr("Купить все доступные ·")} {quickAll}</button>
       </div></details>
-      {selected.length > 0 && <div className="bingo-selected-chips" aria-label="Выбранные билеты">{selected.map((ticket, index) => <button key={ticket.id} type="button" disabled={busy || retry} onClick={() => toggle(ticket)}>Вариант {index + 1} ×</button>)}</div>}
-      <footer className="play-checkout"><div><small>{selected.length ? `Выбрано билетов: ${selected.length}` : "Стоимость билета"}</small><strong><Money value={selected.length ? total : price} /></strong></div><button type="button" disabled={!selected.length || busy || total > balance} onClick={() => void buy()}>{busy ? "Оформляем…" : total > balance ? "Недостаточно CAS" : selected.length ? "Купить билеты" : "Выберите билет"}<span aria-hidden="true">↗</span></button></footer>
+      {selected.length > 0 && <div className="bingo-selected-chips" aria-label={tr("Выбранные билеты")}>{selected.map((ticket, index) => <button key={ticket.id} type="button" disabled={busy || retry} onClick={() => toggle(ticket)}>{tr("Вариант")} {index + 1} ×</button>)}</div>}
+      <footer className="play-checkout"><div><small>{selected.length ? tr("Выбрано билетов: {0}", selected.length) : tr("Стоимость билета")}</small><strong><Money value={selected.length ? total : price} /></strong></div><button type="button" disabled={!selected.length || busy || total > balance} onClick={() => void buy()}>{busy ? tr("Оформляем…") : total > balance ? tr("Недостаточно CAS") : selected.length ? tr("Купить билеты") : tr("Выберите билет")}<span aria-hidden="true">↗</span></button></footer>
     </section>}
-    {tab === "mine" && <section className="bingo-mine"><div className="bingo-section-title"><h2>Мои билеты</h2><p>Во время эфира совпадения отметятся сами.</p></div>{mine.length ? mine.map(ticket => <button type="button" className="bingo-owned-row" key={ticket.id} onClick={() => setOpened({ ...ticket, price: ticket.purchase_price })}><span>✦</span><span><b>{serial(ticket.public_number)}</b><small>Тираж №{ticket.draw_number} · {formatMoscow(ticket.scheduled_at)} МСК</small></span><span>↗</span></button>) : <div className="bingo-empty">Активных билетов пока нет. Выберите билет или посмотрите последний эфир.</div>}</section>}
+    {tab === "mine" && <section className="bingo-mine"><div className="bingo-section-title"><h2>{tr("Мои билеты")}</h2><p>{tr("Во время эфира совпадения отметятся сами.")}</p></div>{mine.length ? mine.map(ticket => <button type="button" className="bingo-owned-row" key={ticket.id} onClick={() => setOpened({ ...ticket, price: ticket.purchase_price })}><span>✦</span><span><b>{tr(serial(ticket.public_number))}</b><small>{tr("Тираж №")}{ticket.draw_number} · {tr(formatMoscow(ticket.scheduled_at))}  {tr("МСК")}</small></span><span>↗</span></button>) : <div className="bingo-empty">{tr("Активных билетов пока нет. Выберите билет или посмотрите последний эфир.")}</div>}</section>}
     {tab === "live" && <section className="bingo-live">
-      <div className="bingo-section-title"><span className="bingo-eyebrow">{live?.complete ? "ИТОГИ РОЗЫГРЫША" : "В ПРЯМОМ ЭФИРЕ"}</span><h2>{live ? `Тираж №${live.draw_number}` : "Встретимся в 22:00."}</h2></div>
+      <div className="bingo-section-title"><span className="bingo-eyebrow">{live?.complete ? tr("ИТОГИ РОЗЫГРЫША") : tr("В ПРЯМОМ ЭФИРЕ")}</span><h2>{live ? tr("Тираж №{0}", live.draw_number) : tr("Встретимся в 22:00.")}</h2></div>
       {live ? <>
-        <div className="bingo-draw-stage"><span className="bingo-live-status">{live.complete ? "ТИРАЖ ЗАВЕРШЁН" : "● ЭФИР"}</span><div className="bingo-current-ball" key={live.numbers.length}>{live.numbers.at(-1) ?? "✦"}</div><p>ХОД <strong>{live.numbers.length}</strong> / {live.total_moves}</p><div className="bingo-live-progress"><i style={{ width: `${live.numbers.length / live.total_moves * 100}%` }} /></div><div className="bingo-last-balls">{live.numbers.slice(-6).reverse().map((number, index) => <span className={index === 0 ? "latest" : ""} key={number}>{String(number).padStart(2, "0")}</span>)}</div></div>
-        {liveTicket ? <><div className="bingo-live-controls"><button type="button" onClick={() => { setAutoBest(false); setLiveIndex(Math.max(0, shownLiveIndex - 1)); }} disabled={shownLiveIndex === 0} aria-label="Предыдущий билет">←</button><span>Билет {shownLiveIndex + 1} / {live.tickets.length}</span><button type="button" aria-pressed={autoBest} onClick={() => setAutoBest(value => !value)}>Авто</button><button type="button" onClick={() => { setAutoBest(false); setLiveIndex(Math.min(live.tickets.length - 1, shownLiveIndex + 1)); }} disabled={shownLiveIndex >= live.tickets.length - 1} aria-label="Следующий билет">→</button></div><Paper ticket={liveTicket} draw={live.draw_number} date={live.scheduled_at} price={liveTicket.price ?? price} revealed={live.numbers} current={live.numbers.at(-1)} result={liveTicket.result} /></> : <div className="bingo-empty">В этом тираже у вас нет билетов. Смотреть эфир можно без покупки.</div>}
-        <div className="bingo-stage-results">{live.stages.map((stage, index) => { const cutoff = rules?.stage_moves?.[index] ?? (index === 2 ? live.jackpot_move : [18, 34, 28, 58][index]); return <div key={index}><span>{["Строка", "Две строки", "Джекпот", "Полная карточка"][index]} · {cutoff}</span><b>{stage.winners ? `${stage.winners} бил.` : stage.move ? index === 2 ? "Перенос" : "Нет" : "В игре"}</b></div>; })}</div>
-        <details className="bingo-all-balls"><summary>Все выпавшие числа · {live.numbers.length}</summary><div>{live.numbers.map(number => <span key={number}>{number}</span>)}</div>{live.complete && <p>Не выпали: {Array.from({ length: 60 }, (_, index) => index + 1).filter(number => !live.numbers.includes(number)).join(" и ")}</p>}</details>
-      </> : <div className="bingo-empty">Эфир начнётся по расписанию.</div>}
+        <div className="bingo-draw-stage"><span className="bingo-live-status">{live.complete ? tr("ТИРАЖ ЗАВЕРШЁН") : tr("● ЭФИР")}</span><div className="bingo-current-ball" key={live.numbers.length}>{tr(live.numbers.at(-1) ?? "✦")}</div><p>{tr("ХОД")} <strong>{live.numbers.length}</strong> / {live.total_moves}</p><div className="bingo-live-progress"><i style={{ width: `${live.numbers.length / live.total_moves * 100}%` }} /></div><div className="bingo-last-balls">{live.numbers.slice(-6).reverse().map((number, index) => <span className={index === 0 ? "latest" : ""} key={number}>{tr(String(number).padStart(2, "0"))}</span>)}</div></div>
+        {liveTicket ? <><div className="bingo-live-controls"><button type="button" onClick={() => { setAutoBest(false); setLiveIndex(Math.max(0, shownLiveIndex - 1)); }} disabled={shownLiveIndex === 0} aria-label={tr("Предыдущий билет")}>←</button><span>{tr("Билет")} {shownLiveIndex + 1} / {live.tickets.length}</span><button type="button" aria-pressed={autoBest} onClick={() => setAutoBest(value => !value)}>{tr("Авто")}</button><button type="button" onClick={() => { setAutoBest(false); setLiveIndex(Math.min(live.tickets.length - 1, shownLiveIndex + 1)); }} disabled={shownLiveIndex >= live.tickets.length - 1} aria-label={tr("Следующий билет")}>→</button></div><Paper ticket={liveTicket} draw={live.draw_number} date={live.scheduled_at} price={liveTicket.price ?? price} revealed={live.numbers} current={live.numbers.at(-1)} result={liveTicket.result} /></> : <div className="bingo-empty">{tr("В этом тираже у вас нет билетов. Смотреть эфир можно без покупки.")}</div>}
+        <div className="bingo-stage-results">{live.stages.map((stage, index) => { const cutoff = rules?.stage_moves?.[index] ?? (index === 2 ? live.jackpot_move : [18, 34, 28, 58][index]); return <div key={index}><span>{tr([tr("Строка"), tr("Две строки"), tr("Джекпот"), tr("Полная карточка")][index])} · {cutoff}</span><b>{stage.winners ? tr("{0} бил.", stage.winners) : stage.move ? index === 2 ? tr("Перенос") : tr("Нет") : tr("В игре")}</b></div>; })}</div>
+        <details className="bingo-all-balls"><summary>{tr("Все выпавшие числа ·")} {live.numbers.length}</summary><div>{live.numbers.map(number => <span key={number}>{number}</span>)}</div>{live.complete && <p>{tr("Не выпали:")} {tr(Array.from({ length: 60 }, (_, index) => index + 1).filter(number => !live.numbers.includes(number)).join(tr(" и ")))}</p>}</details>
+      </> : <div className="bingo-empty">{tr("Эфир начнётся по расписанию.")}</div>}
     </section>}
-    {tab !== "live" && <details className="bingo-rules"><summary>Коротко о правилах <span>+</span></summary>{lottery.ruleset_code === "bingo_12_60_economy_v2" ? <><p>Строка до 18-го хода включительно — 50 000 CAS. Две строки до 34-го — 100 000 CAS. Все 12 чисел до 58-го — 20 000 CAS.</p><p>Каждая выигравшая карточка получает полную фиксированную выплату. Выплаты по категориям суммируются. 40% стоимости карточки пополняют джекпот, 60% сгорают.</p></> : <p>Строка до 18-го хода — 100 000 CAS. Две строки до 34-го — 500 000 CAS. Все подходящие билеты делят приз.</p>}<p>Полный билет до 28-го хода делит джекпот. Участвуют только купленные билеты.</p></details>}
+    {tab !== "live" && <details className="bingo-rules"><summary>{tr("Коротко о правилах")} <span>+</span></summary>{lottery.ruleset_code === "bingo_12_60_economy_v2" ? <><p>{tr("Строка до 18-го хода включительно — 50 000 CAS. Две строки до 34-го — 100 000 CAS. Все 12 чисел до 58-го — 20 000 CAS.")}</p><p>{tr("Каждая выигравшая карточка получает полную фиксированную выплату. Выплаты по категориям суммируются. 40% стоимости карточки пополняют джекпот, 60% сгорают.")}</p></> : <p>{tr("Строка до 18-го хода — 100 000 CAS. Две строки до 34-го — 500 000 CAS. Все подходящие билеты делят приз.")}</p>}<p>{tr("Полный билет до 28-го хода делит джекпот. Участвуют только купленные билеты.")}</p></details>}
     {opened && <PaperDialog onClose={() => setOpened(null)}><BingoEdition ticket={opened} draw={mine.find(t => t.id === opened.id)?.draw_number ?? inventory?.draw_number ?? lottery.draw_number ?? 0} date={mine.find(t => t.id === opened.id)?.scheduled_at ?? inventory?.scheduled_at ?? lottery.scheduled_at ?? new Date().toISOString()} price={opened.price ?? price} /></PaperDialog>}
   </main>;
 }

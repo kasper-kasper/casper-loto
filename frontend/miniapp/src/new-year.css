@@ -1,0 +1,219 @@
+.ny-object{display:block;width:100%;height:100%;object-fit:contain;overflow:hidden;filter:drop-shadow(0 5px 5px #1d08065c)}
+.game-newyear2027{position:relative;isolation:isolate;color:#ffedc7;background:#281007;border-radius:24px;padding:0 12px 14px;overflow:clip}
+.ny-header,.game-newyear2027>.ticket-composer,.game-newyear2027>.live-experience{position:relative;z-index:1}
+.ny-header{padding:15px 2px 12px;text-align:center}.ny-topbar{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:11px;margin-bottom:28px}.ny-topbar button,.ny-header nav button{border:1px solid #f4d4a64d;border-radius:25px;background:#281718b8;color:#ffedc7;padding:9px 13px;backdrop-filter:blur(8px)}
+.ny-header h1{font:700 clamp(29px,8.2vw,45px)/.98 Georgia,serif;color:#ffefca;text-shadow:0 3px 14px #110200;margin:0 auto;max-width:330px;letter-spacing:-1.1px}.ny-header h1 em,.ny-receipt h1 em{display:block;font-weight:500;color:#f0c879;font-style:normal}.ny-title-rule{display:flex;align-items:center;justify-content:center;gap:12px;color:#f2ca7b;margin:8px auto;width:180px}.ny-title-rule:before,.ny-title-rule:after{content:'';height:1px;flex:1;background:linear-gradient(90deg,transparent,#e5ba72,transparent)}.ny-header p{font-size:11px;color:#f8e3c8;text-shadow:0 2px 4px #180400}.ny-header nav{display:flex;justify-content:center;gap:10px}.ny-header nav button{font-size:12px;padding:9px 18px}
+.ny-paper{position:relative;color:#651c17;border:1px solid #b68b51;border-radius:8px;background:radial-gradient(ellipse at 20% 10%,#fff4d9ad,transparent 65%),repeating-linear-gradient(12deg,#99764709 0 1px,transparent 1px 4px),#eed8ad;box-shadow:0 6px 15px #1803006b,inset 0 0 22px #bb874748}.ny-paper:after{content:'';position:absolute;inset:6px;pointer-events:none;border:1px solid #943e2d69;border-radius:3px}.ny-prompt{padding:13px 17px;display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:center}.ny-prompt h2{font:700 23px/1.1 Georgia,serif;margin:0}.ny-prompt p{font-size:11px;margin:5px 0 0}.ny-prompt>div:first-child{flex:1}.ny-prompt>div:last-child{display:flex;flex-direction:column;gap:6px}.ny-prompt strong{font-size:17px}.ny-prompt button{border:0;background:none;padding:0;color:#6b3123;font-size:11px}
+.ny-object-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 5px;padding:12px 0 14px}.ny-object-grid button{position:relative;aspect-ratio:1/.99;min-width:0;padding:0 2px 16px;border:1px solid transparent;border-radius:15px;background:transparent;color:#fbe6bf;transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease;touch-action:manipulation}.ny-object-grid button .ny-object{height:100%;transition:transform .22s ease}.ny-object-grid button[aria-pressed=true]{border-color:#f6ce76;background:linear-gradient(145deg,#c5873129,#501a0829);box-shadow:0 0 0 1px #c18b42,inset 0 0 14px #ffbc4e20,0 0 12px #f8b34540}.ny-object-grid button[aria-pressed=true] .ny-object{transform:translateY(-3px) scale(1.035)}.ny-object-name{position:absolute;bottom:2px;left:0;width:100%;font:10px/1.1 Georgia,serif;text-shadow:0 1px 4px #150200}.ny-object-check{position:absolute;right:5px;top:5px;display:grid;place-items:center;width:19px;height:19px;background:#f5cf7d;color:#683711;border-radius:50%;font-weight:800;font-size:12px;opacity:0;transform:scale(.6);transition:opacity .2s ease,transform .2s ease}.ny-object-grid button[aria-pressed=true] .ny-object-check{opacity:1;transform:scale(1)}.ny-object-grid button:focus-visible,.ny-header button:focus-visible{outline:2px solid #fff2b4;outline-offset:2px}
+.ny-ticket-strip{padding:11px 12px;display:flex;align-items:center;gap:6px}.ny-ticket-strip>strong{font:700 15px Georgia,serif;max-width:52px}.ny-symbols{display:flex;gap:5px;justify-content:center;width:100%}.ny-symbol-slot{display:grid;place-items:center;aspect-ratio:1;flex:1;min-width:0;max-width:150px;color:#bb8e51;border:1px solid #b88c5b4d;border-radius:50%;background:radial-gradient(#d1a96d24,transparent 70%)}.ny-symbol-slot>.ny-object{animation:ny-appear .24s ease-out}.ny-ticket-strip .ny-symbol-slot{height:58px;max-width:70px;flex:1;border-radius:6px}.ny-symbol-slot>span:not(.ny-object){font-size:30px}
+.game-newyear2027 .play-checkout{background:#2c0d10ed;border:1px solid #e9b86d57;box-shadow:0 -8px 28px #15040050;z-index:5}.game-newyear2027 .play-checkout button{background:linear-gradient(#ce3045,#790c24);color:#fff0d1;border:1px solid #fb7381;box-shadow:inset 0 1px 2px #ffb9a263,0 3px 12px #2a0006}.game-newyear2027 .play-checkout button:disabled{opacity:.48}.game-newyear2027 .ticket-composer{gap:12px}.ny-rules{padding:12px 8px;background:#210b0cb0;border:1px solid #c6945d44;border-radius:10px;color:#e5d2bc;font-size:12px}.ny-rules summary{display:flex;justify-content:space-between;cursor:pointer;color:#f4d39c}.ny-rules p{line-height:1.55}.ny-rules dl{margin:15px 0}.ny-rules dl>div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #c2996d25;padding:7px 0}.ny-rules dd{margin:0;text-align:right}
+.ny-environment{position:absolute;z-index:0;inset:0;pointer-events:none;overflow:hidden;background:linear-gradient(#21080418,#20030650),url('./assets/newyear/room.webp') center top/100% auto no-repeat}.ny-environment:before{content:'';position:absolute;inset:285px 0 0;background:linear-gradient(#21080420,#20030650),url('./assets/newyear/wood.webp') center top/540px auto repeat;mask-image:linear-gradient(transparent,#000 65px)}.ny-wire{position:absolute;left:0;right:0;top:-17px;height:35px;border-bottom:2px solid #2a2618;border-radius:0 0 50% 50%}.ny-lights{position:absolute;left:0;right:0;height:30px}.ny-lights-top{top:7px}.ny-lights-bottom{bottom:8px}.ny-lights i,.ny-tree-lights i{position:absolute;display:block;width:5px;height:7px;border-radius:50%;background:var(--light,#ffcf72);box-shadow:0 0 4px 1px var(--light,#ffcf72),0 0 12px 4px #ffc35950;animation:ny-glimmer 4.9s ease-in-out var(--delay) infinite alternate}.ny-lights-top i:nth-child(3n){top:7px}.ny-lights-top i:nth-child(3n+1){top:3px}.ny-tree-lights i{width:4px;height:5px;animation-duration:5.7s}.ny-candle{position:absolute;top:126px;right:4%;width:8px;height:21px;background:linear-gradient(90deg,#e2aa5d,#fff1c5,#a5632b)}.ny-candle i{position:absolute;bottom:100%;left:1px;width:6px;height:13px;border-radius:60% 40% 50% 50%;background:linear-gradient(#f99830,#fff9c9);transform-origin:bottom;box-shadow:0 0 9px #ffc861;animation:ny-flame 2.7s ease-in-out infinite alternate}.ny-candle b{position:absolute;inset:-20px;background:radial-gradient(#f8b64b24,transparent 68%);animation:ny-glimmer 2.7s ease-in-out infinite alternate}
+@keyframes ny-glimmer{0%,15%{opacity:.4}65%,100%{opacity:.92}}@keyframes ny-flame{from{transform:rotate(-4deg) scaleY(.92)}to{transform:rotate(4deg) scaleY(1.06)}}@keyframes ny-appear{from{opacity:0;transform:translateY(5px) scale(.9)}to{opacity:1;transform:none}}
+.ny-receipt-backdrop{position:fixed;inset:0;z-index:100;background:linear-gradient(#1806057d,#100204bf),url('./assets/newyear/room.webp') center/cover;display:grid;place-items:center;padding:14px}.ny-receipt{width:min(390px,100%);max-height:calc(100dvh - 28px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));padding:22px 18px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box}.ny-receipt:after{inset:9px;border:2px double #92382a}.ny-receipt-close{position:absolute;right:12px;top:12px;z-index:2;border:1px solid #8a503864;border-radius:50%;background:#f0dfba;color:#6b281b;width:29px;height:29px;display:grid;place-items:center;padding:6px}.ny-receipt header{text-align:center}.ny-receipt-snow{color:#bc8538;font-size:23px}.ny-receipt h1{font:700 29px/.97 Georgia,serif;margin:4px 0 13px}.ny-receipt h1 em{color:#a76e2e;font-size:28px}.ny-receipt h2{font:700 30px Georgia,serif;margin:8px 0}.ny-receipt header p{font-size:11px;color:#684a35;margin:8px 0}.ny-receipt header b{font-size:12px;color:#9e6d2b;font-weight:500}.ny-receipt section{border-top:1px dashed #99514088;padding-top:12px;text-align:center;min-height:0}.ny-receipt h3{font:700 21px Georgia,serif;margin:2px 0 10px}.ny-receipt-names{display:grid;grid-template-columns:repeat(3,1fr);font:12px/1.1 Georgia,serif;margin:5px 0 6px}.ny-receipt footer{display:flex;justify-content:space-between;align-items:center;border-top:1px dashed #99514088;padding:12px 6px 0;font-size:12px}.ny-receipt footer strong{font:700 21px Georgia,serif}.ny-receipt footer small{display:block;font-size:8px;letter-spacing:1px;margin-top:8px}.ny-receipt-result>span{font-size:11px}.ny-receipt-result .ny-symbol-slot{max-width:65px}.ny-receipt-result>strong{display:block;margin-top:5px;font-size:16px}html:has(.ny-receipt-backdrop),body:has(.ny-receipt-backdrop){overflow:hidden;scrollbar-gutter:auto}
+.collection-newyear2027{background:linear-gradient(#421316,#1c0e1c);border-color:#95634f}.collection-newyear2027 .collection-card-content h2{color:#ffedc6}.collection-newyear2027 .collection-scene{object-position:center 20%}.home-feature-newyear2027{background:linear-gradient(#26080838,#26080c),url('./assets/newyear/preview.webp') center top/100% auto no-repeat!important;border-color:#ae7660}.home-feature-newyear2027 .home-feature-copy{padding-top:36px;max-width:100%;position:relative;z-index:1}.home-feature-newyear2027 .home-feature-copy h2{font:700 36px/1.05 Georgia,serif;max-width:310px;text-shadow:0 3px 12px #160200}.home-feature-newyear2027 .home-feature-art{opacity:0}.home-feature-newyear2027 .home-feature-copy>span{color:#e9cfaa}.home-feature-newyear2027>button{background:linear-gradient(#ffdfa0,#dcae54);color:#3b2412}
+.ny-live-scene .ny-paper{padding:20px 15px;text-align:center}.ny-live-scene h2{font:700 23px Georgia,serif;margin:0 0 14px}.ny-live-scene .ny-symbol-slot{max-width:110px}.ny-live-clock{text-align:center;margin:35px 0 25px;color:#ffe5b0}.ny-live-clock>span{display:block;font-size:13px;margin-bottom:7px}.ny-live-clock>strong{font:700 clamp(42px,12vw,65px)/1 Georgia,serif}.lottery-newyear2027.live-stage{background:transparent;border:0;min-height:0;padding:20px 5px}.lottery-newyear2027 .live-grid,.lottery-newyear2027 .live-ambient,.lottery-newyear2027 .live-identity,.lottery-newyear2027 .live-lottery-scene{display:none}.lottery-newyear2027 .live-heading{font-size:10px}.lottery-newyear2027 .live-ticket .ny-symbol-slot{max-width:65px}.lottery-newyear2027 .live-result{margin-top:18px}.lottery-newyear2027 .live-result>.ny-symbols{display:none}.lottery-newyear2027 .live-actions button{background:#f0cf89;color:#492918}.lottery-newyear2027 .live-result{background:#350e16c7}.lottery-newyear2027 .live-next{background:#250b0cc2}.compact-combination .ny-symbols{width:190px}.compact-combination .ny-symbol-slot{height:47px;flex:none;width:47px}.archive-combination .ny-symbol-slot{max-width:75px}
+@media(max-width:350px){.ny-header h1{font-size:29px}.ny-header{padding-top:10px}.ny-topbar{margin-bottom:20px}.ny-object-name{font-size:9px}.ny-prompt h2{font-size:21px}.ny-ticket-strip .ny-symbol-slot{height:48px}.ny-receipt{padding:14px 15px;gap:8px}.ny-receipt h1{font-size:25px;margin-bottom:8px}.ny-receipt h2{font-size:26px}.ny-receipt h3{font-size:19px}.ny-receipt section{padding-top:8px}.ny-receipt header p{font-size:10px}.ny-receipt-names{font-size:10px}.ny-receipt-snow{font-size:18px}}
+@media(max-height:650px){.ny-receipt{gap:7px;padding-top:14px;padding-bottom:14px}.ny-receipt h1{font-size:25px;margin-bottom:8px}.ny-receipt h2{font-size:25px;margin:5px 0}.ny-receipt section{padding-top:7px}.ny-receipt header p{margin:6px 0}.ny-receipt h3{margin-bottom:4px;font-size:19px}.ny-receipt .ny-symbol-slot{max-width:85px}.ny-receipt-result .ny-symbol-slot{max-width:48px}.ny-receipt footer{padding-top:8px}}
+@media(prefers-reduced-motion:reduce){.ny-environment *,.ny-symbol-slot>.ny-object{animation:none!important}.ny-object-grid button,.ny-object-grid button .ny-object,.ny-object-check{transition:none}}
+
+.collection-newyear2027 .collection-art:after{background:linear-gradient(transparent,#32101a)}.collection-newyear2027 .collection-prize{min-height:22px}.collection-newyear2027 .collection-prize small{color:#d5ba9d}.collection-newyear2027 .collection-card-content h2{font-family:Georgia,serif;font-size:17px}.home-feature-newyear2027 .home-feature-copy{width:100%;min-height:110px;padding-top:18px}.home-feature-newyear2027 .home-feature-copy h2{width:100%;margin-bottom:12px}.ny-environment.motion-paused *{animation-play-state:paused!important}.game-newyear2027 .ny-object-grid button{aspect-ratio:1/.94}
+
+@media(max-height:480px) and (min-width:480px){.ny-receipt{display:grid;width:min(650px,100%);height:calc(100dvh - 28px);grid-template-columns:1fr 1fr;grid-template-rows:1fr auto;padding:14px 20px;column-gap:20px}.ny-receipt header{grid-area:1/1/2/2;align-self:center}.ny-receipt-choice{grid-area:1/2/3/3;align-self:center}.ny-receipt.has-result .ny-receipt-choice{grid-area:1/2/2/3}.ny-receipt-result{grid-area:2/2/3/3}.ny-receipt footer{grid-area:2/1/3/2}.ny-receipt h1,.ny-receipt h1 em{font-size:22px}.ny-receipt h2{font-size:24px}.ny-receipt h3{font-size:18px}.ny-receipt .ny-symbol-slot{max-width:70px}.ny-receipt-result .ny-symbol-slot{max-width:38px}.ny-receipt-names{font-size:10px}.ny-receipt-close{left:12px;right:auto}.ny-receipt footer strong{font-size:18px}.ny-receipt-snow{font-size:16px}}
+.game-newyear2027 .lottery-newyear2027.live-stage{background:transparent!important}.game-newyear2027 .live-heading,.game-newyear2027 .live-actions,.game-newyear2027 .live-next{position:relative;z-index:2}
+.home-feature.home-feature-newyear2027>button{background:linear-gradient(#ffdfa0,#dcae54);color:#3b2412;border-color:#ffe1a3}.collection-card.collection-newyear2027{background:linear-gradient(#421316,#1c0e1c);border-color:#95634f}
+.ny-object-grid button .ny-object{width:auto;aspect-ratio:1;max-width:100%;margin-inline:auto}.ny-timeline{list-style:none;display:flex;justify-content:space-between;gap:10px;padding:0 12px;margin:12px 0 25px;color:#bea98b;font-size:10px}.ny-timeline li{display:flex;gap:6px;align-items:center}.ny-timeline i{width:8px;height:8px;border:1px solid #a7805d;border-radius:50%}.ny-timeline li[aria-current=step]{color:#f4d087}.ny-timeline li[aria-current=step] i{background:#f4d087;box-shadow:0 0 6px #ffc96a}
+
+.game-newyear2027 .ny-topbar{margin-bottom:12px}.game-newyear2027 .ny-header p{margin:7px 0 9px}.game-newyear2027 .ny-title-rule{margin:6px auto}.game-newyear2027 .ny-object-grid button{aspect-ratio:1/.84}.game-newyear2027 .ny-ticket-strip{padding:8px 12px}.game-newyear2027 .ny-ticket-strip .ny-symbol-slot{height:50px}.game-newyear2027 .ny-prompt{padding-top:11px;padding-bottom:11px}
+
+/* Shared artwork is clipped at source, independently of each container's shape. */
+.ny-symbol-slot { overflow:hidden; }
+.ny-symbol-slot > .ny-object { width:88%; height:88%; min-height:0; }
+.ny-object-grid button .ny-object { width:100%; height:100%; object-fit:contain; }
+.ny-object-grid button:disabled { opacity:1; }
+.ny-object-grid button:disabled .ny-object-check { opacity:0; }
+.ny-object-grid button[aria-pressed=true]:disabled .ny-object-check { opacity:1; }
+.game-newyear2027 .ny-header h1 {
+  color:#fff9e9; line-height:1.06; font-weight:700;
+  text-shadow:0 2px 3px #210703,0 4px 16px #140302,0 0 28px #200303;
+}
+.game-newyear2027 .ny-header h1 em { color:#ffe7ad; font-weight:600; }
+.ny-header { background:radial-gradient(ellipse at 50% 46%,#27050c75,transparent 68%); }
+.ny-purchase-notice {
+  position:fixed; z-index:30; left:50%; bottom:calc(88px + var(--app-safe-bottom,0px));
+  transform:translateX(-50%); width:min(340px,calc(100% - 42px));
+  padding:13px 16px; box-sizing:border-box; border:1px solid #ddbb73;
+  border-radius:12px; background:#351b11f5; color:#fff3d8;
+  box-shadow:0 6px 22px #10050270; font-size:12px; line-height:1.4; text-align:center;
+}
+.ny-purchase-notice.is-error { border-color:#ec9a8d; background:#571b24f5; }
+
+/* Light points stay anchored to the photographed bulbs and candle. Only small
+   opacity/transform layers animate; the room and table never move or repaint. */
+.ny-room-lighting { position:absolute; top:0; left:0; width:100%; aspect-ratio:2/3; }
+.ny-tree-lights { position:absolute; inset:0; }
+.ny-lights i,.ny-tree-lights i {
+  width:6px; height:8px; opacity:.65;
+  box-shadow:0 0 3px 1px var(--light,#ffcf72),0 0 10px 3px var(--light,#ffcf72);
+  animation:ny-glimmer 3.2s ease-in-out var(--delay,0s) infinite;
+}
+.ny-lights i:nth-child(3n) { animation-duration:4.3s; }
+.ny-lights i:nth-child(3n+1) { animation-duration:3.7s; }
+.ny-tree-lights i { width:4px; height:5px; animation-duration:4.1s; }
+.ny-lights-bottom { bottom:86px; }
+.ny-candle { top:24.25%; left:84.4%; right:auto; width:0; height:0; background:none; }
+.ny-candle i { left:-3px; bottom:0; width:7px; height:16px; background:radial-gradient(ellipse at 50% 70%,#fffde9 20%,#ffe8a1 45%,#ffb53f 70%,transparent 75%); box-shadow:0 0 10px #ffd180; animation:ny-flame 1.8s ease-in-out infinite; }
+.ny-candle b { inset:auto; top:-30px; left:-24px; width:48px; height:55px; background:radial-gradient(#ffc56465,transparent 68%); animation:ny-glimmer 2.3s ease-in-out -.5s infinite; }
+@keyframes ny-glimmer { 0%,100%{opacity:.24} 40%,60%{opacity:1} }
+@keyframes ny-flame { 0%,100%{transform:rotate(-6deg) scale(.9,1);opacity:.82} 45%{transform:rotate(5deg) scale(1.05,.86);opacity:1} 75%{transform:rotate(-2deg) scale(.95,1.12);opacity:.94} }
+
+/* A single composed photograph replaces the oversized collage in both cards. */
+.collection-card.collection-newyear2027 .collection-art { height:155px; }
+.collection-card.collection-newyear2027 .collection-scene { object-position:55% 50%; }
+.collection-card.collection-newyear2027 .collection-art:after { background:linear-gradient(transparent 65%,#351019); }
+.collection-card.collection-newyear2027 .collection-card-content h2 { font:700 clamp(17px,4.7vw,23px)/1.12 Georgia,serif; color:#fff9e9; text-shadow:0 2px 4px #160307; }
+.collection-newyear2027 h2 em,.home-feature-newyear2027 h2 em { display:block; color:#ffe3a2; font-style:normal; font-weight:500; letter-spacing:.04em; }
+.home-feature.home-feature-newyear2027 { background-color:#2d0d16!important; }
+.home-feature.home-feature-newyear2027 .home-feature-copy { padding-top:158px; min-height:0; text-align:center; }
+.home-feature.home-feature-newyear2027 .home-feature-copy h2 { max-width:none; font-size:32px; color:#fff9e9; text-shadow:0 2px 5px #200407,0 0 15px #200407; }
+.home-feature.home-feature-newyear2027:before,.home-feature.home-feature-newyear2027:after { display:none; }
+
+/* Compact keepsake: engraved festive paper with three
+   isolated objects. The result variant also fits a 320 x 568 viewport. */
+.ny-receipt { padding:12px; gap:11px; border-radius:9px;
+  background:radial-gradient(ellipse at 50% 36%,#fff7e2a8,transparent 75%),repeating-linear-gradient(18deg,#96714008 0 1px,transparent 1px 4px),#f0dfba;
+  box-shadow:0 14px 40px #12050170,inset 0 0 28px #a4763230;
+}
+.ny-receipt:after { inset:6px; border:3px double #94463794; border-radius:4px; }
+.ny-receipt header { position:relative; padding:15px 12px 13px; border:0; border-radius:0; background:transparent; color:#702626; }
+.ny-receipt-snow { position:relative; color:#aa7837; font-size:18px; }
+.ny-receipt h1 { color:#722728; font-size:27px; line-height:1.06; margin:4px 0 8px; text-shadow:0 1px #fff9e4; }
+.ny-receipt h1 em { color:#9b6a2e; font-size:25px; }
+.ny-receipt h2 { font-size:24px; color:#702626; margin:6px 0; }
+.ny-receipt header p { color:#70543d; font-size:10px; margin:7px 0; }
+.ny-receipt header b { display:inline-block; padding:4px 10px; border:1px solid #a9854e50; border-radius:20px; color:#725529; background:#c8ad7220; font-size:11px; }
+.ny-receipt-close { top:10px; right:10px; left:auto; width:32px; height:32px; padding:0; color:#743c2c; background:#f5e9ce; border-color:#ad875680; line-height:1; }
+.ny-receipt-close .icon { display:block; width:16px; height:16px; margin:0; flex:none; }
+.ny-receipt-choice { border-top:0!important; padding:0 6px!important; }
+.ny-receipt h3 { font-size:20px; margin:2px 0 8px; }
+.ny-receipt-choice .ny-symbol-slot { width:100%; max-width:100px; aspect-ratio:1; border-radius:50%; background:radial-gradient(#e4c79760,transparent); }
+.ny-receipt-names { gap:5px; font-size:11px; min-height:25px; align-items:start; }
+.ny-receipt-result { padding-top:8px!important; }
+.ny-receipt footer { padding:10px 6px 4px; }
+.ny-receipt footer strong { font-size:20px; color:#631b24; }
+@media(max-height:650px) {
+  .ny-receipt { gap:7px; }
+  .ny-receipt header { padding:9px 10px; }
+  .ny-receipt h1 { font-size:23px; margin-bottom:5px; }
+  .ny-receipt h1 em { font-size:22px; }
+  .ny-receipt h2 { font-size:23px; margin:4px 0; }
+  .ny-receipt .ny-receipt-choice .ny-symbol-slot { max-width:78px; }
+  .ny-receipt .ny-receipt-result .ny-symbol-slot { max-width:44px; }
+  .ny-receipt footer { padding-top:7px; }
+}
+@media(max-height:480px) and (min-width:480px) {
+  .ny-receipt { padding:12px; column-gap:12px; }
+  .ny-receipt h1,.ny-receipt h1 em { font-size:20px; }
+  .ny-receipt-close { left:auto; right:10px; }
+  .ny-receipt .ny-receipt-choice .ny-symbol-slot { max-width:68px; }
+  .ny-receipt .ny-receipt-result .ny-symbol-slot { max-width:36px; }
+}
+
+/* Keep the collapsed disclosure visually separate from the paper coupon. */
+.game-newyear2027 .ny-rules {
+  margin:22px 3px 0; padding:0; border:0; border-radius:0;
+  background:transparent; box-shadow:none; color:#e5d2bc;
+}
+.game-newyear2027 .ny-rules > summary {
+  padding:12px 2px; min-height:44px; color:#d2bea3; font-size:11px;
+  border-top:1px solid #deb78526; list-style:none;
+}
+.ny-rules > summary::-webkit-details-marker { display:none; }
+.game-newyear2027 .ny-rules > summary > span { color:#dec38e; font-size:18px; transition:transform .15s; }
+.ny-rules[open] > summary > span { transform:rotate(45deg); }
+.ny-rules-body { padding:14px; border:1px solid #c6945d40; border-radius:10px; background:#25100de8; }
+.ny-rules-body > p:last-child { margin-bottom:0; }
+.game-newyear2027:has(.ny-rules) .ny-lights-bottom { bottom:124px; }
+.game-newyear2027:has(.ny-rules[open]) .ny-lights-bottom { visibility:hidden; }
+.ny-receipt header:before,.ny-receipt header:after {
+  content:''; position:absolute; top:-2px; width:73px; height:58px;
+  background:url('./assets/newyear/ticket-sprig.svg') center/contain no-repeat;
+  pointer-events:none; opacity:.83;
+}
+.ny-receipt header:before { left:-4px; }
+.ny-receipt header:after { right:-4px; transform:scaleX(-1); }
+.ny-receipt header h1,.ny-receipt header h2,.ny-receipt header p,.ny-receipt header b { position:relative; }
+.ny-receipt footer { position:relative; }
+.ny-receipt footer:after {
+  content:''; position:absolute; width:65px; height:65px; right:30%; bottom:-4px;
+  background:url('./assets/newyear/ticket-sprig.svg') center/contain no-repeat;
+  transform:rotate(180deg); opacity:.16; pointer-events:none;
+}
+@media(prefers-reduced-motion:reduce) { .ny-rules > summary > span { transition:none; } }
+
+/* Fit all four object rows into the usable Telegram viewport, including its
+   native top controls and bottom safe area. Extra purchase tools follow below. */
+.game-newyear2027:has(.ny-coupon) {
+  --ny-row-height:clamp(40px,calc((var(--tg-viewport-stable-height,100svh) - max(16px,var(--app-safe-top)) - var(--app-safe-bottom) - 350px)/4),92px);
+}
+.game-newyear2027:has(.ny-coupon) .ny-header { padding:6px 0; }
+.game-newyear2027:has(.ny-coupon) .ny-topbar { margin-bottom:5px; min-height:28px; }
+.game-newyear2027:has(.ny-coupon) .ny-topbar button { padding:6px 10px; font-size:10px; }
+.game-newyear2027:has(.ny-coupon) .ny-header h1 { font-size:26px; line-height:1.02; }
+.game-newyear2027:has(.ny-coupon) .ny-header h1 em { font-size:23px; }
+.game-newyear2027:has(.ny-coupon) .ny-title-rule { display:none; }
+.game-newyear2027:has(.ny-coupon) .ny-header p { margin:5px 0 6px; font-size:10px; }
+.game-newyear2027:has(.ny-coupon) .ny-header nav button { padding:6px 16px; font-size:11px; }
+.game-newyear2027 .ny-prompt { padding:6px 12px; min-height:42px; }
+.game-newyear2027 .ny-prompt h2 { font-size:19px; }
+.game-newyear2027 .ny-prompt p { margin-top:2px; font-size:10px; }
+.game-newyear2027 .ny-prompt > div:last-child { gap:2px; }
+.game-newyear2027 .ny-prompt strong { font-size:15px; }
+.game-newyear2027 .ny-object-grid { grid-auto-rows:var(--ny-row-height); gap:3px 5px; padding:5px 0 8px; }
+.game-newyear2027 .ny-object-grid button { aspect-ratio:auto; height:100%; padding:1px 4px 14px; border-radius:10px; }
+.game-newyear2027 .ny-object-grid button .ny-object { width:100%; height:100%; aspect-ratio:auto; }
+.game-newyear2027 .ny-object-name { font-size:9px; }
+.game-newyear2027 .ny-object-check { width:16px; height:16px; right:3px; top:3px; font-size:10px; }
+.game-newyear2027 .ny-ticket-strip { padding:5px 10px; min-height:44px; }
+.game-newyear2027 .ny-ticket-strip .ny-symbol-slot { height:34px; }
+.game-newyear2027 .ny-ticket-strip > strong { font-size:12px; }
+.game-newyear2027:has(.ny-coupon) .ny-environment:before { top:165px; }
+.game-newyear2027 .play-quick { margin:12px 0 5px; padding:8px 10px; background:#2b100c70; border-color:#e4bf8050; }
+.game-newyear2027 .play-quick button { color:#f5d28c; border-color:#d7ae6b60; }
+.game-newyear2027 .ticket-options-body { background:#2b1212ed; border-color:#d7ae6b50; }
+.game-newyear2027 .ticket-options:not(.ny-rules) > summary { color:#ddcaa6; }
+.game-newyear2027 .ticket-favorites .ny-symbols { width:150px; }
+.game-newyear2027 .ticket-favorites .ny-symbol-slot { height:35px; max-width:42px; }
+.game-newyear2027:has(.ny-coupon) .ny-lights-bottom { visibility:hidden; }
+.ny-coupon-lights { display:flex; justify-content:space-around; height:12px; padding-top:3px; pointer-events:none; }
+.ny-coupon-lights i { width:4px; height:5px; border-radius:50%; background:var(--light); box-shadow:0 0 7px 2px var(--light); animation:ny-glimmer 3.7s ease-in-out var(--delay) infinite; }
+.ny-coupon-lights.motion-paused i { animation-play-state:paused; }
+@media(prefers-reduced-motion:reduce) { .ny-coupon-lights i { animation:none; } }
+@media(max-width:350px) {
+  .game-newyear2027:has(.ny-coupon) .ny-header h1 { font-size:23px; }
+}
+@media(max-height:650px) {
+  .game-newyear2027:has(.ny-coupon) { --ny-row-height:clamp(38px,calc((var(--tg-viewport-stable-height,100svh) - max(16px,var(--app-safe-top)) - var(--app-safe-bottom) - 294px)/4),70px); }
+  .game-newyear2027:has(.ny-coupon) .ny-header { padding-block:3px; }
+  .game-newyear2027:has(.ny-coupon) .ny-topbar { margin-bottom:3px; }
+  .game-newyear2027:has(.ny-coupon) .ny-header nav button { padding-block:5px; }
+  .game-newyear2027:has(.ny-coupon) .ny-header h1 { font-size:20px; }
+  .game-newyear2027:has(.ny-coupon) .ny-header h1 em { display:inline; font-size:18px; margin-left:7px; }
+  .game-newyear2027 .ny-prompt { min-height:36px; padding-block:4px; }
+  .game-newyear2027 .ny-prompt h2 { font-size:17px; }
+  .game-newyear2027 .ny-ticket-strip { min-height:38px; padding-block:3px; }
+  .game-newyear2027 .ny-ticket-strip .ny-symbol-slot { height:30px; }
+  .game-newyear2027 .ny-object-name { font-size:8px; }
+}
+
+/* The seasonal feature owns a full row so it cannot stretch its neighbour. */
+.collection-card.collection-newyear2027 { grid-column:1/-1; display:flex; min-height:280px; justify-content:flex-end; }
+.collection-card.collection-newyear2027 .collection-art { position:absolute; inset:0; height:100%; min-height:0; }
+.collection-card.collection-newyear2027 .collection-scene { object-position:center; transform:none; }
+.collection-card.collection-newyear2027 .collection-art:after { background:linear-gradient(180deg,#1d090500 12%,#270b1650 38%,#260916ed 78%,#260916f5); }
+.collection-card.collection-newyear2027 .collection-card-content { flex:none; z-index:1; padding:112px 16px 14px; background:transparent; }
+.collection-card.collection-newyear2027 .collection-card-content h2 { font-size:25px; line-height:1.07; margin-bottom:8px; }
+.collection-card.collection-newyear2027 .collection-time { margin-top:10px; }
+@media(max-width:350px) {
+  .collection-card.collection-newyear2027 .collection-card-content { padding:112px 13px 14px; }
+  .collection-card.collection-newyear2027 .collection-card-content h2 { font-size:21px; }
+}

@@ -19,6 +19,9 @@ else:
 ROOT = Path("/opt/k-loto")
 CONTAINERS = ("k-loto-db-1", "k-loto-api-1", "k-loto-bot-1", "k-loto-gateway-1")
 RUNTIME_WARNINGS = {
+    "achievement_activation_overdue",
+    "achievement_events_blocked",
+    "achievement_queue_delayed",
     "overdue_draws",
     "delayed_publications",
     "scheduler_stale",

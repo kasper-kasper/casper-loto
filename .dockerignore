@@ -15,7 +15,12 @@
 !frontend/miniapp/dist/**
 frontend/web
 .tmp
+output
+archive
 design
+assets/publications
+frontend/miniapp/public/assets/publications
+frontend/admin/public/assets/publications
 .env
 .env.*
 !.env.example

@@ -14,6 +14,7 @@ from typing import Any
 import structlog
 from sqlalchemy import func, select
 
+from k_loto.application.achievement_release import queue_health
 from k_loto.application.publication_monitoring import delayed_publications
 from k_loto.domain.enums import DrawStatus
 from k_loto.infrastructure.database.models import (
@@ -166,6 +167,17 @@ class RuntimeMonitoring:
             )
             heartbeat = await session.get(SchedulerHeartbeat, 1)
             last_success = heartbeat.last_succeeded_at if heartbeat else None
+            achievements = await queue_health(session, now)
+        if achievements.get("activation_overdue"):
+            warnings.append("achievement_activation_overdue")
+        if achievements.get("blocked"):
+            warnings.append("achievement_events_blocked")
+        if (
+            achievements.get("enabled")
+            and not achievements.get("processing_paused")
+            and achievements.get("lag_seconds", 0) > 300
+        ):
+            warnings.append("achievement_queue_delayed")
         if overdue:
             warnings.append("overdue_draws")
         if delayed_distribution or delayed_posts:
@@ -183,6 +195,7 @@ class RuntimeMonitoring:
             "delayed_distribution_posts": delayed_distribution,
             "delayed_posts": delayed_posts,
             "host_monitor": host,
+            "achievements": achievements,
         }
 
     async def run(self, backup_dir: Path, stuck_minutes: int) -> None:

@@ -36,3 +36,13 @@ logs/
 backups/
 .maintenance/
 .playwright-mcp/
+.tmp/
+
+# Unrelated document exports and generated review material stay local.
+/output/
+
+# Private local archives can contain logs, database dumps and operational data.
+archive/local/
+# Retired channel/stories media are retained locally, not as new GitHub assets.
+archive/reference/retired-publications/
+*.dump

@@ -48,12 +48,11 @@ jobs:
           python -m pip install uv==0.12.5
           uv sync --locked --extra dev
           echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
-      - name: Static checks and backend regressions
+      - name: Static checks and locked runtime
         run: |
           ruff check backend bot scripts
           ruff format --check backend bot scripts
           mypy backend/src
-          pytest --disable-warnings --ignore=backend/tests/test_web_api.py --ignore=backend/tests/test_web_identity.py
           python -m scripts.verify_runtime_lock --allow-dev
       - name: Empty database and interrupted concurrent index
         run: |
@@ -61,6 +60,12 @@ jobs:
           python -m scripts.bootstrap_index_smoke
           python -m scripts.migrate_database
           alembic check
+      - name: Backend regressions including achievement PostgreSQL scenarios
+        run: |
+          createdb k_loto_achievement_test
+          { pg_dump -d k_loto_bootstrap_smoke_ci --schema-only; pg_dump -d k_loto_bootstrap_smoke_ci --data-only --table=alembic_version; } | psql -d k_loto_achievement_test -v ON_ERROR_STOP=1 >/dev/null
+          export ACHIEVEMENT_TEST_DATABASE_URL=postgresql+asyncpg://audit:synthetic-ci-only@localhost:5432/k_loto_achievement_test
+          pytest --disable-warnings --ignore=backend/tests/test_web_api.py --ignore=backend/tests/test_web_identity.py
       - name: Real Mini App HTTP and financial PostgreSQL scenarios
         run: |
           createdb k_loto_audit_stage1_ci

@@ -1,9 +1,12 @@
+import { tr } from "./i18n";
 import { brandViewData } from "../../shared/brandNames";
 import { durablePurchase, setPurchaseOwner } from "./purchaseJournal";
 import type { Receipt } from "./purchaseJournal";
 import type { Publication } from "../../shared/publications";
 import type { Highlights } from "./Today";
 import type { ArchivePage } from "./types";
+import type { AchievementCategory, AchievementNotice, AchievementPage } from "./achievementTypes";
+import type { CollectionState } from "./collectionTypes";
 import type { BingoFeed, BingoInventory } from "./BingoView";
 import type { Account, Dashboard, Favorite, InstantPurchaseResult, InstantTicket, LiveFeed, NotificationPreferences, PurchaseResult, TicketPage, UserNotification } from "./types";
 
@@ -50,13 +53,13 @@ export async function rawRequest<T>(path: string, initData: string, init?: Reque
     const payload = (await response.json().catch(() => ({}))) as { detail?: string; maintenance?: boolean };
     if (payload.maintenance) window.dispatchEvent(new Event("economy-maintenance"));
     const translated: Record<number, string> = {
-      402: "Недостаточно CAS для этой покупки.",
-      409: "Продажи на выбранный тираж завершены. Обновите расписание и выберите следующий.",
-      422: "Комбинация или количество билетов не прошли проверку.",
-      429: "Слишком много быстрых покупок. Подождите несколько секунд и попробуйте снова.",
-      503: "Лотерея временно недоступна. Попробуйте ещё раз немного позже.",
+      402: tr("Недостаточно CAS для этой покупки."),
+      409: tr("Продажи на выбранный тираж завершены. Обновите расписание и выберите следующий."),
+      422: tr("Комбинация или количество билетов не прошли проверку."),
+      429: tr("Слишком много быстрых покупок. Подождите несколько секунд и попробуйте снова."),
+      503: tr("Лотерея временно недоступна. Попробуйте ещё раз немного позже."),
     };
-    throw new ApiError(translated[response.status] ?? payload.detail ?? "Не удалось выполнить запрос.", response.status);
+    throw new ApiError(translated[response.status] ?? payload.detail ?? tr("Не удалось выполнить запрос."), response.status);
   }
   if (response.status === 204) return undefined as T;
   return brandViewData(await response.json()) as T;
@@ -64,8 +67,8 @@ export async function rawRequest<T>(path: string, initData: string, init?: Reque
     if (reason instanceof ApiError) throw reason;
     observedStatus = 0;
     throw new Error(path.endsWith("/purchases")
-      ? "Связь прервалась. Проверяем результат покупки — пока не покупайте заново."
-      : "Не удалось получить ответ сервера. Проверьте интернет и попробуйте снова.");
+      ? tr("Связь прервалась. Проверяем результат покупки — пока не покупайте заново.")
+      : tr("Не удалось получить ответ сервера. Проверьте интернет и попробуйте снова."));
   } finally {
     if (timeout !== null) window.clearTimeout(timeout);
     const metric = path.endsWith("/purchases") ? "purchase_client" : path === "/api/v1/miniapp/dashboard" ? "dashboard_client" : null;
@@ -78,18 +81,31 @@ async function request<T>(path: string, initData: string, init?: RequestInit, ca
     const payload = JSON.parse(String(init.body)) as { idempotency_key: string };
     if (!payload.idempotency_key.startsWith("m1-")) payload.idempotency_key = `m1-${payload.idempotency_key}`;
     const body = JSON.stringify(payload);
-    return durablePurchase(path, body, () => rawRequest<Receipt>(path, initData, { ...init, body }),
-      reason => reason instanceof ApiError && [402, 409, 422].includes(reason.status), cartIds) as Promise<T>;
+    const receipt = await durablePurchase(path, body, () => rawRequest<Receipt>(path, initData, { ...init, body }),
+      reason => reason instanceof ApiError && [402, 409, 422].includes(reason.status), cartIds) as T;
+    window.dispatchEvent(new Event("achievements:refresh"));
+    return receipt;
   }
   const value = await rawRequest<T>(path, initData, init);
   if (path === "/api/v1/miniapp/dashboard") {
     const id = (value as Dashboard).owner_user_id;
     if (id) setPurchaseOwner(id);
   }
+  if (path.endsWith("/purchases")) window.dispatchEvent(new Event("achievements:refresh"));
   return value;
 }
 
 export const miniAppApi = {
+  collection: (initData:string) => request<CollectionState>("/api/v1/miniapp/achievements/collection",initData),
+  chooseCollection: (initData:string,badge:string|null,theme:string|null) => request<Pick<CollectionState,"active_badge"|"active_theme">>("/api/v1/miniapp/achievements/collection",initData,{method:"PUT",body:JSON.stringify({badge,theme})}),
+  achievements: (initData: string, options: { category?: AchievementCategory; status?: string; offset?: number; summary?: boolean } = {}, signal?: AbortSignal) => {
+    const query = new URLSearchParams({ limit: options.summary ? "3" : "12" });
+    Object.entries(options).forEach(([key, value]) => { if (value !== undefined) query.set(key, String(value)); });
+    return request<AchievementPage>(`/api/v1/miniapp/achievements?${query}`, initData, { signal });
+  },
+  achievementNotices: (initData: string) => request<AchievementNotice[]>("/api/v1/miniapp/achievements/unseen", initData),
+  achievementSeen: (initData: string, ids: string[]) => request<void>("/api/v1/miniapp/achievements/seen", initData, { method: "POST", body: JSON.stringify({ ids }) }),
+  activity: (initData: string) => request<void>("/api/v1/miniapp/achievements/activity", initData, { method: "POST" }),
   startupTiming: (initData: string, duration: number) => sendTiming(initData, "startup_client", duration),
   publications: (initData: string, before?: string, signal?: AbortSignal) => request<Publication[]>(`/api/v1/miniapp/publications${before ? `?before=${encodeURIComponent(before)}` : ""}`, initData, { signal }),
   drawArchive: (initData: string, lotteryCode: string, jackpotsOnly: boolean, before: string | null = null, signal?: AbortSignal) => {
@@ -154,7 +170,7 @@ export const miniAppApi = {
     const headers = new Headers({ Accept: "text/event-stream" });
     if (initData) headers.set("X-Telegram-Init-Data", initData);
     const response = await fetch(`${API_BASE}/api/v1/miniapp/live/stream?scope=${scope}`, { credentials: "include", headers, signal });
-    if (!response.ok || !response.body) throw new ApiError("Не удалось подключиться к эфиру.", response.status);
+    if (!response.ok || !response.body) throw new ApiError(tr("Не удалось подключиться к эфиру."), response.status);
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
@@ -191,13 +207,14 @@ export const miniAppApi = {
     drawCount: 1 | 5 = 1,
     expectedScheduledAt?: string | null,
     cartIds: string[] = [],
+    selectionModes?: ("manual" | "random" | "unknown")[],
   ) =>
     request<PurchaseResult>(
       `/api/v1/miniapp/lotteries/${encodeURIComponent(lotteryCode)}/purchases`,
       initData,
       {
       method: "POST",
-      body: JSON.stringify({ combinations, idempotency_key: idempotencyKey, draw_count: drawCount, expected_scheduled_at: expectedScheduledAt }),
+      body: JSON.stringify({ combinations, idempotency_key: idempotencyKey, draw_count: drawCount, expected_scheduled_at: expectedScheduledAt, selection_modes: selectionModes }),
       },
       cartIds,
     ),

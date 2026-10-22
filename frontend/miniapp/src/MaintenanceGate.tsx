@@ -1,4 +1,6 @@
+import { tr } from "./i18n";
 import { useEffect, useState, type ReactNode } from "react";
+import { Skeleton } from "./components";
 
 export function MaintenanceGate({ children }: { children: ReactNode }) {
   const preview = import.meta.env.VITE_DESIGN_PREVIEW === "true";
@@ -18,13 +20,14 @@ export function MaintenanceGate({ children }: { children: ReactNode }) {
     window.addEventListener("economy-maintenance", pause);
     return () => { if (task !== null) window.clearTimeout(task); window.removeEventListener("economy-maintenance", pause); };
   }, [preview]);
+  if (state === "checking") return <Skeleton />;
   if (state === "open") return children;
   return <main className="economy-maintenance" aria-live="polite">
     <div className="economy-maintenance__orb" aria-hidden="true">✦</div>
     <small>CASPER LOTO</small>
-    <h1>{state === "error" ? "Не удалось подключиться" : "Обновляем экономику"}</h1>
-    <p>{state === "checking" ? "Проверяем доступность приложения…" : state === "error" ? "Попробуй проверить подключение ещё раз." : "Приложение на технической паузе. Сейчас готовим обновление."}</p>
-    {state === "paused" && <p>Покупки и розыгрыши приостановлены.</p>}
-    {state !== "checking" && <button type="button" onClick={() => { setState("checking"); void check(); }}>Проверить снова</button>}
+    <h1>{state === "error" ? tr("Не удалось подключиться") : tr("Техническая пауза")}</h1>
+    <p>{state === "error" ? tr("Попробуй проверить подключение ещё раз.") : tr("Приложение на технической паузе. Сейчас готовим обновление.")}</p>
+    {state === "paused" && <p>{tr("Покупки и розыгрыши приостановлены.")}</p>}
+    <button type="button" onClick={() => { setState("checking"); void check(); }}>{tr("Проверить снова")}</button>
   </main>;
 }

@@ -382,6 +382,10 @@ class InterestingFactService:
         self._session_factory = session_factory
 
     async def run_if_due(self, *, now: datetime | None = None) -> bool:
+        from k_loto.core.config import get_settings
+
+        if not get_settings().editorial_enabled:
+            return False
         generated_at = now or datetime.now(UTC)
         if generated_at.tzinfo is None:
             raise ValueError(

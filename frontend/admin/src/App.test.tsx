@@ -34,6 +34,38 @@ const analytics: TicketAnalytics = { overall: { lottery_id: null, lottery_name: 
 const numberStatistics: NumberStatisticsReport = { lottery_id: "lottery", lottery_name: "Weekly 5/20", period_start: "2026-08-31T21:00:00Z", window_size: 20, draw_count: 2, first_draw_at: "2026-09-01T09:00:00Z", last_draw_at: "2026-09-01T15:00:00Z", numbers: [{ number: 7, appearances: 2, draw_percentage: 100, last_appearance: "2026-09-01T15:00:00Z", draws_since_last: 0 }] };
 const scheduleEntries: ScheduleEntry[] = [{ id: "scheduled-draw", lottery_id: "lottery", lottery_name: "Weekly 5/20", public_number: 8, scheduled_at: "2026-09-02T17:00:00Z" }];
 
+it("shows distribution history and decodes every Pulse cipher category using the recorded rules", async () => {
+  const draw = {
+    id: "pulse-draw", lottery_id: "pulse", lottery_code: "pulse", lottery_name: "Пульс", public_number: 7276,
+    status: "COMPLETED", scheduled_at: "2026-10-20T00:42:00Z", sales_close_at: "2026-10-20T00:41:50Z", executed_at: "2026-10-20T00:42:00Z",
+    winning_numbers: [9, 10, 13, 18, 1038], ticket_count: 120, total_sales: 240000, total_payout: 40420000,
+    jackpot_opening: 40216000, jackpot_closing: 40000000, distribution_opening: 0, distribution_closing: 0,
+    reserve_used: 0, kasper_fund_used: 40204000, correlation_id: "fixture", is_distribution: true,
+    distributed_amount: 40216000, distribution_category: "200", ruleset_code: "pulse_2_12_2_6_cipher_199_economy_v2",
+  };
+  vi.mocked(adminApi.draws).mockResolvedValue([draw]);
+  vi.mocked(adminApi.draw).mockResolvedValue({ draw, ticket_summary: { total: 120, participants: 1, winners: 37, jackpot_winners: 4, bingo_stages: [] }, tickets: [
+    { id: "A", public_number: 222286, user_id: "owner", numbers: [9,10,14,15,1110], purchase_price: 2000, matches: 200, prize_amount: 10068000, is_jackpot_winner: true },
+    { id: "B", public_number: 222292, user_id: "owner", numbers: [5,7,13,18,1176], purchase_price: 2000, matches: 20, prize_amount: 4000, is_jackpot_winner: false },
+    { id: "C", public_number: 222382, user_id: "owner", numbers: [1,2,14,15,1038], purchase_price: 2000, matches: 1, prize_amount: 0, is_jackpot_winner: false },
+  ] });
+  render(<App />);
+  await openManagement();
+  fireEvent.click(await screen.findByRole("button", { name: /Тиражи/ }));
+  fireEvent.click(await screen.findByRole("tab", { name: "Распределительные" }));
+  await waitFor(() => expect(adminApi.draws).toHaveBeenLastCalledWith("scope=all&period=distribution&limit=100&offset=0"));
+  const row = await screen.findByRole("row", { name: /Пульс №7276/ });
+  expect(within(row).getByText("Распределительный")).toBeInTheDocument();
+  fireEvent.click(row);
+  const dialog = await screen.findByRole("dialog");
+  expect(within(dialog).getByText("Распределено из джекпота")).toBeInTheDocument();
+  expect(within(dialog).getByText("2+0 · шифр нет")).toBeInTheDocument();
+  expect(within(dialog).getByText("совпадений: 0+2 · шифр нет")).toBeInTheDocument();
+  expect(within(dialog).getByText("совпадений: 0+0 · шифр да")).toBeInTheDocument();
+  expect(within(dialog).getByRole("button", { name: "Распределение · 4" })).toBeInTheDocument();
+  expect(within(dialog).queryByText("ДЖЕКПОТ ЭТОГО ТИРАЖА СОРВАН")).not.toBeInTheDocument();
+});
+
 beforeEach(() => {
   vi.clearAllMocks();
   window.history.replaceState({}, "", "/");

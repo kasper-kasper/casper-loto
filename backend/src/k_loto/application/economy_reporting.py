@@ -21,6 +21,7 @@ class EconomyDay:
     credited: int = 0
     debited: int = 0
     prizes: int = 0
+    achievement_rewards: int = 0
     refunds: int = 0
     admin_credit: int = 0
     admin_debit: int = 0
@@ -88,6 +89,10 @@ def daily_flows_query(
                 ledger.c.amount,
             ).label("prizes"),
             total(
+                positive & (ledger.c.type == TransactionType.ACHIEVEMENT_REWARD),
+                ledger.c.amount,
+            ).label("achievement_rewards"),
+            total(
                 positive & (ledger.c.type == TransactionType.TICKET_REFUND),
                 ledger.c.amount,
             ).label("refunds"),
@@ -127,6 +132,7 @@ def daily_flows_query(
                 "credited",
                 "debited",
                 "prizes",
+                "achievement_rewards",
                 "refunds",
                 "admin_credit",
                 "admin_debit",
@@ -212,6 +218,7 @@ class EconomyReportService:
                         "credited",
                         "debited",
                         "prizes",
+                        "achievement_rewards",
                         "refunds",
                         "admin_credit",
                         "admin_debit",

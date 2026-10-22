@@ -4,6 +4,9 @@ import os
 from types import SimpleNamespace
 
 import pytest
+
+# Legacy editorial services are exercised only with explicit test opt-in.
+os.environ.setdefault("EDITORIAL_ENABLED", "true")
 from sqlalchemy.ext.asyncio import AsyncSession
 
 os.environ.setdefault(

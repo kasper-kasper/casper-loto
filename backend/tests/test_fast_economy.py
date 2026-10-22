@@ -133,3 +133,16 @@ def test_public_pause_gate_runs_before_authentication(monkeypatch):
         ).status_code
         == 403
     )
+
+
+def test_open_status_does_not_announce_economy_maintenance(monkeypatch):
+    from k_loto.api import economy_maintenance
+    from k_loto.main import create_app
+
+    async def paused(_session):
+        return False
+
+    monkeypatch.setattr(economy_maintenance, "is_paused", paused)
+    response = TestClient(create_app()).get("/api/v1/miniapp/maintenance")
+    assert response.json() == {"maintenance": False, "message": None}
+    assert response.headers["cache-control"] == "no-store"

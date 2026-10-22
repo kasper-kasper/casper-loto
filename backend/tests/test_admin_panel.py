@@ -14,6 +14,7 @@ from k_loto.api.routes.admin import CurrentAdmin, require_admin_csrf
 from k_loto.application.admin import AdminMutationService, AdminQueryService
 from k_loto.core.config import Settings
 from k_loto.domain.enums import DrawStatus, LotteryKind, TransactionType
+from k_loto.domain.lottery_rules import FAST_RULES
 from k_loto.infrastructure.admin_auth import (
     AdminSession,
     InvalidAdminSession,
@@ -442,7 +443,12 @@ async def test_current_jackpot_adjustment_is_ledgered_and_audited() -> None:
         version=1,
     )
     fake = FakeSession(
-        scalar_values=[None, Lottery(id=lottery_id, code="flash"), jackpot, None]
+        scalar_values=[
+            None,
+            Lottery(id=lottery_id, code="flash", ruleset_code=FAST_RULES.code),
+            jackpot,
+            None,
+        ]
     )
 
     result = await AdminMutationService(
@@ -966,6 +972,9 @@ async def test_archive_draw_query_includes_previous_format_metadata() -> None:
         kasper_fund_used=0,
         correlation_id=UUID(int=903),
         configuration_snapshot={"ruleset_code": "flash-legacy"},
+        is_distribution=False,
+        distribution_category=None,
+        distributed_amount=0,
     )
     lottery = SimpleNamespace(id=draw.lottery_id, code="flash", name="FLASH")
     fake = FakeSession(scalar_values=[], execute_rows=[[(draw, lottery)]])
@@ -977,3 +986,39 @@ async def test_archive_draw_query_includes_previous_format_metadata() -> None:
     assert len(rows) == 1
     assert rows[0].id == draw.id
     assert rows[0].ruleset_code == "flash-legacy"
+
+
+async def test_distribution_history_filters_completed_draws_and_exposes_result():
+    from sqlalchemy.dialects import postgresql
+
+    captured = []
+
+    class RecordingSession(FakeSession):
+        async def execute(self, statement):
+            captured.append(statement)
+            return await super().execute(statement)
+
+    fake = RecordingSession(scalar_values=[], execute_rows=[[]])
+    await AdminQueryService(cast(AsyncSession, fake)).draws(period="distribution")
+    sql = str(
+        captured[0].compile(
+            dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}
+        )
+    )
+    assert "draws.is_distribution IS true" in sql
+    assert "draws.status = 'COMPLETED'" in sql
+
+    from test_weekly_application import build_purchase_accounts
+
+    _, lottery, draw, *_ = build_purchase_accounts(datetime(2026, 10, 20, tzinfo=UTC))
+    draw.is_distribution = True
+    draw.distributed_amount = 40_216_000
+    draw.distribution_category = "200"
+    draw.kasper_fund_used = 0
+    result = AdminQueryService._draw(draw, lottery)
+    from k_loto.api.routes.admin import DrawResponse
+
+    response = DrawResponse.model_validate(result)
+    assert response.is_distribution
+    assert response.distributed_amount == 40_216_000
+    assert response.distribution_category == "200"

@@ -57,12 +57,229 @@ DIAGNOSTIC_LOGS = {
     for service in ("api", "bot")
 }
 
+# Owner-approved retirement of editorial content, never lottery/financial history.
+# Called under BOTH maintenance locks after verified off-host exports and quiescence.
+EDITORIAL_RETIREMENT_SQL = """
+BEGIN;
+SET LOCAL lock_timeout='5s';
+SET LOCAL statement_timeout='30s';
+SELECT pg_advisory_xact_lock(hashtext('publication-event-engine'));
+LOCK TABLE admin_audit_log IN ACCESS EXCLUSIVE MODE;
+CREATE TEMP TABLE editorial_preserved_counts ON COMMIT DROP AS
+SELECT (SELECT count(*) FROM tickets) tickets,
+       (SELECT count(*) FROM draws) draws,
+       (SELECT count(*) FROM ledger_transactions) ledger,
+       (SELECT count(*) FROM admin_audit_log WHERE entity_type <> 'PUBLICATION') audit;
+ALTER TABLE admin_audit_log DISABLE TRIGGER trg_admin_audit_immutable;
+DELETE FROM admin_audit_log WHERE entity_type = 'PUBLICATION';
+ALTER TABLE admin_audit_log ENABLE TRIGGER trg_admin_audit_immutable;
+TRUNCATE TABLE publications, publication_event_states, interesting_facts,
+               interesting_fact_batches, distribution_announcements;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM editorial_preserved_counts c WHERE
+    c.tickets <> (SELECT count(*) FROM tickets) OR
+    c.draws <> (SELECT count(*) FROM draws) OR
+    c.ledger <> (SELECT count(*) FROM ledger_transactions) OR
+    c.audit <> (SELECT count(*) FROM admin_audit_log
+                WHERE entity_type <> 'PUBLICATION'))
+  THEN RAISE EXCEPTION 'Protected business history changed'; END IF;
+END $$;
+COMMIT;
+"""
+
+
+def retire_editorial_data(archive_receipt: dict[str, Any]) -> dict[str, Any]:
+    """Explicit one-off owner operation; caller has verified off-host archives."""
+    if archive_receipt.get("authorization") != "channel-and-stories-removal-2026-10-19":
+        raise RuntimeError("Missing owner authorization receipt")
+    if not archive_receipt.get("local_archive_verified"):
+        raise RuntimeError("Off-host archive must be verified first")
+    for name in ("k-loto-api-1", "k-loto-bot-1"):
+        if (
+            run("docker", "inspect", "--format", "{{.State.Running}}", name).strip()
+            != "false"
+        ):
+            raise RuntimeError("Quiesce API and bot before editorial retirement")
+    subprocess.run(
+        [
+            "docker",
+            "exec",
+            "-i",
+            "k-loto-db-1",
+            "sh",
+            "-c",
+            'exec psql -X -q -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"',
+        ],
+        input=EDITORIAL_RETIREMENT_SQL,
+        text=True,
+        check=True,
+        capture_output=True,
+    )
+    return {"editorial_data_retired": True, "business_history_preserved": True}
+
+
+def delete_archived_editorial_file(path: Path, expected_sha256: str) -> bool:
+    """Delete one exact archived file; no directory recursion or volume pruning."""
+    import hashlib
+
+    allowed_roots = (
+        ROOT / "assets/publications",
+        ROOT / "docs/publications",
+        ROOT / "frontend/miniapp/public/assets/publications",
+        ROOT / "frontend/admin/public/assets/publications",
+        ROOT / "frontend/miniapp/dist/assets/publications",
+        ROOT / "frontend/admin/dist/assets/publications",
+        ROOT / "backups",
+        Path("/opt/k-loto-backups"),
+        DATABASE_BACKUPS,
+        ROOT / ".maintenance/diagnostic-logs",
+    )
+    if not any(path.is_relative_to(root) for root in allowed_roots):
+        raise RuntimeError("File outside editorial/archive scope")
+    if path.is_symlink() or path.resolve() != path:
+        raise RuntimeError("Refusing indirect editorial path")
+    if not path.exists():
+        return False
+    info = path.stat()
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    if digest.hexdigest() != expected_sha256:
+        raise RuntimeError("Archived file changed; deletion refused")
+    return delete_planned_file(
+        FileCandidate(
+            str(path),
+            info.st_size,
+            info.st_mtime_ns,
+            info.st_dev,
+            info.st_ino,
+        )
+    )
+
+
+def retire_archived_editorial_images(receipt: dict[str, Any]) -> dict[str, Any]:
+    """Remove exact archived app images and their content-bearing legacy layers."""
+    if not receipt.get("local_archive_verified"):
+        raise RuntimeError("Verified off-host image archive required")
+    roots = receipt.get("archived_images", [])
+    if not roots:
+        raise RuntimeError("No archived app image identities")
+    targets: set[str] = set()
+    for row in roots:
+        identifier = row["id"]
+        if not re.fullmatch(r"sha256:[a-f0-9]{64}", identifier):
+            raise RuntimeError("Invalid archived image identity")
+        inspected = subprocess.run(
+            ["docker", "image", "inspect", identifier],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if inspected.returncode:
+            continue
+        image = json.loads(inspected.stdout)[0]
+        if not scoped_image(image):
+            raise RuntimeError("Archived image is no longer exclusively project-owned")
+        history = [
+            json.loads(line)
+            for line in run(
+                "docker",
+                "image",
+                "history",
+                "--no-trunc",
+                "--format",
+                "{{json .}}",
+                identifier,
+            ).splitlines()
+        ]
+        positions = [
+            i
+            for i, item in enumerate(history)
+            if any(
+                target in item.get("CreatedBy", "")
+                for target in ("publication-assets", "/srv/admin", "/srv/miniapp")
+            )
+        ]
+        targets.add(identifier)
+        if positions:
+            targets.update(
+                item["ID"]
+                for item in history[: max(positions) + 1]
+                if item["ID"].startswith("sha256:")
+            )
+    # Legacy builder descendants may retain a content layer even without tags.
+    ids = run("docker", "image", "ls", "-aq", "--no-trunc").split()
+    images = json.loads(run("docker", "image", "inspect", *sorted(set(ids))))
+    targets.update(
+        image["Id"]
+        for image in images
+        if image.get("Config", {}).get("WorkingDir")
+        in {"/build/admin", "/build/miniapp"}
+    )
+    changed = True
+    while changed:
+        changed = False
+        for image in images:
+            if image.get("Parent") in targets and image["Id"] not in targets:
+                targets.add(image["Id"])
+                changed = True
+    selected = {image["Id"]: image for image in images if image["Id"] in targets}
+    for identifier, image in selected.items():
+        if image.get("RepoTags") and not scoped_image(image):
+            raise RuntimeError("Content-bearing layer has unrelated tags")
+        if run("docker", "ps", "-aq", "--filter", "ancestor=" + identifier).strip():
+            raise RuntimeError("Archived content image is still used by a container")
+    removed = []
+    while selected:
+        parents = {image.get("Parent") for image in selected.values()}
+        leaves = [key for key in selected if key not in parents]
+        if not leaves:
+            raise RuntimeError("Unexpected Docker legacy image graph")
+        for identifier in leaves:
+            present = subprocess.run(
+                ["docker", "image", "inspect", identifier],
+                capture_output=True,
+                check=False,
+            )
+            if present.returncode:
+                del selected[identifier]
+                continue
+            tags = selected[identifier].get("RepoTags") or []
+            if tags:
+                run("docker", "image", "rm", *tags)
+            else:
+                run("docker", "image", "rm", identifier)
+            removed.append(identifier)
+            del selected[identifier]
+    return {"retired_editorial_image_records": len(removed)}
+
 
 def private_directory(path: Path) -> None:
     if path.is_symlink():
         raise RuntimeError("Refusing symlink in maintenance state")
     path.mkdir(mode=0o700, exist_ok=True)
     path.chmod(0o700)
+
+
+def prune_archived_editorial_cache(receipt: dict[str, Any]) -> dict[str, Any]:
+    """Remove only explicit, archived content cache IDs; never general cache GC."""
+    if not receipt.get("local_archive_verified"):
+        raise RuntimeError("Verified off-host archive required")
+    identifiers = receipt.get("archived_build_cache_ids", [])
+    if any(not re.fullmatch(r"[a-z0-9]{16,64}", item) for item in identifiers):
+        raise RuntimeError("Invalid exact cache identity")
+    for identifier in identifiers:
+        run(
+            "docker",
+            "builder",
+            "prune",
+            "--all",
+            "--force",
+            "--filter",
+            "id=" + identifier,
+        )
+    return {"targeted_editorial_cache_records": len(identifiers)}
 
 
 def write_state(path: Path, value: dict[str, Any]) -> None:

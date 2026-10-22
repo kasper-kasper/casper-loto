@@ -32,6 +32,7 @@ const lotterySeed = [
   { code: "september", name: "3 СЕНТЯБРЯ", kind: "DAILY" as const, numbers_to_pick: 3, max_number: 33, ticket_price: 333, jackpot: 33_333_333, draw_number: 1, scheduled_at: future(83) },
   { code: "pll", name: "2:22", kind: "DAILY" as const, numbers_to_pick: 4, max_number: 15, ticket_price: 24_000, jackpot: 18_640_000, draw_number: 418, scheduled_at: future(145) },
   { code: "pss", name: "Casper Ball", kind: "DAILY" as const, numbers_to_pick: 6, max_number: 44, primary_numbers_to_pick: 5, primary_max_number: 36, secondary_numbers_to_pick: 1, secondary_max_number: 8, secondary_storage_offset: 36, ticket_price: 24_000, jackpot: 24_000_000, draw_number: 219, scheduled_at: future(230) },
+  { code: "mini", name: "Casper Mini", kind: "DAILY" as const, ruleset_code: "casper_mini_6_30", numbers_to_pick: 6, max_number: 30, ticket_price: 10_000, jackpot: 20_000_000, fixed_payouts: {2: 10_000, 3: 30_000, 4: 140_000, 5: 1_000_000} as Record<string, number>, draw_number: 1, scheduled_at: future(110) },
   { code: "khan", name: "6 из 36", kind: "DAILY" as const, numbers_to_pick: 6, max_number: 36, ticket_price: 48_000, jackpot: 33_456_000, draw_number: 174, scheduled_at: future(310) },
   { code: "weekly", fixed_payouts: {21:50000,22:50000,30:100000,31:200000,32:300000,40:500000,41:1000000,42:3000000,50:10000000,51:20000000} as Record<string, number>, name: "Casper Grand", kind: "WEEKLY" as const, numbers_to_pick: 7, max_number: 40, primary_numbers_to_pick: 5, primary_max_number: 35, secondary_numbers_to_pick: 2, secondary_max_number: 5, secondary_storage_offset: 35, ticket_price: 50_000, jackpot: 5_000_182_500, draw_number: 4, scheduled_at: future(1_420) },
 ];
@@ -50,7 +51,7 @@ const dashboard = (): Dashboard => ({
   server_time: nowIso(),
   balance,
   active_ticket_count: purchasedTickets.length,
-  lotteries: lotterySeed.map((lottery) => { const scheduledAt = lottery.code === broadcastPreview?.lotteryCode ? new Date(previewStartsAt).toISOString() : lottery.scheduled_at; return ({ ...lottery, scheduled_at: scheduledAt, sales_close_at: new Date(new Date(scheduledAt).getTime() - (["flash", "shadow", "pulse"].includes(lottery.code) ? 8_000 : 120_000)).toISOString(), sales_open: true, purchase_available: true, player_ticket_count: lottery.code === broadcastPreview?.lotteryCode ? 1 : purchasedTickets.filter((ticket) => ticket.lottery_code === lottery.code).length, sales_status: "OPEN" as const, max_tickets_per_purchase: ["flash", "shadow", "pulse"].includes(lottery.code) ? 100 : 1_000, max_tickets_per_user_per_draw: ["flash", "shadow", "pulse"].includes(lottery.code) ? 500 : 5_000 }); }),
+  lotteries: lotterySeed.map((lottery) => { const scheduledAt = lottery.code === broadcastPreview?.lotteryCode ? new Date(previewStartsAt).toISOString() : lottery.scheduled_at; return ({ ...lottery, scheduled_at: scheduledAt, sales_close_at: new Date(new Date(scheduledAt).getTime() - (["flash", "shadow", "pulse"].includes(lottery.code) ? 8_000 : 120_000)).toISOString(), sales_open: true, purchase_available: true, player_ticket_count: lottery.code === broadcastPreview?.lotteryCode ? 1 : purchasedTickets.filter((ticket) => ticket.lottery_code === lottery.code).length, sales_status: "OPEN" as const, max_tickets_per_purchase: ["mini", "flash", "shadow", "pulse"].includes(lottery.code) ? 100 : 1_000, max_tickets_per_user_per_draw: ["mini", "flash", "shadow", "pulse"].includes(lottery.code) ? 500 : 5_000 }); }),
   recent_results: [],
   monthly_total_payout: 12_333_333,
   total_ticket_count: 18_432,
@@ -59,16 +60,16 @@ const dashboard = (): Dashboard => ({
 
 const account = (): Account => ({ display_name: "Дизайн-превью", balance, ticket_count: purchasedTickets.length + 42, active_ticket_count: purchasedTickets.length, winning_ticket_count: 7, total_spent: 14_760_000, total_won: 19_333_333, best_win: 12_000_000, unread_notification_count: 1, notification_preferences: { telegram_enabled: true, draw_results_enabled: true, inactivity_reminders_enabled: true } });
 
-const previewNumbers: Record<string, number[]> = { dual: [3, 10, 17, 23], pll: [2, 6, 11, 14], pss: [1, 5, 9, 15], khan: [4, 12, 19, 23, 31, 36], weekly: [3, 9, 18, 27, 34, 37, 40], september: [3, 9, 28], grob: [2, 8, 16] };
-const previewLosingTickets: Record<string, number[]> = { pll: [1, 3, 5, 7], pss: [2, 4, 6, 8], khan: [1, 2, 3, 5, 6, 7], weekly: [1, 2, 4, 8, 12, 36, 38], september: [1, 2, 4], grob: [1, 3, 5] };
+const previewNumbers: Record<string, number[]> = { dual: [3, 10, 17, 23], pll: [2, 6, 11, 14], pss: [1, 5, 9, 15], mini: [3, 8, 12, 19, 24, 30], khan: [4, 12, 19, 23, 31, 36], weekly: [3, 9, 18, 27, 34, 37, 40], september: [3, 9, 28], grob: [2, 8, 16] };
+const previewLosingTickets: Record<string, number[]> = { pll: [1, 3, 5, 7], pss: [2, 4, 6, 8], mini: [1, 2, 4, 5, 6, 7], khan: [1, 2, 3, 5, 6, 7], weekly: [1, 2, 4, 8, 12, 36, 38], september: [1, 2, 4], grob: [1, 3, 5] };
 
 const liveDraw = (): LiveDraw => {
   const lottery = lotterySeed.find((item) => item.code === (broadcastPreview?.lotteryCode ?? "grob")) ?? lotterySeed.find((item) => item.code === "grob")!;
   const winningNumbers = previewNumbers[lottery.code] ?? [2, 8, 16];
   const winning = broadcastPreview?.scenario !== "loss";
   const ticketNumbers = winning ? [...winningNumbers] : previewLosingTickets[lottery.code] ?? [1, 3, 5];
-  const revealLead = lottery.code === "khan" ? 4_000 : 1_000;
-  const revealInterval = lottery.code === "khan" ? 3_200 : 2_000;
+  const revealLead = (lottery.code === "khan" || lottery.code === "mini") ? 4_000 : 1_000;
+  const revealInterval = (lottery.code === "khan" || lottery.code === "mini") ? 3_200 : 2_000;
   const starts = broadcastPreview ? new Date(previewStartsAt).toISOString() : lottery.scheduled_at;
   const revealAt = winningNumbers.map((_, index) => new Date(new Date(starts).getTime() + revealLead + index * revealInterval).toISOString());
   const prize = winning ? (lottery.code === "weekly" ? 5_000_000_000 : 250_000) : 0;

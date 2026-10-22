@@ -18,7 +18,7 @@ async def maintenance_status() -> JSONResponse:
     async with session_factory() as session:
         paused = await is_paused(session)
     return JSONResponse(
-        {"maintenance": paused, "message": "Обновляем экономику"},
+        {"maintenance": paused, "message": "Техническая пауза" if paused else None},
         headers={"Cache-Control": "no-store"},
     )
 

@@ -1,5 +1,9 @@
 # Telegram Mini App
 
+Russian and English UI: the player's saved choice on this device takes precedence
+over Telegram's language, then the browser/device language. Switch in My account →
+App language. Details and translation maintenance: [languages](../../docs/MINIAPP_LANGUAGES.md).
+
 React, TypeScript and Vite client for Casper Loto. It authenticates every API request
 with Telegram `initData`; balance, price, draw assignment and payout remain
 server-authoritative.

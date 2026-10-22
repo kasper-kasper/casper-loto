@@ -4,6 +4,20 @@ import { MaintenanceGate } from "./MaintenanceGate";
 
 afterEach(() => { vi.unstubAllGlobals(); });
 
+it("uses the regular app skeleton without a maintenance screen while checking", async () => {
+  let finish!: (value: unknown) => void;
+  vi.stubGlobal("fetch", vi.fn(() => new Promise(resolve => { finish = resolve; })));
+  const { container } = render(<MaintenanceGate><p>Game content</p></MaintenanceGate>);
+  expect(screen.getByRole("main", { name: "Загружаем Casper Loto" })).toHaveClass("skeleton-shell");
+  expect(container.querySelector(".economy-maintenance")).toBeNull();
+  expect(screen.queryByText(/техническ|обновляем экономику/i)).not.toBeInTheDocument();
+  expect(screen.queryByText("Game content")).not.toBeInTheDocument();
+  await waitFor(() => expect(finish).toBeDefined());
+  finish({ ok: true, json: async () => ({ maintenance: false }) });
+  await screen.findByText("Game content");
+  expect(screen.queryByText("Техническая пауза")).not.toBeInTheDocument();
+});
+
 it("keeps the game unmounted during a persistent pause", async () => {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ maintenance: true }) }));
   render(<MaintenanceGate><p>Game content</p></MaintenanceGate>);

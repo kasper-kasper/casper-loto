@@ -32,7 +32,15 @@ from k_loto.core.config import Settings, get_settings
 from k_loto.infrastructure.database.models import Publication
 from k_loto.infrastructure.publication_channel import channel_status
 
-router = APIRouter(tags=["publications"])
+
+def require_editorial_enabled() -> None:
+    if not get_settings().editorial_enabled:
+        raise HTTPException(410, "Editorial publications have been retired.")
+
+
+router = APIRouter(
+    tags=["publications"], dependencies=[Depends(require_editorial_enabled)]
+)
 Session = Annotated[AsyncSession, Depends(get_db_session)]
 Admin = Annotated[CurrentAdmin, Depends(get_current_admin)]
 Editor = Annotated[CurrentAdmin, Depends(require_admin_csrf)]

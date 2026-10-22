@@ -1134,7 +1134,7 @@ class MiniAppQueryService:
             fast_presentation_timeline
             if lottery.code in FAST_LOTTERY_CODES
             else khan_presentation_timeline
-            if lottery.code == "khan"
+            if lottery.code in {"khan", "mini"}
             else presentation_timeline
         )
         timeline = timeline_factory(
@@ -1228,7 +1228,7 @@ class MiniAppQueryService:
         revealing = {
             item.draw_id: item
             for item in contexts
-            if item.code == "khan"
+            if item.code in {"khan", "mini"}
             and item.value.status == DrawStatus.COMPLETED
             and item.value.live_starts_at <= now < item.value.live_ends_at
         }

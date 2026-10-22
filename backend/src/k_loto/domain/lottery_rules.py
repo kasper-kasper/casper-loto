@@ -120,6 +120,8 @@ class LotteryRuleStrategy:
     ordered: bool = False
     server_code_max: int = 0
     server_code_storage_offset: int = 0
+    shared_prize: int = 0
+    shared_prize_match: int = 0
 
     @property
     def display_primary_numbers_to_pick(self) -> int:
@@ -406,6 +408,13 @@ class LotteryRuleStrategy:
                 guaranteed[ticket.id] = fixed
             elif ratio is not None:
                 guaranteed[ticket.id] = ratio.apply(ticket.purchase_price)
+        if self.shared_prize:
+            if jackpot_balance or base_jackpot:
+                raise ConfigurationError(
+                    "A fixed shared prize cannot accumulate a jackpot."
+                )
+            winners = [t for t in tickets if matches[t.id] == self.shared_prize_match]
+            guaranteed.update(_allocate_evenly(self.shared_prize, winners))
         accumulated_jackpot = max(jackpot_balance - base_jackpot, 0)
         for match_code, share in self.tier_pool_payouts.items():
             winners = [ticket for ticket in tickets if matches[ticket.id] == match_code]
@@ -875,6 +884,25 @@ CLASSIC_ECONOMY_RULES = replace(
     guaranteed_payouts=MappingProxyType({}),
     fixed_payouts=MappingProxyType({2: 30_000, 3: 140_000, 4: 1_000_000, 5: 7_000_000}),
 )
+CASPER_MINI_RULES = replace(
+    CLASSIC_ECONOMY_RULES,
+    code="casper_mini_6_30",
+    label="Casper Mini",
+    max_number=30,
+    fixed_payouts=MappingProxyType({2: 10_000, 3: 30_000, 4: 140_000, 5: 1_000_000}),
+)
+NEW_YEAR_2027_RULES = replace(
+    CLASSIC_ECONOMY_RULES,
+    code="newyear_2027_3_12",
+    label="Новогоднее лото 2027",
+    numbers_to_pick=3,
+    max_number=12,
+    jackpot_share=PayoutRatio(0),
+    jackpot_match=-1,
+    fixed_payouts=MappingProxyType({1: 5_000, 2: 30_000}),
+    shared_prize=1_000_000,
+    shared_prize_match=3,
+)
 BALL_ECONOMY_RULES = replace(
     PSS_CASPER_BALL_RULES,
     code="casper_ball_5_36_1_8_economy_v2",
@@ -951,6 +979,8 @@ LOTTERY_RULES: Mapping[str, LotteryRuleStrategy] = MappingProxyType(
             BALL_ECONOMY_RULES,
             CLASSIC_6_36_RULES,
             CLASSIC_ECONOMY_RULES,
+            CASPER_MINI_RULES,
+            NEW_YEAR_2027_RULES,
             DUAL_RULES,
             DUAL_ECONOMY_RULES,
             SEPTEMBER_RULES,

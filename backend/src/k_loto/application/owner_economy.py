@@ -4,19 +4,30 @@ from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 from uuid import uuid4
 
-from sqlalchemy import Integer, func, select, text
+from sqlalchemy import Integer, case, func, literal, select, text, union_all
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql import Select
 
 from k_loto.application.economy import ECONOMY_LOCK, control_state
 from k_loto.application.economy_reporting import EconomyReportService
 from k_loto.application.weekly import KASPER_FUND_ID
-from k_loto.domain.enums import DrawStatus, NotificationStatus, NotificationType
+from k_loto.domain.enums import (
+    DrawStatus,
+    NotificationStatus,
+    NotificationType,
+    TicketSource,
+    TicketStatus,
+)
+from k_loto.domain.lotteries import FAST_LOTTERY_CODES
 from k_loto.domain.schedules import MOSCOW
 from k_loto.infrastructure.database.models import (
+    Balance,
     Draw,
     InstantTicket,
+    JackpotAccount,
     KasperFundAccount,
+    Lottery,
     NotificationOutbox,
     Ticket,
     User,
@@ -25,13 +36,71 @@ from k_loto.infrastructure.database.models import (
 SUMMARY_KIND = "owner_daily_economy"
 
 
+def ticket_activity_query(*, start: datetime, end: datetime, epoch: int) -> Select[Any]:
+    """One row per purchased ticket, including Dual only once; gifts stay separate.
+
+    Purchases are gross confirmed purchases, matching the ledger's purchase flow.
+    Later refunds are reported separately, never erased from business history.
+    """
+    draw_epoch = func.coalesce(
+        Draw.configuration_snapshot["economy_epoch"].astext, "1"
+    ).cast(Integer)
+    tickets = union_all(
+        select(
+            Ticket.user_id.label("user_id"),
+            case(
+                (Ticket.source == TicketSource.GIFT, "gift"),
+                (Lottery.code.in_(FAST_LOTTERY_CODES), "fast"),
+                else_="regular",
+            ).label("kind"),
+            (Ticket.status == TicketStatus.REFUNDED).label("refunded"),
+        )
+        .join(Draw, Draw.id == Ticket.draw_id)
+        .join(Lottery, Lottery.id == Ticket.lottery_id)
+        .where(
+            Ticket.purchased_at >= start,
+            Ticket.purchased_at < end,
+            draw_epoch == epoch,
+        ),
+        select(
+            InstantTicket.user_id,
+            literal("instant").label("kind"),
+            literal(False).label("refunded"),
+        ).where(InstantTicket.purchased_at >= start, InstantTicket.purchased_at < end),
+    ).subquery()
+    return select(
+        *(
+            func.count().filter(tickets.c.kind == kind).label(kind)
+            for kind in ("regular", "fast", "instant", "gift")
+        ),
+        func.count()
+        .filter(tickets.c.refunded, tickets.c.kind != "gift")
+        .label("refunded"),
+        func.count(
+            func.distinct(case((tickets.c.kind != "gift", tickets.c.user_id)))
+        ).label("buyers"),
+    ).select_from(tickets)
+
+
 def due_report_day(now: datetime) -> date | None:
     local = now.astimezone(MOSCOW)
     return local.date() - timedelta(days=1) if local.time() >= time(0, 5) else None
 
 
 def digest_metrics(
-    report: dict[str, Any], *, regular: int, instant: int, fund: int, pending: int
+    report: dict[str, Any],
+    *,
+    regular: int,
+    instant: int,
+    fund: int,
+    pending: int,
+    fast: int = 0,
+    gifts: int = 0,
+    refunded_tickets: int = 0,
+    buyers: int = 0,
+    new_players: int = 0,
+    player_balances: int = 0,
+    jackpots: int = 0,
 ) -> dict[str, Any]:
     day = report["days"][-1]
     complete = [x for x in report["days"] if x["included"] and not x["partial"]]
@@ -52,12 +121,18 @@ def digest_metrics(
         "report_day": str(report["selected_day"]),
         "partial": day["partial"],
         "regular_tickets": regular,
+        "fast_tickets": fast,
         "instant_tickets": instant,
-        "total_tickets": regular + instant,
+        "total_tickets": regular + fast + instant,
+        "gift_tickets": gifts,
+        "refunded_tickets": refunded_tickets,
+        "buyers": buyers,
+        "new_players": new_players,
         "purchases": day["purchases"],
         "prizes": day["prizes"],
         "refunds": day["refunds"],
-        "other_credit": day["other_credit"],
+        "other_credit": day["other_credit"] - day["achievement_rewards"],
+        "achievement_rewards": day["achievement_rewards"],
         "admin_net": day["admin_credit"] - day["admin_debit"],
         "game_net": day["purchases"] - day["prizes"] - day["refunds"],
         "issued": day["issued"],
@@ -67,7 +142,12 @@ def digest_metrics(
         "fund_balance": fund,
         "fund_net": day["fund_net"],
         "fund_runway_days": runway,
+        "fund_daily_expense": (net_expense + len(complete) - 1) // len(complete)
+        if net_expense > 0
+        else 0,
         "trend_days": len(complete),
+        "player_balances": player_balances,
+        "jackpots": jackpots,
         "pending_draws": pending,
         "attention": attention,
     }
@@ -94,10 +174,30 @@ class OwnerEconomySummaryService:
             if control.epoch_started_at and end <= control.epoch_started_at:
                 return False
             key = f"owner-economy:{control.epoch}:{day}:{owner_telegram_id}"
-            if await self.session.scalar(
-                select(NotificationOutbox.id).where(NotificationOutbox.event_key == key)
-            ):
-                return False
+            existing = await self.session.scalar(
+                select(NotificationOutbox)
+                .where(NotificationOutbox.event_key == key)
+                .with_for_update()
+            )
+            if existing is not None:
+                if (
+                    existing.status != NotificationStatus.CANCELLED
+                    or existing.last_error != "owner_report_recipient_changed"
+                    or existing.sent_at is not None
+                ):
+                    return False
+                owner = await self.session.scalar(
+                    select(User.id).where(
+                        User.telegram_id == owner_telegram_id, User.is_active.is_(True)
+                    )
+                )
+                if owner is None or existing.user_id != owner:
+                    return False
+                existing.status = NotificationStatus.PENDING
+                existing.available_at = now
+                existing.locked_at = None
+                existing.last_error = None
+                return True
             owner = await self.session.scalar(
                 select(User.id).where(
                     User.telegram_id == owner_telegram_id, User.is_active.is_(True)
@@ -117,23 +217,21 @@ class OwnerEconomySummaryService:
             draw_epoch = func.coalesce(
                 Draw.configuration_snapshot["economy_epoch"].astext, "1"
             ).cast(Integer)
-            regular = int(
-                await self.session.scalar(
-                    select(func.count(Ticket.id))
-                    .join(Draw, Draw.id == Ticket.draw_id)
-                    .where(
-                        Ticket.purchased_at >= start,
-                        Ticket.purchased_at < end,
-                        draw_epoch == control.epoch,
+            activity = (
+                (
+                    await self.session.execute(
+                        ticket_activity_query(start=start, end=end, epoch=control.epoch)
                     )
                 )
-                or 0
+                .mappings()
+                .one()
             )
-            instant = int(
+            new_players = int(
                 await self.session.scalar(
-                    select(func.count(InstantTicket.id)).where(
-                        InstantTicket.purchased_at >= start,
-                        InstantTicket.purchased_at < end,
+                    select(func.count(User.id)).where(
+                        User.created_at >= start,
+                        User.created_at < end,
+                        User.telegram_id.is_not(None),
                     )
                 )
                 or 0
@@ -158,10 +256,23 @@ class OwnerEconomySummaryService:
             )
             if fund is None:
                 raise RuntimeError("Kasper Fund account is missing.")
+            player_balances = int(
+                await self.session.scalar(select(func.sum(Balance.amount))) or 0
+            )
+            jackpots = int(
+                await self.session.scalar(select(func.sum(JackpotAccount.balance))) or 0
+            )
             payload = digest_metrics(
                 report,
-                regular=regular,
-                instant=instant,
+                regular=int(activity["regular"]),
+                fast=int(activity["fast"]),
+                instant=int(activity["instant"]),
+                gifts=int(activity["gift"]),
+                refunded_tickets=int(activity["refunded"]),
+                buyers=int(activity["buyers"]),
+                new_players=new_players,
+                player_balances=player_balances,
+                jackpots=jackpots,
                 fund=int(fund),
                 pending=pending,
             )

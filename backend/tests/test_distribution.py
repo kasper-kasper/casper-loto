@@ -27,6 +27,40 @@ NOW = datetime(2026, 10, 9, tzinfo=UTC)
 WINNING = (1, 2, 3, 4, 5, 36, 37)
 
 
+def test_pulse_distribution_distinguishes_two_main_from_two_secondary_numbers():
+    from k_loto.domain.lottery_rules import PULSE_RULES
+
+    rules = PULSE_RULES
+    winning = (9, 10, 13, 18, 1038)
+    numbers = [
+        (9, 10, 14, 15, 1110),
+        (9, 10, 15, 16, 1186),
+        (9, 10, 14, 15, 1188),
+        (9, 10, 14, 17, 1113),
+        (5, 7, 13, 18, 1176),
+        (3, 12, 13, 18, 1073),
+    ]
+    tickets = [
+        SettlementTicket(UUID(int=i), i, UUID(int=99), value, 2000)
+        for i, value in enumerate(numbers, 1)
+    ]
+    plan = rules.calculate_settlement(
+        tickets,
+        winning,
+        distribution_balance=0,
+        jackpot_balance=40_216_000,
+        reserve_balance=10**12,
+        base_jackpot=40_000_000,
+    )
+    result = distribute_jackpot(
+        plan, tickets, rules, base_jackpot=40_000_000, fund_balance=10**12
+    )
+    assert result.distribution_category == "200"
+    assert [(p.matches, p.amount, p.jackpot_amount) for p in result.payouts] == (
+        [(200, 10_068_000, 10_054_000)] * 4 + [(20, 4000, 0)] * 2
+    )
+
+
 def ticket(number: int, primary: int, secondary: int) -> SettlementTicket:
     numbers = tuple(
         list(range(1, primary + 1))
@@ -258,7 +292,7 @@ async def test_assignment_replay_has_one_post_audit_and_no_money_writes():
     with patch(
         "k_loto.application.distribution.get_settings",
         return_value=SimpleNamespace(
-            lottery_bot_token=True, publication_channel="@mock"
+            editorial_enabled=True, lottery_bot_token=True, publication_channel="@mock"
         ),
     ):
         result = await DistributionDrawService(cast(AsyncSession, session)).assign(

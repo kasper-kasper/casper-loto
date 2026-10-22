@@ -63,7 +63,7 @@ def announcement_text(
 
 def validate_assignment(draw: Draw, lottery: Lottery, now: datetime) -> None:
     if (
-        lottery.code in {"dual", "kasper-live", "aurora", "vault"}
+        lottery.code in {"dual", "newyear2027", "kasper-live", "aurora", "vault"}
         or not lottery.is_active
     ):
         raise ValueError("Эта лотерея не участвует в распределительных тиражах.")
@@ -131,6 +131,8 @@ def queue_result(
     jackpot_paid: int,
     now: datetime,
 ) -> None:
+    if not get_settings().editorial_enabled:
+        return
     session.add(
         DistributionAnnouncement(
             id=uuid4(),
@@ -147,6 +149,8 @@ async def recover_results(
     factory: async_sessionmaker[AsyncSession], *, now: datetime
 ) -> None:
     """Recover fresh completed receipts without editing any historical draw."""
+    if not get_settings().editorial_enabled:
+        return
     async with factory() as session, session.begin():
         rows = (
             await session.execute(
@@ -421,23 +425,26 @@ class DistributionDrawService:
             timestamp = now or datetime.now(UTC)
             validate_assignment(draw, lottery, timestamp)
             settings = get_settings()
-            if not settings.lottery_bot_token or not settings.publication_channel:
+            if settings.editorial_enabled and (
+                not settings.lottery_bot_token or not settings.publication_channel
+            ):
                 raise ValueError("Для назначения настройте бота и канал публикаций.")
             draw.is_distribution = True
-            announcement = DistributionAnnouncement(
-                id=uuid4(),
-                draw_id=draw.id,
-                kind="schedule",
-                text=announcement_text(
-                    lottery.name,
-                    lottery.code,
-                    draw.public_number,
-                    draw.scheduled_at,
-                    jackpot,
-                ),
-                state="queued",
-            )
-            self.session.add(announcement)
+            if settings.editorial_enabled:
+                announcement = DistributionAnnouncement(
+                    id=uuid4(),
+                    draw_id=draw.id,
+                    kind="schedule",
+                    text=announcement_text(
+                        lottery.name,
+                        lottery.code,
+                        draw.public_number,
+                        draw.scheduled_at,
+                        jackpot,
+                    ),
+                    state="queued",
+                )
+                self.session.add(announcement)
             self.session.add(
                 AdminAuditLog(
                     id=uuid4(),
@@ -535,7 +542,11 @@ async def deliver_distribution(
 
 async def drain_distribution(factory: async_sessionmaker[AsyncSession]) -> None:
     settings = get_settings()
-    if not settings.lottery_bot_token or not settings.publication_channel:
+    if (
+        not settings.editorial_enabled
+        or not settings.lottery_bot_token
+        or not settings.publication_channel
+    ):
         return
     await recover_results(factory, now=datetime.now(UTC))
     bot = Bot(settings.lottery_bot_token.get_secret_value())

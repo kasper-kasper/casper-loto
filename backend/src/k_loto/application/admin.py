@@ -181,6 +181,10 @@ class AdminDraw:
     jackpot_amount: int | None = None
     ruleset_code: str | None = None
 
+    is_distribution: bool = False
+    distribution_category: str | None = None
+    distributed_amount: int = 0
+
 
 @dataclass(frozen=True, slots=True)
 class AdminScheduleEntry:
@@ -453,6 +457,8 @@ class AdminMutationService:
             )
             if lottery is None:
                 raise LookupError("Lottery does not exist.")
+            if get_lottery_rules(lottery.ruleset_code).shared_prize and target_amount:
+                raise ValueError("This lottery has no progressive jackpot.")
             if (
                 lottery.code == "dual"
                 and target_amount != dual_terms(lottery.ruleset_code)[1]
@@ -545,6 +551,8 @@ class AdminMutationService:
                     "Dual price and maximum prize are fixed by its rules version."
                 )
             rules = get_lottery_rules(lottery.ruleset_code)
+            if rules.shared_prize and base_jackpot:
+                raise ValueError("This lottery has no progressive jackpot.")
             if ticket_price % rules.price_divisor:
                 raise ValueError(
                     f"Ticket price must be divisible by {rules.price_divisor} CAS."
@@ -1259,6 +1267,10 @@ class AdminQueryService:
                     ),
                 ),
             )
+        elif period == "distribution":
+            statement = statement.where(
+                Draw.is_distribution.is_(True), Draw.status == DrawStatus.COMPLETED
+            )
         elif period == "failed":
             statement = statement.where(Draw.status == DrawStatus.FAILED)
         if lottery_id:
@@ -1511,6 +1523,9 @@ class AdminQueryService:
             draw.correlation_id,
             jackpot_amount,
             (draw.configuration_snapshot or {}).get("ruleset_code"),
+            bool(draw.is_distribution),
+            draw.distribution_category,
+            draw.distributed_amount or 0,
         )
 
     async def jackpot_events(

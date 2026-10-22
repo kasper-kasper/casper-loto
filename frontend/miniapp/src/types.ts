@@ -55,7 +55,7 @@ export interface Ticket {
   scheduled_at: string;
   numbers: number[];
   purchase_price: number;
-  source: "MANUAL" | "AUTO_PLAY";
+  source: "MANUAL" | "AUTO_PLAY" | "GIFT";
   status: TicketStatus;
   matches: number | null;
   prize_amount: number;
@@ -153,6 +153,7 @@ export interface InstantPurchaseResult {
 }
 
 export interface CartTicket {
+  selectionMode?: "manual" | "random" | "unknown";
   id: string;
   lotteryCode: string;
   lotteryName: string;
@@ -197,7 +198,7 @@ export interface TicketPage {
 
 export interface UserNotification {
   id: string;
-  type: "WIN" | "DRAW_RESULT" | "DRAW_INVITATION" | "JACKPOT_NEWS";
+  type: "WIN" | "DRAW_RESULT" | "DRAW_INVITATION" | "JACKPOT_NEWS" | "ACHIEVEMENT";
   title: string;
   body: string;
   payload: Record<string, unknown>;

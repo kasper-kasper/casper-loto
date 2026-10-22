@@ -1,3 +1,4 @@
+import { tr } from "./i18n";
 const busyMessage = "Покупка уже проверяется в другом окне. Дождитесь результата.";
 const databaseName = "k-loto:purchase-locks:v1";
 const storeName = "leases";
@@ -12,13 +13,13 @@ function openLocks(): Promise<IDBDatabase> {
     const request = indexedDB.open(databaseName, 1);
     request.onupgradeneeded = () => request.result.createObjectStore(storeName);
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(new Error("Не удалось защитить покупку в браузере. Проверьте доступ к хранилищу."));
+    request.onerror = () => reject(new Error(tr("Не удалось защитить покупку в браузере. Проверьте доступ к хранилищу.")));
   });
 }
 
 async function withLease<T>(name: string, run: () => Promise<T>): Promise<T> {
   if (typeof indexedDB === "undefined") {
-    throw new Error("Браузер не позволяет защитить покупку. Откройте Mini App заново в Telegram.");
+    throw new Error(tr("Браузер не позволяет защитить покупку. Откройте Mini App заново в Telegram."));
   }
   const database = await openLocks();
   const token = crypto.randomUUID();
@@ -36,8 +37,8 @@ async function withLease<T>(name: string, run: () => Promise<T>): Promise<T> {
         } else store.put({ token, expiresAt: Date.now() + leaseMilliseconds }, name);
       };
       transaction.oncomplete = () => resolve();
-      transaction.onabort = () => reject(new Error(busy ? busyMessage : "Не удалось сохранить защиту покупки."));
-      transaction.onerror = () => reject(new Error("Не удалось сохранить защиту покупки."));
+      transaction.onabort = () => reject(new Error(busy ? busyMessage : tr("Не удалось сохранить защиту покупки.")));
+      transaction.onerror = () => reject(new Error(tr("Не удалось сохранить защиту покупки.")));
     });
     try {
       return await run();
@@ -50,7 +51,7 @@ async function withLease<T>(name: string, run: () => Promise<T>): Promise<T> {
           if ((request.result as Lease | undefined)?.token === token) store.delete(name);
         };
         transaction.oncomplete = () => resolve();
-        transaction.onabort = transaction.onerror = () => reject(new Error("Не удалось освободить защиту покупки."));
+        transaction.onabort = transaction.onerror = () => reject(new Error(tr("Не удалось освободить защиту покупки.")));
       }).catch(() => {
         // Expiry releases a failed cleanup; keep the confirmed receipt/result.
       });

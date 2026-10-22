@@ -11,6 +11,8 @@ import "./styles.css";
 import "./lottery-themes.css";
 import "./account.css";
 import { initializeTelegram, isLocalDevMode } from "./telegram";
+import { initializeLanguage } from "./i18n";
+import { LanguageRoot } from "./LanguageRoot";
 
 async function start(): Promise<void> {
   performance.mark("miniapp:runtime-ready");
@@ -22,13 +24,14 @@ async function start(): Promise<void> {
     installDesignPreview();
   }
   const initData = initializeTelegram();
+  initializeLanguage();
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
-      <MaintenanceGate>
-      <BroadcastPreviewBanner />
-      <App initData={initData} localDev={isLocalDevMode() || Boolean(broadcastPreview)} />
-      <PurchaseRecovery initData={initData} />
-      </MaintenanceGate>
+      <LanguageRoot>{() => <MaintenanceGate>
+        <BroadcastPreviewBanner />
+        <App initData={initData} localDev={isLocalDevMode() || Boolean(broadcastPreview)} />
+        <PurchaseRecovery initData={initData} />
+      </MaintenanceGate>}</LanguageRoot>
     </StrictMode>,
   );
 }

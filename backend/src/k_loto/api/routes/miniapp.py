@@ -302,6 +302,9 @@ class LiveFeedResponse(BaseModel):
 
 
 class PurchaseRequest(BaseModel):
+    selection_modes: list[Literal["manual", "random", "unknown"]] | None = Field(
+        default=None, max_length=MAX_TICKETS_PER_PURCHASE
+    )
     expected_scheduled_at: AwareDatetime | None = None
     combinations: list[list[int]] = Field(
         min_length=1, max_length=MAX_TICKETS_PER_PURCHASE
@@ -1063,6 +1066,7 @@ async def purchase_weekly_tickets(
             combinations=[list(combination) for combination in request.combinations],
             idempotency_key=request.idempotency_key,
             draw_count=request.draw_count,
+            selection_modes=request.selection_modes,
         )
     except InsufficientBalance as error:
         raise HTTPException(
@@ -1112,6 +1116,7 @@ async def purchase_daily_tickets(
             combinations=[list(value) for value in request.combinations],
             idempotency_key=request.idempotency_key,
             draw_count=request.draw_count,
+            selection_modes=request.selection_modes,
         )
     except InsufficientBalance as error:
         raise HTTPException(
@@ -1164,6 +1169,7 @@ async def purchase_lottery_tickets(
             combinations=[list(value) for value in request.combinations],
             idempotency_key=request.idempotency_key,
             draw_count=request.draw_count,
+            selection_modes=request.selection_modes,
             expected_scheduled_at=request.expected_scheduled_at,
         )
     except InsufficientBalance as error:

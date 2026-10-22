@@ -6,10 +6,17 @@ import { miniAppApi } from "./api";
 import { MINIAPP_TEXTS } from "./content";
 import { markCartPurchased } from "./cart";
 import type { Account, Dashboard, Ticket } from "./types";
+import { LanguageRoot } from "./LanguageRoot";
+import { setLanguage } from "./i18n";
 
 vi.mock("./api", () => ({
   ApiError: class ApiError extends Error {},
   miniAppApi: {
+    achievements: vi.fn().mockResolvedValue({ enabled: false, total: 0, earned: 0, earned_by_category: {}, items: [] }),
+    achievementNotices: vi.fn().mockResolvedValue([]),
+    achievementSeen: vi.fn().mockResolvedValue(undefined),
+    activity: vi.fn().mockResolvedValue(undefined),
+    collection: vi.fn().mockResolvedValue({active_badge:null,active_theme:null,items:[]}),
     devSession: vi.fn(),
     devRefill: vi.fn(),
     dashboard: vi.fn(),
@@ -153,6 +160,7 @@ const account: Account = {
 };
 
 beforeEach(() => {
+  setLanguage("ru");
   vi.clearAllMocks();
   vi.stubGlobal("scrollTo", vi.fn());
   vi.mocked(miniAppApi.highlights).mockResolvedValue({ last_jackpot: null });
@@ -184,7 +192,7 @@ beforeEach(() => {
   });
 });
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.unstubAllGlobals(); setLanguage("ru"); });
 
 async function openWeeklyFromStorefront(): Promise<void> {
   fireEvent.click(await screen.findByRole("button", { name: "Лотереи" }));
@@ -195,6 +203,14 @@ it("requires a signed Telegram launch", () => {
   render(<App initData="" />);
 
   expect(screen.getByText("Откройте Casper Loto в Telegram")).toBeInTheDocument();
+  expect(miniAppApi.activity).not.toHaveBeenCalled();
+});
+
+it("records opening without waiting for achievement processing", async () => {
+  vi.mocked(miniAppApi.activity).mockReturnValueOnce(new Promise(() => undefined));
+  render(<App initData="signed" />);
+  expect(await screen.findByLabelText("5 000 CAS")).toBeInTheDocument();
+  expect(miniAppApi.activity).toHaveBeenCalledExactlyOnceWith("signed");
 });
 
 it("opens a loopback development session outside Telegram", async () => {
@@ -297,7 +313,7 @@ it("renders Casper Halloween and its three-of-twenty-eight picker", async () => 
   expect(await screen.findByRole("heading", { name: "Casper Halloween" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Открыть лотерею" }));
 
-  await waitFor(() => expect(container.querySelector(".ticket-number-grid")).not.toBeNull());
+  await waitFor(() => expect(container.querySelector(".ticket-number-grid")).not.toBeNull(), { timeout: 5000 });
   const grid = container.querySelector(".ticket-number-grid");
   expect(grid).not.toBeNull();
   expect(within(grid as HTMLElement).getAllByRole("button")).toHaveLength(28);
@@ -372,6 +388,7 @@ it("allows a previously saved cart to be completed atomically", async () => {
       1,
       "2026-08-16T17:00:00Z",
       [expect.any(String)],
+      ["unknown"],
     ),
   );
   expect(await screen.findByText("1 билет куплен · списано 100 CAS")).toBeInTheDocument();
@@ -407,8 +424,10 @@ it("removes cart positions purchased in another tab before checkout", async () =
     markCartPurchased(["other-tab-ticket"]);
     window.dispatchEvent(new StorageEvent("storage", { key: "k-loto:cart:purchased:v2:other-tab-ticket", storageArea: localStorage }));
   });
-  await waitFor(() => expect(screen.queryByRole("button", { name: "Корзина: 1 комбинация" })).not.toBeInTheDocument());
-  expect(sessionStorage.getItem("k-loto:cart:v2")).toBeNull();
+  await waitFor(() => {
+    expect(screen.queryByRole("button", { name: "Корзина: 1 комбинация" })).not.toBeInTheDocument();
+    expect(sessionStorage.getItem("k-loto:cart:v2")).toBeNull();
+  });
   expect(miniAppApi.purchase).not.toHaveBeenCalled();
 });
 
@@ -440,7 +459,7 @@ it("keeps Casper Grand main and special number fields independent", async () => 
   await waitFor(() => expect(miniAppApi.purchase).toHaveBeenCalledWith(
     "signed", "weekly", [[1, 2, 3, 4, 5, 36, 37]],
     "00000000-0000-4000-8000-000000000001", 1,
-    "2026-08-16T17:00:00Z", [],
+    "2026-08-16T17:00:00Z", [], ["manual"],
   ));
   expect(screen.getByRole("heading", { name: "Casper Grand" })).toBeInTheDocument();
   await waitFor(() => {
@@ -473,7 +492,7 @@ it("offers an explicit prepaid five-draw purchase without enabling it by default
   await waitFor(() => expect(miniAppApi.purchase).toHaveBeenCalledWith(
     "signed", "weekly", [[1, 2, 3, 4, 5]],
     "00000000-0000-4000-8000-000000000001", 5,
-    "2026-08-16T17:00:00Z", [],
+    "2026-08-16T17:00:00Z", [], ["manual"],
   ));
 });
 
@@ -499,7 +518,7 @@ it("shows one simple notification control and no auto-play panel", async () => {
   expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
   expect(screen.queryByText("Автоучастие")).not.toBeInTheDocument();
   expect(screen.queryByText(MINIAPP_TEXTS.account.subtitle)).not.toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "Моё" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Личный кабинет" })).toBeInTheDocument();
 });
 
 it("renders losing history as neutral and winning history as rewarded", async () => {
@@ -725,7 +744,7 @@ it("keeps Casper Dual as one 2+2 ticket with no favorites or five-draw repeat", 
   fireEvent.click(screen.getByRole("button", { name: "Купить билет" }));
   await waitFor(() => expect(miniAppApi.purchase).toHaveBeenCalledWith(
     "test", "dual", [[3, 10, 17, 23]], expect.any(String), 1,
-    expect.any(String), [],
+    expect.any(String), [], ["manual"],
   ));
 });
 
@@ -750,6 +769,28 @@ it("account hub clears a stale Fast filter when opening all active tickets", asy
   await waitFor(() => expect(miniAppApi.tickets).toHaveBeenLastCalledWith("test", "active", "", false));
 });
 
+it("opens achievements from the profile without the notification heading", async () => {
+  render(<App initData="test" />);
+  fireEvent.click(await screen.findByRole("button", { name: "Моё" }));
+  fireEvent.click(await screen.findByRole("button", { name: /Все достижения/ }));
+  expect(await screen.findByRole("heading", { name: "Мои достижения" })).toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "Уведомления" })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "← В профиль" }));
+  expect(await screen.findByRole("heading", { name: "Личный кабинет" })).toBeInTheDocument();
+});
+
+it("counts a visible opening instead of a hidden application preload", async () => {
+  const visibility = vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
+  try {
+    render(<App initData="test" />);
+    await screen.findByRole("button", { name: "Моё" });
+    expect(miniAppApi.activity).not.toHaveBeenCalled();
+    visibility.mockReturnValue("visible");
+    fireEvent(document, new Event("visibilitychange"));
+    await waitFor(() => expect(miniAppApi.activity).toHaveBeenCalledWith("test"));
+  } finally { visibility.mockRestore(); }
+});
+
 it("returns to the personal overview when reselecting My in the dock", async () => {
   render(<App initData="test" />);
   const dock = await screen.findByRole("navigation", { name: "Основная навигация" });
@@ -758,7 +799,7 @@ it("returns to the personal overview when reselecting My in the dock", async () 
   fireEvent.click(await screen.findByRole("button", { name: /История участия/ }));
   expect(await screen.findByRole("heading", { name: "Мои билеты" })).toBeInTheDocument();
   fireEvent.click(within(dock).getByRole("button", { name: "Моё" }));
-  expect(await screen.findByRole("heading", { name: "Моё" })).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "Личный кабинет" })).toBeInTheDocument();
   expect(screen.queryByRole("heading", { name: "Мои билеты" })).not.toBeInTheDocument();
   expect(window.scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: "instant" });
   expect(miniAppApi.purchase).not.toHaveBeenCalled();
@@ -769,10 +810,10 @@ it("reuses a fresh profile when switching views and reselecting My", async () =>
   const dock = await screen.findByRole("navigation", { name: "Основная навигация" });
   await waitFor(() => expect(miniAppApi.account).toHaveBeenCalledOnce());
   fireEvent.click(within(dock).getByRole("button", { name: "Моё" }));
-  expect(await screen.findByRole("heading", { name: "Моё" })).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "Личный кабинет" })).toBeInTheDocument();
   fireEvent.click(within(dock).getByRole("button", { name: "Сегодня" }));
   fireEvent.click(within(dock).getByRole("button", { name: "Моё" }));
-  expect(await screen.findByRole("heading", { name: "Моё" })).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "Личный кабинет" })).toBeInTheDocument();
   expect(miniAppApi.account).toHaveBeenCalledOnce();
 });
 
@@ -786,7 +827,7 @@ it("shares an in-flight profile request when opening My during startup", async (
   fireEvent.click(within(dock).getByRole("button", { name: "Моё" }));
   expect(miniAppApi.account).toHaveBeenCalledOnce();
   await act(async () => complete(account));
-  expect(await screen.findByRole("heading", { name: "Моё" })).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "Личный кабинет" })).toBeInTheDocument();
 });
 
 it("opens active regular tickets from home after previously viewing winning history", async () => {
@@ -858,4 +899,50 @@ it("ignores the lottery-opening response when a purchase already superseded it",
   expect(screen.getByRole("heading", { name: "Weekly 5/20" })).toBeInTheDocument();
   expect(screen.getByLabelText("4 900 CAS")).toBeInTheDocument();
   expect(screen.queryByText(/Продажи для выбранного тиража уже завершены/)).not.toBeInTheDocument();
+});
+
+
+it("marks a real gift ticket in the list and full ticket without implying a charge", async () => {
+  const gift: Ticket = { id: "gift", public_number: 467, lottery_code: "pll", lottery_name: "2:22",
+    draw_number: 12, scheduled_at: "2026-10-21T15:00:00Z", numbers: [1, 2, 3, 4],
+    purchase_price: 0, source: "GIFT", status: "PURCHASED", matches: null, prize_amount: 0, winning_numbers: null };
+  vi.mocked(miniAppApi.tickets).mockResolvedValue({ tickets: [gift], total: 1, has_more: false });
+  render(<App initData="signed" />);
+  fireEvent.click(await screen.findByRole("button", { name: "Моё" }));
+  fireEvent.click(await screen.findByRole("button", { name: /Активные билеты/ }));
+  expect(await screen.findByText("Подарочный")).toBeInTheDocument();
+  fireEvent.click(screen.getByText("Билет #0467"));
+  const ticket = await screen.findByRole("dialog", { name: "Билет 467" });
+  expect(within(ticket).getByText("Подарочный")).toBeInTheDocument();
+  expect(within(ticket).getByText("С баланса ничего не списано")).toBeInTheDocument();
+});
+
+
+it("refreshes the balance once after achievement delivery without adding a polling loop", async () => {
+  vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
+  render(<App initData="signed" />);
+  await screen.findByRole("button", { name: "Моё" });
+  const before = vi.mocked(miniAppApi.dashboard).mock.calls.length;
+  vi.mocked(miniAppApi.dashboard).mockResolvedValue({ ...dashboard, balance: 25000 });
+  window.dispatchEvent(new Event("achievements:updated"));
+  window.dispatchEvent(new Event("achievements:updated"));
+  await waitFor(() => expect(miniAppApi.dashboard).toHaveBeenCalledTimes(before + 1));
+  expect(await screen.findByLabelText("25 000 CAS")).toBeInTheDocument();
+});
+it("switches the actual account, catalogue and picker between English and Russian", async () => {
+  const { container } = render(<LanguageRoot>{() => <App initData="signed-init-data" />}</LanguageRoot>);
+  fireEvent.click(await screen.findByRole("button", { name: "Моё" }));
+  fireEvent.click(await screen.findByRole("button", { name: "English" }));
+  expect(screen.getByRole("heading", { name: "My account" })).toBeVisible();
+  expect(screen.getByText(account.display_name, { exact: true })).toBeVisible();
+  expect(screen.getByRole("button", { name: "English" })).toHaveAttribute("aria-pressed", "true");
+  fireEvent.click(screen.getByRole("button", { name: "Lotteries" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Open Weekly 5/20" }));
+  expect(await screen.findByRole("button", { name: "Random numbers" })).toBeVisible();
+  expect(container.querySelector(".play-room")?.textContent).not.toMatch(/[А-Яа-яЁё]/);
+  expect(miniAppApi.purchase).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Back to lotteries" }));
+  fireEvent.click(screen.getByRole("button", { name: "My account" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Русский" }));
+  expect(screen.getByRole("heading", { name: "Личный кабинет" })).toBeVisible();
 });

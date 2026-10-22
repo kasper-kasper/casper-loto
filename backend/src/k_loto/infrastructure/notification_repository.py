@@ -96,6 +96,19 @@ class SqlNotificationRepository:
                     cancellation_reason = "notification_type_retired"
                 elif preference is None or not preference.telegram_enabled:
                     cancellation_reason = "telegram_consent_withdrawn"
+                elif event.type == NotificationType.ACHIEVEMENT:
+                    from k_loto.core.config import get_settings
+                    from k_loto.infrastructure.database.achievement_models import (
+                        AchievementPlayer,
+                    )
+
+                    achievement_player = await session.get(AchievementPlayer, user.id)
+                    if (
+                        not get_settings().achievements_notifications_enabled
+                        or not achievement_player
+                        or not achievement_player.telegram_enabled
+                    ):
+                        cancellation_reason = "achievement_consent_withdrawn"
                 elif (
                     event.type == NotificationType.INACTIVITY_REMINDER
                     and not preference.inactivity_reminders_enabled

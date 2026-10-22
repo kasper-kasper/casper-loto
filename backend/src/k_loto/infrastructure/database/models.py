@@ -39,6 +39,7 @@ from k_loto.domain.enums import (
     TicketStatus,
     TransactionType,
 )
+from k_loto.infrastructure.database import achievement_models as achievement_models
 from k_loto.infrastructure.database.base import Base
 
 # Explicit conv names retain historical PostgreSQL identifiers (including its
@@ -391,12 +392,30 @@ class Ticket(Base):
             "lottery_id", "public_number", name="uq_ticket_lottery_number"
         ),
         CheckConstraint("public_number >= 1", name="public_number_positive"),
-        CheckConstraint("purchase_price > 0", name="purchase_price_positive"),
+        CheckConstraint("purchase_price >= 0", name="purchase_price_positive"),
+        CheckConstraint(
+            "(source='GIFT' AND purchase_price=0 AND achievement_reward_id IS NOT NULL "
+            "AND selection_mode='random') OR (source<>'GIFT' AND purchase_price>0 "
+            "AND achievement_reward_id IS NULL)",
+            name="gift_ticket_origin",
+        ),
         CheckConstraint("prize_amount >= 0", name="prize_amount_nonnegative"),
         CheckConstraint("matches IS NULL OR matches >= 0", name="matches_nonnegative"),
         Index("ix_ticket_user_status", "user_id", "status"),
         Index("ix_ticket_user_draw_status", "user_id", "draw_id", "status"),
         Index("ix_ticket_draw", "draw_id"),
+        Index(
+            "ix_ticket_achievement_result",
+            "draw_id",
+            "id",
+            postgresql_where=text("status='SETTLED'"),
+        ),
+        Index(
+            "ix_ticket_achievement_second_result",
+            "second_draw_id",
+            "id",
+            postgresql_where=text("status='SETTLED'"),
+        ),
         Index("ix_ticket_second_draw", "second_draw_id"),
         Index(
             "ix_ticket_profile_recent",
@@ -419,6 +438,15 @@ class Ticket(Base):
             name=conv("ck_tickets_ck_tickets_dual_dawn_matches"),
         ),
         Index("ix_ticket_status_settled_lottery", "status", "settled_at", "lottery_id"),
+        CheckConstraint(
+            "selection_mode IN ('unknown','manual','random')",
+            name="ticket_selection_mode",
+        ),
+        Index(
+            "ix_ticket_purchase_operation",
+            "purchase_operation_id",
+            postgresql_where=text("purchase_operation_id IS NOT NULL"),
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(
@@ -441,6 +469,11 @@ class Ticket(Base):
     )
     numbers: Mapped[list[int]] = mapped_column(ARRAY(Integer))
     purchase_price: Mapped[int] = mapped_column(BigInteger)
+    selection_mode: Mapped[str] = mapped_column(String(16), server_default="unknown")
+    purchase_operation_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True))
+    achievement_reward_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("achievement_rewards.id"), unique=True
+    )
     source: Mapped[TicketSource] = mapped_column(
         enum_type(TicketSource, "ticket_source"),
         default=TicketSource.MANUAL,
@@ -757,7 +790,16 @@ class UserNotification(Base):
     """Durable in-app inbox; only its read marker may change."""
 
     __tablename__ = "user_notifications"
-    __table_args__ = (Index("ix_user_notification_inbox", "user_id", "created_at"),)
+    __table_args__ = (
+        Index("ix_user_notification_inbox", "user_id", "created_at"),
+        Index(
+            "ix_achievement_unseen_notifications",
+            "user_id",
+            "created_at",
+            "id",
+            postgresql_where=text("type='ACHIEVEMENT' AND read_at IS NULL"),
+        ),
+    )
 
     id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True), primary_key=True, default=uuid4

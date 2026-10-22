@@ -2149,3 +2149,5 @@ html { overflow-x: clip; scrollbar-gutter: stable; }
 .purchase-recovery button:disabled { opacity: .5; }
 
 .economy-maintenance{min-height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 24px;background:radial-gradient(ellipse at top,#302643,#10111b 65%);color:#fff;text-align:center;font:17px/1.6 system-ui}.economy-maintenance h1{font-size:clamp(30px,7vw,46px);line-height:1.15;max-width:500px}.economy-maintenance p{color:#c4bfce;max-width:440px}.economy-maintenance small{color:#e2bc76;letter-spacing:3px}.economy-maintenance__orb{margin-bottom:28px;width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#ffe8af,#b98635);box-shadow:0 0 65px #e5b65b30;display:grid;place-items:center;color:#211b13;font-size:36px}.economy-maintenance button{margin-top:20px;padding:12px 22px;border:1px solid #d5ab67;border-radius:14px;background:#282132;color:#f5d399;font:inherit;cursor:pointer}
+html:lang(en) .picker-shell.lottery-september .number-grid::before { content:"SEPTEMBER · 03 / 09"; }
+html:lang(en) .khan-output::after { content:"RECEIVER"; }

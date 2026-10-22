@@ -44,7 +44,10 @@ async def delayed_publications(
 ) -> int:
     from k_loto.application.publication_automation import publication_eligibility_filter
     from k_loto.application.publication_retention import stale_streak_filter
+    from k_loto.core.config import get_settings
 
+    if not get_settings().editorial_enabled:
+        return 0
     cutoff = now - grace
     delivery = Publication.content["delivery"]
     active = Publication.status == "draft"

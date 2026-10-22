@@ -1,0 +1,1 @@
+export const collectionGames: Record<string,string> = { flash:"FLASH", shadow:"CODE", pulse:"PULSE", khan:"6 из 36", pss:"Casper Ball", weekly:"Casper Grand", bingo:"Casper Bingo", pll:"2:22", september:"3 сентября", grob:"Halloween" };

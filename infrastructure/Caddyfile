@@ -29,7 +29,7 @@ import /etc/caddy/extensions/*.caddy
     handle {
         root * /srv/miniapp
         try_files {path} /index.html
-        header Cache-Control "no-cache, must-revalidate"
+        header Cache-Control "no-store"
         file_server
     }
 }

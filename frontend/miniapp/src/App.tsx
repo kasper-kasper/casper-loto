@@ -1,12 +1,17 @@
+import { notificationText } from "./notificationText";
+import { tr, getLocale, getLanguage } from "./i18n";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import type { CatalogFilter } from "./LotteryCatalog";
 import { motion } from "motion/react";
 
+import { GiftTicketBadge } from "./GiftTicketBadge";
+import { NewYearTicketDetail, NewYearSymbols, NewYearPurchaseNotice } from "./NewYear";
+import { MiniTicketDetail } from "./MiniTicket";
+import { AchievementNotices } from "./AchievementNotices";
 import { ApiError, miniAppApi } from "./api";
 import { recoveredEvent } from "./purchaseJournal";
 import { Today } from "./Today";
-import { Stories } from "./Stories";
 import { MobileNavigation } from "./MobileNavigation";
 import type { Highlights } from "./Today";
 import { logoHorizontal, logoSymbol } from "./brand";
@@ -32,6 +37,8 @@ import { isGrandLottery, matchLabel } from "./grand";
 import { errorHaptic, requestTelegramWriteAccess, selectionHaptic, successHaptic } from "./telegram";
 import type { Account, CartTicket, Dashboard, Favorite, LiveFeed, Lottery, NotificationPreferences, PurchaseResult, Ticket, UserNotification } from "./types";
 
+const Achievements = lazy(() => import("./Achievements").then(({ Achievements }) => ({ default: Achievements })));
+const Collection = lazy(() => import("./Collection").then(({ Collection }) => ({ default: Collection })));
 const AccountOverview = lazy(() => import("./AccountHub").then(({ AccountHub }) => ({ default: AccountHub })));
 const NumberPicker = lazy(() => import("./TicketComposer").then(({ TicketComposer }) => ({ default: TicketComposer })));
 const LotteryCatalog = lazy(() => import("./LotteryCatalog").then(({ LotteryCatalog }) => ({ default: LotteryCatalog })));
@@ -48,7 +55,7 @@ const DrawArchive = lazy(() => import("./DrawArchive").then(({ DrawArchive }) =>
 
 type View = "archive" | "catalog" | "home" | "live" | "fast" | "account" | "cart";
 type TicketView = "active" | "history";
-type AccountView = "overview" | "tickets" | "notifications";
+type AccountView = "overview" | "tickets" | "notifications" | "achievements" | "collection";
 interface CartReceipt { ticketCount: number; totalCost: number }
 
 interface AppProps {
@@ -63,6 +70,7 @@ function initialView(): View {
 }
 
 function plural(value: number, one: string, few: string, many: string): string {
+  if (getLanguage() === "en") return value === 1 ? one : many;
   const lastTwo = value % 100;
   const last = value % 10;
   if (lastTwo >= 11 && lastTwo <= 14) return many;
@@ -78,7 +86,7 @@ function compactCombination(ticket: Ticket, lottery?: Lottery): string {
   if (!offset) return ticket.numbers.join("  ");
   const main = ticket.numbers.filter((value) => value <= offset).join("  ");
   const special = ticket.numbers.filter((value) => value > offset && value <= offset + (lottery?.secondary_max_number ?? 0)).map((value) => value - offset).join("  ");
-  return `${main}  +  ${special}${cipher ? `  ·  ШИФР ${String(cipher - 1_000).padStart(3, "0")}` : ""}`;
+  return `${main}  +  ${special}${cipher ? tr("  ·  ШИФР {0}", String(cipher - 1_000).padStart(3, "0")) : ""}`;
 }
 
 function TicketCard({ ticket, lottery, index = 0, onOpen }: { ticket: Ticket; lottery?: Lottery; index?: number; onOpen: () => void }) {
@@ -89,13 +97,13 @@ function TicketCard({ ticket, lottery, index = 0, onOpen }: { ticket: Ticket; lo
   const dualWaiting = ticket.lottery_code === "dual" && !complete && (ticket.dual_night_matches !== null && ticket.dual_night_matches !== undefined || ticket.dual_dawn_matches !== null && ticket.dual_dawn_matches !== undefined);
   return <button className={`ticket-card compact-ticket ${winner ? "winner" : ""}`} onClick={onOpen} style={{ "--item-index": index } as CSSProperties} type="button">
     <div className="ticket-meta">
-      <div><span className="eyebrow">{ticket.lottery_name}{ticket.source === "AUTO_PLAY" ? " · АВТОБИЛЕТ" : ""}</span><h3>{formatTicketLabel(ticket.lottery_code, ticket.public_number)}</h3></div>
-      <StatusBadge active={!complete} label={refunded ? "Возврат" : dualWaiting ? "Первый раунд завершён" : undefined} />
+      <div><span className="eyebrow">{tr(ticket.lottery_name)}{ticket.source === "AUTO_PLAY" ? tr(" · АВТОБИЛЕТ") : ""}</span><h3>{tr(formatTicketLabel(ticket.lottery_code, ticket.public_number))}</h3>{ticket.source === "GIFT" && <GiftTicketBadge />}</div>
+      <StatusBadge active={!complete} label={tr(refunded ? tr("Возврат") : dualWaiting ? tr("Первый раунд завершён") : undefined)} />
     </div>
-    <div className="compact-combination">{compactCombination(ticket, lottery)}<span>Открыть билет →</span></div>
+    <div className="compact-combination">{tr(ticket.lottery_code === "newyear2027" ? <NewYearSymbols values={ticket.numbers} /> : compactCombination(ticket, lottery))}<span>{tr("Открыть билет →")}</span></div>
     {complete && <div className={`ticket-result ${winner ? "win" : "loss"} ${refunded ? "refunded" : ""}`}>
-      <div><span>{refunded ? "Билет возвращён" : ticket.lottery_code === "dual" ? `NIGHT ${ticket.dual_night_matches ?? 0}/2 · DAWN ${ticket.dual_dawn_matches ?? 0}/2` : matches > 0 ? `Совпадений: ${matchLabel(ticket.lottery_code, matches, ticket.numbers.length === 7)}` : "Совпадений нет"}</span><small>{refunded ? "Стоимость зачислена на баланс" : winner ? "Выигрыш зачислен" : "Без выигрыша"}</small></div>
-      <strong>{refunded ? `+${formatCas(ticket.purchase_price)}` : winner ? `+${formatCas(ticket.prize_amount)}` : "0 CAS"}</strong>
+      <div><span>{tr(refunded ? tr("Билет возвращён") : ticket.lottery_code === "dual" ? `NIGHT ${ticket.dual_night_matches ?? 0}/2 · DAWN ${ticket.dual_dawn_matches ?? 0}/2` : matches > 0 ? tr("Совпадений: {0}", matchLabel(ticket.lottery_code, matches, ticket.numbers.length === 7)) : tr("Совпадений нет"))}</span><small>{refunded ? tr("Стоимость зачислена на баланс") : winner ? tr("Выигрыш зачислен") : tr("Без выигрыша")}</small></div>
+      <strong>{tr(refunded ? `+${formatCas(ticket.purchase_price)}` : winner ? `+${formatCas(ticket.prize_amount)}` : "0 CAS")}</strong>
     </div>}
   </button>;
 }
@@ -103,9 +111,9 @@ function TicketCard({ ticket, lottery, index = 0, onOpen }: { ticket: Ticket; lo
 function InstantHistoryCard({ ticket }: { ticket: Ticket }) {
   const winning = ticket.prize_amount > 0;
   return <article className={`ticket-card compact-ticket instant-history-ticket ${winning ? "winner" : ""}`}>
-    <div className="ticket-meta"><div><span className="eyebrow">{ticket.lottery_name}</span><h3>№ {ticket.public_number.toLocaleString("ru-RU")}</h3></div><StatusBadge active={false} label={winning ? "Выигрыш" : "Без выигрыша"} /></div>
-    <div className="instant-history-symbols">{ticket.lottery_code === "aurora" ? <span aria-label="Кристалл Aurora">✧</span> : ticket.lottery_code === "vault" ? <span aria-label="Золотой сейф Vault">▣</span> : (ticket.instant_symbols ?? []).map((value, index) => <i key={`${value}:${index}`}><LiveSymbol value={value} /></i>)}</div>
-    <div className={`ticket-result ${winning ? "win" : "loss"}`}><div><span>{ticket.lottery_code === "aurora" ? "Кристалл Aurora" : ticket.lottery_code === "vault" ? "Сейф Vault" : winning ? "Одинаковые символы" : "Разные символы"}</span><small>{winning ? "Выигрыш зачислен" : "Без выигрыша"}</small></div><strong>{winning ? `+${formatCas(ticket.prize_amount)}` : "0 CAS"}</strong></div>
+    <div className="ticket-meta"><div><span className="eyebrow">{tr(ticket.lottery_name)}</span><h3>№ {tr(ticket.public_number.toLocaleString(getLocale()))}</h3></div><StatusBadge active={false} label={winning ? tr("Выигрыш") : tr("Без выигрыша")} /></div>
+    <div className="instant-history-symbols">{ticket.lottery_code === "aurora" ? <span aria-label={tr("Кристалл Aurora")}>✧</span> : ticket.lottery_code === "vault" ? <span aria-label={tr("Золотой сейф Vault")}>▣</span> : (ticket.instant_symbols ?? []).map((value, index) => <i key={`${value}:${index}`}><LiveSymbol value={value} /></i>)}</div>
+    <div className={`ticket-result ${winning ? "win" : "loss"}`}><div><span>{ticket.lottery_code === "aurora" ? tr("Кристалл Aurora") : ticket.lottery_code === "vault" ? tr("Сейф Vault") : winning ? tr("Одинаковые символы") : tr("Разные символы")}</span><small>{winning ? tr("Выигрыш зачислен") : tr("Без выигрыша")}</small></div><strong>{tr(winning ? `+${formatCas(ticket.prize_amount)}` : "0 CAS")}</strong></div>
   </article>;
 }
 
@@ -121,8 +129,8 @@ function TicketGroups({ tickets, lotteries, now, active, onOpen }: { tickets: Ti
     const first = items[0];
     const total = first.draw_ticket_count ?? items.length;
     const lottery = lotteries.find((item) => item.code === first.lottery_code);
-    return <section className={`ticket-draw-group lottery-${first.lottery_code} ${active && groupIndex === 0 ? "next-ticket-group" : ""}`} key={key}><header><div>{active && groupIndex === 0 && <b>Следующий</b>}<span className="eyebrow">{first.lottery_name}</span><h2>{first.lottery_code === "dual" ? `Билет на два раунда · #${first.draw_number} → #${first.second_draw_number ?? "—"}` : formatDrawLabel(first.lottery_code, first.draw_number)}</h2><time>{formatMoscow(first.scheduled_at)} МСК{active ? ` · через ${countdown(first.scheduled_at, now)}` : ""}</time></div><div><strong>{total}</strong><small>{plural(total, "билет", "билета", "билетов")}</small></div></header><div className="ticket-group-list">{items.map((ticket, index) => <TicketCard index={index} key={ticket.id} lottery={lottery} onOpen={() => onOpen(ticket)} ticket={ticket} />)}</div></section>;
-  })}{["kasper-live", "aurora", "vault"].map(code => { const gameTickets = instantTickets.filter(t => t.lottery_code === code); return gameTickets.length > 0 && <section className={`ticket-draw-group lottery-${code}`} key={code}><header><div><span className="eyebrow">{gameTickets[0].lottery_name}</span><h2>Мгновенные билеты</h2><time>Результат сразу после покупки</time></div><div><strong>{gameTickets.length}</strong><small>{plural(gameTickets.length, "билет", "билета", "билетов")}</small></div></header><div className="ticket-group-list">{gameTickets.map((ticket) => <InstantHistoryCard key={ticket.id} ticket={ticket} />)}</div></section>; })}</div>;
+    return <section className={`ticket-draw-group lottery-${first.lottery_code} ${active && groupIndex === 0 ? "next-ticket-group" : ""}`} key={key}><header><div>{active && groupIndex === 0 && <b>{tr("Следующий")}</b>}<span className="eyebrow">{tr(first.lottery_name)}</span><h2>{tr(first.lottery_code === "dual" ? tr("Билет на два раунда · #{0} → #{1}", first.draw_number, first.second_draw_number ?? "—") : formatDrawLabel(first.lottery_code, first.draw_number))}</h2><time>{tr(formatMoscow(first.scheduled_at))}  {tr("МСК")}{active ? tr(" · через {0}", countdown(first.scheduled_at, now)) : ""}</time></div><div><strong>{total}</strong><small>{tr(plural(total, tr("билет"), tr("билета"), tr("билетов")))}</small></div></header><div className="ticket-group-list">{items.map((ticket, index) => <TicketCard index={index} key={ticket.id} lottery={lottery} onOpen={() => onOpen(ticket)} ticket={ticket} />)}</div></section>;
+  })}{["kasper-live", "aurora", "vault"].map(code => { const gameTickets = instantTickets.filter(t => t.lottery_code === code); return gameTickets.length > 0 && <section className={`ticket-draw-group lottery-${code}`} key={code}><header><div><span className="eyebrow">{tr(gameTickets[0].lottery_name)}</span><h2>{tr("Мгновенные билеты")}</h2><time>{tr("Результат сразу после покупки")}</time></div><div><strong>{gameTickets.length}</strong><small>{tr(plural(gameTickets.length, tr("билет"), tr("билета"), tr("билетов")))}</small></div></header><div className="ticket-group-list">{gameTickets.map((ticket) => <InstantHistoryCard key={ticket.id} ticket={ticket} />)}</div></section>; })}</div>;
 }
 
 function DualTicketDetail({ ticket, onClose }: { ticket: Ticket; onClose: () => void }) {
@@ -134,9 +142,9 @@ function DualTicketDetail({ ticket, onClose }: { ticket: Ticket; onClose: () => 
     const result = first ? ticket.first_winning_numbers : ticket.second_winning_numbers;
     const selected = ticket.numbers.filter(value => phase === "NIGHT" ? value <= 12 : value > 12).map(value => phase === "NIGHT" ? value : value - 12);
     const matches = phase === "NIGHT" ? ticket.dual_night_matches : ticket.dual_dawn_matches;
-    return <section className={`dual-ticket-round ${phase.toLowerCase()}`}><header><span>{phase === "NIGHT" ? "☾" : "☀"}</span><div><strong>{phase}</strong><small>{first ? `Тираж #${ticket.draw_number}` : `Тираж #${ticket.second_draw_number ?? "—"}`}</small></div></header><div className="dual-ticket-numbers">{selected.map(value => <i className={result?.includes(value) ? "matched" : ""} key={value}>{value}</i>)}</div><p>{result?.length ? `Выпало ${result.join(" · ")} · совпало ${matches ?? 0} из 2` : `Ожидается розыгрыш ${phase}`}</p></section>;
+    return <section className={`dual-ticket-round ${phase.toLowerCase()}`}><header><span>{phase === "NIGHT" ? "☾" : "☀"}</span><div><strong>{tr(phase)}</strong><small>{first ? tr("Тираж #{0}", ticket.draw_number) : tr("Тираж #{0}", ticket.second_draw_number ?? "—")}</small></div></header><div className="dual-ticket-numbers">{selected.map(value => <i className={result?.includes(value) ? "matched" : ""} key={value}>{value}</i>)}</div><p>{result?.length ? tr("Выпало {0} · совпало {1} из 2", result.join(" · "), matches ?? 0) : tr("Ожидается розыгрыш {0}", phase)}</p></section>;
   };
-  return <div className="ticket-detail-backdrop" onClick={onClose} role="presentation"><article aria-label={`Билет Casper Dual №${ticket.public_number}`} aria-modal="true" className="dual-ticket-detail" onClick={event => event.stopPropagation()} role="dialog"><button aria-label="Закрыть билет" className="paper-close" onClick={onClose} type="button"><Icon name="close" /></button><div className="dual-ticket-scene" /><header><span>CASPER DUAL · ОДИН БИЛЕТ, ДВА РАУНДА</span><h2>Билет №{ticket.public_number}</h2><p>Первый: {firstPhase} · второй: {firstPhase === "NIGHT" ? "DAWN" : "NIGHT"}</p></header><div className="dual-ticket-rounds">{round("NIGHT")}{round("DAWN")}</div><footer><span>{secondFinished ? "Итог двух раундов" : firstFinished ? "Первый раунд завершён · билет активен" : "Ожидаем первый раунд"}</span><strong>{secondFinished ? ticket.prize_amount ? `+${formatCas(ticket.prize_amount)}` : "Без выигрыша" : "Выплата после второго раунда"}</strong><small>Стоимость билета {formatCas(ticket.purchase_price)}</small></footer></article></div>;
+  return <div className="ticket-detail-backdrop" onClick={onClose} role="presentation"><article aria-label={tr("Билет Casper Dual №{0}", ticket.public_number)} aria-modal="true" className="dual-ticket-detail" onClick={event => event.stopPropagation()} role="dialog"><button aria-label={tr("Закрыть билет")} className="paper-close" onClick={onClose} type="button"><Icon name="close" /></button><div className="dual-ticket-scene" /><header><span>{tr("CASPER DUAL · ОДИН БИЛЕТ, ДВА РАУНДА")}</span><h2>{tr("Билет №")}{ticket.public_number}</h2><p>{tr("Первый:")} {tr(firstPhase)}  {tr("· второй:")} {firstPhase === "NIGHT" ? "DAWN" : "NIGHT"}</p></header><div className="dual-ticket-rounds">{round("NIGHT")}{round("DAWN")}</div><footer><span>{secondFinished ? tr("Итог двух раундов") : firstFinished ? tr("Первый раунд завершён · билет активен") : tr("Ожидаем первый раунд")}</span><strong>{tr(secondFinished ? ticket.prize_amount ? `+${formatCas(ticket.prize_amount)}` : tr("Без выигрыша") : tr("Выплата после второго раунда"))}</strong><small>{tr("Стоимость билета")} {tr(formatCas(ticket.purchase_price))}</small></footer></article></div>;
 }
 
 function TicketDetail({ ticket, lottery, onClose }: { ticket: Ticket; lottery?: Lottery; onClose: () => void }) {
@@ -160,42 +168,48 @@ function TicketDetail({ ticket, lottery, onClose }: { ticket: Ticket; lottery?: 
     return () => window.removeEventListener("keydown", close);
   }, [onClose]);
   if (ticket.lottery_code === "dual") return <DualTicketDetail ticket={ticket} onClose={onClose} />;
-  return <div className="ticket-detail-backdrop" onClick={onClose} role="presentation"><motion.article animate={{ opacity: 1, y: 0, scale: 1 }} aria-label={`Билет ${ticket.public_number}`} aria-modal="true" className={`paper-ticket lottery-${ticket.lottery_code}`} initial={{ opacity: 0, y: 18, scale: .97 }} onClick={(event) => event.stopPropagation()} role="dialog">
-    <button aria-label="Закрыть билет" className="paper-close" onClick={onClose} type="button"><Icon name="close" /></button>
-    <header><span>{ticket.lottery_name}</span><strong>{formatTicketLabel(ticket.lottery_code, ticket.public_number)}</strong><small>{formatDrawLabel(ticket.lottery_code, ticket.draw_number)} · {formatMoscow(ticket.scheduled_at)} МСК</small></header>
+  if (ticket.lottery_code === "newyear2027") return <NewYearTicketDetail ticket={ticket} onClose={onClose} />;
+  if (ticket.lottery_code === "mini") return <MiniTicketDetail ticket={ticket} onClose={onClose} />;
+  return <div className="ticket-detail-backdrop" onClick={onClose} role="presentation"><motion.article animate={{ opacity: 1, y: 0, scale: 1 }} aria-label={tr("Билет {0}", ticket.public_number)} aria-modal="true" className={`paper-ticket lottery-${ticket.lottery_code}`} initial={{ opacity: 0, y: 18, scale: .97 }} onClick={(event) => event.stopPropagation()} role="dialog">
+    <button aria-label={tr("Закрыть билет")} className="paper-close" onClick={onClose} type="button"><Icon name="close" /></button>
+    <header><span>{tr(ticket.lottery_name)}</span>{ticket.source === "GIFT" && <GiftTicketBadge />}<strong>{tr(formatTicketLabel(ticket.lottery_code, ticket.public_number))}</strong><small>{tr(formatDrawLabel(ticket.lottery_code, ticket.draw_number))} · {tr(formatMoscow(ticket.scheduled_at))}  {tr("МСК")}</small></header>
     <div className="paper-perforation" />
-    <section><div className="paper-field-title"><b>{codeMode ? `${ticket.numbers.length}-значный код` : secondaryMax ? "Основное поле" : "Комбинация"}</b><small>{ticket.numbers.filter((value) => !offset || value <= offset).join(codeMode ? "" : " · ")}</small></div>{codeMode ? <div className="paper-code-field">{ticket.numbers.map((value, index) => <i className={`${ticket.winning_numbers?.[index] !== undefined ? "winning" : ""} ${ticket.winning_numbers?.[index] === value ? "matched" : ""}`} key={index}>{value}</i>)}</div> : renderField(primaryMax)}</section>
-    {secondaryMax > 0 && <section className="paper-special"><div className="paper-field-title"><b>Специальное поле</b><small>{ticket.numbers.filter((value) => value > offset && value <= offset + secondaryMax).map((value) => value - offset).join(" · ")}</small></div>{renderField(secondaryMax, offset)}</section>}
-    {cipher && <section className={`paper-cipher ${completed && cipher === winningCipher ? "matched" : ""}`}><span>ШИФР БИЛЕТА</span><strong>{String(cipher - 1_000).padStart(3, "0")}</strong>{completed && <small>Шифр тиража: {winningCipher ? String(winningCipher - 1_000).padStart(3, "0") : "—"}</small>}</section>}
-    {ticket.status === "REFUNDED" ? <section className="paper-result"><b>Билет возвращён</b><p>Стоимость зачислена на баланс</p><strong>+{formatCas(ticket.purchase_price)}</strong></section> : completed && <section className="paper-result"><div><span>Выпавшие числа</span><strong>{compactCombination({ ...ticket, numbers: ticket.winning_numbers ?? [] }, lottery)}</strong></div><p>{ticket.matches ? `Совпало ${matchLabel(ticket.lottery_code, ticket.matches, ticket.numbers.length === 7)}` : "Совпадений нет"}</p><b className={ticket.prize_amount > 0 ? "win" : "loss"}>{ticket.prize_amount > 0 ? `Выигрыш: ${formatCas(ticket.prize_amount)}` : "Без выигрыша"}</b></section>}
-    <footer><span>Стоимость</span><strong>{formatCas(ticket.purchase_price)}</strong><small>CAS · CASPER LOTO</small></footer>
+    <section><div className="paper-field-title"><b>{codeMode ? tr("{0}-значный код", ticket.numbers.length) : secondaryMax ? tr("Основное поле") : tr("Комбинация")}</b><small>{tr(ticket.numbers.filter((value) => !offset || value <= offset).join(codeMode ? "" : " · "))}</small></div>{codeMode ? <div className="paper-code-field">{ticket.numbers.map((value, index) => <i className={`${ticket.winning_numbers?.[index] !== undefined ? "winning" : ""} ${ticket.winning_numbers?.[index] === value ? "matched" : ""}`} key={index}>{value}</i>)}</div> : renderField(primaryMax)}</section>
+    {secondaryMax > 0 && <section className="paper-special"><div className="paper-field-title"><b>{tr("Специальное поле")}</b><small>{tr(ticket.numbers.filter((value) => value > offset && value <= offset + secondaryMax).map((value) => value - offset).join(" · "))}</small></div>{renderField(secondaryMax, offset)}</section>}
+    {cipher && <section className={`paper-cipher ${completed && cipher === winningCipher ? "matched" : ""}`}><span>{tr("ШИФР БИЛЕТА")}</span><strong>{tr(String(cipher - 1_000).padStart(3, "0"))}</strong>{completed && <small>{tr("Шифр тиража:")} {tr(winningCipher ? String(winningCipher - 1_000).padStart(3, "0") : "—")}</small>}</section>}
+    {ticket.status === "REFUNDED" ? <section className="paper-result"><b>{tr("Билет возвращён")}</b><p>{tr("Стоимость зачислена на баланс")}</p><strong>+{tr(formatCas(ticket.purchase_price))}</strong></section> : completed && <section className="paper-result"><div><span>{tr("Выпавшие числа")}</span><strong>{tr(compactCombination({ ...ticket, numbers: ticket.winning_numbers ?? [] }, lottery))}</strong></div><p>{ticket.matches ? tr("Совпало {0}", matchLabel(ticket.lottery_code, ticket.matches, ticket.numbers.length === 7)) : tr("Совпадений нет")}</p><b className={ticket.prize_amount > 0 ? "win" : "loss"}>{ticket.prize_amount > 0 ? tr("Выигрыш: {0}", formatCas(ticket.prize_amount)) : tr("Без выигрыша")}</b></section>}
+    <footer><span>{ticket.source === "GIFT" ? tr("Награда за достижение") : tr("Стоимость")}</span><strong>{tr(ticket.source === "GIFT" ? tr("Подарочный билет") : formatCas(ticket.purchase_price))}</strong><small>{ticket.source === "GIFT" ? tr("С баланса ничего не списано") : "CAS · CASPER LOTO"}</small></footer>
   </motion.article></div>;
 }
 
 function NotificationCenter({ notifications, onPlay, onTickets }: { notifications: UserNotification[]; onPlay: () => void; onTickets: () => void }) {
-  if (!notifications.length) return <EmptyState title={copy.notifications.emptyTitle} text={copy.notifications.emptyText} />;
+  if (!notifications.length) return <EmptyState title={tr(copy.notifications.emptyTitle)} text={tr(copy.notifications.emptyText)} />;
   return <div className="inbox-list">{notifications.map((item) => {
     const isWin = item.type === "WIN";
     const isFastResult = item.type === "DRAW_RESULT";
     const isJackpot = item.type === "JACKPOT_NEWS";
-    return <article className={`${isWin ? "win" : isFastResult ? "result" : isJackpot ? "news" : "invite"} ${item.read_at ? "read" : "unread"}`} key={item.id}><div className="inbox-symbol">{isWin ? "+" : isFastResult ? "ϟ" : isJackpot ? "J" : "K"}</div><div><header><strong>{item.title}</strong><time>{formatMoscow(item.created_at)} МСК</time></header><p>{item.body}</p><button onClick={isWin || isFastResult ? onTickets : onPlay} type="button">{isWin || isFastResult ? copy.actions.openTickets : copy.actions.chooseNumbers}<span>→</span></button></div></article>;
+    return <article className={`${isWin ? "win" : isFastResult ? "result" : isJackpot ? "news" : "invite"} ${item.read_at ? "read" : "unread"}`} key={item.id}><div className="inbox-symbol">{isWin ? "+" : isFastResult ? "ϟ" : isJackpot ? "J" : "K"}</div><div><header><strong>{notificationText(item.title)}</strong><time>{tr(formatMoscow(item.created_at))}  {tr("МСК")}</time></header><p>{notificationText(item.body)}</p><button onClick={isWin || isFastResult ? onTickets : onPlay} type="button">{tr(isWin || isFastResult ? copy.actions.openTickets : copy.actions.chooseNumbers)}<span>→</span></button></div></article>;
   })}</div>;
 }
 
 function CartView({ cart, groups, receipt, purchasing, success, progress, canAdd, onClear, onRemove, onAdd, onBuy, onTickets, onHome }: { cart: CartTicket[]; groups: CartTicket[][]; receipt: CartReceipt | null; purchasing: boolean; success: boolean; progress: { done: number; total: number } | null; canAdd: boolean; onClear: () => void; onRemove: (id: string) => void; onAdd: () => void; onBuy: () => void; onTickets: () => void; onHome: () => void }) {
   const total = cart.reduce((sum, item) => sum + item.price * item.drawCount, 0);
-  if (receipt && !cart.length) return <div className="cart-success"><div className="cart-success-mark" aria-hidden="true">✓</div><span className="eyebrow">Покупка завершена</span><h1>Билеты уже в игре</h1><strong>{receipt.ticketCount} {plural(receipt.ticketCount, "билет", "билета", "билетов")} · {formatCas(receipt.totalCost)}</strong><p>Они уже участвуют в своих тиражах.</p><div><button className="primary-button" onClick={onAdd} type="button">Купить ещё</button><button onClick={onTickets} type="button">Мои билеты</button><button onClick={onHome} type="button">На главную</button></div></div>;
-  if (!cart.length) return <div className="cart-empty"><div className="cart-empty-art" aria-hidden="true"><span /><i /><b>+</b></div><span className="eyebrow">Ваш следующий билет</span><h1>Корзина пока пуста</h1><p>Соберите комбинацию — мы аккуратно сохраним её здесь до оформления.</p><button className="cart-empty-action" onClick={onHome} type="button">Выбрать лотерею <span>→</span></button></div>;
+  if (receipt && !cart.length) return <div className="cart-success"><div className="cart-success-mark" aria-hidden="true">✓</div><span className="eyebrow">{tr("Покупка завершена")}</span><h1>{tr("Билеты уже в игре")}</h1><strong>{receipt.ticketCount} {tr(plural(receipt.ticketCount, tr("билет"), tr("билета"), tr("билетов")))} · {tr(formatCas(receipt.totalCost))}</strong><p>{tr("Они уже участвуют в своих тиражах.")}</p><div><button className="primary-button" onClick={onAdd} type="button">{tr("Купить ещё")}</button><button onClick={onTickets} type="button">{tr("Мои билеты")}</button><button onClick={onHome} type="button">{tr("На главную")}</button></div></div>;
+  if (!cart.length) return <div className="cart-empty"><div className="cart-empty-art" aria-hidden="true"><span /><i /><b>+</b></div><span className="eyebrow">{tr("Ваш следующий билет")}</span><h1>{tr("Корзина пока пуста")}</h1><p>{tr("Соберите комбинацию — мы аккуратно сохраним её здесь до оформления.")}</p><button className="cart-empty-action" onClick={onHome} type="button">{tr("Выбрать лотерею")} <span>→</span></button></div>;
 
   return <div className="cart-layout">
-    <header className="cart-header"><div><span className="eyebrow">Готово к оформлению</span><h1>{cart.length} {plural(cart.length, "комбинация", "комбинации", "комбинаций")}</h1></div><button disabled={purchasing} onClick={onClear} type="button">Очистить</button></header>
-    <div className="cart-groups">{groups.map((items, groupIndex) => <motion.section animate={{ opacity: 1, y: 0 }} className={`cart-group lottery-${items[0].lotteryCode}`} initial={{ opacity: 0, y: 9 }} key={`${items[0].lotteryCode}:${items[0].drawCount}`} transition={{ delay: groupIndex * .05 }}><header><div><span>{items[0].lotteryName}</span><strong>В группе: {items.length}</strong></div><div><small>{items[0].drawCount === 5 ? "на 5 тиражей" : "ближайший тираж"}</small><b>{formatCas(items.reduce((sum, item) => sum + item.price * item.drawCount, 0))}</b></div></header><div className="cart-ticket-stack">{items.slice(0, 5).map((ticket, index) => <article className="cart-combination" key={`${ticket.id}:${index}`}><span>{String(index + 1).padStart(2, "0")}</span>{isGrandLottery(ticket.lotteryCode) ? <GrandNumberSet values={ticket.numbers} offset={ticket.lotteryCode === "pss" ? 36 : 35} specialLabel={ticket.lotteryCode === "pss" ? "Casper Ball" : undefined} /> : <NumberSet values={ticket.numbers} />}<button className="remove-button" onClick={() => { selectionHaptic(); onRemove(ticket.id); }} type="button" aria-label={`Удалить билет ${index + 1}`}><Icon name="close" /></button></article>)}{items.length > 5 && <p>+ ещё {items.length - 5} — оформим одной операцией</p>}</div></motion.section>)}</div>
-    {progress && <div className="purchase-progress"><div><span>Оформляем билеты</span><strong>{progress.done} из {progress.total}</strong></div><i><span style={{ width: `${(progress.done / progress.total) * 100}%` }} /></i></div>}
-    <aside className="cart-checkout"><div className="checkout-receipt"><span>Итого</span><strong><Money value={total} /></strong><small>{cart.length} комб. · безопасная покупка одной операцией</small></div><button aria-label="Добавить комбинацию" className="checkout-add" disabled={!canAdd || purchasing} onClick={onAdd} type="button">+ Добавить ещё</button><PrimaryButton className="checkout-buy" loading={purchasing} success={success} onClick={onBuy}>{success ? "Билеты куплены" : purchasing ? `Оформляем ${progress?.done ?? 0} из ${progress?.total ?? cart.length}` : `Купить ${cart.length} комб.`}</PrimaryButton></aside>
+    <header className="cart-header"><div><span className="eyebrow">{tr("Готово к оформлению")}</span><h1>{cart.length} {tr(plural(cart.length, tr("комбинация"), tr("комбинации"), tr("комбинаций")))}</h1></div><button disabled={purchasing} onClick={onClear} type="button">{tr("Очистить")}</button></header>
+    <div className="cart-groups">{groups.map((items, groupIndex) => <motion.section animate={{ opacity: 1, y: 0 }} className={`cart-group lottery-${items[0].lotteryCode}`} initial={{ opacity: 0, y: 9 }} key={`${items[0].lotteryCode}:${items[0].drawCount}`} transition={{ delay: groupIndex * .05 }}><header><div><span>{tr(items[0].lotteryName)}</span><strong>{tr("В группе:")} {items.length}</strong></div><div><small>{items[0].drawCount === 5 ? tr("на 5 тиражей") : tr("ближайший тираж")}</small><b>{tr(formatCas(items.reduce((sum, item) => sum + item.price * item.drawCount, 0)))}</b></div></header><div className="cart-ticket-stack">{items.slice(0, 5).map((ticket, index) => <article className="cart-combination" key={`${ticket.id}:${index}`}><span>{tr(String(index + 1).padStart(2, "0"))}</span>{ticket.lotteryCode === "newyear2027" ? <NewYearSymbols values={ticket.numbers} /> : isGrandLottery(ticket.lotteryCode) ? <GrandNumberSet values={ticket.numbers} offset={ticket.lotteryCode === "pss" ? 36 : 35} specialLabel={tr(ticket.lotteryCode === "pss" ? "Casper Ball" : undefined)} /> : <NumberSet values={ticket.numbers} />}<button className="remove-button" onClick={() => { selectionHaptic(); onRemove(ticket.id); }} type="button" aria-label={tr("Удалить билет {0}", index + 1)}><Icon name="close" /></button></article>)}{items.length > 5 && <p>{tr("+ ещё")} {items.length - 5}  {tr("— оформим одной операцией")}</p>}</div></motion.section>)}</div>
+    {progress && <div className="purchase-progress"><div><span>{tr("Оформляем билеты")}</span><strong>{progress.done}  {tr("из")} {progress.total}</strong></div><i><span style={{ width: `${(progress.done / progress.total) * 100}%` }} /></i></div>}
+    <aside className="cart-checkout"><div className="checkout-receipt"><span>{tr("Итого")}</span><strong><Money value={total} /></strong><small>{cart.length}  {tr("комб. · безопасная покупка одной операцией")}</small></div><button aria-label={tr("Добавить комбинацию")} className="checkout-add" disabled={!canAdd || purchasing} onClick={onAdd} type="button">{tr("+ Добавить ещё")}</button><PrimaryButton className="checkout-buy" loading={purchasing} success={success} onClick={onBuy}>{success ? tr("Билеты куплены") : purchasing ? tr("Оформляем {0} из {1}", progress?.done ?? 0, progress?.total ?? cart.length) : tr("Купить {0} комб.", cart.length)}</PrimaryButton></aside>
   </div>;
 }
 
-export default function App({ initData, localDev = false }: AppProps) {
+export default function App(props: AppProps) {
+  return <><AppContent {...props} /><AchievementNotices initData={props.initData} /></>;
+}
+
+function AppContent({ initData, localDev = false }: AppProps) {
   const authenticated = Boolean(initData) || localDev;
   const [cartTtl] = useState(() => configuredCartTtl());
   const [view, setView] = useState<View>(initialView);
@@ -328,6 +342,18 @@ export default function App({ initData, localDev = false }: AppProps) {
     return () => window.removeEventListener(recoveredEvent, recovered);
   }, [refreshDashboard, refreshAccount]);
 
+  useEffect(() => {
+    let timer: number | undefined;
+    const refreshRewards = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        void Promise.allSettled([refreshDashboard(), refreshAccount()]);
+      }, 200);
+    };
+    window.addEventListener("achievements:updated", refreshRewards);
+    return () => { window.clearTimeout(timer); window.removeEventListener("achievements:updated", refreshRewards); };
+  }, [refreshDashboard, refreshAccount]);
+
   const applyPurchaseSnapshot = useCallback((lotteryCode: string, result: PurchaseResult, currentDrawTickets: number) => {
     snapshotEpoch.current += 1;
     setDashboard((current) => current ? {
@@ -422,9 +448,11 @@ export default function App({ initData, localDev = false }: AppProps) {
     let active = true;
     prepare.then(async () => {
       await refreshDashboard();
+      // Opening is recorded independently; achievement work never gates rendering.
+      if (active && document.visibilityState === "visible") void miniAppApi.activity(initData).catch(() => undefined);
       // Secondary profile statistics must not compete with first-screen data.
       if (active) void refreshAccount().catch(() => undefined);
-    }).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Не удалось загрузить Casper Loto.")).finally(() => setLoading(false));
+    }).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : tr("Не удалось загрузить Casper Loto."))).finally(() => setLoading(false));
     return () => { active = false; };
   }, [authenticated, initData, localDev, refreshAccount, refreshDashboard]);
   useEffect(() => {
@@ -455,10 +483,10 @@ export default function App({ initData, localDev = false }: AppProps) {
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") void refreshDashboard().catch(() => undefined);
     }, 3_600_000);
-    const resync = () => { if (document.visibilityState === "visible") void refreshDashboard().catch(() => undefined); };
+    const resync = () => { if (document.visibilityState === "visible") { void refreshDashboard().catch(() => undefined); void miniAppApi.activity(initData).catch(() => undefined); } };
     document.addEventListener("visibilitychange", resync);
     return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", resync); };
-  }, [authenticated, refreshDashboard]);
+  }, [authenticated, refreshDashboard, initData]);
   useEffect(() => {
     const generation = ++ticketGeneration.current;
     ticketMorePending.current = false;
@@ -471,7 +499,7 @@ export default function App({ initData, localDev = false }: AppProps) {
       setTickets(page.tickets);
       setTicketTotal(page.total);
       setTicketsHaveMore(page.has_more);
-    }).catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "Не удалось загрузить билеты."); }).finally(() => { if (active) { setTicketsLoading(false); setTicketsMoreLoading(false); } });
+    }).catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : tr("Не удалось загрузить билеты.")); }).finally(() => { if (active) { setTicketsLoading(false); setTicketsMoreLoading(false); } });
     return () => { active = false; ticketGeneration.current += 1; };
   }, [accountView, authenticated, initData, ticketLotteryFilter, ticketView, ticketWinsOnly, view]);
 
@@ -489,7 +517,7 @@ export default function App({ initData, localDev = false }: AppProps) {
       setTicketTotal(page.total);
       setTicketsHaveMore(page.has_more);
     } catch (reason) {
-      if (generation === ticketGeneration.current) setError(reason instanceof Error ? reason.message : "Не удалось загрузить следующую страницу билетов.");
+      if (generation === ticketGeneration.current) setError(reason instanceof Error ? reason.message : tr("Не удалось загрузить следующую страницу билетов."));
     } finally {
       if (generation === ticketGeneration.current) { ticketMorePending.current = false; setTicketsMoreLoading(false); }
     }
@@ -503,7 +531,7 @@ export default function App({ initData, localDev = false }: AppProps) {
         setNotifications((current) => current.map((item) => ({ ...item, read_at: item.read_at ?? new Date().toISOString() })));
         await refreshAccount();
       }
-    }).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Не удалось загрузить уведомления."));
+    }).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : tr("Не удалось загрузить уведомления.")));
   }, [accountView, authenticated, initData, refreshAccount, view]);
   useEffect(() => {
     if (view !== "fast" || !authenticated) return;
@@ -514,7 +542,7 @@ export default function App({ initData, localDev = false }: AppProps) {
     void miniAppApi.liveStream(initData, (feed) => {
       setFastFeed((current) => newestLiveFeed(current, feed));
     }, controller.signal, "fast").catch((reason: unknown) => {
-      if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : "Не удалось подключиться к Fast-эфиру.");
+      if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : tr("Не удалось подключиться к Fast-эфиру."));
     });
     return () => { window.clearTimeout(initial); controller.abort(); };
   }, [authenticated, initData, refreshDashboard, refreshFastLive, view]);
@@ -566,48 +594,48 @@ export default function App({ initData, localDev = false }: AppProps) {
       setPickerInitialNumbers(initialNumbers.length === cachedLottery.numbers_to_pick ? initialNumbers : []);
       setFavorites([]);
       setPickerLottery(cachedLottery);
-      if (cachedLottery.code !== "dual") void miniAppApi.favorites(initData, cachedLottery.code).then(setFavorites).catch(() => undefined);
+      if (!isFastLottery(cachedLottery.code)) void miniAppApi.favorites(initData, cachedLottery.code).then(setFavorites).catch(() => undefined);
     }
     try {
       const fresh = await refreshDashboard();
       if (!fresh) return;
       const lottery = fresh?.lotteries.find((item) => item.code === lotteryCode);
       if (!lottery) {
-        setNotice("Продажи для выбранного тиража уже завершены. Показываем актуальное расписание.");
+        setNotice(tr("Продажи для выбранного тиража уже завершены. Показываем актуальное расписание."));
         setView("home");
         return;
       }
       setPickerInitialNumbers(initialNumbers.length === lottery.numbers_to_pick ? initialNumbers : []);
       if (isFastLottery(lottery.code)) setFavorites([]);
       setPickerLottery(lottery);
-      if (!cachedLottery && !isFastLottery(lottery.code) && lottery.code !== "dual") void miniAppApi.favorites(initData, lottery.code).then(setFavorites).catch(() => undefined);
+      if (!cachedLottery && !isFastLottery(lottery.code)) void miniAppApi.favorites(initData, lottery.code).then(setFavorites).catch(() => undefined);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Не удалось обновить состояние продаж.");
+      setError(reason instanceof Error ? reason.message : tr("Не удалось обновить состояние продаж."));
     }
   };
 
-  const requestPurchase = async (lotteryCode: string, combinations: number[][], drawCount: 1 | 5, cartIds: string[] = []) => {
+  const requestPurchase = async (lotteryCode: string, combinations: number[][], drawCount: 1 | 5, cartIds: string[] = [], selectionModes?: ("manual" | "random" | "unknown")[]) => {
     const idempotencyKey = crypto.randomUUID();
     const scheduledAt = dashboard?.lotteries.find(lottery => lottery.code === lotteryCode)?.scheduled_at;
     try {
-      return await miniAppApi.purchase(initData, lotteryCode, combinations, idempotencyKey, drawCount, scheduledAt, cartIds);
+      return await miniAppApi.purchase(initData, lotteryCode, combinations, idempotencyKey, drawCount, scheduledAt, cartIds, selectionModes);
     } catch (reason) {
       if (reason instanceof ApiError && reason.status < 500) throw reason;
       await new Promise((resolve) => window.setTimeout(resolve, 500));
-      return miniAppApi.purchase(initData, lotteryCode, combinations, idempotencyKey, drawCount, scheduledAt, cartIds);
+      return miniAppApi.purchase(initData, lotteryCode, combinations, idempotencyKey, drawCount, scheduledAt, cartIds, selectionModes);
     }
   };
 
-  const purchaseDirect = async (lotteryCode: string, combinations: number[][], drawCount: 1 | 5) => {
+  const purchaseDirect = async (lotteryCode: string, combinations: number[][], drawCount: 1 | 5, mode: "manual" | "random" | "unknown" = "random") => {
     if (purchaseInFlight.current) return false;
     purchaseInFlight.current = true;
     snapshotEpoch.current += 1;
     setPurchasing(true); setPurchaseSuccess(false); setError(null);
     try {
-      const result = await requestPurchase(lotteryCode, combinations, drawCount);
+      const result = await requestPurchase(lotteryCode, combinations, drawCount, [], combinations.map(() => mode));
       applyPurchaseSnapshot(lotteryCode, result, combinations.length);
       setPurchaseSuccess(true); successHaptic();
-      setNotice(`${combinations.length === 1 ? "Билет куплен" : `Куплено билетов: ${combinations.length}`} · списано ${formatCas(result.total_cost)}`);
+      setNotice(tr("{0} · списано {1}", combinations.length === 1 ? tr("Билет куплен") : tr("Куплено билетов: {0}", combinations.length), formatCas(result.total_cost)));
       void refreshDashboard().then((fresh) => {
         const freshLottery = fresh?.lotteries.find((lottery) => lottery.code === lotteryCode);
         if (freshLottery) setPickerLottery((current) => current?.code === lotteryCode ? freshLottery : current);
@@ -616,7 +644,7 @@ export default function App({ initData, localDev = false }: AppProps) {
       return true;
     } catch (reason) {
       errorHaptic();
-      setError(reason instanceof Error ? reason.message : "Ответ о покупке потерян. Проверяем её результат.");
+      setError(reason instanceof Error ? reason.message : tr("Ответ о покупке потерян. Проверяем её результат."));
       return false;
     } finally {
       purchaseInFlight.current = false;
@@ -640,7 +668,7 @@ export default function App({ initData, localDev = false }: AppProps) {
     try {
       for (const ticketsForLottery of groups.values()) {
         const sample = ticketsForLottery[0];
-        const result = await requestPurchase(sample.lotteryCode, ticketsForLottery.map((ticket) => ticket.numbers), sample.drawCount, ticketsForLottery.map(ticket => ticket.id));
+        const result = await requestPurchase(sample.lotteryCode, ticketsForLottery.map((ticket) => ticket.numbers), sample.drawCount, ticketsForLottery.map(ticket => ticket.id), ticketsForLottery.map(ticket => ticket.selectionMode ?? "unknown"));
         const purchasedIds = new Set(ticketsForLottery.map((ticket) => ticket.id));
         setCart((current) => current.filter((ticket) => !purchasedIds.has(ticket.id)));
         done += ticketsForLottery.length;
@@ -649,13 +677,13 @@ export default function App({ initData, localDev = false }: AppProps) {
         applyPurchaseSnapshot(sample.lotteryCode, result, ticketsForLottery.length);
       }
       setPurchaseSuccess(true); successHaptic();
-      setNotice(`${done} ${plural(done, "билет куплен", "билета куплены", "билетов куплено")} · списано ${formatCas(totalCost)}`);
+      setNotice(tr("{0} {1} · списано {2}", done, plural(done, tr("билет куплен"), tr("билета куплены"), tr("билетов куплено")), formatCas(totalCost)));
       setCartReceipt({ ticketCount: done, totalCost });
       void refreshDashboard().catch(() => undefined);
     } catch (reason) {
       errorHaptic();
       setCart(loadCart(cartTtl));
-      setError(`${done ? `Куплено ${done} из ${total}. ` : ""}${reason instanceof Error ? reason.message : "Покупка прервана. Проверяем её результат."}`);
+      setError(`${done ? tr("Куплено {0} из {1}. ", done, total) : ""}${reason instanceof Error ? reason.message : tr("Покупка прервана. Проверяем её результат.")}`);
     } finally {
       purchaseInFlight.current = false;
       setPurchasing(false); setPurchaseSuccess(false); setPurchaseProgress(null);
@@ -667,8 +695,8 @@ export default function App({ initData, localDev = false }: AppProps) {
     try {
       const favorite = await miniAppApi.saveFavorite(initData, pickerLottery.code, numbers);
       setFavorites((current) => current.some((item) => item.id === favorite.id) ? current : [favorite, ...current]);
-      successHaptic(); setNotice("Комбинация сохранена в избранное");
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "Не удалось сохранить комбинацию."); }
+      successHaptic(); setNotice(tr("Комбинация сохранена в избранное"));
+    } catch (reason) { setError(reason instanceof Error ? reason.message : tr("Не удалось сохранить комбинацию.")); }
   };
 
   const deleteFavorite = async (id: string) => {
@@ -676,7 +704,7 @@ export default function App({ initData, localDev = false }: AppProps) {
     try {
       await miniAppApi.deleteFavorite(initData, pickerLottery.code, id);
       setFavorites((current) => current.filter((item) => item.id !== id));
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "Не удалось удалить комбинацию."); }
+    } catch (reason) { setError(reason instanceof Error ? reason.message : tr("Не удалось удалить комбинацию.")); }
   };
 
   const saveNotificationPreferences = async (preferences: NotificationPreferences) => {
@@ -686,14 +714,14 @@ export default function App({ initData, localDev = false }: AppProps) {
       successHaptic();
     } catch (reason) {
       errorHaptic();
-      setError(reason instanceof Error ? reason.message : "Не удалось сохранить уведомления.");
+      setError(reason instanceof Error ? reason.message : tr("Не удалось сохранить уведомления."));
     }
   };
 
   const enableTelegramNotifications = async () => {
     const allowed = await requestTelegramWriteAccess();
     if (!allowed) {
-      setNotice("Разрешение не выдано. Его можно включить позже в разделе «Моё».");
+      setNotice(tr("Разрешение не выдано. Его можно включить позже в разделе «Моё»."));
       return;
     }
     const preferences: NotificationPreferences = {
@@ -702,7 +730,7 @@ export default function App({ initData, localDev = false }: AppProps) {
       inactivity_reminders_enabled: true,
     };
     await saveNotificationPreferences(preferences);
-    setNotice("Telegram-уведомления включены");
+    setNotice(tr("Telegram-уведомления включены"));
   };
 
   const refillDevBalance = async () => {
@@ -710,13 +738,13 @@ export default function App({ initData, localDev = false }: AppProps) {
     try {
       const result = await miniAppApi.devRefill();
       setDashboard((current) => current ? { ...current, balance: result.balance } : current);
-      successHaptic(); setNotice("Тестовый баланс пополнен через ledger");
-    } catch (reason) { errorHaptic(); setError(reason instanceof Error ? reason.message : "Баланс не пополнен."); }
+      successHaptic(); setNotice(tr("Тестовый баланс пополнен через ledger"));
+    } catch (reason) { errorHaptic(); setError(reason instanceof Error ? reason.message : tr("Баланс не пополнен.")); }
   };
 
-  if (!authenticated) return <main className="centered-message"><img alt="Casper Loto" className="standalone-brand-mark" src={logoSymbol} /><h1>Откройте Casper Loto в Telegram</h1><p>Безопасный вход выполняется автоматически при запуске Mini App.</p></main>;
+  if (!authenticated) return <main className="centered-message"><img alt="Casper Loto" className="standalone-brand-mark" src={logoSymbol} /><h1>{tr("Откройте Casper Loto в Telegram")}</h1><p>{tr("Безопасный вход выполняется автоматически при запуске Mini App.")}</p></main>;
   if (loading) return <Skeleton />;
-  if (!dashboard) return <main className="centered-message"><div className="offline-mark">!</div><h1>Нет связи с Casper Loto</h1><p>{error}</p></main>;
+  if (!dashboard) return <main className="centered-message"><div className="offline-mark">!</div><h1>{tr("Нет связи с Casper Loto")}</h1><p>{tr(error)}</p></main>;
   const bingoLottery = dashboard.lotteries.find(item => item.code === "bingo");
   if (kasperLiveOpen) return <Suspense fallback={<Skeleton />}><KasperLiveView initData={initData} balance={dashboard.balance} onClose={() => setKasperLiveOpen(false)} onSettled={(result) => {
     snapshotEpoch.current += 1;
@@ -737,26 +765,28 @@ export default function App({ initData, localDev = false }: AppProps) {
     setAccount((current) => current ? { ...current, balance: result.balance_after, ticket_count: current.ticket_count + result.tickets.length, winning_ticket_count: current.winning_ticket_count + winning.length, total_spent: current.total_spent + result.total_cost, total_won: current.total_won + result.total_prize, best_win: Math.max(current.best_win, ...result.tickets.map((ticket) => ticket.prize_amount)) } : current);
   }} /></Suspense>;
   if (bingoOpen && bingoLottery) return <Suspense fallback={<Skeleton />}><BingoView initialTab={roomLive ? "live" : "choose"} lottery={bingoLottery} initData={initData} now={serverNow} balance={dashboard.balance} onClose={() => setBingoOpen(false)} onPurchased={(result) => { applyPurchaseSnapshot("bingo", result, result.ticket_ids.length); void Promise.allSettled([refreshDashboard(), refreshAccount()]); }} /></Suspense>;
-  if (pickerLottery) return <main className={`app-shell picker-page ${isFastLottery(pickerLottery.code) ? "" : "draw-play-page"}`}><Suspense fallback={<Skeleton />}>{isFastLottery(pickerLottery.code) ? <FastPicker key={pickerLottery.code} error={error} lottery={pickerLottery} purchasing={purchasing} success={purchaseSuccess} onBuy={(numbers) => purchaseDirect(pickerLottery.code, [numbers], 1)} onClose={() => { setPickerLottery(null); setView(current => current === "catalog" || current === "live" ? current : "fast"); }} /> : <LotteryRoom balance={dashboard.balance} initialLive={roomLive} key={pickerLottery.code} lottery={pickerLottery} initData={initData} now={serverNow} onClose={() => { setRoomLive(false); setPickerLottery(null); }} onLiveModeChange={setRoomLive} onTickets={() => { setRoomLive(false); setPickerLottery(null); setTicketLotteryFilter(pickerLottery.code); setTicketsLoading(true); setAccountView("tickets"); setView("account"); }}><>{error && <p className="play-message is-error" role="alert">{error}</p>}{notice && <p className="play-message" role="status">{notice}</p>}<NumberPicker lottery={pickerLottery} balance={dashboard.balance} now={serverNow} purchasing={purchasing} initialNumbers={pickerInitialNumbers} favorites={favorites} onBuy={(numbers, drawCount) => purchaseDirect(pickerLottery.code, [numbers], drawCount)} onBuyMany={(combinations, drawCount) => purchaseDirect(pickerLottery.code, combinations, drawCount)} onSaveFavorite={(numbers) => void saveFavorite(numbers)} onDeleteFavorite={(id) => void deleteFavorite(id)} /></></LotteryRoom>}</Suspense></main>;
+  if (pickerLottery) return <main className={`app-shell picker-page ${isFastLottery(pickerLottery.code) ? "" : "draw-play-page"}`}><Suspense fallback={<Skeleton />}>{isFastLottery(pickerLottery.code) ? <FastPicker key={pickerLottery.code} error={error} lottery={pickerLottery} purchasing={purchasing} success={purchaseSuccess} onBuy={(numbers, mode) => purchaseDirect(pickerLottery.code, [numbers], 1, mode)} onClose={() => { setPickerLottery(null); setView(current => current === "catalog" || current === "live" ? current : "fast"); }} /> : <LotteryRoom balance={dashboard.balance} initialLive={roomLive} key={pickerLottery.code} lottery={pickerLottery} initData={initData} now={serverNow} onClose={() => { setRoomLive(false); setPickerLottery(null); }} onLiveModeChange={setRoomLive} onTickets={() => { setRoomLive(false); setPickerLottery(null); setTicketLotteryFilter(pickerLottery.code); setTicketsLoading(true); setAccountView("tickets"); setView("account"); }}><>{pickerLottery.code === "newyear2027" ? <NewYearPurchaseNotice error={error} notice={notice} /> : <>{error && <p className="play-message is-error" role="alert">{tr(error)}</p>}{notice && <p className="play-message" role="status">{tr(notice)}</p>}</>}<NumberPicker lottery={pickerLottery} balance={dashboard.balance} now={serverNow} purchasing={purchasing} initialNumbers={pickerInitialNumbers} favorites={favorites} onBuy={(numbers, drawCount, mode) => purchaseDirect(pickerLottery.code, [numbers], drawCount, mode)} onBuyMany={(combinations, drawCount) => purchaseDirect(pickerLottery.code, combinations, drawCount)} onSaveFavorite={(numbers) => void saveFavorite(numbers)} onDeleteFavorite={(id) => void deleteFavorite(id)} /></></LotteryRoom>}</Suspense></main>;
 
   return <main className={`app-shell ${view === "fast" ? "fast-shell" : ""}`}>
-    {view !== "account" && <header className="app-header"><div aria-label="Casper Loto" className="brand-lockup"><picture><source media="(max-width: 520px)" srcSet={logoSymbol} /><img alt="" className="brand-logo-horizontal" width="138" height="46" fetchPriority="high" src={logoHorizontal} /></picture></div><div className="header-actions">{localDev && import.meta.env.VITE_DESIGN_PREVIEW !== "true" && <button className="dev-badge" onClick={() => void refillDevBalance()} type="button">+ TEST CAS</button>}{cart.length > 0 && <button aria-label={`Корзина: ${cart.length} ${plural(cart.length, "комбинация", "комбинации", "комбинаций")}`} className="header-cart" onClick={() => setView("cart")} type="button"><Icon name="cart" /><small>{cart.length}</small></button>}<Balance value={dashboard.balance} /></div></header>}
-    {updateAvailable && <aside className="update-banner"><span><strong>Доступно обновление</strong><small>Корзина сохранена на этом устройстве.</small></span><button onClick={() => { const url = new URL(window.location.href); url.searchParams.set("app_update", String(Date.now())); window.location.replace(url.toString()); }} type="button">Обновить</button></aside>}
-    {(error || notice) && <button className={`toast ${error ? "error" : "success"}`} onClick={() => { setError(null); setNotice(null); }} type="button"><span>{error ? "!" : "✓"}</span><span className="toast-message">{error ?? notice}</span><Icon name="close" /></button>}
-    <Suspense fallback={<div className="skeleton view-loading-skeleton" aria-label="Загружаем экран" />} >
+    {view !== "account" && <header className="app-header"><div aria-label="Casper Loto" className="brand-lockup"><picture><source media="(max-width: 520px)" srcSet={logoSymbol} /><img alt="" className="brand-logo-horizontal" width="138" height="46" fetchPriority="high" src={logoHorizontal} /></picture></div><div className="header-actions">{localDev && import.meta.env.VITE_DESIGN_PREVIEW !== "true" && <button className="dev-badge" onClick={() => void refillDevBalance()} type="button">+ TEST CAS</button>}{cart.length > 0 && <button aria-label={tr("Корзина: {0} {1}", cart.length, plural(cart.length, tr("комбинация"), tr("комбинации"), tr("комбинаций")))} className="header-cart" onClick={() => setView("cart")} type="button"><Icon name="cart" /><small>{cart.length}</small></button>}<Balance value={dashboard.balance} /></div></header>}
+    {updateAvailable && <aside className="update-banner"><span><strong>{tr("Доступно обновление")}</strong><small>{tr("Корзина сохранена на этом устройстве.")}</small></span><button onClick={() => { const url = new URL(window.location.href); url.searchParams.set("app_update", String(Date.now())); window.location.replace(url.toString()); }} type="button">{tr("Обновить")}</button></aside>}
+    {(error || notice) && <button className={`toast ${error ? "error" : "success"}`} onClick={() => { setError(null); setNotice(null); }} type="button"><span>{error ? "!" : "✓"}</span><span className="toast-message">{tr(error ?? notice)}</span><Icon name="close" /></button>}
+    <Suspense fallback={<div className="skeleton view-loading-skeleton" aria-label={tr("Загружаем экран")} />} >
     {selectedTicket && (selectedTicket.lottery_code === "bingo" ? <BingoTicketDetail ticket={selectedTicket} onClose={() => setSelectedTicket(null)} /> : <TicketDetail lottery={dashboard.lotteries.find((item) => item.code === selectedTicket.lottery_code)} onClose={() => setSelectedTicket(null)} ticket={selectedTicket} />)}
 
     {view === "archive" && <Suspense fallback={<Skeleton />}><DrawArchive initData={initData} onBack={() => setView("home")} /></Suspense>}
-    {view === "home" && <section className="view-content home-view" key="home"><Today stories={<Stories initData={initData} onOpen={(code) => { if (code === "casper-loto") setView("catalog"); else void openLottery(code); }} />} onArchive={() => { setView("archive"); window.scrollTo({ top: 0, behavior: "instant" }); }} lotteries={standardLotteries} now={serverNow} highlights={highlights} totalTicketCount={dashboard.total_ticket_count} totalWinningTicketCount={dashboard.total_winning_ticket_count} monthlyTotalPayout={dashboard.monthly_total_payout} onOpen={(code, live) => void openLottery(code, [], live)} onCatalog={() => setView("catalog")} onTickets={() => { setTicketsLoading(true); setTicketView("active"); setTicketWinsOnly(false); setAccountView("tickets"); setTicketLotteryFilter("scope:standard"); setView("account"); }} /></section>}
+    {view === "home" && <section className="view-content home-view" key="home"><Today onArchive={() => { setView("archive"); window.scrollTo({ top: 0, behavior: "instant" }); }} lotteries={standardLotteries} now={serverNow} highlights={highlights} totalTicketCount={dashboard.total_ticket_count} totalWinningTicketCount={dashboard.total_winning_ticket_count} monthlyTotalPayout={dashboard.monthly_total_payout} onOpen={(code, live) => void openLottery(code, [], live)} onCatalog={() => setView("catalog")} onTickets={() => { setTicketsLoading(true); setTicketView("active"); setTicketWinsOnly(false); setAccountView("tickets"); setTicketLotteryFilter("scope:standard"); setView("account"); }} /></section>}
     {view === "catalog" && <section className="view-content catalog-view" key="catalog"><LotteryCatalog lotteries={dashboard.lotteries} now={serverNow} selectedFilter={catalogFilter} restoreScroll={catalogScroll} onFilterChange={filter => { setCatalogFilter(filter);setCatalogScroll(0);window.scrollTo({ top: 0, behavior: "instant" }); }} onOpen={code => { setCatalogScroll(window.scrollY);void openLottery(code); }} /></section>}
     {view === "live" && <section className="view-content catalog-view"><LotteryCatalog lotteries={dashboard.lotteries} now={serverNow} selectedFilter={catalogFilter} restoreScroll={catalogScroll} onFilterChange={filter => { setCatalogFilter(filter);setCatalogScroll(0);window.scrollTo({ top: 0, behavior: "instant" }); }} onOpen={code => { setCatalogScroll(window.scrollY);void openLottery(code); }} /></section>}
 
-    {view === "fast" && <section className="view-content fast-world" key="fast"><FastView lotteries={fastLotteries} feed={fastFeed} now={serverNow} balance={dashboard.balance} purchasing={purchasing} onOpen={(code) => void openLottery(code)} onQuickBuy={(code, combinations) => void purchaseDirect(code, combinations, 1)} /><footer className="fast-world-footer">{fastHighlights?.last_jackpot && <div className="fast-last-jackpot"><small>ПОСЛЕДНИЙ ДЖЕКПОТ</small><strong><Money value={fastHighlights.last_jackpot.jackpot_amount} compact /></strong><span>{fastHighlights.last_jackpot.lottery_name} · {formatMoscow(fastHighlights.last_jackpot.occurred_at)} МСК</span></div>}<button className="fast-history-button" type="button" onClick={() => { setTicketsLoading(true); setTicketLotteryFilter("scope:fast"); setAccountView("tickets"); setView("account"); }}><Icon name="ticket" /><span><b>Билеты Casper Fast</b><small>Активные и история</small></span><strong>→</strong></button></footer></section>}
+    {view === "fast" && <section className="view-content fast-world" key="fast"><FastView lotteries={fastLotteries} feed={fastFeed} now={serverNow} balance={dashboard.balance} purchasing={purchasing} onOpen={(code) => void openLottery(code)} onQuickBuy={(code, combinations) => void purchaseDirect(code, combinations, 1)} /><footer className="fast-world-footer">{fastHighlights?.last_jackpot && <div className="fast-last-jackpot"><small>{tr("ПОСЛЕДНИЙ ДЖЕКПОТ")}</small><strong><Money value={fastHighlights.last_jackpot.jackpot_amount} compact /></strong><span>{tr(fastHighlights.last_jackpot.lottery_name)} · {tr(formatMoscow(fastHighlights.last_jackpot.occurred_at))}  {tr("МСК")}</span></div>}<button className="fast-history-button" type="button" onClick={() => { setTicketsLoading(true); setTicketLotteryFilter("scope:fast"); setAccountView("tickets"); setView("account"); }}><Icon name="ticket" /><span><b>{tr("Билеты Casper Fast")}</b><small>{tr("Активные и история")}</small></span><strong>→</strong></button></footer></section>}
 
     {view === "account" && <section className="view-content personal-section" key="account">
-      {accountView !== "overview" && <header className="personal-section-heading"><button type="button" aria-label="Обзор" onClick={() => { selectionHaptic(); setAccountView("overview"); void refreshAccount(false).catch(() => undefined); }}>← <span>Моё</span></button><h1>{accountView === "tickets" ? "Мои билеты" : "Уведомления"}</h1><button type="button" onClick={() => { if (accountView === "tickets") setAccountView("notifications"); else { setTicketsLoading(true); setAccountView("tickets"); } }}>{accountView === "tickets" ? "Уведомления" : "Билеты"}</button></header>}
-      {accountView === "overview" && (account ? <AccountOverview account={account} lotteries={dashboard.lotteries} onCatalog={() => setView("catalog")} onTickets={() => { setTicketLotteryFilter(""); setTicketWinsOnly(false); setTicketsLoading(true); setTicketView("active"); setAccountView("tickets"); }} onHistory={() => { setTicketsLoading(true); setTicketLotteryFilter(""); setTicketWinsOnly(false); setTicketView("history"); setAccountView("tickets"); }} onNotifications={() => setAccountView("notifications")} onEnableTelegram={() => void enableTelegramNotifications()} onSavePreferences={(preferences) => void saveNotificationPreferences(preferences)} /> : <div className="skeleton account-skeleton" />)}
-      {accountView === "tickets" && <><div className={`segmented-control ${ticketView}`}><i /><button className={ticketView === "active" ? "selected" : ""} onClick={() => { selectionHaptic(); if (ticketView !== "active") setTicketsLoading(true); setTicketView("active"); }} type="button">Активные</button><button className={ticketView === "history" ? "selected" : ""} onClick={() => { selectionHaptic(); if (ticketView !== "history") setTicketsLoading(true); setTicketView("history"); }} type="button">История</button></div><div className="ticket-filters"><select aria-label="Фильтр по лотерее" value={ticketLotteryFilter} onChange={(event) => { setTicketsLoading(true); setTicketLotteryFilter(event.target.value); }}><option value="scope:standard">Обычные лотереи</option><option value="scope:fast">Casper Fast</option><option value="">Все игры</option><option value="kasper-live">Casper LIVE</option><option value="aurora">Casper Aurora</option><option value="vault">Casper Vault</option>{dashboard.lotteries.map((lottery) => <option key={lottery.code} value={lottery.code}>{lottery.name}</option>)}</select>{ticketView === "history" && <button aria-pressed={ticketWinsOnly} className={ticketWinsOnly ? "active" : ""} onClick={() => { setTicketsLoading(true); setTicketWinsOnly((value) => !value); }} type="button">Только выигрыши</button>}<span>{ticketTotal} {plural(ticketTotal, "билет", "билета", "билетов")}</span></div>{ticketsLoading ? <div className="ticket-skeletons"><div className="skeleton ticket-skeleton" /><div className="skeleton ticket-skeleton" /></div> : tickets.length ? <><TicketGroups active={ticketView === "active"} lotteries={dashboard.lotteries} now={serverNow} onOpen={setSelectedTicket} tickets={tickets} />{ticketsHaveMore && <button className="load-more-tickets" disabled={ticketsMoreLoading} onClick={() => void loadMoreTickets()} type="button">{ticketsMoreLoading ? "Загружаем…" : `Показать ещё · ${tickets.length} из ${ticketTotal}`}</button>}</> : <EmptyState title={ticketView === "active" ? "Нет активных билетов" : "История пока пуста"} text={ticketView === "active" ? "Выберите лотерею и соберите свою комбинацию." : "Завершённые билеты появятся после розыгрыша."} action={ticketView === "active" && firstAvailable ? { label: "Выбрать лотерею", onClick: () => setView("catalog") } : undefined} />}{ticketView === "active" && firstAvailable && !ticketsLoading && tickets.length > 0 && <PrimaryButton className="sticky-action" onClick={() => void openLottery(firstAvailable.code)}>Ещё один билет</PrimaryButton>}</>}
+      {(accountView === "tickets" || accountView === "notifications") && <header className="personal-section-heading"><button type="button" aria-label={tr("Обзор")} onClick={() => { selectionHaptic(); setAccountView("overview"); void refreshAccount(false).catch(() => undefined); }}>← <span>{tr("Моё")}</span></button><h1>{accountView === "tickets" ? tr("Мои билеты") : tr("Уведомления")}</h1><button type="button" onClick={() => { if (accountView === "tickets") setAccountView("notifications"); else { setTicketsLoading(true); setAccountView("tickets"); } }}>{accountView === "tickets" ? tr("Уведомления") : tr("Билеты")}</button></header>}
+      {accountView === "overview" && (account ? <AccountOverview initData={initData} onCollection={() => { setAccountView("collection"); window.scrollTo({top:0,behavior:"instant"}); }} onAchievements={() => { setAccountView("achievements"); window.scrollTo({ top: 0, behavior: "instant" }); }} account={account} lotteries={dashboard.lotteries} onCatalog={() => setView("catalog")} onTickets={() => { setTicketLotteryFilter(""); setTicketWinsOnly(false); setTicketsLoading(true); setTicketView("active"); setAccountView("tickets"); }} onHistory={() => { setTicketsLoading(true); setTicketLotteryFilter(""); setTicketWinsOnly(false); setTicketView("history"); setAccountView("tickets"); }} onNotifications={() => setAccountView("notifications")} onEnableTelegram={() => void enableTelegramNotifications()} onSavePreferences={(preferences) => void saveNotificationPreferences(preferences)} /> : <div className="skeleton account-skeleton" />)}
+      {accountView === "tickets" && <><div className={`segmented-control ${ticketView}`}><i /><button className={ticketView === "active" ? "selected" : ""} onClick={() => { selectionHaptic(); if (ticketView !== "active") setTicketsLoading(true); setTicketView("active"); }} type="button">{tr("Активные")}</button><button className={ticketView === "history" ? "selected" : ""} onClick={() => { selectionHaptic(); if (ticketView !== "history") setTicketsLoading(true); setTicketView("history"); }} type="button">{tr("История")}</button></div><div className="ticket-filters"><select aria-label={tr("Фильтр по лотерее")} value={ticketLotteryFilter} onChange={(event) => { setTicketsLoading(true); setTicketLotteryFilter(event.target.value); }}><option value="scope:standard">{tr("Обычные лотереи")}</option><option value="scope:fast">Casper Fast</option><option value="">{tr("Все игры")}</option><option value="kasper-live">Casper LIVE</option><option value="aurora">Casper Aurora</option><option value="vault">Casper Vault</option>{dashboard.lotteries.map((lottery) => <option key={lottery.code} value={lottery.code}>{tr(lottery.name)}</option>)}</select>{ticketView === "history" && <button aria-pressed={ticketWinsOnly} className={ticketWinsOnly ? "active" : ""} onClick={() => { setTicketsLoading(true); setTicketWinsOnly((value) => !value); }} type="button">{tr("Только выигрыши")}</button>}<span>{ticketTotal} {tr(plural(ticketTotal, tr("билет"), tr("билета"), tr("билетов")))}</span></div>{ticketsLoading ? <div className="ticket-skeletons"><div className="skeleton ticket-skeleton" /><div className="skeleton ticket-skeleton" /></div> : tickets.length ? <><TicketGroups active={ticketView === "active"} lotteries={dashboard.lotteries} now={serverNow} onOpen={setSelectedTicket} tickets={tickets} />{ticketsHaveMore && <button className="load-more-tickets" disabled={ticketsMoreLoading} onClick={() => void loadMoreTickets()} type="button">{ticketsMoreLoading ? tr("Загружаем…") : tr("Показать ещё · {0} из {1}", tickets.length, ticketTotal)}</button>}</> : <EmptyState title={ticketView === "active" ? tr("Нет активных билетов") : tr("История пока пуста")} text={ticketView === "active" ? tr("Выберите лотерею и соберите свою комбинацию.") : tr("Завершённые билеты появятся после розыгрыша.")} action={ticketView === "active" && firstAvailable ? { label: tr("Выбрать лотерею"), onClick: () => setView("catalog") } : undefined} />}{ticketView === "active" && firstAvailable && !ticketsLoading && tickets.length > 0 && <PrimaryButton className="sticky-action" onClick={() => void openLottery(firstAvailable.code)}>{tr("Ещё один билет")}</PrimaryButton>}</>}
+      {accountView === "achievements" && <Achievements initData={initData} onBack={() => setAccountView("overview")} />}
+      {accountView === "collection" && <Collection initData={initData} onBack={() => setAccountView("overview")} />}
       {accountView === "notifications" && <NotificationCenter notifications={notifications} onPlay={() => firstAvailable ? void openLottery(firstAvailable.code) : setView("home")} onTickets={() => { setTicketsLoading(true); setAccountView("tickets"); }} />}
     </section>}
 

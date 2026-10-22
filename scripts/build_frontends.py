@@ -41,7 +41,15 @@ def source_paths(client: str) -> list[str]:
         .decode()
         .split("\0")
     )
-    return sorted({path for path in paths if path and (ROOT / path).is_file()})
+    return sorted(
+        {
+            path
+            for path in paths
+            if path
+            and (ROOT / path).is_file()
+            and "/public/assets/publications/" not in path
+        }
+    )
 
 
 def source_hash(client: str) -> str:

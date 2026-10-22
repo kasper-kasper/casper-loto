@@ -1,3 +1,4 @@
+import { tr } from "./i18n";
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import type { Publication } from "../../shared/publications";
 import { PublicationArtwork } from "./PublicationArtwork";
@@ -42,22 +43,22 @@ export function Stories({ initData, onOpen }: { initData: string; onOpen: (code:
     return lockInteractionViewport();
   }, [viewerOpen]);
   if (!items.length && !error) return null;
-  return <section className="home-stories" aria-label="Новости Casper"><header><h2>Новости Casper</h2><span>{items.length ? `${items.length} историй` : ""}</span></header>
-    {error && <button type="button" className="stories-retry" disabled={busy} onClick={() => void load()}>Не удалось загрузить новости · повторить</button>}
-    <div className="stories-strip">{items.map((item, position) => <button type="button" key={item.id} onClick={() => open(position)} className="story-cover" style={{ backgroundColor: item.content.template.base, borderColor: item.content.template.accent, opacity: seen.includes(item.id) ? .55 : 1 }}><img src={item.content.template.formats.story.background} alt="" width={1080} height={1920} loading="lazy" /><span className="story-cover-game" style={{ color: item.content.template.accent }}>{item.content.template.lotteryLabel}</span><strong>{item.content.fields.title}</strong><small>Читать ↗</small></button>)}{more && <button type="button" className="story-more" disabled={busy} onClick={() => void load(items.at(-1)?.id)}>{busy ? "Загружаем…" : "Ещё истории →"}</button>}</div>
-    <dialog ref={dialog} className="story-dialog" style={{ "--story-telegram-top": window.Telegram?.WebApp?.isFullscreen ? "56px" : "0px" } as CSSProperties} aria-label={selected?.content.fields.title ?? "История"} onClose={() => { setIndex(null);setPaused(false);setHolding(false); }} onKeyDown={event => { if (event.code === "Space" && !(event.target as Element).closest("button")) { event.preventDefault();setPaused(value => !value); }if (event.key === "ArrowRight") { event.preventDefault();step(1); }if (event.key === "ArrowLeft") { event.preventDefault();step(-1); } }}>
-      {selected && <><header className="story-dialog-header"><div className="story-progress" aria-label={`${index! + 1} из ${items.length}`}>
+  return <section className="home-stories" aria-label={tr("Новости Casper")}><header><h2>{tr("Новости Casper")}</h2><span>{items.length ? tr("{0} историй", items.length) : ""}</span></header>
+    {error && <button type="button" className="stories-retry" disabled={busy} onClick={() => void load()}>{tr("Не удалось загрузить новости · повторить")}</button>}
+    <div className="stories-strip">{items.map((item, position) => <button type="button" key={item.id} onClick={() => open(position)} className="story-cover" style={{ backgroundColor: item.content.template.base, borderColor: item.content.template.accent, opacity: seen.includes(item.id) ? .55 : 1 }}><img src={item.content.template.formats.story.background} alt="" width={1080} height={1920} loading="lazy" /><span className="story-cover-game" style={{ color: item.content.template.accent }}>{tr(item.content.template.lotteryLabel)}</span><strong>{item.content.fields.title}</strong><small>{tr("Читать ↗")}</small></button>)}{more && <button type="button" className="story-more" disabled={busy} onClick={() => void load(items.at(-1)?.id)}>{busy ? tr("Загружаем…") : tr("Ещё истории →")}</button>}</div>
+    <dialog ref={dialog} className="story-dialog" style={{ "--story-telegram-top": window.Telegram?.WebApp?.isFullscreen ? "56px" : "0px" } as CSSProperties} aria-label={tr(selected?.content.fields.title ?? tr("История"))} onClose={() => { setIndex(null);setPaused(false);setHolding(false); }} onKeyDown={event => { if (event.code === "Space" && !(event.target as Element).closest("button")) { event.preventDefault();setPaused(value => !value); }if (event.key === "ArrowRight") { event.preventDefault();step(1); }if (event.key === "ArrowLeft") { event.preventDefault();step(-1); } }}>
+      {selected && <><header className="story-dialog-header"><div className="story-progress" aria-label={tr("{0} из {1}", index! + 1, items.length)}>
         {items.map((item, position) => <span key={item.id} aria-current={position === index ? "step" : undefined}><i style={{ transform: `scaleX(${position < index! ? 1 : position === index ? progress : 0})` }} /></span>)}
-      </div><div className="story-dialog-controls"><span>{selected.content.template.lotteryLabel}<small>{index! + 1} / {items.length}</small></span><div className="story-player-actions"><button autoFocus type="button" aria-label="Закрыть историю" onClick={close}>×</button></div></div></header>
+      </div><div className="story-dialog-controls"><span>{tr(selected.content.template.lotteryLabel)}<small>{index! + 1} / {items.length}</small></span><div className="story-player-actions"><button autoFocus type="button" aria-label={tr("Закрыть историю")} onClick={close}>×</button></div></div></header>
       <div className="story-stage" onPointerDown={event => { if (event.button !== 0 || gesture.current || (event.target as Element).closest(".publication-story-cta")) return;(event.target as Element).setPointerCapture?.(event.pointerId);setHolding(true);ignoreTap.current = false;gesture.current = { x: event.clientX, y: event.clientY, at: Date.now() }; }} onPointerUp={event => {
         setHolding(false);const start = gesture.current;gesture.current = null;if (!start) return;
         const dx = event.clientX - start.x, dy = event.clientY - start.y;
         ignoreTap.current = Date.now() - start.at > 300 || Math.abs(dx) > 20 || Math.abs(dy) > 20;
         if (dy > 70 && Math.abs(dy) > Math.abs(dx)) close();else if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) step(dx < 0 ? 1 : -1);
       }} onPointerCancel={() => { setHolding(false);gesture.current = null;ignoreTap.current = true; }} onLostPointerCapture={() => { setHolding(false);gesture.current = null; }}>
-        <PublicationArtwork template={selected.content.template} fields={selected.content.fields} ctaLabel={selected.content.cta_label} onOpen={() => { close();onOpen(selected.lottery_code); }} />
-        <button className="story-tap story-tap-previous" type="button" aria-label="Предыдущая история" onClick={() => tap(-1)} />
-        <button className="story-tap story-tap-next" type="button" aria-label="Следующая история" onClick={() => tap(1)} />
+        <PublicationArtwork template={selected.content.template} fields={selected.content.fields} ctaLabel={tr(selected.content.cta_label)} onOpen={() => { close();onOpen(selected.lottery_code); }} />
+        <button className="story-tap story-tap-previous" type="button" aria-label={tr("Предыдущая история")} onClick={() => tap(-1)} />
+        <button className="story-tap story-tap-next" type="button" aria-label={tr("Следующая история")} onClick={() => tap(1)} />
       </div></>}
 
     </dialog>

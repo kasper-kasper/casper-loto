@@ -1,0 +1,120 @@
+<div id="casper-icon-directions" aria-label="Значки обычных достижений">
+  <div class="viz-carousel viz-dotted-background" aria-label="Варианты значков Casper Loto" data-previous-label="Предыдущий стиль" data-next-label="Следующий стиль">
+    <section data-variant="Контур с характером" aria-label="Контур с характером">
+      <div class="cl-proposal cl-outline"><header><span>CASPER LOTO / ОБЫЧНЫЕ</span><h2>Контур с характером</h2><small>22 значка · лёгкая линия · игровые детали</small></header><div class="cl-gallery"></div><div class="cl-example" aria-label="Пример в карточке достижения"></div></div>
+    </section>
+    <section data-variant="Билетные знаки" aria-label="Билетные знаки" hidden>
+      <div class="cl-proposal cl-ticket"><header><span>CASPER LOTO / ОБЫЧНЫЕ</span><h2>Билетные знаки</h2><small>22 значка · форма билета · свой символ внутри</small></header><div class="cl-gallery"></div><div class="cl-example" aria-label="Пример в карточке достижения"></div></div>
+    </section>
+    <section data-variant="Плоские печати" aria-label="Плоские печати" hidden>
+      <div class="cl-proposal cl-stamp"><header><span>CASPER LOTO / ОБЫЧНЫЕ</span><h2>Плоские печати</h2><small>22 значка · плотный силуэт · два тона</small></header><div class="cl-gallery"></div><div class="cl-example" aria-label="Пример в карточке достижения"></div></div>
+    </section>
+  </div>
+  <style>
+    #casper-icon-directions { width:100%; }
+    #casper-icon-directions .cl-proposal { --cl-bg:#101629; --cl-panel:#192138; --cl-tile:#20263d; --cl-ink:#f1eef7; --cl-muted:#adb4c9; --cl-accent:#c8aff5; --cl-soft:#c8aff516; --cl-size:42px; font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--cl-bg); color:var(--cl-ink); border-radius:24px; padding:26px 24px 20px; }
+    #casper-icon-directions header { margin-bottom:24px; padding-right:75px; }
+    #casper-icon-directions header>span { color:var(--cl-muted); font-size:10px; letter-spacing:.14em; }
+    #casper-icon-directions h2 { margin:8px 0; font-size:26px; letter-spacing:-.035em; font-weight:600; }
+    #casper-icon-directions header>small { font-size:12px; color:var(--cl-muted); }
+    #casper-icon-directions .cl-gallery { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px 6px; }
+    #casper-icon-directions .cl-tile { appearance:none; min-width:0; display:flex; flex-direction:column; align-items:center; gap:10px; padding:12px 3px 9px; border:1px solid transparent; border-radius:16px; background:transparent; color:var(--cl-ink); font:inherit; text-align:center; }
+    #casper-icon-directions .cl-tile[aria-pressed=true] { border-color:#c8aff535; background:#c8aff509; }
+    #casper-icon-directions .cl-name { font-size:11px; line-height:1.4; min-height:32px; overflow-wrap:anywhere; max-width:100%; }
+    #casper-icon-directions .cl-symbol { position:relative; display:grid; place-items:center; width:66px; height:66px; flex-shrink:0; background:var(--cl-soft); color:var(--cl-accent); border-radius:20px; }
+    #casper-icon-directions .cl-symbol>svg[data-lucide] { width:var(--cl-size)!important; height:var(--cl-size)!important; stroke-width:1.6px; }
+    #casper-icon-directions .cl-symbol .cl-mark { position:absolute; right:0; bottom:-2px; display:grid; place-items:center; height:22px; min-width:22px; padding:0 3px; box-sizing:border-box; border:3px solid var(--cl-bg); border-radius:8px; background:var(--cl-accent); color:var(--cl-bg); font-size:11px; line-height:1; font-weight:700; font-variant-numeric:tabular-nums; }
+    #casper-icon-directions .cl-mark svg[data-lucide] { width:12px!important; height:12px!important; stroke-width:2.4px; }
+    #casper-icon-directions .cl-outline .cl-symbol[data-special=true] { border-radius:24px 15px 24px 15px; }
+    #casper-icon-directions .cl-ticket .cl-symbol { width:72px; height:58px; margin:4px 0; border-radius:9px; background:var(--cl-soft); }
+    #casper-icon-directions .cl-ticket .cl-symbol::before, #casper-icon-directions .cl-ticket .cl-symbol::after { content:""; position:absolute; top:calc(50% - 6px); width:12px; height:12px; border-radius:50%; background:var(--cl-bg); }
+    #casper-icon-directions .cl-ticket .cl-symbol::before { left:-6px; }
+    #casper-icon-directions .cl-ticket .cl-symbol::after { right:-6px; }
+    #casper-icon-directions .cl-ticket .cl-symbol>svg[data-lucide] { width:34px!important; height:34px!important; margin-left:-7px; stroke-width:1.8px; }
+    #casper-icon-directions .cl-ticket .cl-symbol { border-right:13px solid #c8aff51c; box-sizing:border-box; }
+    #casper-icon-directions .cl-ticket .cl-symbol .cl-mark { right:-17px; bottom:13px; background:var(--cl-bg); color:var(--cl-accent); border:0; padding:0; }
+    #casper-icon-directions .cl-stamp .cl-symbol { background:var(--cl-accent); color:var(--cl-bg); border-radius:50%; }
+    #casper-icon-directions .cl-stamp .cl-symbol[data-special=true] { border-radius:19px; transform:rotate(-7deg); }
+    #casper-icon-directions .cl-stamp .cl-symbol[data-special=true]>.lucide { transform:rotate(7deg); }
+    #casper-icon-directions .cl-stamp .cl-symbol>svg[data-lucide] { width:37px!important; height:37px!important; stroke-width:2.2px; }
+    #casper-icon-directions .cl-stamp .cl-mark { background:var(--cl-bg); color:var(--cl-accent); border-color:var(--cl-bg); bottom:-3px; right:-3px; }
+    #casper-icon-directions .cl-example { display:flex; align-items:center; gap:14px; margin-top:20px; padding:18px; border-radius:17px; background:var(--cl-panel); min-height:62px; }
+    #casper-icon-directions .cl-example .cl-symbol { width:48px; height:48px; border-radius:14px; }
+    #casper-icon-directions .cl-example .cl-symbol>svg[data-lucide] { width:28px!important; height:28px!important; }
+    #casper-icon-directions .cl-example .cl-mark { height:18px; min-width:18px; font-size:10px; border-width:2px; }
+    #casper-icon-directions .cl-example strong { display:block; font-weight:600; font-size:15px; line-height:1.35; }
+    #casper-icon-directions .cl-example p { margin:6px 0 0; color:var(--cl-muted); font-size:12px; line-height:1.5; }
+    #casper-icon-directions .cl-example .cl-ticket .cl-symbol { width:54px; }
+    #casper-icon-directions .cl-unearned .cl-symbol { opacity:.42; filter:grayscale(1); }
+    @media(max-width:550px) { #casper-icon-directions .cl-gallery { grid-template-columns:repeat(4,minmax(0,1fr)); } #casper-icon-directions .cl-proposal { padding:22px 14px 16px; } #casper-icon-directions h2 { font-size:23px; } #casper-icon-directions .cl-symbol { width:58px; height:58px; } #casper-icon-directions .cl-ticket .cl-symbol { width:62px; height:50px; } #casper-icon-directions .cl-ticket .cl-symbol::before,#casper-icon-directions .cl-ticket .cl-symbol::after { top:19px; } }
+    @media(max-width:370px) { #casper-icon-directions .cl-gallery { grid-template-columns:repeat(3,minmax(0,1fr)); } #casper-icon-directions header { padding-right:35px; } #casper-icon-directions .cl-name { font-size:11px; } }
+  </style>
+  <script>
+    (() => {
+      const root = document.getElementById('casper-icon-directions');
+      const items = [
+        ['first_ticket','Ты с нами!','ticket-plus',null,'Купить первый платный билет'],
+        ['first_win','Опа, прилетело!','hand-coins','sparkles','Получить первый выигрыш по платному билету'],
+        ['break_even','Ну хоть не в минус','scale',null,'Получить выплату ровно в стоимость билета'],
+        ['first_profit','Почти богач','piggy-bank','plus','Получить выплату больше стоимости билета'],
+        ['ten_tickets','Затянуло','magnet','10','Купить 10 платных билетов'],
+        ['twenty_five_tickets','Тебе точно норм?','orbit','25','Купить 25 платных билетов'],
+        ['five_wins','Пошла жара!','flame','5','Получить 5 выигрышных платных билетов'],
+        ['ten_wins','Это уже система','rocket','10','Получить 10 выигрышных платных билетов'],
+        ['three_games','Чё тут у вас?','map-pinned','3','Поучаствовать в 3 разных лотереях'],
+        ['seven_games','Везде отметился','footprints','7','Поучаствовать в 7 разных лотереях'],
+        ['first_fast','Вот это скорость!','rabbit',null,'Впервые сыграть в FAST'],
+        ['first_instant','Здесь и сейчас','mouse-pointer-click',null,'Впервые сыграть в мгновенную игру'],
+        ['first_custom','Особый случай','wand-sparkles',null,'Впервые сыграть в авторскую лотерею'],
+        ['first_classic','Как раньше','clover',null,'Впервые сыграть в «6 из 36»'],
+        ['first_ball','Ну, покатились!','circle-dot','move-right','Впервые сыграть в Casper Ball'],
+        ['first_grand','Играем по-крупному','castle',null,'Впервые сыграть в Casper Grand'],
+        ['first_dual','И вашим, и нашим','eclipse',null,'Впервые сыграть в Casper Dual'],
+        ['first_bingo','БИНГООО','grid-2x2','check','Впервые сыграть в Casper Bingo'],
+        ['three_days','Ну наконец-то','calendar-heart','3','Открыть приложение в 3 разных дня'],
+        ['own_combination','Я сам решу!','fingerprint',null,'Вручную выбрать комбинацию'],
+        ['bulk_purchase','Заверните всё!','package-open','5','Купить 5 билетов одной операцией'],
+        ['first_achievement_reward','А так можно было?!','gift','sparkles','Получить первую награду за достижение']
+      ];
+      const state = { selected:'first_ticket', muted:false, size:42 };
+      function symbol(item) {
+        const mark = item[3] ? `<span class="cl-mark" aria-hidden="true">${/^\d+$/.test(item[3]) ? item[3] : `<i data-lucide="${item[3]}"></i>`}</span>` : '';
+        return `<span class="cl-symbol" data-special="${['first_ticket','first_custom','first_grand','first_achievement_reward'].includes(item[0])}"><i data-lucide="${item[2]}" aria-hidden="true"></i>${mark}</span>`;
+      }
+      root.querySelectorAll('.cl-proposal').forEach(stage => {
+        const gallery=stage.querySelector('.cl-gallery');
+        gallery.innerHTML=items.map(item=>`<button type="button" class="cl-tile cursor-interaction" data-code="${item[0]}" aria-pressed="false" aria-label="${item[1]}: ${item[4]}">${symbol(item)}<span class="cl-name">${item[1]}</span></button>`).join('');
+      });
+      function render() {
+        const item=items.find(item=>item[0]===state.selected) ?? items[0];
+        root.querySelectorAll('.cl-proposal').forEach(stage=> {
+          stage.style.setProperty('--cl-size',`${state.size}px`);
+          stage.classList.toggle('cl-unearned',state.muted);
+          stage.querySelectorAll('.cl-tile').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.code===item[0])));
+          stage.querySelector('.cl-example').innerHTML=`${symbol(item)}<span><strong>${item[1]}</strong><p>${item[4]}</p></span>`;
+        });
+        if(globalThis.lucide) lucide.createIcons();
+      }
+      function restore(saved) {
+        const code=saved?.modelContent?.selectedAchievement;
+        if(items.some(item=>item[0]===code))state.selected=code;
+        render();
+      }
+      restore(window.openai?.widgetState);
+      root.addEventListener('click',event=> {
+        const button=event.target.closest('button[data-code]');
+        if(!button)return;
+        state.selected=button.dataset.code;
+        render();
+        window.openai?.setWidgetState?.({modelContent:{selectedAchievement:state.selected},privateContent:null})?.catch(()=>{});
+      });
+      window.addEventListener('openai:set_globals',event=> {
+        if(event.detail?.globals?.widgetState)restore(event.detail.globals.widgetState);
+      });
+      if(globalThis.Tweak) {
+        const tweak=new Tweak({container:root,onChange:render});
+        tweak.addToggle(state,'muted',{label:'Неполученные достижения'});
+      }
+    })();
+  </script>
+</div>

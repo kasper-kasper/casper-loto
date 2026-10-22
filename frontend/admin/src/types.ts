@@ -120,6 +120,9 @@ export interface Draw {
   reserve_used: number;
   kasper_fund_used: number;
   correlation_id: string;
+  is_distribution?: boolean;
+  distribution_category?: string | null;
+  distributed_amount?: number;
   jackpot_amount?: number | null;
   ruleset_code?: string | null;
 }

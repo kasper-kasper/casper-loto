@@ -1,4 +1,4 @@
-const supportedLotteries = new Set(["pll", "pss", "khan", "weekly", "september", "grob", "bingo"]);
+const supportedLotteries = new Set(["pll", "pss", "khan", "mini", "weekly", "september", "grob", "bingo"]);
 
 export type BroadcastPreviewScenario = "win" | "loss";
 

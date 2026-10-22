@@ -1,0 +1,17 @@
+{
+  "mode": "Built-in image_gen tool",
+  "assets": [
+    {
+      "path": "frontend/miniapp/src/assets/newyear/symbols.webp",
+      "prompt": "Use case: stylized-concept. Project asset: one transparent sprite atlas for a premium Russian New Year lottery, photorealistic dimensional festive objects, tactile detailed miniatures, warm amber light, red cream gold palette with deep blue bell. EXACTLY 12 isolated objects evenly arranged in a rigid 3-column by 4-row grid, equal square cells, generous clear transparent gutters, no object crosses its cell. Row 1 left bowl of mandarins with leaves, center green champagne bottle with flute, right crystal bowl of Olivier salad. Row 2 left ornate golden mantel clock, center standing cream tear-off calendar showing only '31', right snow globe with snowy cottage. Row 3 left two crossed lit sparklers, center blue gold party popper with confetti, right folded Christmas postcard with snowy cottage illustration. Row 4 left miniature decorated Christmas tree, center friendly snowman with black hat red scarf, right navy blue golden Christmas bell with ribbon. Same visual scale within each cell. View straight on slightly from above. Genuinely transparent background. No labels, no captions, no UI, no frame, no extra items, no emoji. Output portrait 3:4 atlas.",
+      "source": "exec-96731b7f-922c-426c-9792-d293f323c3fd.png",
+      "notes": "Transparent 3x4 atlas. IDs read left to right, top to bottom. Same atlas in grid, selection, receipt, live, archive, catalog, home. WebP encoding only; original generated PNG unchanged."
+    },
+    {
+      "path": "frontend/miniapp/src/assets/newyear/room.webp",
+      "prompt": "Use case: stylized-concept. Asset: background plate for an interactive mobile Russian New Year lottery, no interface and no text. Portrait 2:3 composition. Cozy luxurious Christmas evening at home. Decorated fir tree occupies upper left, burgundy velvet curtains, blue snowy window upper right, old golden mantel clock and ivory candles to right. Upper third rich detailed warm amber gold multicolored fairy lights with visible individual bulbs. Lower TWO THIRDS a beautiful dark warm walnut wooden tabletop seen slightly from above, empty usable surface for game objects and cream paper controls. Fir sprigs and red ornaments only at outside corners. At bottom a garland on table edge, visible red green and amber small bulbs at specific points. Deep dimensional lighting, photographic realistic rich material texture, refined warm burgundy amber cream gold palette. No words, no numbers, no tickets, no symbols or game objects placed on center table. No UI mockup, no buttons, no borders. Keep central tabletop empty, quieter and dark enough for interactive objects overlay.",
+      "source": "exec-4d476b1b-5ba6-4018-a126-431fb90d160d.png",
+      "notes": "Static room plate; separately rendered CSS bulbs and candle flame use opacity/transforms."
+    }
+  ]
+}

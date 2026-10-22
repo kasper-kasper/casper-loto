@@ -226,6 +226,10 @@ class DrawResponse(ApiModel):
     jackpot_amount: int | None = None
     ruleset_code: str | None = None
 
+    is_distribution: bool = False
+    distribution_category: str | None = None
+    distributed_amount: int = 0
+
 
 class JackpotEventResponse(ApiModel):
     id: UUID
@@ -938,7 +942,10 @@ async def draws(
     limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
     scope: LotteryScope = "all",
-    period: Literal["today", "future", "completed", "failed", "archived"] | None = None,
+    period: Literal[
+        "today", "future", "completed", "failed", "archived", "distribution"
+    ]
+    | None = None,
 ) -> list[DrawResponse]:
     items = await AdminQueryService(session, scope=scope).draws(
         lottery_id=lottery_id,

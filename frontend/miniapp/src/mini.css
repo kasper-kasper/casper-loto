@@ -1,0 +1,114 @@
+.mini-rules{margin:8px 0 16px;border:1px solid #9ba87844;border-radius:12px;background:#062c22;color:#e9e6ce}
+.mini-rules summary{display:flex;justify-content:space-between;align-items:center;min-height:44px;padding:10px 13px;cursor:pointer;font-size:11px}
+.mini-rules p{margin:10px 13px;color:#bccbbb;font-size:11px;line-height:1.6}
+.mini-rules dl{margin:10px 13px;font-size:11px}
+.mini-rules dl>div{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid #aac29924}
+.mini-rules dd{margin:0;color:#ecdc9b}
+.lottery-mini.live-stage{background:radial-gradient(ellipse at 70% 20%,#326a3e44,transparent 70%),#04281e !important;border-color:#b5ae6f70}
+.lottery-mini .live-label,.lottery-mini .live-identity>span{color:#dcd5a2}
+.lottery-mini .live-facts>div,.lottery-mini .result-preview,.lottery-mini .live-next{background:#0a352b;border-color:#9ca87d44}
+.lottery-mini .live-identity h1,.lottery-mini .live-countdown>strong{color:#f7f0d7}
+.lottery-mini .khan-draw-console{border-color:#a1a57777;background:linear-gradient(130deg,#164b36,#06291f)}
+.lottery-mini .khan-current-ball.has-number,.lottery-mini .khan-ball-rack i.filled,.lottery-mini .khan-best-ticket .number.won,.lottery-mini .live-final-numbers i{color:#fff4ce;border-color:#c3bd83;background:radial-gradient(circle at 30% 20%,#4e9164,#075031 70%);box-shadow:inset 0 0 0 2px #b4bd7d44,0 4px 12px #0004}
+.lottery-mini .khan-progress i{background:#dfd08e}
+.lottery-mini .khan-best-ticket{background:#0b382b;border-color:#9eb57b66}
+/* Mini: engraved paper, emerald enamel and a four-leaf jewel. */
+.play-room.game-mini,.lottery-mini,.room-mini{--game-accent:#ead498;--game-rgb:77,155,115;--game-base:#062b22;--play-accent:#ead498;--play-ink:#123f30;--lottery-accent:#ead498;--lottery-glow:#3b9b6c}
+.app-shell.draw-play-page:has(.game-mini){isolation:isolate;min-height:100dvh;background:radial-gradient(ellipse at 92% 16%,#6c9b6b35,transparent 35%),radial-gradient(ellipse at 10% 60%,#17624e60,transparent 42%),linear-gradient(145deg,#021711,#0b3327 44%,#021b17 72%,#061e1b)}
+.app-shell:has(.game-mini)::before{content:"";position:fixed;z-index:-1;inset:0;pointer-events:none;background:radial-gradient(ellipse at 10% 12%,#c8d8a816 0 2%,transparent 13%),radial-gradient(ellipse at 90% 67%,#68ac831a 0 3%,transparent 16%),repeating-radial-gradient(ellipse at 130% 20%,transparent 0 58px,#c6cd9310 60px,transparent 62px 87px);filter:blur(.3px)}
+.game-mini.play-room{position:relative;isolation:isolate;padding:7px 6px 0;color:#f7f0dc;background:transparent}
+.mini-topbar{display:flex;gap:9px;align-items:center;min-height:44px}
+.mini-topbar>button{display:grid;place-items:center;flex:none;width:36px;height:36px;border:1px solid #b6c09866;border-radius:50%;background:linear-gradient(135deg,#33765b66,#001c15);box-shadow:inset 0 1px #edf4d51a,0 3px 9px #0004;color:#e5e5c8;font-size:22px}
+.mini-topbar>div{flex:1;min-width:0}
+.mini-topbar h1{margin:0;color:#f8edcd;font:500 clamp(23px,7vw,31px)/1 Georgia,serif;letter-spacing:-.045em;text-shadow:0 2px 4px #0008}
+.mini-topbar>div>span{display:flex;align-items:center;gap:7px;margin-top:5px;color:#b8c5a3;font-size:8px;letter-spacing:.12em}
+.mini-topbar i{width:3px;height:3px;transform:rotate(45deg);background:#c8b978}
+.mini-balance{font-size:10px;color:#e0e3cf;white-space:nowrap}
+.mini-jackpot-band{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 70px auto;align-items:center;gap:2px;min-height:76px;margin-top:13px;padding:9px 12px;border:1px solid #c2aa638c;border-radius:11px;background:radial-gradient(ellipse at 50% -30%,#c2c78b26,transparent 70%),linear-gradient(120deg,#134b3699,#041f18cc);box-shadow:inset 0 1px #f4e1a72a,inset 0 -10px 24px #00130d66,0 8px 20px #0003}
+.mini-jackpot-band::after{position:absolute;inset:3px;content:"";pointer-events:none;border:1px solid #ceca8422;border-radius:8px}
+.mini-jackpot-band>img{width:100px;height:100px;justify-self:center;margin-block:-25px;filter:drop-shadow(0 8px 7px #0008)}
+.mini-jackpot-band>div>span{display:block;margin-bottom:6px;color:#bec9b0;font-size:9px}
+.mini-jackpot-band strong{display:block;color:#f3d98d;font:500 clamp(16px,4.8vw,21px)/1.1 Georgia,serif;white-space:nowrap}
+.mini-jackpot-band .currency-mark{font-size:10px}
+.mini-clock{text-align:right;font-variant-numeric:tabular-nums}.mini-clock time{font-size:14px;color:#f5efd8}
+.mini-context{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:33px}
+.mini-context>time{font-size:8px;color:#c5cdb7}.mini-context>div{display:flex;gap:12px}
+.mini-context button{min-height:32px;padding:0;border:0;background:none;font-size:9px;color:#eee0bc}
+.mini-coupon{position:relative;isolation:isolate;margin:5px 0 0;padding:20px 17px 11px;border:1px solid #fff2bb;border-radius:4px 4px 9px 9px;color:#183f2c;background:repeating-linear-gradient(17deg,#8f965c09 0 1px,transparent 1px 3px),radial-gradient(ellipse at 0 0,#fffdf0,transparent 66%),linear-gradient(115deg,#f2ecd3,#dddcb7);box-shadow:0 3px 0 #827342,0 7px 0 -2px #031e14,0 16px 28px #0007}
+.mini-coupon::before,.mini-receipt::after{content:"";position:absolute;pointer-events:none;inset:6px;border:3px double #547b4e8c;border-radius:2px;z-index:-1;background:repeating-radial-gradient(ellipse at 100% 100%,transparent 0 9px,#6c874a08 10px,transparent 11px 15px)}
+.mini-coupon-engraving{position:absolute;inset:9px;z-index:-1;pointer-events:none;border:1px solid #7b925644}
+.mini-coupon-engraving>span{position:absolute;font:24px Georgia,serif;color:#426c42;line-height:1;background:#eeead0}
+.mini-coupon-engraving>span:nth-child(1){top:-8px;left:-8px}.mini-coupon-engraving>span:nth-child(2){top:-8px;right:-8px}.mini-coupon-engraving>span:nth-child(3){bottom:-8px;left:-8px}.mini-coupon-engraving>span:nth-child(4){bottom:-8px;right:-8px}
+.mini-coupon-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:9px;border-bottom:1px solid #526e4399}
+.mini-coupon-heading>div>span{display:block;color:#66805b;font-size:7px;letter-spacing:.12em}
+.mini-coupon-heading h2{margin:5px 0 0;font:600 30px/.95 Georgia,serif;letter-spacing:-.055em;color:#123d29}
+.mini-coupon-heading>button{display:flex;align-items:center;gap:5px;min-height:36px;padding:5px 9px;border:1px solid #4c694c99;border-radius:20px;color:#2e4b32;background:linear-gradient(130deg,#fffbea99,#d0d0a94d);box-shadow:inset 0 1px #fff8df;font-size:9px}
+.mini-coupon-heading .icon{width:13px;height:13px}
+.mini-field-label{display:flex;justify-content:space-between;gap:10px;padding:8px 0 5px;font-size:9px;color:#536445}
+.mini-field-label [role=status]{font-weight:650;color:#183d2b;font-variant-numeric:tabular-nums}
+.mini-number-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:3px 6px;padding-bottom:9px}
+.mini-number-grid>button{position:relative;display:grid;place-items:center;min-width:0;min-height:clamp(33px,5.2dvh,43px);padding:0;border:0;border-radius:50%;background:none;color:#234b31;font:400 20px/1 Georgia,serif;isolation:isolate}
+.mini-number-grid>button::before{content:"";position:absolute;z-index:-1;width:32px;height:32px;border:1px solid #7e90635e;border-radius:50%;background:linear-gradient(130deg,#fffdef55,#b8c08a12);box-shadow:inset 0 0 0 2px #f2edcf,0 1px 1px #fff9e8}
+.mini-number-grid>button[aria-pressed=true]{color:#fcf0c8}
+.mini-number-grid>button[aria-pressed=true]::before{width:35px;height:35px;border:3px double #e0d5a4;background:radial-gradient(circle at 28% 12%,#4d8a58,#0b5031 52%,#032c1d);box-shadow:0 2px 3px #173d3b55,inset 1px 1px #a5c48d77,inset -3px -4px 7px #001b16}
+.mini-number-grid>button[aria-pressed=true]::after{content:"";position:absolute;top:5px;left:calc(50% - 10px);width:12px;height:4px;transform:rotate(-25deg);border-radius:50%;background:#e0ebbe33;pointer-events:none}
+.mini-coupon-stub{position:relative;padding-top:10px;border-top:1px dashed #4d714f99}
+.mini-coupon-stub::before,.mini-coupon-stub::after{position:absolute;top:-7px;content:"";width:12px;height:12px;border-radius:50%;background:#05251b;box-shadow:inset 0 -1px #a1b084}
+.mini-coupon-stub::before{left:-23px}.mini-coupon-stub::after{right:-23px}
+.mini-stub-label{display:flex;justify-content:space-between;color:#45623e;font-size:7px;letter-spacing:.09em}.mini-stub-label>span:last-child{letter-spacing:0}
+.mini-chosen{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin:8px 0}
+.mini-chosen>button,.mini-chosen>span{display:grid;place-items:center;justify-self:center;width:35px;height:35px;border:3px double #bac18c;border-radius:50%;color:#fff3d0;background:radial-gradient(circle at 25% 12%,#4b8c59,#0c5132 58%,#00291b);box-shadow:0 3px 4px #1b3b3133,inset 0 1px #b2d39455;font:17px Georgia,serif}
+.mini-chosen>span{color:#9ba77c;border:1px solid #7a8e5d44;background:#fff9e42b;box-shadow:inset 0 2px 5px #6f77451a}
+.mini-coupon-stub footer{padding-inline:9px;display:flex;justify-content:space-between;gap:8px;color:#6d7756;font-size:7px}
+.play-room.game-mini .play-quick{margin:13px 0 2px;background:linear-gradient(130deg,#38654a66,#02251e99);border:1px solid #b7bf8a66;border-radius:11px;box-shadow:inset 0 1px #f2e6b714,0 4px 10px #0002}
+.play-room.game-mini .play-quick button{border:1px solid #bdc59466;border-radius:50%;background:radial-gradient(circle at 30% 0,#74a97a24,#03271e);color:#f4e9c8;box-shadow:inset 0 1px #e1edce1a}
+.play-room.game-mini .play-checkout{border:1px solid #a3b27e66;border-radius:13px 13px 0 0;background:linear-gradient(120deg,#133e2ef5,#04261df5);box-shadow:0 -6px 18px #00140d44,inset 0 1px #d7deac22}
+.play-room.game-mini .play-checkout>button{background:#194d39;color:#a9bcaa;border-radius:12px}
+.play-room.game-mini .play-checkout>button:not(:disabled){color:#fff7de;background:linear-gradient(140deg,#388b59,#075334);border:1px solid #c6c58c;box-shadow:inset 0 1px #e3ecc166,0 3px 0 #021c12}
+.game-mini .ticket-options>summary{min-height:40px;padding-block:10px;color:#bdc9ad;font-size:10px}
+.mini-coupon button:focus-visible,.mini-header button:focus-visible{outline:2px solid #a17c2f;outline-offset:3px}
+.collection-card.collection-mini{--collection-accent:#ebd18d;--collection-glow:#6a9a58;border-color:#b7ab6870;background:radial-gradient(ellipse at 80% 0,#43764c66,transparent 65%),linear-gradient(145deg,#143e2b,#031e17 75%)}
+.collection-mini .collection-art{overflow:visible;background:radial-gradient(ellipse at 50% 60%,#8eaa4c40,transparent 66%),repeating-radial-gradient(ellipse at 50% 50%,transparent 0 28px,#d3c88a12 29px,transparent 30px 38px),#082c21}
+.collection-mini .collection-art::after{background:linear-gradient(0deg,#0b3022,transparent 65%)}
+.collection-mini .collection-scene{object-fit:contain;object-position:center;transform:translateY(3px) scale(1.22);filter:drop-shadow(0 9px 9px #0006)}
+.home-feature.home-feature-mini{border-color:#c2b87d77;background:radial-gradient(ellipse at 80% 20%,#537c494d,transparent 70%),linear-gradient(130deg,#153b2a,#031c17)}
+.home-feature-mini .home-feature-art{top:22px;right:0;height:180px;filter:drop-shadow(0 12px 12px #0007)}
+.home-feature-mini .home-feature-copy>strong{color:#efd79a}
+.visual-mini{display:grid;place-items:center;position:relative;background:radial-gradient(ellipse at 50% 40%,#78995b36,transparent 60%)}
+.visual-mini>img{height:95%;width:95%;object-fit:contain;filter:drop-shadow(0 12px 12px #00130dcc)}
+.lottery-mini .live-lottery-scene{opacity:.32;filter:none}
+/* One complete sheet, including the result: no scroll inside or behind it. */
+html:has(.mini-ticket-backdrop),body:has(.mini-ticket-backdrop){overflow:hidden;scrollbar-gutter:auto}
+.ticket-detail-backdrop.mini-ticket-backdrop{display:grid;place-items:center;padding:14px;background:radial-gradient(ellipse at 15% 20%,#386c4e44,transparent 55%),radial-gradient(ellipse at 90% 75%,#195c4855,transparent 50%),#011b16ee;overflow:hidden;box-sizing:border-box}
+.mini-receipt{position:relative;isolation:isolate;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;box-sizing:border-box;width:min(360px,100%);height:min(650px,calc(100dvh - 28px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)));min-height:0;margin:0;padding:13px 17px 12px;border:4px double #91a274;border-radius:13px 13px 5px 5px;background:repeating-linear-gradient(15deg,#7c8e5509 0 1px,transparent 1px 3px),radial-gradient(ellipse at 0 0,#fffdf0,transparent 70%),#eee9cf;color:#173f2b;box-shadow:0 12px 55px #0009;font-family:Georgia,serif}
+.mini-receipt.has-result{grid-template-rows:auto auto minmax(0,1fr) auto auto}
+.mini-receipt::before{content:"";position:absolute;z-index:-1;inset:auto 5px 3px auto;width:100px;height:100px;opacity:.12;background:url('./assets/lotteries/mini-clover.svg') center/contain no-repeat;pointer-events:none}
+.mini-receipt::after{inset:4px;border-width:1px;background:repeating-radial-gradient(ellipse at 10% 0,transparent 0 9px,#49723d09 10px,transparent 11px 15px)}
+.mini-receipt-close{position:absolute;z-index:1;right:6px;top:6px;display:grid;place-items:center;width:40px;height:40px;padding:10px;border:1px solid #52774b55;border-radius:50%;background:#f2eed9bb;color:#1e4935}
+.mini-receipt header{text-align:center;min-width:0}
+.mini-receipt-crest{display:block;width:53px;height:53px;margin:-5px auto 0;filter:drop-shadow(0 2px 2px #51614244)}
+.mini-receipt header>span{display:block;font:600 9px/1.3 system-ui,sans-serif;letter-spacing:.25em}
+.mini-receipt header>small{display:block;margin:4px 0;font-size:9px;letter-spacing:.13em}
+.mini-receipt h2{margin:5px 0;font-size:clamp(23px,6.5vw,29px);line-height:1.1;overflow-wrap:anywhere}
+.mini-receipt header p{margin:5px 0 7px;font:10px/1.4 system-ui,sans-serif}
+.mini-receipt-status{display:inline-block;padding:4px 12px;border-radius:20px;background:#d9e1b5;font:500 10px/1.4 system-ui,sans-serif}
+.mini-receipt-combination{margin-top:10px;padding:9px 0;border-top:1px dashed #6f8d5b;border-bottom:1px solid #7c935b66;text-align:center}
+.mini-receipt-combination>span{font:8px system-ui,sans-serif;letter-spacing:.14em}
+.mini-receipt-combination>div{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;margin-top:7px}
+.mini-receipt-combination i,.mini-receipt-grid i{display:grid;place-items:center;justify-self:center;align-self:center;border-radius:50%;font-style:normal;font-variant-numeric:tabular-nums}
+.mini-receipt-combination i{width:32px;height:32px;font-size:16px;color:#fff4d4;border:3px double #d9d6a2;background:radial-gradient(ellipse at 25% 0,#3a8057,#08452f 75%);box-shadow:0 2px 4px #193c2833}
+.mini-receipt-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:repeat(5,minmax(0,1fr));gap:4px 6px;min-height:0;padding:9px 0;border-bottom:1px dashed #6f8d5b}
+.mini-receipt-grid i{height:min(100%,34px);width:auto;aspect-ratio:1;box-sizing:border-box;min-height:0;border:1px solid #9caa7a;color:#304f35;font-size:14px}
+.mini-receipt-grid i.selected{color:#fff6dc;background:radial-gradient(ellipse at 25% 0,#3d8055,#06412a);border:3px double #d9d6a2}
+.mini-receipt-grid i.matched{outline:2px solid #a3852a;outline-offset:1px}
+.mini-receipt-result{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #6f8d5b66;font:10px/1.5 system-ui,sans-serif}
+.mini-receipt-result>div:last-child{text-align:right}.mini-receipt-result>div>span,.mini-receipt-result strong,.mini-receipt-result b{display:block}
+.mini-receipt-result strong{font-size:11px}.mini-receipt-result b{font-size:12px;color:#164f30}
+.mini-receipt footer{position:relative;display:grid;grid-template-columns:1fr auto;align-items:center;gap:3px 9px;padding:9px 0 0}
+.mini-receipt footer>span{font:10px system-ui,sans-serif}.mini-receipt footer>strong{font-size:23px;line-height:1.15}
+.mini-receipt footer>small{grid-column:1/-1;font:7px system-ui,sans-serif;color:#64764f;letter-spacing:.12em}
+.mini-receipt :focus-visible{outline:2px solid #9e7d29;outline-offset:2px}
+@media(max-width:359px){.mini-topbar{gap:6px}.mini-topbar h1{font-size:25px}.mini-balance{font-size:8px}.mini-jackpot-band{grid-template-columns:minmax(0,1fr) 54px auto;padding-inline:9px}.mini-jackpot-band>img{width:82px;height:82px}.mini-clock time{font-size:12px}.mini-context>div{gap:8px}.mini-context>time{font-size:7px}.mini-coupon{padding-inline:15px}.mini-coupon-heading h2{font-size:27px}.mini-number-grid{column-gap:2px}.mini-chosen{gap:3px}.mini-chosen>button,.mini-chosen>span{width:31px;height:31px}.mini-receipt{padding-inline:13px}.mini-receipt-combination i{width:29px;height:29px}}
+@media(max-height:650px){.mini-jackpot-band{min-height:62px;margin-top:9px}.mini-jackpot-band>img{width:85px;height:85px}.mini-context{min-height:29px}.mini-coupon{padding-top:16px}.mini-coupon-heading{padding-bottom:6px}.mini-coupon-heading h2{font-size:26px}.mini-field-label{padding:6px 0 3px}.mini-number-grid{gap:2px 4px;padding-bottom:7px}.mini-number-grid>button{min-height:33px;font-size:18px}.mini-number-grid>button::before{width:28px;height:28px}.mini-number-grid>button[aria-pressed=true]::before{width:31px;height:31px}.mini-coupon-stub{padding-top:7px}.mini-chosen{margin-block:6px}.mini-chosen>button,.mini-chosen>span{width:29px;height:29px}.mini-receipt{padding-top:9px;padding-bottom:9px}.mini-receipt-crest{width:40px;height:40px}.mini-receipt header>small{margin:3px 0}.mini-receipt h2{font-size:24px}.mini-receipt header p{font-size:9px;margin:4px 0 5px}.mini-receipt-combination{margin-top:7px;padding-block:7px}.mini-receipt-combination>div{margin-top:5px}.mini-receipt-combination i{width:28px;height:28px;font-size:14px}.mini-receipt-grid{padding-block:7px;row-gap:3px}.mini-receipt-grid i{font-size:12px}.mini-receipt-result{padding-block:6px}.mini-receipt footer{padding-top:6px}.mini-receipt footer>strong{font-size:21px}}
+
+@media(max-height:480px) and (min-width:480px){.mini-receipt-close{right:auto;left:6px}.mini-receipt,.mini-receipt.has-result{width:min(680px,100%);grid-template-columns:1fr 1fr;grid-template-rows:auto minmax(0,1fr) auto;column-gap:16px}.mini-receipt header{grid-column:1;grid-row:1/3;align-self:center}.mini-receipt:not(.has-result) header{grid-row:1/4}.mini-receipt-combination{grid-column:2;grid-row:1;margin-top:0;padding-block:5px}.mini-receipt-grid{grid-column:2;grid-row:2;padding-block:5px;row-gap:2px}.mini-receipt-grid i{font-size:10px}.mini-receipt-result{grid-column:1;grid-row:3;align-self:end}.mini-receipt footer{grid-column:2;grid-row:3}.mini-receipt footer>strong{font-size:18px}}

@@ -4,6 +4,8 @@ const AMBIENT_MOTION_SELECTOR = [
   ".fast-card",
   ".fast-live-card",
   ".fast-divider",
+  ".ny-environment",
+  ".ny-coupon-lights",
 ].join(",");
 
 function setAnimationsPaused(element: Element, paused: boolean): void {
@@ -22,15 +24,22 @@ function setAnimationsPaused(element: Element, paused: boolean): void {
 export function installMotionBudget(): () => void {
   const root = document.documentElement;
   const observed = new Set<Element>();
+  const visible = new WeakMap<Element, boolean>();
   const intersection = typeof IntersectionObserver === "undefined"
     ? null
     : new IntersectionObserver((entries) => {
       for (const entry of entries) {
+        visible.set(entry.target, entry.isIntersecting);
         setAnimationsPaused(entry.target, !entry.isIntersecting || document.hidden);
       }
     }, { rootMargin: "120px 0px" });
 
   const observeNewScenes = () => {
+    for (const element of observed) {
+      if (element.isConnected) continue;
+      intersection?.unobserve(element);
+      observed.delete(element);
+    }
     for (const element of document.querySelectorAll(AMBIENT_MOTION_SELECTOR)) {
       if (observed.has(element)) continue;
       observed.add(element);
@@ -42,7 +51,7 @@ export function installMotionBudget(): () => void {
     root.classList.toggle("app-backgrounded", document.hidden);
     for (const element of observed) {
       if (document.hidden) setAnimationsPaused(element, true);
-      else if (!intersection) setAnimationsPaused(element, false);
+      else setAnimationsPaused(element, intersection ? visible.get(element) === false : false);
     }
   };
 

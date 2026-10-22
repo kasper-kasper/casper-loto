@@ -1,0 +1,30 @@
+{
+  "mode": "Built-in image_gen",
+  "assets": [
+    {
+      "path": "frontend/miniapp/src/assets/newyear/wood.webp",
+      "source": "exec-1e420972-d1eb-45fa-a694-fee3f7f81ac8.png",
+      "prompt": "Use case: photorealistic-natural. Project asset: high resolution square seamless-style dark walnut tabletop texture for mobile game board. Entire image is ONLY wood, photographed straight down, consistent fine realistic horizontal grain, understated polished satin surface, warm brown amber with subtle burgundy warmth. Fine visible crisp grain at normal 100% scale, quiet enough behind small colorful game objects. Even warm lighting with very subtle edges darkened. No objects, no joints with large perspective, no room, no text, no garlands, no blur, no strong highlights. Square 1024x1024.",
+      "notes": "WebP encoding only. Original generated PNG preserved."
+    },
+    {
+      "path": "frontend/miniapp/src/assets/newyear/preview.webp",
+      "source": "exec-82c3ae96-c91a-4af2-b0d2-a79ebc4dbeb7.png",
+      "prompt": "Use case: stylized-concept. Project asset: single cohesive premium Christmas still-life hero illustration for a Russian New Year lottery card. Landscape 3:2. Cozy evening home scene, richly decorated fir tree with warm individual fairy lights on left, frosty blue snowy window and burgundy curtains behind right, warm ivory pillar candles on right. Foreground beautiful walnut table with small festive arrangement of mandarins in an elegant bowl, one ornate golden mantel clock, tasteful fir branches and red/gold ornaments. These objects sit naturally together with consistent perspective and light, not separate icons, no collage. Rich photographic tactile materials and depth, warm amber gold cream burgundy palette, restrained detailed elegant composition. Main focal stilllife in central60% of image so survives narrow mobile crop. No text, no UI, no symbols floating, no frame, no numbers except clock face.",
+      "notes": "WebP encoding only. Original generated PNG preserved."
+    },
+    {
+      "path": "frontend/miniapp/src/assets/newyear/champagne.webp",
+      "source": "exec-8e621e9c-a6c5-4330-8384-a7ec51a4a625.png",
+      "prompt": "Use case: stylized-concept. One isolated premium realistic 3D game icon on transparent background: elegant dark green champagne bottle with gold foil neck and a single slender flute of golden champagne beside it. Both objects complete, upright, simple unbranded label, crisp clean silhouettes and clean glass. Warm soft studio lighting, subtle natural shadow. Centered square composition with 12% transparent margin on every side. Nothing else: no leaves, no twigs, no confetti, no speckles, no glow, no text, no frame. Actual alpha transparency.",
+      "notes": "WebP encoding only. Original generated PNG preserved."
+    },
+    {
+      "path": "frontend/miniapp/src/assets/newyear/sparklers.webp",
+      "source": "exec-fa89f90b-84e1-4eb3-a1a5-4f9ea43185c1.png",
+      "prompt": "Use case: stylized-concept. One isolated realistic premium game icon on transparent background: exactly TWO thin metal handheld sparklers crossed in an X, with compact delicate golden starburst sparks burning at the TWO UPPER TIPS ONLY. Fine silver wire handles continue downward. Elegant realistic warm tiny sparks, crisp recognizable silhouette at thumbnail size. Centered square composition, all sparks inside central80% of canvas. True transparency BETWEEN each fine spark, no solid glowing patches, no beige clouds, no gold disks, no firework balls, no background, no decorations, no text, no border.",
+      "notes": "WebP encoding only. Original generated PNG preserved."
+    }
+  ],
+  "atlas": "Original symbols.webp retained; explicit source windows in NewYear.tsx. Attempted atlas edit discarded."
+}

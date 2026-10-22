@@ -13,6 +13,27 @@ function setup(lottery = base, purchasing = false) {
 }
 
 describe("ticket selection presentation", () => {
+  it("loads and saves a complete Dual favorite while keeping five-draw repeats unavailable", () => {
+    const onBuy = vi.fn();
+    const onSaveFavorite = vi.fn();
+    render(<TicketComposer lottery={{...base, code:"dual", numbers_to_pick:4, max_number:24}} balance={1000000} now={0} purchasing={false} favorites={[{id:"dual-pair",numbers:[2,4,14,16]}]} onBuy={onBuy} onBuyMany={vi.fn()} onSaveFavorite={onSaveFavorite} onDeleteFavorite={vi.fn()} />);
+    fireEvent.click(screen.getByText("Избранное", {exact:true}));
+    expect(screen.queryByRole("button",{name:"5 тиражей"})).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button",{name:"NIGHT: 2 · 4 / DAWN: 2 · 4"}));
+    expect(screen.getByRole("button",{name:"Купить билет"})).toBeEnabled();
+    fireEvent.click(screen.getByRole("button",{name:"Купить билет"}));
+    expect(onBuy).toHaveBeenCalledWith([2,4,14,16],1,"random");
+    fireEvent.click(screen.getByRole("button",{name:"NIGHT 4"}));
+    fireEvent.click(screen.getByRole("button",{name:"NIGHT 5"}));
+    fireEvent.click(screen.getByRole("button",{name:"Сохранить комбинацию"}));
+    expect(onSaveFavorite).toHaveBeenCalledWith([2,5,14,16]);
+  });
+  it("never labels random autofill as a manual combination", () => {
+    const { onBuy } = setup();
+    fireEvent.click(screen.getByRole("button", { name: "Случайные числа" }));
+    fireEvent.click(screen.getByRole("button", { name: "Купить билет" }));
+    expect(onBuy).toHaveBeenCalledWith(expect.any(Array), 1, "random");
+  });
   it("caps Grand fields independently, removes chosen balls and buys an encoded 5+2 ticket", () => {
     const { onBuy, onBuyMany } = setup({ ...base, code: "weekly", name: "Casper Grand", numbers_to_pick: 7, max_number: 40, primary_numbers_to_pick: 5, primary_max_number: 35, secondary_numbers_to_pick: 2, secondary_max_number: 5, secondary_storage_offset: 35, ticket_price: 50000, fixed_payouts: {21:50000,51:20000000} });
     for (const n of [1,4,13,21,28,35]) fireEvent.click(screen.getByRole("button", { name: `Основные числа ${n}` }));
@@ -23,7 +44,7 @@ describe("ticket selection presentation", () => {
     expect(screen.getByRole("button", { name: "Купить билет" })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "Основные числа 35" }));
     fireEvent.click(screen.getByRole("button", { name: "Купить билет" }));
-    expect(onBuy).toHaveBeenCalledWith([4,13,21,28,35,37,40],1);
+    expect(onBuy).toHaveBeenCalledWith([4,13,21,28,35,37,40],1,"manual");
     fireEvent.click(screen.getByRole("button", { name: "Купить 25 случайных билетов" }));
     expect(onBuyMany.mock.calls[0][0]).toHaveLength(25);
     for (const numbers of onBuyMany.mock.calls[0][0] as number[][]) {

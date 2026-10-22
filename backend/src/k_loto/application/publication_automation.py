@@ -1526,7 +1526,11 @@ async def deliver_one(
 
 async def drain(factory: async_sessionmaker[AsyncSession]) -> None:
     settings = get_settings()
-    if not settings.lottery_bot_token or not settings.publication_channel:
+    if (
+        not settings.editorial_enabled
+        or not settings.lottery_bot_token
+        or not settings.publication_channel
+    ):
         return
     bot = Bot(settings.lottery_bot_token.get_secret_value())
     try:

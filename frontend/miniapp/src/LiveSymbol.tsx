@@ -1,3 +1,4 @@
+import { tr } from "./i18n";
 import { useId } from "react";
 import { logoSymbol } from "./brand";
 import { liveSymbolDefinitions } from "./liveSymbols";
@@ -26,7 +27,7 @@ export function LiveSymbol({ value }: { value: number }) {
     <><circle cx="32" cy="32" r="27" /><circle className="live-symbol-cut" cx="32" cy="32" r="23" /><circle fill="#672034" stroke="#ffe4a6" cx="32" cy="32" r="20" /><image href={logoSymbol} x="13" y="13" width="38" height="38" /><path className="live-symbol-glint" d="m11 12 2-5 2 5 5 2-5 2-2 5-2-5-5-2Z" /></>,
     <path d="M14 11h39v9L34 55H20l20-33H14Z" />,
   ];
-  return <svg className={`live-symbol live-symbol-${material}`} viewBox="0 0 64 64" role="img" aria-label={definition?.name ?? "Символ"}>
+  return <svg className={`live-symbol live-symbol-${material}`} viewBox="0 0 64 64" role="img" aria-label={tr(definition?.name ?? tr("Символ"))}>
     <defs><linearGradient id={gradientId} x2=".8" y2="1"><stop stopColor={palette[0]} /><stop offset=".45" stopColor={palette[1]} /><stop offset="1" stopColor={palette[2]} /></linearGradient></defs>
     <g fill={`url(#${gradientId})`} stroke={palette[0]} strokeWidth="1.2" strokeLinejoin="round">{shapes[value - 1] ?? shapes[0]}</g>
   </svg>;

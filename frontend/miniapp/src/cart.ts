@@ -1,3 +1,4 @@
+import { tr } from "./i18n";
 import { displayBrandName } from "../../shared/brandNames";
 import type { CartTicket } from "./types";
 
@@ -34,7 +35,7 @@ export function filterPurchasedCartTickets<T extends { id: string }>(tickets: T[
     const key = PURCHASED_PREFIX + ticket.id;
     const raw = localStorage.getItem(key);
     if (raw === null) return !consumed[ticket.id];
-    if (raw !== "1") throw new Error("Не удалось проверить купленные позиции корзины.");
+    if (raw !== "1") throw new Error(tr("Не удалось проверить купленные позиции корзины."));
     return false;
   });
 }

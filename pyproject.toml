@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "k-loto"
-version = "1.57.0"
+version = "1.59.0"
 description = "Casper Loto virtual lottery platform"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -55,7 +55,7 @@ testpaths = ["backend/tests"]
 target-version = "py312"
 line-length = 88
 src = ["backend/src", "backend/tests"]
-exclude = [".tools", ".venv"]
+exclude = [".tools", ".venv", "archive"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "ASYNC"]

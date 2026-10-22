@@ -17,6 +17,10 @@ def format_cas(amount: int) -> str:
 
 
 def _display_numbers(numbers: list[int], lottery_code: str) -> str:
+    if lottery_code == "newyear2027":
+        from k_loto.domain.newyear import SYMBOLS
+
+        return " · ".join(SYMBOLS[value - 1] for value in numbers)
     if lottery_code == "pss" and len(numbers) == 6:
         main = [value for value in numbers if value <= 36]
         special = [value - 36 for value in numbers if value > 36]
@@ -180,20 +184,35 @@ def format_owner_economy(payload: dict[str, Any]) -> str:
         value = int(payload[key])
         return f"{'+' if signed and value > 0 else ''}{format_cas(value)} CAS"
 
-    attention = payload["attention"]
-    verdict = {
-        "unresolved_draws": "⚠️ Есть незавершённые тиражи: итог ещё может дополниться.",
-        "fund_empty": "🚨 Фонд Каспера пуст. Проверь возможность выплат.",
-        "fund_less_than_day": "⚠️ Фонда меньше чем на день при текущем темпе расхода.",
-    }.get(attention, "📊 Сводка по фактическим движениям CAS")
     runway = payload["fund_runway_days"]
     days = int(payload["trend_days"])
+    warnings = []
+    if int(payload["pending_draws"]):
+        warnings.append(
+            "⚠️ Не завершено тиражей за отчётный день: "
+            f"{int(payload['pending_draws'])}. "
+            "Итоги могут дополниться."
+        )
+    if int(payload["fund_balance"]) == 0:
+        warnings.append("🚨 Фонд Каспера пуст. Проверь возможность выплат.")
+    elif runway == 0:
+        warnings.append("⚠️ Фонда меньше чем на день при текущем темпе расхода.")
     if runway is not None:
+        horizon = "больше 10 лет" if runway > 3650 else f"около {runway} дн."
+        average = (
+            f"Средний расход: {cash('fund_daily_expense')}/день "
+            f"за {days} полных дней.\n"
+            if "fund_daily_expense" in payload
+            else ""
+        )
         estimate = (
-            f"При таком темпе: около {runway} дн. запаса (по {days} полным дням)."
+            f"{average}Запас при таком расходе: {horizon}. Это оценка, не гарантия."
         )
     elif days:
-        estimate = f"За {days} полных дней чистого расхода фонда не было."
+        estimate = (
+            f"За {days} полных дней фонд не сокращался в сумме. "
+            "Для оценки запаса нет устойчивого расхода."
+        )
     else:
         estimate = "Для оценки расхода ещё нет полных дней нового этапа."
     partial = " · часть дня после обновления экономики" if payload["partial"] else ""
@@ -205,28 +224,67 @@ def format_owner_economy(payload: dict[str, Any]) -> str:
         if supply < 0
         else "Объём валюты не изменился"
     )
+    activity = (
+        f"👥 Новых игроков: {int(payload['new_players'])}\n"
+        f"Покупали билеты: {int(payload['buyers'])} игроков\n\n"
+        if "new_players" in payload
+        else ""
+    )
+    types = (
+        f"• FAST: {int(payload['fast_tickets'])}\n"
+        f"• Мгновенные: {int(payload['instant_tickets'])}\n"
+        f"• Тиражные: {int(payload['regular_tickets'])}\n"
+        if "fast_tickets" in payload
+        else f"Тиражные и FAST: {int(payload['regular_tickets'])}\n"
+        f"Мгновенные: {int(payload['instant_tickets'])}\n"
+    )
+    gifts = (
+        f"Подарочных выдано отдельно: {int(payload['gift_tickets'])}\n"
+        if "gift_tickets" in payload
+        else ""
+    )
+    refunds = (
+        f"Из купленных возвращено билетов: {int(payload['refunded_tickets'])}\n"
+        if payload.get("refunded_tickets")
+        else ""
+    )
+    achievements = (
+        f"Награды за достижения: {cash('achievement_rewards')}\n"
+        if "achievement_rewards" in payload
+        else ""
+    )
+    snapshots = (
+        f"У игроков на балансах: {cash('player_balances')}\n"
+        f"В джекпотах: {cash('jackpots')}\n"
+        if "player_balances" in payload
+        else ""
+    )
+    status = (
+        "\n".join(warnings)
+        if warnings
+        else "Незавершённых тиражей за отчётный день нет. Фонд не пуст."
+    )
     return (
-        f"Casper Loto · {payload['report_day']} МСК{partial}\n"
-        f"{verdict}\n\n"
-        f"🎟 Куплено билетов: {int(payload['total_tickets'])}\n"
-        f"Тиражные и Fast: {int(payload['regular_tickets'])} · "
-        f"мгновенные: {int(payload['instant_tickets'])}\n"
-        f"Покупки: {cash('purchases')}\n"
-        f"Выигрыши: {cash('prizes')}\n"
+        f"Casper Loto · итоги {payload['report_day']} (МСК){partial}\n\n"
+        f"{activity}"
+        f"🎟 Куплено платных билетов: {int(payload['total_tickets'])}\n"
+        f"{types}{refunds}{gifts}\n"
+        f"💰 Игроки потратили на билеты: {cash('purchases')}\n"
+        f"Выплачено выигрышей: {cash('prizes')}\n"
         f"Возвраты: {cash('refunds')}\n"
-        f"Покупки − выигрыши − возвраты: {cash('game_net', True)}\n\n"
+        f"{achievements}"
         f"Бонусы и прочие начисления: {cash('other_credit')}\n"
         f"Ручные изменения балансов: {cash('admin_net', True)}\n"
         f"Изменение балансов игроков: {cash('player_net', True)}\n\n"
         f"🔥 Сожжено: {cash('burned')}\n"
-        f"Создано в системе: {cash('issued')}\n"
+        f"Создано новых CAS: {cash('issued')}\n"
         f"{direction}: {cash('supply_net', True)}\n\n"
         f"🏦 Фонд сейчас: {cash('fund_balance')}\n"
         f"Изменение фонда за день: {cash('fund_net', True)}\n"
-        f"{estimate}\n\n"
-        "Это не прибыль: часть покупок остаётся в джекпотах. "
-        "Рост CAS допустим; следим за его темпом и расходом фонда. "
-        "Запас в днях — оценка по прошлому расходу, а не гарантия будущих выплат.\n"
+        f"{snapshots}{estimate}\n\n"
+        f"{status}\n"
+        "Суммы выше — движения CAS, не прибыль проекта. "
+        "Переводы из фонда и джекпотов не считаются созданием валюты.\n"
         "Подробности: админка → Экономика."
     )
 
@@ -255,6 +313,8 @@ def format_system_alert(payload: dict[str, Any]) -> str:
 
 class BotNotificationFormatter:
     def format(self, notification: ClaimedNotification) -> str:
+        if notification.type == NotificationType.ACHIEVEMENT:
+            return f"Получено достижение: {str(notification.payload['title'])[:160]}"
         if notification.type == NotificationType.TICKET_PURCHASED:
             return format_purchase_message(notification.payload)
         if notification.type == NotificationType.DRAW_RESULT:

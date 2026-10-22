@@ -141,6 +141,7 @@ def test_all_games_grants_refunds_and_transfers_are_counted_once(ledger):
         credited=7500,
         debited=3600,
         prizes=5000,
+        achievement_rewards=0,
         refunds=2000,
         admin_credit=300,
         admin_debit=100,
@@ -170,6 +171,20 @@ def test_epoch_boundary_never_splits_a_transfer_into_issuance(ledger):
     archive = rows(connection, table, epoch=cutoff, archive=True)[0]
     assert current["credited"] == current["issued"] == 50
     assert archive["credited"] == 40 and archive["issued"] == archive["burned"] == 0
+
+
+def test_achievement_rewards_are_separate_and_do_not_create_currency(ledger):
+    connection, table, operation = ledger
+    operation(
+        utc("2026-10-18T10:00:00"),
+        [
+            (Account.KASPER_FUND, Kind.ACHIEVEMENT_REWARD, -3333, None),
+            (Account.USER_BALANCE, Kind.ACHIEVEMENT_REWARD, 3333, None),
+        ],
+    )
+    day = rows(connection, table)[0]
+    assert day["achievement_rewards"] == day["credited"] == 3333
+    assert day["prizes"] == day["issued"] == day["burned"] == 0
 
 
 async def test_report_marks_partial_and_excluded_days_without_fake_comparisons():

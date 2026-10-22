@@ -247,3 +247,4 @@
  box-shadow:0 0 0 3px rgba(255,215,151,.2),0 0 24px rgba(222,104,62,.42) !important;
  transform:scale(.94);
 }
+html:lang(en) .room-dual .picker-note:before { content:"Purchases close 2 minutes before the next round. "; }

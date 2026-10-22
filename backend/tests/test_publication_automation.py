@@ -220,11 +220,14 @@ def test_copy_compiler_has_all_owner_variants(tmp_path: Path) -> None:
     import shutil
 
     root = Path(__file__).resolve().parents[2]
+    library = root / "archive/reference/retired-publications/docs/publications"
+    if not library.is_dir():
+        pytest.skip("Retired editable publication libraries are local archive only")
     for block in ("a", "b"):
         target = tmp_path / f"docs/publications/block-{block}"
         target.mkdir(parents=True)
         shutil.copyfile(
-            root / f"docs/publications/block-{block}/telegram-posts.v1.txt",
+            library / f"block-{block}/telegram-posts.v1.txt",
             target / "telegram-posts.v1.txt",
         )
     (tmp_path / "backend/src/k_loto/application").mkdir(parents=True)

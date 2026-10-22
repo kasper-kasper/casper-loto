@@ -1,3 +1,4 @@
+import { tr } from "./i18n";
 import { useEffect, useState } from "react";
 import { rawRequest } from "./api";
 import { cancelPurchase, completePurchase, durablePurchase, journalEvent, purchaseActive, readPurchase, receiptGame } from "./purchaseJournal";
@@ -26,7 +27,7 @@ export function PurchaseRecovery({ initData }: { initData: string }) {
           setResult(response.receipt); setPending(readPurchase()); setMessage(null);
         }
       } catch (reason) {
-        if (!disposed) setMessage(reason instanceof Error ? reason.message : "Нет связи. Проверим покупку, когда интернет вернётся.");
+        if (!disposed) setMessage(reason instanceof Error ? reason.message : tr("Нет связи. Проверим покупку, когда интернет вернётся."));
       } finally { running = false; }
     };
     const changed = () => { void check(); };
@@ -52,7 +53,7 @@ export function PurchaseRecovery({ initData }: { initData: string }) {
           `/api/v1/miniapp/purchase-receipts/${encodeURIComponent(pending.key)}/cancel?game=${receiptGame(pending)}`, initData, { method: "POST" }));
         receipt = response.receipt;
         if (!receipt && response.cancelled) {
-          setPending(readPurchase()); setMessage("Неподтверждённая покупка отменена. Билеты из корзины можно купить заново.");
+          setPending(readPurchase()); setMessage(tr("Неподтверждённая покупка отменена. Билеты из корзины можно купить заново."));
         }
       } else {
         receipt = await durablePurchase(pending.path, pending.body,
@@ -62,16 +63,16 @@ export function PurchaseRecovery({ initData }: { initData: string }) {
         if (cancel) await completePurchase(pending, receipt, true);
         setResult(receipt); setPending(readPurchase());
       }
-    } catch (reason) { setMessage(reason instanceof Error ? reason.message : "Связь прервалась. Покупку пока не удалось проверить."); }
+    } catch (reason) { setMessage(reason instanceof Error ? reason.message : tr("Связь прервалась. Покупку пока не удалось проверить.")); }
     finally { setBusy(false); }
   };
   if (!pending && !result && !message) return null;
   return <aside className="purchase-recovery" role="status" aria-live="polite">
-    <strong>{result ? "Покупка найдена" : pending ? "Проверяем предыдущую покупку" : "Проверка покупки"}</strong>
-    {pending && <p>Ответ потерялся, но билеты могли быть куплены. Повтор отправит тот же запрос без второй покупки. Отмена затрагивает только ещё не выполненный запрос.</p>}
-    {result && <p>Билетов: {"tickets" in result ? result.tickets.length : result.ticket_ids.length} · стоимость {formatCas(result.total_cost)}.{"total_prize" in result && ` Выигрыш: ${formatCas(result.total_prize)}.`} Билеты доступны в разделе «Мои билеты».</p>}
-    {message && <p>{message}</p>}
-    {pending ? <div><button disabled={busy} onClick={() => void resolve(false)}>{busy ? "Проверяем…" : "Повторить этот запрос"}</button><button disabled={busy} onClick={() => void resolve(true)}>Отменить неподтверждённую покупку</button></div>
-      : <button onClick={() => { setResult(null); setMessage(null); }}>Понятно</button>}
+    <strong>{result ? tr("Покупка найдена") : pending ? tr("Проверяем предыдущую покупку") : tr("Проверка покупки")}</strong>
+    {pending && <p>{tr("Ответ потерялся, но билеты могли быть куплены. Повтор отправит тот же запрос без второй покупки. Отмена затрагивает только ещё не выполненный запрос.")}</p>}
+    {result && <p>{tr("Билетов:")} {"tickets" in result ? result.tickets.length : result.ticket_ids.length}  {tr("· стоимость")} {tr(formatCas(result.total_cost))}.{"total_prize" in result && tr(" Выигрыш: {0}.", formatCas(result.total_prize))}  {tr("Билеты доступны в разделе «Мои билеты».")}</p>}
+    {message && <p>{tr(message)}</p>}
+    {pending ? <div><button disabled={busy} onClick={() => void resolve(false)}>{busy ? tr("Проверяем…") : tr("Повторить этот запрос")}</button><button disabled={busy} onClick={() => void resolve(true)}>{tr("Отменить неподтверждённую покупку")}</button></div>
+      : <button onClick={() => { setResult(null); setMessage(null); }}>{tr("Понятно")}</button>}
   </aside>;
 }

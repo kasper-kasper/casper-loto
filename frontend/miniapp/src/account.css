@@ -14,3 +14,6 @@
 .personal-section .ticket-draw-group { border-radius:17px; }
 .personal-section button:focus-visible,.personal-section select:focus-visible { outline:2px solid #e7cf9e; outline-offset:3px; }
 .fast-picker-error { position:relative; z-index:2; padding:14px; border:1px solid #ff859866; border-radius:12px; color:#ffd0d8; background:#351924; font-size:13px; line-height:1.5; }
+.gift-ticket-badge { display: inline-flex; align-items: center; gap: 5px; width: fit-content; max-width: 100%; padding: 4px 8px; margin-top: 6px; border: 1px solid rgba(193,163,245,.3); border-radius: 999px; background: rgba(164,119,232,.12); color: #d7b7ff; font-size: 10px; font-weight: 600; line-height: 1.2; letter-spacing: .02em; }
+.gift-ticket-badge svg { width: 13px; height: 13px; flex: 0 0 13px; }
+.paper-ticket header .gift-ticket-badge { color: #68418f; background: #f1e9fa; border-color: #d9c6ed; }

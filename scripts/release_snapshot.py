@@ -30,6 +30,7 @@ def managed_path(root: Path, relative: str) -> Path:
         ".tools",
         ".tmp",
         "design",
+        "archive",
     ):
         raise RuntimeError("Runtime or unrelated files cannot be release inputs")
     if relative.startswith("frontend/web/") or relative == "frontend/web":

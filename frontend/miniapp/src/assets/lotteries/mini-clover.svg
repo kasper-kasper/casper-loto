@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" fill="none">
+  <defs>
+    <linearGradient id="gold" x1="65" y1="35" x2="260" y2="290" gradientUnits="userSpaceOnUse"><stop stop-color="#fff4bb"/><stop offset=".22" stop-color="#d9b96c"/><stop offset=".43" stop-color="#8f682d"/><stop offset=".61" stop-color="#f6e4a1"/><stop offset=".82" stop-color="#b0843d"/><stop offset="1" stop-color="#f8e8b3"/></linearGradient>
+    <linearGradient id="edge" x1="80" y1="30" x2="240" y2="280" gradientUnits="userSpaceOnUse"><stop stop-color="#fff6c8"/><stop offset=".5" stop-color="#af853d"/><stop offset="1" stop-color="#5a3e17"/></linearGradient>
+    <radialGradient id="face" cx="0" cy="0" r="1" gradientTransform="translate(119 90) rotate(62) scale(212)" gradientUnits="userSpaceOnUse"><stop stop-color="#326c51"/><stop offset=".48" stop-color="#0d382b"/><stop offset="1" stop-color="#021d17"/></radialGradient>
+    <linearGradient id="leaf" x1="122" y1="76" x2="180" y2="154" gradientUnits="userSpaceOnUse"><stop stop-color="#96c49b"/><stop offset=".21" stop-color="#4c9b71"/><stop offset=".58" stop-color="#18714d"/><stop offset="1" stop-color="#033e2b"/></linearGradient>
+    <linearGradient id="facet" x1="160" y1="79" x2="191" y2="147" gradientUnits="userSpaceOnUse"><stop stop-color="#b6dfad" stop-opacity=".7"/><stop offset="1" stop-color="#163f2d" stop-opacity="0"/></linearGradient>
+    <filter id="shadow" x="0" y="0" width="320" height="320" filterUnits="userSpaceOnUse"><feDropShadow dx="0" dy="14" stdDeviation="13" flood-color="#00150e" flood-opacity=".7"/></filter>
+    <g id="petal"><path d="M160 155C142 142 107 123 106 101C104 73 141 65 160 92C180 64 216 75 214 101C213 123 178 143 160 155Z" fill="url(#leaf)" stroke="url(#edge)" stroke-width="2.3"/><path d="M160 151L160 95C144 73 114 77 112 99C126 100 147 123 160 151Z" fill="url(#facet)"/><path d="M160 149V98M158 136L132 104M162 136L188 104M153 130L123 116M167 130L198 116" stroke="#cbda9e" stroke-opacity=".34" stroke-width=".9"/><path d="M112 98C115 79 139 76 151 90" stroke="#e3efbe" stroke-opacity=".65" stroke-width="1.6" stroke-linecap="round"/></g>
+  </defs>
+  <ellipse cx="160" cy="282" rx="96" ry="15" fill="#000f0a" opacity=".35"/>
+  <g filter="url(#shadow)">
+    <circle cx="160" cy="159" r="122" fill="#61491e"/>
+    <circle cx="160" cy="152" r="122" fill="url(#gold)"/>
+    <circle cx="160" cy="152" r="117" stroke="#fff1b3" stroke-opacity=".7" stroke-width="1.5"/>
+    <circle cx="160" cy="152" r="111" fill="url(#face)" stroke="#806332" stroke-width="3"/>
+    <circle cx="160" cy="152" r="103" stroke="url(#gold)" stroke-opacity=".6" stroke-dasharray="1 5" stroke-linecap="round" stroke-width="2"/>
+    <circle cx="160" cy="152" r="96" stroke="#b8bf87" stroke-opacity=".14"/>
+    <path d="M166 149C155 185 165 220 190 237C175 233 153 222 151 208C147 188 153 169 158 150" fill="url(#gold)"/>
+    <use href="#petal"/>
+    <use href="#petal" transform="rotate(90 160 155)"/>
+    <use href="#petal" transform="rotate(180 160 155)"/>
+    <use href="#petal" transform="rotate(270 160 155)"/>
+    <path d="M160 141L174 155L160 169L146 155Z" fill="url(#gold)"/>
+    <path d="M160 146L169 155L160 164L151 155Z" fill="#f5e9af"/><path d="M160 146V155H151M160 164V155H169" fill="#a77e34"/>
+    <path d="M78 78A110 110 0 0 1 145 42" stroke="#fff9da" stroke-opacity=".8" stroke-width="2" stroke-linecap="round"/>
+    <path d="M59 150L64 160L59 170L54 160Z M261 134L266 144L261 154L256 144Z" fill="url(#gold)"/>
+    <circle cx="160" cy="43" r="3" fill="#fff2bf"/><circle cx="160" cy="261" r="3" fill="#dcb873"/>
+  </g>
+  <path d="M246 54V72M237 63H255M250 59L242 67M242 59L250 67" stroke="#ffedb2" stroke-width="1.5" stroke-linecap="round"/>
+  <circle cx="75" cy="244" r="2" fill="#e6cc85" opacity=".7"/>
+</svg>

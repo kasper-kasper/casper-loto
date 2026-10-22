@@ -1,5 +1,6 @@
 interface TelegramWebApp {
   initData: string;
+  initDataUnsafe?: { user?: { id?: number; language_code?: string } };
   colorScheme?: "light" | "dark";
   isFullscreen?: boolean;
   isVerticalSwipesEnabled?: boolean;

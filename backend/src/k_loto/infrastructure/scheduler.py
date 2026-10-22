@@ -44,7 +44,8 @@ class SchedulerRuntime:
             logger.error(
                 "scheduler_startup_recovery_failed", error_type=type(error).__name__
             )
-        await self._run_publication_events()
+        if get_settings().editorial_enabled:
+            await self._run_publication_events()
         await self._run_owner_economy()
         self._scheduler.add_job(
             self._run_owner_economy,
@@ -55,24 +56,25 @@ class SchedulerRuntime:
             coalesce=True,
             max_instances=1,
         )
-        self._scheduler.add_job(
-            self._run_publication_events,
-            trigger="interval",
-            seconds=self._interval_seconds,
-            id="publication-event-reconciliation",
-            replace_existing=True,
-            coalesce=True,
-            max_instances=1,
-        )
-        self._scheduler.add_job(
-            self._run_publication_delivery,
-            trigger="interval",
-            seconds=2,
-            id="publication-delivery",
-            replace_existing=True,
-            coalesce=True,
-            max_instances=1,
-        )
+        if get_settings().editorial_enabled:
+            self._scheduler.add_job(
+                self._run_publication_events,
+                trigger="interval",
+                seconds=self._interval_seconds,
+                id="publication-event-reconciliation",
+                replace_existing=True,
+                coalesce=True,
+                max_instances=1,
+            )
+            self._scheduler.add_job(
+                self._run_publication_delivery,
+                trigger="interval",
+                seconds=2,
+                id="publication-delivery",
+                replace_existing=True,
+                coalesce=True,
+                max_instances=1,
+            )
         self._scheduler.add_job(
             self._run,
             trigger="interval",
@@ -83,6 +85,30 @@ class SchedulerRuntime:
             max_instances=1,
         )
         self._scheduler.start()
+
+        if get_settings().achievements_worker_enabled:
+            self._scheduler.add_job(
+                self._run_achievements,
+                trigger="interval",
+                seconds=2,
+                id="achievement-projection",
+                replace_existing=True,
+                coalesce=True,
+                max_instances=1,
+            )
+
+    async def _run_achievements(self) -> None:
+        from k_loto.application.achievement_release import activate_due
+        from k_loto.application.achievements import drain
+
+        try:
+            async with session_factory() as session, session.begin():
+                started_at = await activate_due(session)
+            if started_at:
+                logger.info("achievements_activated", started_at=started_at.isoformat())
+            await drain(session_factory, limit=10)
+        except Exception as error:
+            logger.error("achievement_worker_failed", error_type=type(error).__name__)
 
     async def _run_owner_economy(self) -> None:
         settings = get_settings()
@@ -99,6 +125,8 @@ class SchedulerRuntime:
             )
 
     async def _run_publication_events(self) -> None:
+        if not get_settings().editorial_enabled:
+            return
         async with session_factory() as session:
             if await is_paused(session):
                 return
@@ -131,6 +159,8 @@ class SchedulerRuntime:
             logger.exception("publication_event_scan_failed")
 
     async def _run_publication_delivery(self) -> None:
+        if not get_settings().editorial_enabled:
+            return
         async with session_factory() as session:
             if await is_paused(session):
                 return

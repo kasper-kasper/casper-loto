@@ -27,6 +27,7 @@ class TicketStatus(StrEnum):
 class TicketSource(StrEnum):
     MANUAL = "MANUAL"
     AUTO_PLAY = "AUTO_PLAY"
+    GIFT = "GIFT"
 
 
 class LedgerAccountKind(StrEnum):
@@ -38,6 +39,7 @@ class LedgerAccountKind(StrEnum):
 
 
 class TransactionType(StrEnum):
+    ACHIEVEMENT_REWARD = "ACHIEVEMENT_REWARD"
     ADMIN_BALANCE_ADJUSTMENT = "ADMIN_BALANCE_ADJUSTMENT"
     TICKET_PURCHASE = "TICKET_PURCHASE"
     TICKET_REFUND = "TICKET_REFUND"
@@ -54,6 +56,7 @@ class AuditAction(StrEnum):
 
 
 class NotificationType(StrEnum):
+    ACHIEVEMENT = "ACHIEVEMENT"
     TICKET_PURCHASED = "TICKET_PURCHASED"
     DRAW_RESULT = "DRAW_RESULT"
     JACKPOT_WIN = "JACKPOT_WIN"
@@ -63,6 +66,7 @@ class NotificationType(StrEnum):
 
 
 class InAppNotificationType(StrEnum):
+    ACHIEVEMENT = "ACHIEVEMENT"
     WIN = "WIN"
     DRAW_RESULT = "DRAW_RESULT"
     DRAW_INVITATION = "DRAW_INVITATION"

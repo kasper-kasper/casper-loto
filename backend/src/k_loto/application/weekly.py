@@ -1,5 +1,7 @@
 """Transactional Weekly purchase and settlement services."""
 
+from collections.abc import Sequence
+from contextlib import nullcontext
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -138,7 +140,8 @@ class SettlementResult:
 def _existing_purchase_result(
     existing: LedgerTransaction, user_id: UUID
 ) -> PurchaseResult:
-    if existing.account_id != user_id:
+    sponsored = (existing.details or {}).get("source") == "GIFT"
+    if (existing.user_id if sponsored else existing.account_id) != user_id:
         raise InvalidTicket("Purchase key belongs to another request.")
     ticket_ids = tuple(UUID(value) for value in existing.details["ticket_ids"])
     draw_ids = tuple(
@@ -150,7 +153,9 @@ def _existing_purchase_result(
         draw_id=UUID(existing.details["draw_id"]),
         ticket_ids=ticket_ids,
         total_cost=-existing.amount,
-        balance_after=existing.balance_after,
+        balance_after=existing.details.get(
+            "user_balance_after", existing.balance_after
+        ),
         draw_ids=draw_ids,
         draw_count=int(existing.details.get("draw_count", len(draw_ids))),
         already_processed=True,
@@ -222,15 +227,38 @@ class WeeklyTicketPurchaseService:
         draw_count: int = 1,
         expected_scheduled_at: datetime | None = None,
         source: TicketSource = TicketSource.MANUAL,
+        selection_modes: Sequence[str] | None = None,
         pool_ticket_ids: list[UUID] | None = None,
         pool_required_numbers: tuple[int, ...] = (),
         select_bingo_pool: bool = False,
         now: datetime | None = None,
+        _reward_part_id: UUID | None = None,
     ) -> PurchaseResult:
+        gifted = source == TicketSource.GIFT
+        if gifted != (_reward_part_id is not None):
+            raise InvalidTicket("Gift tickets require a server reward reference.")
+        if gifted and (
+            draw_count != 1
+            or len(combinations) != 1
+            or not self._session.in_transaction()
+        ):
+            raise InvalidTicket(
+                "Gift delivery requires one ticket in its reward transaction."
+            )
         if not idempotency_key or len(idempotency_key) > 100:
             raise ValueError("idempotency_key must contain 1 to 100 characters.")
         if draw_count not in MULTI_DRAW_COUNTS:
             raise InvalidTicket("A purchase can cover either 1 or 5 draws.")
+        modes = selection_modes or ["unknown"] * len(combinations)
+        if len(modes) != len(combinations) or any(
+            mode not in {"manual", "random", "unknown"} for mode in modes
+        ):
+            raise InvalidTicket("Invalid combination selection modes.")
+        if (
+            source in {TicketSource.AUTO_PLAY, TicketSource.GIFT}
+            or self._lottery_code == "bingo"
+        ):
+            modes = ["random"] * len(combinations)
         if self._target_draw_id is not None and draw_count != 1:
             raise InvalidTicket("A selected draw purchase cannot span multiple draws.")
         if source == TicketSource.AUTO_PLAY and self._target_draw_id is None:
@@ -240,13 +268,51 @@ class WeeklyTicketPurchaseService:
                 f"A purchase must contain 1 to {MAX_TICKETS_PER_PURCHASE} tickets."
             )
         timestamp = now or datetime.now(UTC)
+        if gifted:
+            idempotency_key = f"gift:{_reward_part_id}"
         client_key = idempotency_key
         if self._lottery_code == "bingo":
             idempotency_key = bingo_purchase_key(user_id, client_key)
         user_ledger_key = f"purchase:{idempotency_key}:user"
 
-        async with self._session.begin():
+        async with nullcontext() if gifted else self._session.begin():
             economy = await require_open(self._session)
+            if gifted:
+                from k_loto.infrastructure.database.achievement_models import (
+                    AchievementAward,
+                    AchievementReward,
+                )
+
+                part = await self._session.get(AchievementReward, _reward_part_id)
+                award = (
+                    await self._session.get(AchievementAward, part.award_id)
+                    if part
+                    else None
+                )
+                if (
+                    part is None
+                    or award is None
+                    or award.user_id != user_id
+                    or part.payload.get("type") != "ticket"
+                    or part.payload.get("amount") != 1
+                    or part.payload.get("lottery") != self._lottery_code
+                    or self._lottery_code
+                    not in {
+                        "september",
+                        "grob",
+                        "pll",
+                        "khan",
+                        "pss",
+                        "weekly",
+                        "bingo",
+                        "flash",
+                        "shadow",
+                        "pulse",
+                    }
+                ):
+                    raise InvalidTicket(
+                        "Gift ticket does not match its approved reward."
+                    )
             await guard_attempt(self._session, user_id, client_key, "scheduled")
             existing = await self._session.scalar(
                 select(LedgerTransaction).where(
@@ -265,6 +331,8 @@ class WeeklyTicketPurchaseService:
                 .with_for_update()
             )
             if lottery is None or lottery.ticket_price is None:
+                if gifted:
+                    raise NoAvailableDraw("Gift lottery is temporarily unavailable.")
                 raise ConfigurationError(
                     f"Active {self.lottery_label} lottery is not configured."
                 )
@@ -306,6 +374,14 @@ class WeeklyTicketPurchaseService:
                 raise InvalidTicket(
                     f"This lottery accepts at most {lottery.max_tickets_per_purchase} "
                     "tickets in one purchase."
+                )
+            if (
+                lottery.code == "mini"
+                and len(combinations) * draw_count > lottery.max_tickets_per_purchase
+            ):
+                raise InvalidTicket(
+                    "Casper Mini accepts at most 100 tickets across all draws "
+                    "in one purchase."
                 )
 
             timestamp = now or datetime.now(UTC)
@@ -597,7 +673,7 @@ class WeeklyTicketPurchaseService:
                 combinations = [entry.numbers for entry in pool_entries]
 
             fund = None
-            if lottery.code == "dual":
+            if lottery.code == "dual" or gifted:
                 fund = await self._session.scalar(
                     select(KasperFundAccount)
                     .where(KasperFundAccount.id == KASPER_FUND_ID)
@@ -637,7 +713,9 @@ class WeeklyTicketPurchaseService:
             ):
                 raise ConfigurationError("Draw ticket price snapshot is invalid.")
             total_cost = len(canonical) * sum(prices)
-            if balance.amount < total_cost:
+            if (
+                fund.balance if gifted and fund is not None else balance.amount
+            ) < total_cost:
                 raise InsufficientBalance("Insufficient CAS balance.")
 
             operation_id = uuid4()
@@ -647,7 +725,7 @@ class WeeklyTicketPurchaseService:
             for target_draw, ticket_price in zip(
                 draws[:draw_count], prices, strict=True
             ):
-                for normalized in canonical:
+                for combination_index, normalized in enumerate(canonical):
                     stored_numbers = purchase_rules.complete_purchase_combination(
                         normalized, self._number_generator
                     )
@@ -664,7 +742,10 @@ class WeeklyTicketPurchaseService:
                             else None,
                             user_id=user_id,
                             numbers=list(stored_numbers),
-                            purchase_price=ticket_price,
+                            purchase_price=0 if gifted else ticket_price,
+                            achievement_reward_id=_reward_part_id,
+                            selection_mode=modes[combination_index],
+                            purchase_operation_id=operation_id,
                             source=source,
                             purchased_at=timestamp,
                             status=TicketStatus.PURCHASED,
@@ -685,8 +766,14 @@ class WeeklyTicketPurchaseService:
                     entry.ticket_id = ticket_id
 
             balance_before = balance.amount
-            balance.amount -= total_cost
-            balance.version += 1
+            sponsor_before = fund.balance if gifted and fund is not None else 0
+            if gifted:
+                assert fund is not None
+                fund.balance -= total_cost
+                fund.version += 1
+            else:
+                balance.amount -= total_cost
+                balance.version += 1
             jackpot_before = jackpot.balance
             fund_before = 0
             if lottery.code == "dual":
@@ -709,6 +796,8 @@ class WeeklyTicketPurchaseService:
                 "ticket_ids": [str(value) for value in ticket_ids],
                 "ticket_count": len(ticket_ids),
                 "source": source.value,
+                "user_balance_after": balance.amount,
+                "achievement_reward": str(_reward_part_id) if gifted else None,
                 "jackpot_contribution": jackpot.balance - jackpot_before,
                 "burned_cas": 0
                 if lottery.code == "dual"
@@ -718,11 +807,15 @@ class WeeklyTicketPurchaseService:
                 _ledger_entry(
                     operation_id=operation_id,
                     idempotency_key=user_ledger_key,
-                    account_kind=LedgerAccountKind.USER_BALANCE,
-                    account_id=balance.user_id,
+                    account_kind=LedgerAccountKind.KASPER_FUND
+                    if gifted
+                    else LedgerAccountKind.USER_BALANCE,
+                    account_id=KASPER_FUND_ID if gifted else balance.user_id,
                     transaction_type=TransactionType.TICKET_PURCHASE,
-                    before=balance_before,
-                    after=balance.amount,
+                    before=sponsor_before if gifted else balance_before,
+                    after=fund.balance
+                    if gifted and fund is not None
+                    else balance.amount,
                     user_id=user_id,
                     lottery_id=lottery.id,
                     draw_id=draw.id,
@@ -745,7 +838,7 @@ class WeeklyTicketPurchaseService:
                         details=shared_details,
                     )
                 )
-            if fund is not None:
+            if fund is not None and not gifted:
                 purchase_ledger.append(
                     _ledger_entry(
                         operation_id=operation_id,
@@ -975,7 +1068,11 @@ class WeeklySettlementService:
                         public_number=ticket.public_number,
                         user_id=ticket.user_id,
                         numbers=tuple(ticket.numbers),
-                        purchase_price=ticket.purchase_price,
+                        purchase_price=int(
+                            _snapshot_value(draw, "ticket_price", lottery.ticket_price)
+                        )
+                        if ticket.source == TicketSource.GIFT
+                        else ticket.purchase_price,
                     )
                     for ticket in ticket_models
                 ],
@@ -999,7 +1096,13 @@ class WeeklySettlementService:
                             t.public_number,
                             t.user_id,
                             tuple(t.numbers),
-                            t.purchase_price,
+                            int(
+                                _snapshot_value(
+                                    draw, "ticket_price", lottery.ticket_price
+                                )
+                            )
+                            if t.source == TicketSource.GIFT
+                            else t.purchase_price,
                         )
                         for t in ticket_models
                     ],

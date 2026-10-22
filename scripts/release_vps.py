@@ -31,6 +31,8 @@ FRONTENDS = (
 
 
 def load_local_env(path: Path) -> dict[str, str]:
+    if not path.exists():
+        return {}
     values: dict[str, str] = {}
     for raw_line in path.read_text(encoding="utf-8").splitlines():
         line = raw_line.strip()
@@ -114,8 +116,8 @@ def verify_candidate_finances(
 ) -> None:
     """Exercise the freshly built runtime without touching production business rows."""
     database = f"k_loto_audit_stage1_{uuid4().hex[:12]}"
-    publication_fixture = shlex.quote(
-        source_dir + "/docs/publications:/app/docs/publications:ro"
+    production_fixture = shlex.quote(
+        source_dir + "/docker-compose.prod.yml:/app/docker-compose.prod.yml:ro"
     )
     command = (
         "set -eu; cd /opt/k-loto; "
@@ -133,8 +135,9 @@ def verify_candidate_finances(
         "-v ON_ERROR_STOP=1 >/dev/null'; "
         f"{compose} run --rm --no-deps -e APP_ENV=test "
         f"-v {shlex.quote(source_dir + '/infrastructure:/app/infrastructure:ro')} "
-        f"-v {publication_fixture} "
-        f"-e SCHEDULER_ENABLED=false -e UV_CACHE_DIR=/tmp/uv-cache {service} sh -c '"
+        f"-v {production_fixture} "
+        f"-e SCHEDULER_ENABLED=false -e EDITORIAL_ENABLED=true "
+        f"-e UV_CACHE_DIR=/tmp/uv-cache {service} sh -c '"
         f'export DATABASE_URL="${{DATABASE_URL%/*}}/{database}"; '
         "python -m scripts.verify_runtime_lock && "
         "uv sync --locked --extra dev --no-editable >/dev/null && "
@@ -143,19 +146,13 @@ def verify_candidate_finances(
         "backend/tests/test_history_cursor.py "
         "backend/tests/test_server_maintenance.py "
         "backend/tests/test_local_dev_mode.py "
-        "backend/tests/test_publication_monitoring.py "
-        "backend/tests/test_publication_automation.py::"
-        "test_snapshot_records_queue_entry_once_not_source_event_age "
-        "backend/tests/test_publications.py::"
-        "test_manual_approval_stamps_queue_entry_and_retry_preserves_it "
-        "backend/tests/test_publication_automation.py::"
-        "test_copy_compiler_has_all_owner_variants && "
+        "backend/tests/test_editorial_retirement.py && "
         "alembic upgrade head >/dev/null && alembic check && "
-        "python -m scripts.publication_monitoring_postgres_smoke && "
         "python -m scripts.financial_recovery_postgres_smoke && "
         "python -m scripts.integrity_delivery_postgres_smoke && "
         "python -m scripts.miniapp_integration_smoke && "
-        "python -m scripts.profile_projection_postgres_smoke'"
+        "python -m scripts.profile_projection_postgres_smoke && "
+        "python -m scripts.editorial_retirement_postgres_smoke'"
     )
     run_remote(
         client, "Candidate financial database verification", command, timeout=600
@@ -183,6 +180,28 @@ def verify_empty_database(
     )
 
 
+def verify_achievement_migration(
+    client: paramiko.SSHClient, compose: str, *, service: str
+) -> None:
+    database = f"k_loto_achievement_restore_{uuid4().hex[:12]}"
+    command = (
+        "set -eu; cd /opt/k-loto; "
+        f"{compose} exec -T db sh -c 'createdb -U \"$POSTGRES_USER\" {database}'; "
+        f"cleanup() {{ {compose} exec -T db sh -c 'dropdb -U "
+        f'"$POSTGRES_USER" {database}\'; }}; trap cleanup EXIT; '
+        f"{compose} exec -T db sh -ec 'set -o pipefail; "
+        'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc | '
+        f'pg_restore -U "$POSTGRES_USER" -d {database} --exit-on-error\'; '
+        f"{compose} run --rm --no-deps -e APP_ENV=test "
+        f"-e SCHEDULER_ENABLED=false {service} sh -c '"
+        f'export DATABASE_URL="${{DATABASE_URL%/*}}/{database}"; '
+        "python -m scripts.achievement_migration_smoke'"
+    )
+    run_remote(
+        client, "Full production restore migration verification", command, timeout=600
+    )
+
+
 def release_files(include_frontends: bool) -> dict[str, str]:
     paths = (
         subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT)
@@ -192,7 +211,18 @@ def release_files(include_frontends: bool) -> dict[str, str]:
     paths = [
         p
         for p in paths
-        if p and not p.startswith(("frontend/web/", "design/")) and (ROOT / p).is_file()
+        if p
+        and not p.startswith(
+            (
+                "frontend/web/",
+                "design/",
+                "assets/publications/",
+                "docs/publications/",
+                "archive/",
+            )
+        )
+        and "/public/assets/publications/" not in p
+        and (ROOT / p).is_file()
     ]
     if include_frontends:
         if __package__:
@@ -271,20 +301,35 @@ def wait_for_health(client: paramiko.SSHClient, compose: str) -> None:
 
 
 def schema_fingerprint(client: paramiko.SSHClient, compose: str) -> str:
-    return run_remote(
+    schema = run_remote(
         client,
         "Read schema fingerprint",
         "cd /opt/k-loto && "
         + compose
         + " exec -T db sh -c "
         + shlex.quote(
-            '(pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --schema-only '
-            '--no-owner --no-privileges | sed "/^\\\\restrict /d;'
-            '/^\\\\unrestrict /d"; psql -U "$POSTGRES_USER" '
-            '-d "$POSTGRES_DB" -Atc "SELECT version_num FROM alembic_version") '
-            "| sha256sum"
+            'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --schema-only '
+            '--no-owner --no-privileges; psql -U "$POSTGRES_USER" '
+            '-d "$POSTGRES_DB" -Atc "SELECT version_num FROM alembic_version"'
         ),
-    ).split()[0]
+        capture_limit=2_000_000,
+        show_output=False,
+    )
+    if len(schema.encode()) >= 2_000_000:
+        raise RuntimeError("Schema fingerprint input exceeds capture limit")
+    return hashlib.sha256(canonical_schema_dump(schema).encode()).hexdigest()
+
+
+def canonical_schema_dump(schema: str) -> str:
+    """Ignore pg_dump's random psql safety nonce, preserving every DDL line."""
+    return (
+        "\n".join(
+            line
+            for line in schema.splitlines()
+            if not line.startswith(("\\restrict ", "\\unrestrict "))
+        )
+        + "\n"
+    )
 
 
 def main() -> None:
@@ -489,8 +534,7 @@ def main() -> None:
                         "frontend/admin/dist frontend/miniapp/dist"
                         if service == "gateway"
                         else "backend bot scripts pyproject.toml uv.lock README.md "
-                        "alembic.ini CHANGELOG.md DEVLOG.md "
-                        "frontend/miniapp/public/assets/publications"
+                        "alembic.ini CHANGELOG.md DEVLOG.md"
                     )
                     # Stream only this image's verified inputs. Large gateway
                     # assets need not be read for every backend image build.
@@ -509,6 +553,9 @@ def main() -> None:
                         built_backend = service
                 if backend:
                     candidate_service = backend[0]
+                    verify_achievement_migration(
+                        client, candidate_compose, service=candidate_service
+                    )
                     verify_candidate_finances(
                         client,
                         candidate_compose,

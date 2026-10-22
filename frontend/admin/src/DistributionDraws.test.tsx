@@ -5,10 +5,10 @@ import { adminApi } from "./api";
 import type { DistributionDraw } from "./api";
 import type { Lottery } from "./types";
 
-vi.mock("./api", () => ({ adminApi: { lotteries: vi.fn(), distributionDraws: vi.fn(), assignDistribution: vi.fn() } }));
+vi.mock("./api", () => ({ adminApi: { lotteries: vi.fn(), distributionDraws: vi.fn(), assignDistribution: vi.fn(), draws: vi.fn() } }));
 const lottery = { id:"grand",code:"weekly",name:"Casper Grand",is_active:true } as Lottery;
 const draw: DistributionDraw = {id:"draw",lottery_id:"grand",lottery_name:"Casper Grand",number:9,scheduled_at:"2099-10-10T17:00:00Z",sales_close_at:"2099-10-10T16:55:00Z",jackpot:5000000,ticket_count:145,is_distribution:false,status:"SCHEDULED",announcement_state:null,post:"Полностью распределим весь джекпот. #CasperLotto"};
-beforeEach(()=>{vi.clearAllMocks();vi.mocked(adminApi.lotteries).mockResolvedValue([lottery,{...lottery,id:"dual",code:"dual",name:"Casper Dual"},{...lottery,id:"vault",code:"vault",name:"Vault"}]);vi.mocked(adminApi.distributionDraws).mockResolvedValue([draw]);vi.mocked(adminApi.assignDistribution).mockResolvedValue({...draw,is_distribution:true,announcement_state:"sent"});});
+beforeEach(()=>{vi.clearAllMocks();vi.mocked(adminApi.draws).mockResolvedValue([]);vi.mocked(adminApi.lotteries).mockResolvedValue([lottery,{...lottery,id:"dual",code:"dual",name:"Casper Dual"},{...lottery,id:"vault",code:"vault",name:"Vault"}]);vi.mocked(adminApi.distributionDraws).mockResolvedValue([draw]);vi.mocked(adminApi.assignDistribution).mockResolvedValue({...draw,is_distribution:true,announcement_state:"sent"});});
 
 test("Dual and instant games are absent; purchased tickets remain and confirmation precedes post",async()=>{
   render(<DistributionDraws/>);
@@ -18,8 +18,8 @@ test("Dual and instant games are absent; purchased tickets remain and confirmati
   expect(screen.getByText("145")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button",{name:"Назначить распределительный тираж"}));
   expect(adminApi.assignDistribution).not.toHaveBeenCalled();
-  expect(screen.getByText(draw.post)).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button",{name:"Подтвердить и опубликовать пост"}));
+  expect(screen.queryByText(draw.post)).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button",{name:"Подтвердить назначение"}));
   await screen.findByText("Пост опубликован");
   expect(adminApi.assignDistribution).toHaveBeenCalledExactlyOnceWith(draw);
 });
@@ -37,5 +37,20 @@ test("date change clears old confirmation and loads Moscow day",async()=>{
   fireEvent.click(screen.getByRole("button",{name:"Назначить распределительный тираж"}));
   fireEvent.change(screen.getByLabelText("Дата распределительного тиража"),{target:{value:"2099-10-17"}});
   await waitFor(()=>expect(adminApi.distributionDraws).toHaveBeenLastCalledWith("grand","2099-10-17"));
-  expect(screen.queryByRole("button",{name:"Подтвердить и опубликовать пост"})).not.toBeInTheDocument();
+  expect(screen.queryByRole("button",{name:"Подтвердить назначение"})).not.toBeInTheDocument();
+});
+
+test("completed distributions are visible without polling and open their immutable result", async () => {
+  const onOpen = vi.fn();
+  vi.mocked(adminApi.draws).mockResolvedValue([{
+    id: "completed", public_number: 7276, scheduled_at: "2026-10-20T00:42:00Z",
+    ticket_count: 120, distributed_amount: 40216000, total_payout: 40420000,
+  } as import("./types").Draw]);
+  render(<DistributionDraws onOpen={onOpen} />);
+  const history = await screen.findByRole("region", { name: "История распределительных тиражей" });
+  const button = await within(history).findByRole("button", { name: /№7276/ });
+  fireEvent.click(button);
+  expect(onOpen).toHaveBeenCalledWith("completed");
+  expect(adminApi.draws).toHaveBeenCalledExactlyOnceWith("scope=all&period=distribution&lottery_id=grand&limit=50");
+  expect(history.textContent?.replaceAll(/\s/g, "")).toContain("40216000CAS");
 });

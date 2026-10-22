@@ -1,3 +1,5 @@
+import { tr } from "./i18n";
+import { NewYearLiveScene, NewYearSymbols } from "./NewYear";
 import { DistributionBadge } from "./DistributionBadge";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
@@ -27,13 +29,14 @@ function drawKey(draw: LiveDraw): string {
 function lotteryFormat(draw: LiveDraw): string {
   if (draw.lottery_code === "dual") {
     const slot = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Moscow", hour: "2-digit", minute: "2-digit" }).format(new Date(draw.scheduled_at));
-    return `РАУНД ${slot === "00:30" ? "NIGHT" : "DAWN"} · 2 ИЗ 12`;
+    return tr("РАУНД {0} · 2 ИЗ 12", slot === "00:30" ? "NIGHT" : "DAWN");
   }
-  if (draw.lottery_code === "pss") return "ЕЖЕДНЕВНАЯ · 5 ИЗ 36 + CASPER BALL 1 ИЗ 8";
-  if (draw.lottery_code === "khan") return "ЕЖЕДНЕВНАЯ · 6 ИЗ 36";
-  if (draw.lottery_code === "september") return "DAILY · 3 ИЗ 33";
-  if (draw.lottery_code === "grob") return `ПРАЗДНИЧНАЯ · 3 ИЗ ${draw.primary_max_number || 16}`;
-  return draw.lottery_kind === "WEEKLY" ? "ЕЖЕНЕДЕЛЬНАЯ · 5 ИЗ 35 + 2 ИЗ 5" : "DAILY · 4 ИЗ 15";
+  if (draw.lottery_code === "pss") return tr("ЕЖЕДНЕВНАЯ · 5 ИЗ 36 + CASPER BALL 1 ИЗ 8");
+  if (draw.lottery_code === "mini") return tr("КЛАССИКА · 6 ИЗ 30");
+  if (draw.lottery_code === "khan") return tr("ЕЖЕДНЕВНАЯ · 6 ИЗ 36");
+  if (draw.lottery_code === "september") return tr("DAILY · 3 ИЗ 33");
+  if (draw.lottery_code === "grob") return tr("ПРАЗДНИЧНАЯ · 3 ИЗ {0}", draw.primary_max_number || 16);
+  return draw.lottery_kind === "WEEKLY" ? tr("ЕЖЕНЕДЕЛЬНАЯ · 5 ИЗ 35 + 2 ИЗ 5") : tr("DAILY · 4 ИЗ 15");
 }
 
 function khanBallBand(number: number): string {
@@ -46,8 +49,8 @@ function khanBallBand(number: number): string {
 function KhanLototron({ revealedNumbers, currentNumber, mixing }: { revealedNumbers: number[]; currentNumber: number | null; mixing: boolean }) {
   const shown = currentNumber ?? revealedNumbers.at(-1) ?? null;
   return <div className="khan-draw-console" aria-live="polite">
-    <header><span><i />{mixing ? "ПОДГОТОВКА ТИРАЖА" : `ШАР ${revealedNumbers.length} ИЗ 6`}</span><strong>{mixing ? "Синхронизируем результат" : shown === null ? "Механизм готов" : "Число зафиксировано"}</strong></header>
-    <div className="khan-current-wrap"><div className={`khan-current-ball ${shown !== null ? "has-number" : ""} ${shown !== null ? khanBallBand(shown) : ""}`} key={shown ?? "empty"}>{shown ?? "—"}</div><span>{mixing ? "Эфир начнётся через несколько секунд" : "Результат тиража обновляется автоматически"}</span></div>
+    <header><span><i />{mixing ? tr("ПОДГОТОВКА ТИРАЖА") : tr("ШАР {0} ИЗ 6", revealedNumbers.length)}</span><strong>{mixing ? tr("Синхронизируем результат") : shown === null ? tr("Механизм готов") : tr("Число зафиксировано")}</strong></header>
+    <div className="khan-current-wrap"><div className={`khan-current-ball ${shown !== null ? "has-number" : ""} ${shown !== null ? khanBallBand(shown) : ""}`} key={shown ?? "empty"}>{tr(shown ?? "—")}</div><span>{mixing ? tr("Эфир начнётся через несколько секунд") : tr("Результат тиража обновляется автоматически")}</span></div>
     <div className="khan-progress"><i style={{ width: `${(revealedNumbers.length / 6) * 100}%` }} /></div>
     <div className="khan-ball-rack">{Array.from({ length: 6 }, (_, index) => { const number = revealedNumbers[index]; return <i className={number ? `filled ${khanBallBand(number)}` : ""} key={index}>{number ?? "·"}</i>; })}</div>
   </div>;
@@ -55,7 +58,7 @@ function KhanLototron({ revealedNumbers, currentNumber, mixing }: { revealedNumb
 
 function KhanBestTicket({ ticket, revealedNumbers }: { ticket: LiveTicket; revealedNumbers: number[] }) {
   const matches = ticket.numbers.filter((number) => revealedNumbers.includes(number)).length;
-  return <article className="khan-best-ticket"><header><div><span>ВАШ ЛУЧШИЙ БИЛЕТ СЕЙЧАС</span><strong>{formatTicketLabel("khan", ticket.public_number)}</strong></div><b>{matches} / 6</b></header><div className="number-row">{ticket.numbers.map((number) => <span className={`number ${khanBallBand(number)} ${revealedNumbers.includes(number) ? "won" : ""}`} key={number}>{number}</span>)}</div></article>;
+  return <article className="khan-best-ticket"><header><div><span>{tr("ВАШ ЛУЧШИЙ БИЛЕТ СЕЙЧАС")}</span><strong>{tr(formatTicketLabel("khan", ticket.public_number))}</strong></div><b>{matches} / 6</b></header><div className="number-row">{ticket.numbers.map((number) => <span className={`number ${khanBallBand(number)} ${revealedNumbers.includes(number) ? "won" : ""}`} key={number}>{number}</span>)}</div></article>;
 }
 
 export function LiveView({ feed, now, loading, onPlay, onTickets }: LiveViewProps) {
@@ -82,8 +85,8 @@ export function LiveView({ feed, now, loading, onPlay, onTickets }: LiveViewProp
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  if (loading && !feed) return <section className="live-stage live-loading" aria-label="Загружаем эфир"><div className="live-grid" /><div className="skeleton live-title-skeleton" /><div className="skeleton live-clock-skeleton" /><div className="skeleton live-panel-skeleton" /></section>;
-  if (!draw) return <section className="live-stage live-idle"><div className="live-grid" /><span className="live-label"><i /> ЭФИР</span><h1>Расписание готовится</h1><p>Следующий тираж появится здесь автоматически.</p><button className="secondary-button" onClick={onTickets} type="button">Мои билеты</button></section>;
+  if (loading && !feed) return <section className="live-stage live-loading" aria-label={tr("Загружаем эфир")}><div className="live-grid" /><div className="skeleton live-title-skeleton" /><div className="skeleton live-clock-skeleton" /><div className="skeleton live-panel-skeleton" /></section>;
+  if (!draw) return <section className="live-stage live-idle"><div className="live-grid" /><span className="live-label"><i />  {tr("ЭФИР")}</span><h1>{tr("Расписание готовится")}</h1><p>{tr("Следующий тираж появится здесь автоматически.")}</p><button className="secondary-button" onClick={onTickets} type="button">{tr("Мои билеты")}</button></section>;
 
   const isReplay = Boolean(replayDraw);
   const winner = draw.player_total_prize > 0;
@@ -92,9 +95,10 @@ export function LiveView({ feed, now, loading, onPlay, onTickets }: LiveViewProp
   const finalMinute = !isReplay && state.phase === "waiting" && startsIn <= 60_000;
   const finalMinuteProgress = finalMinute ? Math.max(0, Math.min(100, ((60_000 - startsIn) / 60_000) * 100)) : 0;
   const grand = isGrandLottery(draw.lottery_code);
+  const newYear = draw.lottery_code === "newyear2027";
   const dual = draw.lottery_code === "dual";
   const grandOffset = draw.secondary_storage_offset ?? (draw.lottery_code === "pss" ? 36 : 35);
-  const resultSize = draw.winning_numbers?.length ?? (dual ? 2 : draw.lottery_code === "september" || draw.lottery_code === "grob" ? 3 : draw.lottery_code === "khan" ? 6 : draw.lottery_kind === "WEEKLY" ? 7 : 4);
+  const resultSize = draw.winning_numbers?.length ?? (dual ? 2 : draw.lottery_code === "september" || draw.lottery_code === "grob" ? 3 : (draw.lottery_code === "khan" || draw.lottery_code === "mini") ? 6 : draw.lottery_kind === "WEEKLY" ? 7 : 4);
   const khanShownNumbers = state.currentNumber === null ? state.revealedNumbers : [...state.revealedNumbers, state.currentNumber];
 
   return <div className="live-experience">
@@ -102,44 +106,45 @@ export function LiveView({ feed, now, loading, onPlay, onTickets }: LiveViewProp
     <section className={`live-stage lottery-${draw.lottery_code} phase-${state.phase} ${finalMinute ? "final-minute" : ""} ${isReplay ? "is-replay" : "is-live"}`}>
       <div className="live-grid" aria-hidden="true" />
       <div className="live-ambient" aria-hidden="true" />
-      <div className="live-lottery-scene"><LotteryVisual code={draw.lottery_code} context="live" animated={!isReplay && draw.lottery_code !== "khan"} /></div>
-      {draw.lottery_code === "september" && <div className="live-september-mark" aria-hidden="true"><small>{copy.september.liveMood}</small><strong>03</strong><span>сентября</span></div>}
+      <div className="live-lottery-scene"><LotteryVisual code={draw.lottery_code} context="live" animated={!isReplay && draw.lottery_code !== "khan" && draw.lottery_code !== "mini"} /></div>
+      {draw.lottery_code === "september" && <div className="live-september-mark" aria-hidden="true"><small>{tr(copy.september.liveMood)}</small><strong>03</strong><span>{tr("сентября")}</span></div>}
       <header className="live-heading">
-        <span className="live-label"><i /> {isReplay ? "ПОВТОР ТИРАЖА" : state.phase === "waiting" ? "СКОРО В ЭФИРЕ" : state.phase === "result" ? "ТИРАЖ ЗАВЕРШЁН" : "ПРЯМОЙ ЭФИР"}</span>
-        {isReplay ? <button className="replay-close" onClick={() => setReplayKey(null)} type="button"><Icon name="close" /> К эфиру</button> : <span>{formatDrawLabel(draw.lottery_code, draw.draw_number)}</span>}
+        <span className="live-label"><i /> {isReplay ? tr("ПОВТОР ТИРАЖА") : state.phase === "waiting" ? tr("СКОРО В ЭФИРЕ") : state.phase === "result" ? tr("ТИРАЖ ЗАВЕРШЁН") : tr("ПРЯМОЙ ЭФИР")}</span>
+        {isReplay ? <button className="replay-close" onClick={() => setReplayKey(null)} type="button"><Icon name="close" />  {tr("К эфиру")}</button> : <span>{tr(formatDrawLabel(draw.lottery_code, draw.draw_number))}</span>}
       </header>
-      <div className="live-identity"><span>{lotteryFormat(draw)}</span><h1>{draw.lottery_name}</h1><time>{formatMoscow(draw.scheduled_at)} МСК · {formatDrawLabel(draw.lottery_code, draw.draw_number)}</time></div>
+      <div className="live-identity"><span>{tr(lotteryFormat(draw))}</span><h1>{tr(draw.lottery_name)}</h1><time>{tr(formatMoscow(draw.scheduled_at))}  {tr("МСК ·")} {tr(formatDrawLabel(draw.lottery_code, draw.draw_number))}</time></div>
 
       {draw.lottery_code === "weekly" && <GrandDrawScene active={state.phase === "starting" || state.phase === "revealing"} revealed={state.revealedNumbers} />}
-      {state.phase === "waiting" && <>
-        <div className="live-countdown"><span>{finalMinute ? "Тираж начнётся через" : "До начала тиража"}</span><strong>{countdown(draw.scheduled_at, now)}</strong><small><i /> Синхронизировано с сервером</small><div className="live-signal" aria-hidden="true"><i /><span /></div>{finalMinute && <div className="last-minute-progress"><span style={{ width: `${finalMinuteProgress}%` }} /></div>}</div>
-        <div className="live-timeline" aria-label="Этапы тиража"><div className="active"><i /><span>Ожидание</span></div><b /><div><i /><span>Выбор чисел</span></div><b /><div><i /><span>Результат</span></div></div>
-        <div className="result-preview"><span>{finalMinute ? "Готовим экран результата" : "Здесь появятся выпавшие числа"}</span><div>{Array.from({ length: resultSize }, (_, index) => <i key={index}>{index + 1}</i>)}</div></div>
-        <div className="live-facts"><div><span>Джекпот</span><strong><Money value={draw.jackpot} compact /></strong></div><div><span>Ваши билеты</span><strong>{draw.player_ticket_count}</strong></div></div>
+      {newYear && <NewYearLiveScene scheduledAt={draw.scheduled_at} now={now} values={state.currentNumber === null ? state.revealedNumbers : [...state.revealedNumbers, state.currentNumber]} phase={state.phase} />}
+      {!newYear && state.phase === "waiting" && <>
+        <div className="live-countdown"><span>{finalMinute ? tr("Тираж начнётся через") : tr("До начала тиража")}</span><strong>{tr(countdown(draw.scheduled_at, now))}</strong><small><i />  {tr("Синхронизировано с сервером")}</small><div className="live-signal" aria-hidden="true"><i /><span /></div>{finalMinute && <div className="last-minute-progress"><span style={{ width: `${finalMinuteProgress}%` }} /></div>}</div>
+        <div className="live-timeline" aria-label={tr("Этапы тиража")}><div className="active"><i /><span>{tr("Ожидание")}</span></div><b /><div><i /><span>{tr("Выбор чисел")}</span></div><b /><div><i /><span>{tr("Результат")}</span></div></div>
+        <div className="result-preview"><span>{finalMinute ? tr("Готовим экран результата") : tr("Здесь появятся выпавшие числа")}</span><div>{Array.from({ length: resultSize }, (_, index) => <i key={index}>{index + 1}</i>)}</div></div>
+        <div className="live-facts"><div><span>{tr("Джекпот")}</span><strong><Money value={draw.jackpot} compact /></strong></div><div><span>{tr("Ваши билеты")}</span><strong>{draw.player_ticket_count}</strong></div></div>
       </>}
 
-      {state.phase === "starting" && (draw.lottery_code === "khan" ? <KhanLototron revealedNumbers={[]} currentNumber={null} mixing /> : <div className="live-start"><span>{isReplay ? "Возвращаемся к моменту тиража" : "Тираж начинается"}</span><strong>{isReplay ? "Восстанавливаем последовательность чисел" : copy.live.choosingNumbers}</strong><p>{isReplay ? "Это цифровой повтор сохранённого результата." : copy.live.stayOnScreen}</p><i /></div>)}
+      {!newYear && state.phase === "starting" && ((draw.lottery_code === "khan" || draw.lottery_code === "mini") ? <KhanLototron revealedNumbers={[]} currentNumber={null} mixing /> : <div className="live-start"><span>{isReplay ? tr("Возвращаемся к моменту тиража") : tr("Тираж начинается")}</span><strong>{tr(isReplay ? tr("Восстанавливаем последовательность чисел") : copy.live.choosingNumbers)}</strong><p>{tr(isReplay ? tr("Это цифровой повтор сохранённого результата.") : copy.live.stayOnScreen)}</p><i /></div>)}
 
-      {state.phase === "revealing" && (draw.lottery_code === "khan" ? <><KhanLototron revealedNumbers={khanShownNumbers} currentNumber={state.currentNumber} mixing={false} />{draw.highlighted_tickets[0] && <KhanBestTicket ticket={draw.highlighted_tickets[0]} revealedNumbers={khanShownNumbers} />}</> : <div className="live-reveal" aria-live="polite">
-        <span>{isReplay ? "В записи выпало число" : "Выпадает число"}</span>
+      {!newYear && state.phase === "revealing" && ((draw.lottery_code === "khan" || draw.lottery_code === "mini") ? <><KhanLototron revealedNumbers={khanShownNumbers} currentNumber={state.currentNumber} mixing={false} />{draw.highlighted_tickets[0] && <KhanBestTicket ticket={draw.highlighted_tickets[0]} revealedNumbers={khanShownNumbers} />}</> : <div className="live-reveal" aria-live="polite">
+        <span>{isReplay ? tr("В записи выпало число") : tr("Выпадает число")}</span>
         <motion.strong animate={{ opacity: 1, scale: 1, y: 0 }} initial={{ opacity: 0, scale: .76, y: 12 }} key={state.currentNumber} transition={{ type: "spring", stiffness: 280, damping: 22 }}>{grand && (state.currentNumber ?? 0) > grandOffset ? (state.currentNumber ?? 0) - grandOffset : state.currentNumber}</motion.strong>
-        <div className={`live-sequence ${grand ? "grand-live-sequence" : ""}`}>{draw.winning_numbers?.map((number, index) => <i className={`${grand && number > grandOffset ? "special" : ""} ${index < state.revealedNumbers.length ? `shown ${index === state.revealedNumbers.length - 1 ? "recent" : ""}` : ""}`} key={`${number}-${index}`}>{index < state.revealedNumbers.length ? (grand && number > grandOffset ? number - grandOffset : number) : "·"}</i>)}</div>
+        <div className={`live-sequence ${grand ? "grand-live-sequence" : ""}`}>{draw.winning_numbers?.map((number, index) => <i className={`${grand && number > grandOffset ? "special" : ""} ${index < state.revealedNumbers.length ? `shown ${index === state.revealedNumbers.length - 1 ? "recent" : ""}` : ""}`} key={`${number}-${index}`}>{tr(index < state.revealedNumbers.length ? (grand && number > grandOffset ? number - grandOffset : number) : "·")}</i>)}</div>
       </div>)}
 
       {state.phase === "result" && <motion.div animate={{ opacity: 1, y: 0 }} className={`live-result ${winner ? "winner" : "neutral"}`} initial={{ opacity: 0, y: 10 }}>
-        <span>{isReplay ? "Результат записи" : dual ? "Результат раунда" : "Итог тиража"}</span>
-        {grand ? <GrandNumberSet values={state.revealedNumbers} offset={grandOffset} specialLabel={draw.lottery_code === "pss" ? "Casper Ball" : undefined} /> : <div className="live-final-numbers">{state.revealedNumbers.map((number) => <i key={number}>{number}</i>)}</div>}
-        {draw.player_ticket_count === 0 ? <div className="personal-result"><strong>Вы не участвовали в этом {dual ? "раунде" : "тираже"}</strong><p>Новый билет можно выбрать для ближайшего розыгрыша.</p></div> : winner ? <div className="personal-result win"><span>Ваш выигрыш</span><strong>+{formatCas(draw.player_total_prize)}</strong><p>Выигрышных билетов: {draw.player_winning_ticket_count}</p></div> : dual ? <div className="personal-result"><strong>Результат раунда сохранён</strong><p>Проверьте свой билет: после первого раунда он остаётся активным, итог и выплата появятся после второго.</p></div> : <div className="personal-result"><strong>В этот раз без выигрыша</strong><p>{draw.player_best_matches ? `Лучший результат — ${matchLabel(draw.lottery_code, draw.player_best_matches, grand)}.` : "Совпадений нет."} Следующий шанс уже близко.</p></div>}
-        {!dual && draw.highlighted_tickets.map((ticket) => <article className="live-ticket" key={ticket.public_number}><div><span>{formatTicketLabel(draw.lottery_code, ticket.public_number)}</span><strong>{ticket.prize_amount > 0 ? `+${formatCas(ticket.prize_amount)}` : "Без выигрыша"}</strong></div>{grand ? <GrandNumberSet values={ticket.numbers} offset={grandOffset} specialLabel={draw.lottery_code === "pss" ? "Casper Ball" : undefined} winning={draw.winning_numbers} animate={ticket.prize_amount > 0} /> : <NumberSet values={ticket.numbers} winning={draw.winning_numbers} animate={ticket.prize_amount > 0} />}</article>)}
+        <span>{isReplay ? tr("Результат записи") : dual ? tr("Результат раунда") : tr("Итог тиража")}</span>
+        {newYear ? <NewYearSymbols values={state.revealedNumbers} /> : grand ? <GrandNumberSet values={state.revealedNumbers} offset={grandOffset} specialLabel={tr(draw.lottery_code === "pss" ? "Casper Ball" : undefined)} /> : <div className="live-final-numbers">{state.revealedNumbers.map((number) => <i key={number}>{number}</i>)}</div>}
+        {draw.player_ticket_count === 0 ? <div className="personal-result"><strong>{tr("Вы не участвовали в этом")} {dual ? tr("раунде") : tr("тираже")}</strong><p>{tr("Новый билет можно выбрать для ближайшего розыгрыша.")}</p></div> : winner ? <div className="personal-result win"><span>{tr("Ваш выигрыш")}</span><strong>+{tr(formatCas(draw.player_total_prize))}</strong><p>{tr("Выигрышных билетов:")} {draw.player_winning_ticket_count}</p></div> : dual ? <div className="personal-result"><strong>{tr("Результат раунда сохранён")}</strong><p>{tr("Проверьте свой билет: после первого раунда он остаётся активным, итог и выплата появятся после второго.")}</p></div> : <div className="personal-result"><strong>{tr("В этот раз без выигрыша")}</strong><p>{draw.player_best_matches ? tr("Лучший результат — {0}.", matchLabel(draw.lottery_code, draw.player_best_matches, grand)) : tr("Совпадений нет.")}  {tr("Следующий шанс уже близко.")}</p></div>}
+        {!dual && draw.highlighted_tickets.map((ticket) => <article className="live-ticket" key={ticket.public_number}><div><span>{tr(formatTicketLabel(draw.lottery_code, ticket.public_number))}</span><strong>{tr(ticket.prize_amount > 0 ? `+${formatCas(ticket.prize_amount)}` : tr("Без выигрыша"))}</strong></div>{newYear ? <NewYearSymbols values={ticket.numbers} /> : grand ? <GrandNumberSet values={ticket.numbers} offset={grandOffset} specialLabel={tr(draw.lottery_code === "pss" ? "Casper Ball" : undefined)} winning={draw.winning_numbers} animate={ticket.prize_amount > 0} /> : <NumberSet values={ticket.numbers} winning={draw.winning_numbers} animate={ticket.prize_amount > 0} />}</article>)}
       </motion.div>}
 
-      {!isReplay && state.nextDraw && <div className="live-next"><span>Следующий тираж</span><strong>{state.nextDraw.lottery_name}</strong><small>{formatMoscow(state.nextDraw.scheduled_at)} МСК · {countdown(state.nextDraw.scheduled_at, now)}</small></div>}
-      <div className="live-actions"><button className="secondary-button" onClick={onTickets} type="button">Мои билеты</button>{isReplay ? <button className="secondary-button" onClick={() => { setReplayStartedAt(now); selectionHaptic(); }} type="button">Повторить ещё раз</button> : canBuy && <PrimaryButton onClick={() => onPlay(canBuy)}>Выбрать числа</PrimaryButton>}</div>
+      {!isReplay && state.nextDraw && <div className="live-next"><span>{tr("Следующий тираж")}</span><strong>{tr(state.nextDraw.lottery_name)}</strong><small>{tr(formatMoscow(state.nextDraw.scheduled_at))}  {tr("МСК ·")} {tr(countdown(state.nextDraw.scheduled_at, now))}</small></div>}
+      <div className="live-actions"><button className="secondary-button" onClick={onTickets} type="button">{tr("Мои билеты")}</button>{isReplay ? <button className="secondary-button" onClick={() => { setReplayStartedAt(now); selectionHaptic(); }} type="button">{tr("Повторить ещё раз")}</button> : canBuy && <PrimaryButton onClick={() => onPlay(canBuy)}>{newYear ? tr("Выбрать символы") : tr("Выбрать числа")}</PrimaryButton>}</div>
     </section>
 
     {!isReplay && feed && <section className="replay-library">
-      <div className="section-heading"><div><span className="eyebrow">Цифровой архив</span><h2>Последние розыгрыши</h2></div><span className="section-count">По 2 каждой лотереи</span></div>
-      <div className="replay-list">{feed.recent_completed.map((item) => { const parts = splitGrandNumbers(item.winning_numbers ?? [], item.secondary_storage_offset ?? (item.lottery_code === "pss" ? 36 : 35)); return <button className={`replay-row lottery-${item.lottery_code}`} key={drawKey(item)} onClick={() => startReplay(item)} type="button"><span className="replay-symbol"><Icon name="replay" /></span><span><strong>{item.lottery_name}</strong><small>{formatMoscow(item.scheduled_at)} МСК · {formatDrawLabel(item.lottery_code, item.draw_number)}</small></span><span className="replay-numbers">{isGrandLottery(item.lottery_code) ? `${parts.main.join(" · ")} + ${parts.special.join(" · ")}` : item.winning_numbers?.join(" · ")}</span><b>Смотреть</b></button>; })}</div>
+      <div className="section-heading"><div><span className="eyebrow">{tr("Цифровой архив")}</span><h2>{tr("Последние розыгрыши")}</h2></div><span className="section-count">{tr("По 2 каждой лотереи")}</span></div>
+      <div className="replay-list">{feed.recent_completed.map((item) => { const parts = splitGrandNumbers(item.winning_numbers ?? [], item.secondary_storage_offset ?? (item.lottery_code === "pss" ? 36 : 35)); return <button className={`replay-row lottery-${item.lottery_code}`} key={drawKey(item)} onClick={() => startReplay(item)} type="button"><span className="replay-symbol"><Icon name="replay" /></span><span><strong>{tr(item.lottery_name)}</strong><small>{tr(formatMoscow(item.scheduled_at))}  {tr("МСК ·")} {tr(formatDrawLabel(item.lottery_code, item.draw_number))}</small></span><span className="replay-numbers">{tr(item.lottery_code === "newyear2027" ? <NewYearSymbols values={item.winning_numbers ?? []} /> : isGrandLottery(item.lottery_code) ? `${parts.main.join(" · ")} + ${parts.special.join(" · ")}` : item.winning_numbers?.join(" · "))}</span><b>{tr("Смотреть")}</b></button>; })}</div>
     </section>}
   </div>;
 }

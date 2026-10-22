@@ -1,3 +1,4 @@
+import { tr, getLocale } from "./i18n";
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
@@ -23,7 +24,7 @@ export function Icon({ name }: { name: IconName }) {
     repeat: <><path d="M18 7h-9a5 5 0 0 0-5 5v1" /><path d="m15 4 3 3-3 3M6 17h9a5 5 0 0 0 5-5v-1" /><path d="m9 20-3-3 3-3" /></>,
     close: <><path d="m6 6 12 12M18 6 6 18" /></>,
   };
-  return <svg aria-hidden="true" className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>;
+  return <svg aria-hidden="true" className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{tr(paths[name])}</svg>;
 }
 
 function useAnimatedValue(value: number): number {
@@ -55,11 +56,11 @@ function useAnimatedValue(value: number): number {
 
 export function Balance({ value }: { value: number }) {
   const displayed = useAnimatedValue(value);
-  return <div aria-label={`Баланс: ${new Intl.NumberFormat("ru-RU").format(displayed)} CAS`} className="balance"><strong><Money compact value={displayed} /></strong></div>;
+  return <div aria-label={tr("Баланс: {0} CAS", new Intl.NumberFormat(getLocale()).format(displayed))} className="balance"><strong><Money compact value={displayed} /></strong></div>;
 }
 
 export function Money({ value, compact = false, prefix = "" }: { value: number; compact?: boolean; prefix?: string }) {
-  return <span className="money-value" aria-label={`${prefix}${new Intl.NumberFormat("ru-RU").format(value)} CAS`}><span>{prefix}{compact ? formatCompactAmount(value) : new Intl.NumberFormat("ru-RU").format(value)}</span><i className="currency-mark" aria-hidden="true">C</i></span>;
+  return <span className="money-value" aria-label={tr(`${prefix}${new Intl.NumberFormat(getLocale()).format(value)} CAS`)}><span>{tr(prefix)}{tr(compact ? formatCompactAmount(value) : new Intl.NumberFormat(getLocale()).format(value))}</span><i className="currency-mark" aria-hidden="true">C</i></span>;
 }
 
 export function PrimaryButton({
@@ -80,7 +81,7 @@ export function PrimaryButton({
   return <button className={`primary-button ${loading ? "loading" : ""} ${success ? "success" : ""} ${className}`} disabled={disabled || loading} onClick={onClick} type="button">
     {loading && <span className="button-spinner" />}
     {success && <span className="button-check">✓</span>}
-    <span>{children}</span>
+    <span>{tr(children)}</span>
   </button>;
 }
 
@@ -93,7 +94,7 @@ export function NumberSet({
   winning?: number[] | null;
   animate?: boolean;
 }) {
-  return <div className="number-row" aria-label={`Числа: ${values.join(", ")}`}>
+  return <div className="number-row" aria-label={tr("Числа: {0}", values.join(", "))}>
     {values.map((value, index) => {
       const won = winning?.includes(value) ?? false;
       return <span className={`number ${won ? "won" : ""} ${animate && won ? "animate-win" : ""}`} key={value} style={{ "--number-index": index } as CSSProperties}>{value}</span>;
@@ -106,7 +107,7 @@ export function GrandNumberSet({
   winning,
   animate = false,
   offset = 35,
-  specialLabel = "Спецчисла",
+  specialLabel = tr("Спецчисла"),
 }: {
   values: number[];
   winning?: number[] | null;
@@ -116,10 +117,10 @@ export function GrandNumberSet({
 }) {
   const parts = splitGrandNumbers(values, offset);
   const winningParts = winning ? splitGrandNumbers(winning, offset) : null;
-  return <div className="grand-number-set" aria-label={`Основные числа: ${parts.main.join(", ")}; специальные числа: ${parts.special.join(", ")}`}>
-    <div><small>Основное поле</small><NumberSet animate={animate} values={parts.main} winning={winningParts?.main} /></div>
+  return <div className="grand-number-set" aria-label={tr("Основные числа: {0}; специальные числа: {1}", parts.main.join(", "), parts.special.join(", "))}>
+    <div><small>{tr("Основное поле")}</small><NumberSet animate={animate} values={parts.main} winning={winningParts?.main} /></div>
     <span aria-hidden="true">+</span>
-    <div className="grand-special"><small>{specialLabel}</small><NumberSet animate={animate} values={parts.special} winning={winningParts?.special} /></div>
+    <div className="grand-special"><small>{tr(specialLabel)}</small><NumberSet animate={animate} values={parts.special} winning={winningParts?.special} /></div>
   </div>;
 }
 
@@ -127,17 +128,17 @@ export function SignalSet({ values, code, winning }: { values: number[]; code: "
   if (code === "pulse") {
     const parts = splitPulseNumbers(values);
     const won = winning ? splitPulseNumbers(winning) : null;
-    return <div className="signal-set signal-pulse" aria-label={`Основные числа: ${parts.main.join(", ")}; Pulse-число: ${parts.pulse.join(", ")}`}>
-      {parts.main.map((value) => <span className={won?.main.includes(value) ? "won" : ""} key={value}><i /><small>{String(value).padStart(2, "0")}</small></span>)}
+    return <div className="signal-set signal-pulse" aria-label={tr("Основные числа: {0}; Pulse-число: {1}", parts.main.join(", "), parts.pulse.join(", "))}>
+      {parts.main.map((value) => <span className={won?.main.includes(value) ? "won" : ""} key={value}><i /><small>{tr(String(value).padStart(2, "0"))}</small></span>)}
       <b aria-hidden="true">+</b>
       {parts.pulse.map((value) => <span className={`pulse-special ${won?.pulse.includes(value) ? "won" : ""}`} key={`pulse-${value}`}><i /><small>P{value}</small></span>)}
     </div>;
   }
-  return <div className={`signal-set signal-${code}`} aria-label={`Позиции: ${values.join(", ")}`}>{values.map((value) => <span className={winning?.includes(value) ? "won" : ""} key={value}><i /><small>{String(value).padStart(2, "0")}</small></span>)}</div>;
+  return <div className={`signal-set signal-${code}`} aria-label={tr("Позиции: {0}", values.join(", "))}>{values.map((value) => <span className={winning?.includes(value) ? "won" : ""} key={value}><i /><small>{tr(String(value).padStart(2, "0"))}</small></span>)}</div>;
 }
 
 export function StatusBadge({ active, label }: { active: boolean; label?: string }) {
-  return <span className={`status ${active ? "active" : "complete"} ${label ? "custom" : ""}`}><i />{label ?? (active ? "Активен" : "Завершён")}</span>;
+  return <span className={`status ${active ? "active" : "complete"} ${label ? "custom" : ""}`}><i />{tr(label ?? (active ? tr("Активен") : tr("Завершён")))}</span>;
 }
 
 export function EmptyState({
@@ -151,14 +152,14 @@ export function EmptyState({
 }) {
   return <div className="empty-state">
     <div className="empty-illustration" aria-hidden="true"><span /><span /><Icon name="ticket" /></div>
-    <strong>{title}</strong>
-    <p>{text}</p>
-    {action && <button className="empty-action" onClick={action.onClick} type="button">{action.label}<span>→</span></button>}
+    <strong>{tr(title)}</strong>
+    <p>{tr(text)}</p>
+    {action && <button className="empty-action" onClick={action.onClick} type="button">{tr(action.label)}<span>→</span></button>}
   </div>;
 }
 
 export function Skeleton() {
-  return <main className="app-shell skeleton-shell" aria-label="Загружаем Casper Loto">
+  return <main className="app-shell skeleton-shell" aria-label={tr("Загружаем Casper Loto")}>
     <header className="app-header"><div aria-label="Casper Loto" className="brand-lockup"><picture><source media="(max-width: 520px)" srcSet={logoSymbol} /><img alt="" className="brand-logo-horizontal" width="138" height="46" fetchPriority="high" src={logoHorizontal} /></picture></div><div className="skeleton header-balance-skeleton" /></header>
     <div className="skeleton hero-skeleton" />
     <div className="skeleton draw-skeleton" />

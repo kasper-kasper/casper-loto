@@ -18,6 +18,30 @@ from scripts.release_snapshot import (
 )
 
 
+def test_candidate_checks_mount_verified_production_config(monkeypatch):
+    remote = Mock()
+    monkeypatch.setattr(release_vps, "run_remote", remote)
+    release_vps.verify_candidate_finances(
+        Mock(), "docker compose", service="api", source_dir="/safe/candidate"
+    )
+    command = remote.call_args.args[2]
+    fixture = "/safe/candidate/docker-compose.prod.yml:/app/docker-compose.prod.yml:ro"
+    assert "-v " + fixture in command
+    assert "python -m scripts.editorial_retirement_postgres_smoke" in command
+
+
+def test_schema_fingerprint_ignores_only_random_pg_dump_nonce(monkeypatch):
+    original = "CREATE TABLE tickets (id uuid);\n0058\n"
+    one = "\\restrict nonce1\n" + original + "\\unrestrict nonce1\n"
+    two = "\\restrict nonce2\n" + original + "\\unrestrict nonce2\n"
+    remote = Mock(side_effect=[one, two, two.replace("id uuid", "id text")])
+    monkeypatch.setattr(release_vps, "run_remote", remote)
+    first = release_vps.schema_fingerprint(Mock(), "docker compose")
+    assert release_vps.schema_fingerprint(Mock(), "docker compose") == first
+    assert release_vps.schema_fingerprint(Mock(), "docker compose") != first
+    assert remote.call_args.kwargs["show_output"] is False
+
+
 def test_structured_release_output_can_exceed_diagnostic_tail(capsys):
     payload = b"public-inventory\n" * 2000
     remaining = [payload]
@@ -157,6 +181,8 @@ def test_snapshot_accepts_only_known_public_environment_templates(tmp_path):
         "backups/dump",
         "design/reels/video.mp4",
         "frontend/web/package.json",
+        "archive/reference/legacy-web/App.tsx",
+        "archive/local/database.dump",
     ],
 )
 def test_source_snapshot_rejects_secrets_runtime_data_web_and_escape(

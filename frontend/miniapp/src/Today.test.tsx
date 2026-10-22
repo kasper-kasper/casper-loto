@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import { Today } from "./Today";
 import type { Lottery } from "./types";
+import miniClover from "./assets/lotteries/mini-clover.svg";
 
 const lottery: Lottery = {
   code: "khan", name: "6 из 36", kind: "DAILY", numbers_to_pick: 6, max_number: 36,
@@ -11,6 +12,11 @@ const lottery: Lottery = {
   max_tickets_per_purchase: 1000, max_tickets_per_user_per_draw: 5000,
 };
 const props = { lotteries: [lottery], now: Date.parse("2026-09-28T16:00:00Z"), highlights: null, totalTicketCount: 42, totalWinningTicketCount: 7, monthlyTotalPayout: 15000, onOpen: vi.fn(), onCatalog: vi.fn(), onTickets: vi.fn(), onArchive: vi.fn() };
+
+it("uses Mini's clover artwork when Mini is the next home draw", () => {
+  const { container } = render(<Today {...props} lotteries={[{ ...lottery, code: "mini", name: "Casper Mini" }]} />);
+  expect(container.querySelector(".home-feature-mini .home-feature-art img")).toHaveAttribute("src", miniClover);
+});
 
 it("keeps personal home tickets and catalog accessible with and without active tickets", () => {
   const onTickets = vi.fn(), onCatalog = vi.fn();

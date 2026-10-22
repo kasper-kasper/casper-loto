@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
 
 import khanScene from "./assets/lotteries/khan-scene.webp";
+import miniClover from "./assets/lotteries/mini-clover.svg";
 import septemberScene from "./assets/lotteries/september-embankment.jpg";
 import pllScene from "./assets/lotteries/pll-portal.jpg";
 import pssScene from "./assets/lotteries/pss-nature-scene.webp";
@@ -66,6 +67,7 @@ export function LotteryVisual({ code, context = "hero", animated = true }: Lotte
   const loading = context === "catalog" ? "lazy" : "eager";
   const layered = context === "picker" || context === "live";
 
+  if (code === "mini") return <div ref={captureScene} aria-hidden="true" className={`lottery-visual visual-mini visual-${context}`}><img src={miniClover} alt="" decoding="async" /><i /></div>;
   if (code === "dual") return <div ref={captureScene} aria-hidden="true" className={`lottery-visual visual-dual visual-${context} raster-visual`}><img alt="" className="scene-backdrop" decoding="async" fetchPriority={context === "catalog" ? "auto" : "high"} loading={loading} src={dualScene} /><i className="scene-depth" /><i className="dual-scene-glow" /></div>;
 
   if (rasterScenes[code]) return <div ref={captureScene} aria-hidden="true" className={`lottery-visual visual-${code} visual-${context} raster-visual ${sceneActive ? "" : "motion-paused"}`}>
