@@ -273,19 +273,24 @@ Read [AGENTS.md](AGENTS.md) before making changes.
 
 | Document | Contents |
 | --- | --- |
-| [Changelog](CHANGELOG.md) | Changes and releases; currently in Russian |
-| [Devlog](DEVLOG.md) | Development notes, decisions and verification |
+| [Changelog](CHANGELOG.md) · [Русский](CHANGELOG.ru.md) | Notable releases and grouped fixes |
+| [Devlog](DEVLOG.md) · [Русский](DEVLOG.ru.md) | My development notes and decisions |
 | [Roadmap](docs/ROADMAP.md) | Planned features and target dates, in English and Russian |
 | [Documentation](docs/README.md) | Index of technical documentation |
 
-Some technical and historical documents are currently in Russian.
+The [history archive](docs/history/README.md) preserves the complete earlier
+technical journals. Some technical documents retain their original language.
+See [how versions and journals work](docs/HISTORY_GUIDE.md).
 
 ## Licence
 
-I want others to be able to learn from and use what I build. I am still
-choosing a specific licence; its terms will appear in `LICENSE`.
-Until then, [get in touch](https://t.me/rabochyru) about using the project.
-Third-party dependencies, fonts and images have their own terms.
+I release my original code and associated documentation under the
+**[MIT License](LICENSE)**. You can learn from it, change it and use it in your
+own projects, including commercially, while keeping the licence and copyright
+notice. My own Casper Loto application remains free of real-money purchases.
+
+Third-party materials retain their own terms. For brand use and existing
+notices, see [licensing details](docs/LICENSING.md).
 
 ---
 

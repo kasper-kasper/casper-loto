@@ -1,0 +1,2173 @@
+{
+  "snapshot": "2026-10-23",
+  "source_git_commit": "4ab94855ac85dd2b2a08ac8c2551d0a06bba856a",
+  "sources": [
+    {
+      "file": "CHANGELOG.original.md",
+      "sha256": "3dc585205d78732db34a032d19c4baf427161f7260531b41794e493a65bce383",
+      "headings": [
+        {
+          "heading": "## [Mini App 1.70.0] - 2026-10-22",
+          "line": 1,
+          "date": "2026-10-22"
+        },
+        {
+          "heading": "## [Mini App 1.69.1] - 2026-10-22",
+          "line": 7,
+          "date": "2026-10-22"
+        },
+        {
+          "heading": "## [1.59.0 / Mini App 1.69.0] - 2026-10-22",
+          "line": 13,
+          "date": "2026-10-22"
+        },
+        {
+          "heading": "## [Local only · Новогоднее лото — оформление] - 2026-10-21",
+          "line": 19,
+          "date": "2026-10-21"
+        },
+        {
+          "heading": "## [Local only · Casper Mini] - 2026-10-21",
+          "line": 27,
+          "date": "2026-10-21"
+        },
+        {
+          "heading": "## [Local only · Новогоднее лото 2027] - 2026-10-21",
+          "line": 29,
+          "date": "2026-10-21"
+        },
+        {
+          "heading": "## [Mini App 1.68.2] - 2026-10-21",
+          "line": 42,
+          "date": "2026-10-21"
+        },
+        {
+          "heading": "## [API 1.58.2 / Mini App 1.68.1] - 2026-10-21",
+          "line": 46,
+          "date": "2026-10-21"
+        },
+        {
+          "heading": "## [API 1.58.1 / Mini App 1.68.0] - 2026-10-21",
+          "line": 52,
+          "date": "2026-10-21"
+        },
+        {
+          "heading": "## [API 1.58.0 / Mini App 1.68.0] - 2026-10-21",
+          "line": 56,
+          "date": "2026-10-21"
+        },
+        {
+          "heading": "## [API 1.57.2 / Admin 1.61.2] - 2026-10-20",
+          "line": 62,
+          "date": "2026-10-20"
+        },
+        {
+          "heading": "## [Этапы локальной подготовки достижений к релизу 1.58.0 / 1.68.0] - 2026-10-20",
+          "line": 68,
+          "date": "2026-10-20"
+        },
+        {
+          "heading": "## [API 1.57.1 / Mini App 1.67.1 / Admin 1.61.1] - 2026-10-19",
+          "line": 83,
+          "date": "2026-10-19"
+        },
+        {
+          "heading": "## [API 1.57.0 / Mini App 1.67.0 / Admin 1.61.0] - 2026-10-18",
+          "line": 89,
+          "date": "2026-10-18"
+        },
+        {
+          "heading": "## [API 1.56.7] - 2026-10-17",
+          "line": 98,
+          "date": "2026-10-17"
+        },
+        {
+          "heading": "## [API 1.56.6 / Admin 1.60.4] - 2026-10-16",
+          "line": 102,
+          "date": "2026-10-16"
+        },
+        {
+          "heading": "## [API 1.56.5 / Admin 1.60.3] - 2026-10-16",
+          "line": 108,
+          "date": "2026-10-16"
+        },
+        {
+          "heading": "## [Operations] - 2026-10-16",
+          "line": 115,
+          "date": "2026-10-16"
+        },
+        {
+          "heading": "## [API 1.56.4 / Mini App 1.66.5] - 2026-10-14",
+          "line": 120,
+          "date": "2026-10-14"
+        },
+        {
+          "heading": "## [API 1.56.3 / Mini App 1.66.4] - 2026-10-14",
+          "line": 126,
+          "date": "2026-10-14"
+        },
+        {
+          "heading": "## [API 1.56.2 / Admin 1.60.2] - 2026-10-14",
+          "line": 132,
+          "date": "2026-10-14"
+        },
+        {
+          "heading": "## [Mini App 1.66.3 / Admin 1.60.1 / Local Web 1.56.1] - 2026-10-14",
+          "line": 141,
+          "date": "2026-10-14"
+        },
+        {
+          "heading": "## [API 1.56.1 / Mini App 1.66.2] - 2026-10-14",
+          "line": 148,
+          "date": "2026-10-14"
+        },
+        {
+          "heading": "## [API 1.56.0 / Mini App 1.66.1 / Admin 1.60.0] - 2026-10-11",
+          "line": 155,
+          "date": "2026-10-11"
+        },
+        {
+          "heading": "## [API 1.55.2 / Mini App 1.65.1] - 2026-10-11",
+          "line": 162,
+          "date": "2026-10-11"
+        },
+        {
+          "heading": "## [API 1.55.1 / Admin 1.59.1] - 2026-10-11",
+          "line": 168,
+          "date": "2026-10-11"
+        },
+        {
+          "heading": "## [API 1.55.0 / Mini App 1.65.0 / Admin 1.59.0] - 2026-10-09",
+          "line": 174,
+          "date": "2026-10-09"
+        },
+        {
+          "heading": "## [Mini App 1.64.1] - 2026-10-09",
+          "line": 180,
+          "date": "2026-10-09"
+        },
+        {
+          "heading": "## [API 1.54.0 / Mini App 1.64.0 / Admin 1.58.0] - 2026-10-09",
+          "line": 185,
+          "date": "2026-10-09"
+        },
+        {
+          "heading": "## [API 1.53.0 / Mini App 1.63.0 / Admin 1.57.0] - 2026-10-09",
+          "line": 191,
+          "date": "2026-10-09"
+        },
+        {
+          "heading": "## [API 1.52.0 / Mini App 1.62.0 / Web 1.56.0] - 2026-10-09",
+          "line": 197,
+          "date": "2026-10-09"
+        },
+        {
+          "heading": "## [Mini App 1.61.2 / Web 1.55.2] - 2026-10-09",
+          "line": 203,
+          "date": "2026-10-09"
+        },
+        {
+          "heading": "## [Mini App 1.61.1 / Web 1.55.1] - 2026-10-09",
+          "line": 207,
+          "date": "2026-10-09"
+        },
+        {
+          "heading": "## [API 1.51.0 / Mini App 1.61.0 / Web 1.55.0] - 2026-10-09",
+          "line": 211,
+          "date": "2026-10-09"
+        },
+        {
+          "heading": "## [Mini App 1.60.0] - 2026-10-09",
+          "line": 218,
+          "date": "2026-10-09"
+        },
+        {
+          "heading": "## [Mini App 1.59.3] - 2026-10-08",
+          "line": 224,
+          "date": "2026-10-08"
+        },
+        {
+          "heading": "## [API 1.50.5 / Admin 1.56.1] - 2026-10-08",
+          "line": 229,
+          "date": "2026-10-08"
+        },
+        {
+          "heading": "## [Mini App 1.59.1] - 2026-10-06",
+          "line": 233,
+          "date": "2026-10-06"
+        },
+        {
+          "heading": "## [API 1.50.0 / Mini App 1.59.0 / Admin 1.56.0] - 2026-10-06",
+          "line": 237,
+          "date": "2026-10-06"
+        },
+        {
+          "heading": "## [Mini App 1.58.7 / Admin 1.55.7 / API 1.49.1] - 2026-10-06",
+          "line": 241,
+          "date": "2026-10-06"
+        },
+        {
+          "heading": "# Changelog",
+          "line": 245,
+          "date": null
+        },
+        {
+          "heading": "## [API 1.49.0] - 2026-10-06",
+          "line": 247,
+          "date": "2026-10-06"
+        },
+        {
+          "heading": "## [1.58.6] - 2026-10-06",
+          "line": 251,
+          "date": "2026-10-06"
+        },
+        {
+          "heading": "## [1.58.5] - 2026-10-06",
+          "line": 255,
+          "date": "2026-10-06"
+        },
+        {
+          "heading": "## [1.58.4] - 2026-10-05",
+          "line": 259,
+          "date": "2026-10-05"
+        },
+        {
+          "heading": "## [1.58.3] - 2026-10-05",
+          "line": 263,
+          "date": "2026-10-05"
+        },
+        {
+          "heading": "## [1.58.2] - 2026-10-05",
+          "line": 267,
+          "date": "2026-10-05"
+        },
+        {
+          "heading": "## [1.58.1] - 2026-10-05",
+          "line": 271,
+          "date": "2026-10-05"
+        },
+        {
+          "heading": "## [1.58.0] - 2026-10-05",
+          "line": 275,
+          "date": "2026-10-05"
+        },
+        {
+          "heading": "## [1.57.0] - 2026-10-05",
+          "line": 281,
+          "date": "2026-10-05"
+        },
+        {
+          "heading": "## [1.56.1] - 2026-10-05",
+          "line": 286,
+          "date": "2026-10-05"
+        },
+        {
+          "heading": "## [1.56.0] - 2026-10-05",
+          "line": 290,
+          "date": "2026-10-05"
+        },
+        {
+          "heading": "## [1.55.1] - 2026-10-04",
+          "line": 295,
+          "date": "2026-10-04"
+        },
+        {
+          "heading": "## [1.55.0] - 2026-10-04",
+          "line": 299,
+          "date": "2026-10-04"
+        },
+        {
+          "heading": "## [1.54.1] - 2026-10-04",
+          "line": 303,
+          "date": "2026-10-04"
+        },
+        {
+          "heading": "## [1.54.0] - 2026-10-04",
+          "line": 307,
+          "date": "2026-10-04"
+        },
+        {
+          "heading": "## [1.53.0] - 2026-10-04",
+          "line": 312,
+          "date": "2026-10-04"
+        },
+        {
+          "heading": "## [1.52.0] - 2026-09-28",
+          "line": 317,
+          "date": "2026-09-28"
+        },
+        {
+          "heading": "## [1.51.0] - 2026-09-28",
+          "line": 322,
+          "date": "2026-09-28"
+        },
+        {
+          "heading": "## [1.50.0] - 2026-09-28",
+          "line": 327,
+          "date": "2026-09-28"
+        },
+        {
+          "heading": "## [1.49.0] - 2026-09-28",
+          "line": 332,
+          "date": "2026-09-28"
+        },
+        {
+          "heading": "## [1.48.0] - 2026-09-28",
+          "line": 337,
+          "date": "2026-09-28"
+        },
+        {
+          "heading": "## [1.47.10] - 2026-09-28",
+          "line": 343,
+          "date": "2026-09-28"
+        },
+        {
+          "heading": "## [1.47.9] - 2026-09-28",
+          "line": 347,
+          "date": "2026-09-28"
+        },
+        {
+          "heading": "## [1.47.8] - 2026-09-28",
+          "line": 351,
+          "date": "2026-09-28"
+        },
+        {
+          "heading": "## [1.47.7] - 2026-09-28",
+          "line": 355,
+          "date": "2026-09-28"
+        },
+        {
+          "heading": "## [1.47.6] - 2026-09-25",
+          "line": 361,
+          "date": "2026-09-25"
+        },
+        {
+          "heading": "## [1.47.5] - 2026-09-25",
+          "line": 370,
+          "date": "2026-09-25"
+        },
+        {
+          "heading": "## [1.47.4] - 2026-09-25",
+          "line": 375,
+          "date": "2026-09-25"
+        },
+        {
+          "heading": "## [1.47.3] - 2026-09-25",
+          "line": 379,
+          "date": "2026-09-25"
+        },
+        {
+          "heading": "## [1.47.2] - 2026-09-24",
+          "line": 383,
+          "date": "2026-09-24"
+        },
+        {
+          "heading": "## [1.47.1] - 2026-09-24",
+          "line": 388,
+          "date": "2026-09-24"
+        },
+        {
+          "heading": "## [Unreleased]",
+          "line": 392,
+          "date": null
+        },
+        {
+          "heading": "## [1.46.0] - 2026-09-24",
+          "line": 423,
+          "date": "2026-09-24"
+        },
+        {
+          "heading": "## [1.45.1] - 2026-09-23",
+          "line": 431,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## [1.45.0] - 2026-09-23",
+          "line": 437,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## [1.44.0] - 2026-09-23",
+          "line": 442,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## [1.42.5] - 2026-09-23",
+          "line": 447,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## [1.42.4] - 2026-09-23",
+          "line": 452,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## [1.42.3] - 2026-09-23",
+          "line": 458,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## [1.42.2] - 2026-09-23",
+          "line": 463,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## [1.42.1] - 2026-09-23",
+          "line": 469,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## [1.42.0] - 2026-09-22",
+          "line": 476,
+          "date": "2026-09-22"
+        },
+        {
+          "heading": "## [1.41.1] - 2026-09-22",
+          "line": 490,
+          "date": "2026-09-22"
+        },
+        {
+          "heading": "## [1.41.0] - 2026-09-22",
+          "line": 497,
+          "date": "2026-09-22"
+        },
+        {
+          "heading": "## [1.40.0] - 2026-09-21",
+          "line": 506,
+          "date": "2026-09-21"
+        },
+        {
+          "heading": "## [1.39.1] - 2026-09-21",
+          "line": 519,
+          "date": "2026-09-21"
+        },
+        {
+          "heading": "## [1.39.0] - 2026-09-21",
+          "line": 526,
+          "date": "2026-09-21"
+        },
+        {
+          "heading": "## [1.38.0] - 2026-09-21",
+          "line": 533,
+          "date": "2026-09-21"
+        },
+        {
+          "heading": "## [1.37.1] - 2026-09-21",
+          "line": 546,
+          "date": "2026-09-21"
+        },
+        {
+          "heading": "## [1.37.0] - 2026-09-21",
+          "line": 552,
+          "date": "2026-09-21"
+        },
+        {
+          "heading": "## [1.36.0] - 2026-09-15",
+          "line": 565,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.35.1] - 2026-09-15",
+          "line": 576,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.35.0] - 2026-09-15",
+          "line": 583,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.34.0] - 2026-09-15",
+          "line": 590,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.33.2] - 2026-09-15",
+          "line": 601,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.33.1] - 2026-09-15",
+          "line": 609,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.33.0] - 2026-09-15",
+          "line": 617,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.32.0] - 2026-09-15",
+          "line": 627,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.31.0] - 2026-09-15",
+          "line": 636,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.30.0] - 2026-09-15",
+          "line": 644,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.29.0] - 2026-09-15",
+          "line": 651,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.28.0] - 2026-09-15",
+          "line": 658,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.27.1] - 2026-09-15",
+          "line": 665,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.27.0] - 2026-09-15",
+          "line": 671,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.26.0] - 2026-09-14",
+          "line": 680,
+          "date": "2026-09-14"
+        },
+        {
+          "heading": "## [1.25.0] - 2026-09-14",
+          "line": 691,
+          "date": "2026-09-14"
+        },
+        {
+          "heading": "## [1.24.1] - 2026-09-05",
+          "line": 706,
+          "date": "2026-09-05"
+        },
+        {
+          "heading": "## [1.24.0] - 2026-09-05",
+          "line": 713,
+          "date": "2026-09-05"
+        },
+        {
+          "heading": "## [1.23.1] - 2026-09-05",
+          "line": 720,
+          "date": "2026-09-05"
+        },
+        {
+          "heading": "## [1.23.0] - 2026-09-05",
+          "line": 727,
+          "date": "2026-09-05"
+        },
+        {
+          "heading": "## [1.22.1] - 2026-09-05",
+          "line": 741,
+          "date": "2026-09-05"
+        },
+        {
+          "heading": "## [1.22.0] - 2026-09-05",
+          "line": 748,
+          "date": "2026-09-05"
+        },
+        {
+          "heading": "## [1.21.2] - 2026-09-05",
+          "line": 764,
+          "date": "2026-09-05"
+        },
+        {
+          "heading": "## [1.21.1] - 2026-09-05",
+          "line": 777,
+          "date": "2026-09-05"
+        },
+        {
+          "heading": "## [1.21.0] - 2026-09-05",
+          "line": 788,
+          "date": "2026-09-05"
+        },
+        {
+          "heading": "## 1.20.0 — 2026-09-05",
+          "line": 801,
+          "date": "2026-09-05"
+        },
+        {
+          "heading": "## [1.19.0] - 2026-09-05",
+          "line": 810,
+          "date": "2026-09-05"
+        },
+        {
+          "heading": "## [1.18.1] - 2026-09-05",
+          "line": 840,
+          "date": "2026-09-05"
+        },
+        {
+          "heading": "## [1.18.0] - 2026-09-04",
+          "line": 854,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.17.0] - 2026-09-04",
+          "line": 867,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.16.3] - 2026-09-04",
+          "line": 887,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.16.2] - 2026-09-04",
+          "line": 896,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.16.1] - 2026-09-04",
+          "line": 906,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.16.0] - 2026-09-04",
+          "line": 921,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.15.1] - 2026-09-04",
+          "line": 939,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.15.0] - 2026-09-04",
+          "line": 952,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.14.0] - 2026-09-04",
+          "line": 965,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.13.0] - 2026-09-04",
+          "line": 982,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.12.2] - 2026-09-04",
+          "line": 1006,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.12.1] - 2026-09-04",
+          "line": 1013,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.12.0] - 2026-09-04",
+          "line": 1022,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.11.1] - 2026-09-04",
+          "line": 1044,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.11.0] - 2026-09-04",
+          "line": 1061,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.10.0] - 2026-09-02",
+          "line": 1076,
+          "date": "2026-09-02"
+        },
+        {
+          "heading": "## [1.9.1] - 2026-09-02",
+          "line": 1091,
+          "date": "2026-09-02"
+        },
+        {
+          "heading": "## [1.9.0] - 2026-09-02",
+          "line": 1098,
+          "date": "2026-09-02"
+        },
+        {
+          "heading": "## [1.8.2] - 2026-09-02",
+          "line": 1111,
+          "date": "2026-09-02"
+        },
+        {
+          "heading": "## [1.8.1] - 2026-09-01",
+          "line": 1125,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.8.0] - 2026-09-01",
+          "line": 1139,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.7.0] - 2026-09-01",
+          "line": 1163,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.6.0] - 2026-09-01",
+          "line": 1188,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.5.0] - 2026-09-01",
+          "line": 1211,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.4.2] - 2026-09-01",
+          "line": 1238,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.4.1] - 2026-09-01",
+          "line": 1253,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.4.0] - 2026-09-01",
+          "line": 1271,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.3.0] - 2026-09-01",
+          "line": 1298,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.2.1] - 2026-09-01",
+          "line": 1315,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.2.0] - 2026-09-01",
+          "line": 1322,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.1.0] - 2026-09-01",
+          "line": 1340,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.0.2] - 2026-09-01",
+          "line": 1353,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.0.1] - 2026-09-01",
+          "line": 1361,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.0.0] - 2026-09-01",
+          "line": 1368,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [0.23.1] - 2026-09-01",
+          "line": 1383,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [0.23.0] - 2026-09-01",
+          "line": 1402,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [0.22.0] - 2026-09-01",
+          "line": 1430,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [0.21.0] - 2026-09-01",
+          "line": 1461,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [0.20.0] - 2026-09-01",
+          "line": 1489,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [0.19.0] - 2026-08-31",
+          "line": 1517,
+          "date": "2026-08-31"
+        },
+        {
+          "heading": "## [0.18.0] - 2026-08-31",
+          "line": 1544,
+          "date": "2026-08-31"
+        },
+        {
+          "heading": "## [0.17.0] - 2026-08-31",
+          "line": 1566,
+          "date": "2026-08-31"
+        },
+        {
+          "heading": "## [0.16.1] - 2026-08-31",
+          "line": 1589,
+          "date": "2026-08-31"
+        },
+        {
+          "heading": "## [0.16.0] - 2026-08-31",
+          "line": 1596,
+          "date": "2026-08-31"
+        },
+        {
+          "heading": "## [0.15.0] - 2026-08-31",
+          "line": 1612,
+          "date": "2026-08-31"
+        },
+        {
+          "heading": "## [0.14.0] - 2026-08-31",
+          "line": 1622,
+          "date": "2026-08-31"
+        },
+        {
+          "heading": "## [0.13.1] - 2026-08-15",
+          "line": 1650,
+          "date": "2026-08-15"
+        },
+        {
+          "heading": "## [0.13.0] - 2026-08-15",
+          "line": 1664,
+          "date": "2026-08-15"
+        },
+        {
+          "heading": "## [0.12.0] - 2026-08-15",
+          "line": 1685,
+          "date": "2026-08-15"
+        },
+        {
+          "heading": "## [0.11.0] - 2026-08-15",
+          "line": 1710,
+          "date": "2026-08-15"
+        },
+        {
+          "heading": "## [0.10.0] - 2026-08-15",
+          "line": 1733,
+          "date": "2026-08-15"
+        },
+        {
+          "heading": "## [0.9.0] - 2026-08-15",
+          "line": 1759,
+          "date": "2026-08-15"
+        },
+        {
+          "heading": "## [0.8.0] - 2026-08-15",
+          "line": 1782,
+          "date": "2026-08-15"
+        },
+        {
+          "heading": "## [0.7.0] - 2026-08-15",
+          "line": 1805,
+          "date": "2026-08-15"
+        },
+        {
+          "heading": "## [0.6.0] - 2026-08-15",
+          "line": 1817,
+          "date": "2026-08-15"
+        },
+        {
+          "heading": "## [0.5.0] - 2026-08-14",
+          "line": 1834,
+          "date": "2026-08-14"
+        },
+        {
+          "heading": "## [0.4.0] - 2026-08-14",
+          "line": 1844,
+          "date": "2026-08-14"
+        },
+        {
+          "heading": "## [0.3.0] - 2026-08-14",
+          "line": 1855,
+          "date": "2026-08-14"
+        },
+        {
+          "heading": "## [0.2.0] - 2026-08-14",
+          "line": 1867,
+          "date": "2026-08-14"
+        },
+        {
+          "heading": "## [0.1.0] - 2026-08-14",
+          "line": 1877,
+          "date": "2026-08-14"
+        },
+        {
+          "heading": "## [1.42.6] - 2026-09-23",
+          "line": 1887,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## [1.42.7] - 2026-09-23",
+          "line": 1890,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## [1.42.8] - 2026-09-23",
+          "line": 1893,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## [1.42.9] - 2026-09-23",
+          "line": 1896,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## [1.43.0] - 2026-09-23",
+          "line": 1900,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "# Unreleased",
+          "line": 1903,
+          "date": null
+        },
+        {
+          "heading": "## 1.50.1 — 2026-10-06",
+          "line": 1907,
+          "date": "2026-10-06"
+        },
+        {
+          "heading": "## 1.50.2 — 2026-10-06",
+          "line": 1911,
+          "date": "2026-10-06"
+        },
+        {
+          "heading": "## 1.50.3 — 2026-10-06",
+          "line": 1916,
+          "date": "2026-10-06"
+        },
+        {
+          "heading": "## Mini App 1.59.2 — 2026-10-06",
+          "line": 1920,
+          "date": "2026-10-06"
+        },
+        {
+          "heading": "## 1.50.4 — 2026-10-06",
+          "line": 1924,
+          "date": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "file": "DEVLOG.original.md",
+      "sha256": "8e190f3b946adc3f8770cb469d71bc4da2b16391d2819aa53e4ac56bd9399b95",
+      "headings": [
+        {
+          "heading": "## [First private GitHub upload and clean CI achievement database] - 2026-10-23",
+          "line": 1,
+          "date": "2026-10-23"
+        },
+        {
+          "heading": "## [English-first GitHub presentation and private publication preparation] - 2026-10-23",
+          "line": 5,
+          "date": "2026-10-23"
+        },
+        {
+          "heading": "## [Personal README, roadmap and GitHub readiness audit] - 2026-10-23",
+          "line": 9,
+          "date": "2026-10-23"
+        },
+        {
+          "heading": "## [Russian GitHub README and author story] - 2026-10-23",
+          "line": 15,
+          "date": "2026-10-23"
+        },
+        {
+          "heading": "## [English Mini App 1.70.0 — production verified] - 2026-10-23",
+          "line": 19,
+          "date": "2026-10-23"
+        },
+        {
+          "heading": "## [Mini App English localisation] - 2026-10-22",
+          "line": 22,
+          "date": "2026-10-22"
+        },
+        {
+          "heading": "## [Draw UI compact Telegram layout and standard purchase tools] - 2026-10-22",
+          "line": 26,
+          "date": "2026-10-22"
+        },
+        {
+          "heading": "## [Two lotteries — production verified] - 2026-10-22",
+          "line": 30,
+          "date": "2026-10-22"
+        },
+        {
+          "heading": "## [Two lottery production release preparation] - 2026-10-22",
+          "line": 34,
+          "date": "2026-10-22"
+        },
+        {
+          "heading": "## [New Year 2027 — paper receipt and disclosure, local only] - 2026-10-21",
+          "line": 38,
+          "date": "2026-10-21"
+        },
+        {
+          "heading": "## [New Year 2027 — visual corrections, local only] - 2026-10-21",
+          "line": 44,
+          "date": "2026-10-21"
+        },
+        {
+          "heading": "## [Casper Mini — independent visual identity, local only] - 2026-10-21",
+          "line": 52,
+          "date": "2026-10-21"
+        },
+        {
+          "heading": "## [New Year 2027 — local only] - 2026-10-21",
+          "line": 54,
+          "date": "2026-10-21"
+        },
+        {
+          "heading": "## [Casper Mini — local implementation] - 2026-10-21",
+          "line": 83,
+          "date": "2026-10-21"
+        },
+        {
+          "heading": "## [Remove maintenance styling from startup] - 2026-10-21",
+          "line": 123,
+          "date": "2026-10-21"
+        },
+        {
+          "heading": "## [Owner digest clarity and neutral Mini App startup] - 2026-10-21",
+          "line": 145,
+          "date": "2026-10-21"
+        },
+        {
+          "heading": "## [No-wait launch barrier follow-up] - 2026-10-21",
+          "line": 191,
+          "date": "2026-10-21"
+        },
+        {
+          "heading": "## [Achievements published and 02:00 Moscow launch armed] - 2026-10-21",
+          "line": 214,
+          "date": "2026-10-21"
+        },
+        {
+          "heading": "## [Achievement production launch preparation — owner authorized] - 2026-10-21",
+          "line": 232,
+          "date": "2026-10-21"
+        },
+        {
+          "heading": "## [Compact profile heading and category titles — local only] - 2026-10-21",
+          "line": 247,
+          "date": "2026-10-21"
+        },
+        {
+          "heading": "## [Legendary visual unlocks for the laptop account — local only] - 2026-10-20",
+          "line": 272,
+          "date": "2026-10-20"
+        },
+        {
+          "heading": "## [Legendary achievements, compact gifts and collection — local only] - 2026-10-20",
+          "line": 286,
+          "date": "2026-10-20"
+        },
+        {
+          "heading": "## [Workspace organization and GitHub readiness — local only] - 2026-10-20",
+          "line": 336,
+          "date": "2026-10-20"
+        },
+        {
+          "heading": "## [Epic achievements — implemented locally] - 2026-10-20",
+          "line": 376,
+          "date": "2026-10-20"
+        },
+        {
+          "heading": "## [Epic achievements — reward proposal only] - 2026-10-20",
+          "line": 400,
+          "date": "2026-10-20"
+        },
+        {
+          "heading": "## [Rare achievements — implemented locally] - 2026-10-20",
+          "line": 412,
+          "date": "2026-10-20"
+        },
+        {
+          "heading": "## [Rare achievements — proposal history] - 2026-10-20",
+          "line": 440,
+          "date": "2026-10-20"
+        },
+        {
+          "heading": "## [Uncommon achievements and gift packs — implemented locally] - 2026-10-20",
+          "line": 451,
+          "date": "2026-10-20"
+        },
+        {
+          "heading": "## [Uncommon achievements — proposal history, local] - 2026-10-20",
+          "line": 477,
+          "date": "2026-10-20"
+        },
+        {
+          "heading": "## [Approved achievement icons and rarity colors — local only] - 2026-10-20",
+          "line": 497,
+          "date": "2026-10-20"
+        },
+        {
+          "heading": "## [Owner digest delivery and distribution visibility] - 2026-10-20",
+          "line": 520,
+          "date": "2026-10-20"
+        },
+        {
+          "heading": "## [Laptop preview launcher — local only] - 2026-10-19",
+          "line": 544,
+          "date": "2026-10-19"
+        },
+        {
+          "heading": "## [Common achievements and profile — local only] - 2026-10-19",
+          "line": 568,
+          "date": "2026-10-19"
+        },
+        {
+          "heading": "## [Editorial retirement and server optimization] - 2026-10-19",
+          "line": 597,
+          "date": "2026-10-19"
+        },
+        {
+          "heading": "## [Read-only VPS capacity audit] - 2026-10-18",
+          "line": 626,
+          "date": "2026-10-18"
+        },
+        {
+          "heading": "## [Local foundation — achievements, OD-066] - 2026-10-18",
+          "line": 633,
+          "date": "2026-10-18"
+        },
+        {
+          "heading": "## [API 1.57.0 / Mini App 1.67.0 / Admin 1.61.0 — combined economy release] - 2026-10-18",
+          "line": 642,
+          "date": "2026-10-18"
+        },
+        {
+          "heading": "## [Planning — Production economy baseline and proposals] - 2026-10-17",
+          "line": 660,
+          "date": "2026-10-17"
+        },
+        {
+          "heading": "## [Planning and channel artwork — October roadmap] - 2026-10-17",
+          "line": 666,
+          "date": "2026-10-17"
+        },
+        {
+          "heading": "## [Planning — Collections and public showcase] - 2026-10-17",
+          "line": 673,
+          "date": "2026-10-17"
+        },
+        {
+          "heading": "## [Marketing — Casper free-play Reel] - 2026-10-17",
+          "line": 680,
+          "date": "2026-10-17"
+        },
+        {
+          "heading": "## [API 1.56.7] - 2026-10-17",
+          "line": 687,
+          "date": "2026-10-17"
+        },
+        {
+          "heading": "## [API 1.56.6 / Admin 1.60.4] - 2026-10-16",
+          "line": 696,
+          "date": "2026-10-16"
+        },
+        {
+          "heading": "## [API 1.56.5 / Admin 1.60.3] - 2026-10-16",
+          "line": 705,
+          "date": "2026-10-16"
+        },
+        {
+          "heading": "## [Operations] - 2026-10-16",
+          "line": 720,
+          "date": "2026-10-16"
+        },
+        {
+          "heading": "## [API 1.56.4 / Mini App 1.66.5] - 2026-10-14",
+          "line": 728,
+          "date": "2026-10-14"
+        },
+        {
+          "heading": "## [API 1.56.3 / Mini App 1.66.4] - 2026-10-14",
+          "line": 739,
+          "date": "2026-10-14"
+        },
+        {
+          "heading": "## [API 1.56.2 / Admin 1.60.2] - 2026-10-14",
+          "line": 750,
+          "date": "2026-10-14"
+        },
+        {
+          "heading": "## [Mini App 1.66.3 / Admin 1.60.1 / Local Web 1.56.1] - 2026-10-14",
+          "line": 761,
+          "date": "2026-10-14"
+        },
+        {
+          "heading": "## [API 1.56.1 / Mini App 1.66.2] - 2026-10-14",
+          "line": 773,
+          "date": "2026-10-14"
+        },
+        {
+          "heading": "## [API 1.56.0 / Mini App 1.66.1 / Admin 1.60.0] - 2026-10-11",
+          "line": 790,
+          "date": "2026-10-11"
+        },
+        {
+          "heading": "## Compact server-only storage policy - 2026-10-11",
+          "line": 803,
+          "date": "2026-10-11"
+        },
+        {
+          "heading": "## Legal Mini App HTTPS integration - 2026-10-11",
+          "line": 811,
+          "date": "2026-10-11"
+        },
+        {
+          "heading": "## Count-only release archive retention - 2026-10-11",
+          "line": 815,
+          "date": "2026-10-11"
+        },
+        {
+          "heading": "## Casper Aurora instant release - 2026-10-09",
+          "line": 821,
+          "date": "2026-10-09"
+        },
+        {
+          "heading": "## Casper Grand flagship implementation - 2026-10-09",
+          "line": 830,
+          "date": "2026-10-09"
+        },
+        {
+          "heading": "## Casper Grand concept study — 2026-10-09",
+          "line": 839,
+          "date": "2026-10-09"
+        },
+        {
+          "heading": "## Halloween production grid cascade regression — 2026-10-09",
+          "line": 844,
+          "date": "2026-10-09"
+        },
+        {
+          "heading": "## Halloween pumpkin number field correction — 2026-10-09",
+          "line": 851,
+          "date": "2026-10-09"
+        },
+        {
+          "heading": "## Casper Halloween format and pumpkin experience — 2026-10-09",
+          "line": 857,
+          "date": "2026-10-09"
+        },
+        {
+          "heading": "## Compact visual catalogue and festive filter — 2026-10-09",
+          "line": 869,
+          "date": "2026-10-09"
+        },
+        {
+          "heading": "## Stage 1: scratch and Stories gesture fixes — 2026-10-08",
+          "line": 877,
+          "date": "2026-10-08"
+        },
+        {
+          "heading": "## Casper Dual circular ticket restoration — 2026-10-06",
+          "line": 885,
+          "date": "2026-10-06"
+        },
+        {
+          "heading": "## Owner-authorized publication activation — 2026-10-06",
+          "line": 891,
+          "date": "2026-10-06"
+        },
+        {
+          "heading": "## Owner platform B artwork and copy — 2026-10-06",
+          "line": 901,
+          "date": "2026-10-06"
+        },
+        {
+          "heading": "## Platform publication event foundation B — 2026-10-06",
+          "line": 908,
+          "date": "2026-10-06"
+        },
+        {
+          "heading": "## Atmospheric additions for remaining draw games — 2026-10-06",
+          "line": 915,
+          "date": "2026-10-06"
+        },
+        {
+          "heading": "## Casper Dual owner-only publication library — 2026-10-06",
+          "line": 921,
+          "date": "2026-10-06"
+        },
+        {
+          "heading": "## Additional owner Fast publication scenes — 2026-10-05",
+          "line": 927,
+          "date": "2026-10-05"
+        },
+        {
+          "heading": "## Casper Bingo owner collection replacement — 2026-10-05",
+          "line": 932,
+          "date": "2026-10-05"
+        },
+        {
+          "heading": "## Expanded editable Telegram copy bank — 2026-10-05",
+          "line": 938,
+          "date": "2026-10-05"
+        },
+        {
+          "heading": "## Editable Telegram post bank and launch checklist — 2026-10-05",
+          "line": 943,
+          "date": "2026-10-05"
+        },
+        {
+          "heading": "## Block A participant-record threshold — 2026-10-05",
+          "line": 949,
+          "date": "2026-10-05"
+        },
+        {
+          "heading": "## Block A schedule clarification and readable texts — 2026-10-05",
+          "line": 953,
+          "date": "2026-10-05"
+        },
+        {
+          "heading": "## Manual Stories and publication foundation — 2026-10-05",
+          "line": 960,
+          "date": "2026-10-05"
+        },
+        {
+          "heading": "## Category A lottery publication visual library — 2026-10-05",
+          "line": 970,
+          "date": "2026-10-05"
+        },
+        {
+          "heading": "## Classic publication collection and chosen home placement — 2026-10-04",
+          "line": 978,
+          "date": "2026-10-04"
+        },
+        {
+          "heading": "## Mini App stories and channel publication design study — 2026-10-04",
+          "line": 985,
+          "date": "2026-10-04"
+        },
+        {
+          "heading": "## Compact home archive entry — 2026-10-04",
+          "line": 992,
+          "date": "2026-10-04"
+        },
+        {
+          "heading": "## Mini App draw archive — 2026-10-04",
+          "line": 996,
+          "date": "2026-10-04"
+        },
+        {
+          "heading": "## Unified VPS maintenance and important diagnostic retention — 2026-10-04",
+          "line": 1004,
+          "date": "2026-10-04"
+        },
+        {
+          "heading": "## Product brand spelling and server storage audit — 2026-10-04",
+          "line": 1012,
+          "date": "2026-10-04"
+        },
+        {
+          "heading": "## Mini App: Fast spacing, signal repair and Telegram fullscreen — 2026-10-04",
+          "line": 1020,
+          "date": "2026-10-04"
+        },
+        {
+          "heading": "## Mini App: dimensional Fast devices and tactile selection — 2026-10-04",
+          "line": 1027,
+          "date": "2026-10-04"
+        },
+        {
+          "heading": "## Mini App: Casper Bingo emerald ticket edition — 2026-09-28",
+          "line": 1036,
+          "date": "2026-09-28"
+        },
+        {
+          "heading": "## Mini App: unified draw-game ticket screens — 2026-09-28",
+          "line": 1044,
+          "date": "2026-09-28"
+        },
+        {
+          "heading": "## Mini App: classic 6/36 ticket and catalog identity — 2026-09-28",
+          "line": 1046,
+          "date": "2026-09-28"
+        },
+        {
+          "heading": "## Mini App: dark home and compact glass navigation — 2026-09-28",
+          "line": 1054,
+          "date": "2026-09-28"
+        },
+        {
+          "heading": "## Mini App: personal dashboard and dimensional navigation — 2026-09-28",
+          "line": 1062,
+          "date": "2026-09-28"
+        },
+        {
+          "heading": "## Mini App: illustrated lottery catalog — 2026-09-28",
+          "line": 1076,
+          "date": "2026-09-28"
+        },
+        {
+          "heading": "## Mini App: первый экран до загрузки React — 2026-09-28",
+          "line": 1083,
+          "date": "2026-09-28"
+        },
+        {
+          "heading": "## Mini App: preview sizing and personal area — 2026-09-28",
+          "line": 1090,
+          "date": "2026-09-28"
+        },
+        {
+          "heading": "# Development log",
+          "line": 1098,
+          "date": null
+        },
+        {
+          "heading": "## Block A owner policy and provisional copy — 2026-10-05",
+          "line": 1100,
+          "date": "2026-10-05"
+        },
+        {
+          "heading": "## Atmospheric September publication collection — 2026-10-05",
+          "line": 1105,
+          "date": "2026-10-05"
+        },
+        {
+          "heading": "## Owner artwork for 6/36 publications — 2026-10-05",
+          "line": 1113,
+          "date": "2026-10-05"
+        },
+        {
+          "heading": "## Mini App: static cache and screen chunks — 2026-09-28",
+          "line": 1121,
+          "date": "2026-09-28"
+        },
+        {
+          "heading": "## Mini App: first-load and rendering budget — 2026-09-25",
+          "line": 1127,
+          "date": "2026-09-25"
+        },
+        {
+          "heading": "## Kasper Bingo: второй ежедневный слот — 2026-09-25",
+          "line": 1133,
+          "date": "2026-09-25"
+        },
+        {
+          "heading": "## Admin owner dashboard focus pass — 2026-09-25",
+          "line": 1139,
+          "date": "2026-09-25"
+        },
+        {
+          "heading": "## Auto-play allowlist and restoration — 2026-09-25",
+          "line": 1146,
+          "date": "2026-09-25"
+        },
+        {
+          "heading": "## Casper Dual auto-play incident — 2026-09-25",
+          "line": 1153,
+          "date": "2026-09-25"
+        },
+        {
+          "heading": "## Mini App 6/36 depth pass — 2026-09-24",
+          "line": 1160,
+          "date": "2026-09-24"
+        },
+        {
+          "heading": "## Mini App 6/36 visual pass — 2026-09-24",
+          "line": 1168,
+          "date": "2026-09-24"
+        },
+        {
+          "heading": "## Casper Ball PSS transition — 2026-09-24",
+          "line": 1175,
+          "date": "2026-09-24"
+        },
+        {
+          "heading": "## Phaser «6 из 36» local visual stand - 2026-09-24",
+          "line": 1185,
+          "date": "2026-09-24"
+        },
+        {
+          "heading": "## Casper Loto brand foundation - 2026-09-24",
+          "line": 1215,
+          "date": "2026-09-24"
+        },
+        {
+          "heading": "## Phaser «ГРОБ» vertical slice - 2026-09-23",
+          "line": 1234,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## Design documentation - 2026-09-23",
+          "line": 1244,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## [1.45.1] - 2026-09-23",
+          "line": 1249,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## [1.45.0] - 2026-09-23",
+          "line": 1255,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## [1.44.0] - 2026-09-23",
+          "line": 1261,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## [1.42.5] - 2026-09-23",
+          "line": 1266,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## [1.42.4] - 2026-09-23",
+          "line": 1271,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## [1.42.3] - 2026-09-23",
+          "line": 1276,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## [1.42.2] - 2026-09-23",
+          "line": 1281,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## [1.42.1] - 2026-09-23",
+          "line": 1285,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## [1.42.0] - 2026-09-22",
+          "line": 1291,
+          "date": "2026-09-22"
+        },
+        {
+          "heading": "## Documentation - 2026-09-22",
+          "line": 1300,
+          "date": "2026-09-22"
+        },
+        {
+          "heading": "## [1.41.1] - 2026-09-22",
+          "line": 1304,
+          "date": "2026-09-22"
+        },
+        {
+          "heading": "## [1.41.0] - 2026-09-22",
+          "line": 1309,
+          "date": "2026-09-22"
+        },
+        {
+          "heading": "## [1.40.0] - 2026-09-21",
+          "line": 1317,
+          "date": "2026-09-21"
+        },
+        {
+          "heading": "## [1.39.1] - 2026-09-21",
+          "line": 1328,
+          "date": "2026-09-21"
+        },
+        {
+          "heading": "## [1.39.0] - 2026-09-21",
+          "line": 1338,
+          "date": "2026-09-21"
+        },
+        {
+          "heading": "## [1.38.0] - 2026-09-21",
+          "line": 1348,
+          "date": "2026-09-21"
+        },
+        {
+          "heading": "## [1.37.0] - 2026-09-21",
+          "line": 1359,
+          "date": "2026-09-21"
+        },
+        {
+          "heading": "## [1.36.0] - 2026-09-15",
+          "line": 1374,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.35.1] - 2026-09-15",
+          "line": 1385,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.35.0] - 2026-09-15",
+          "line": 1393,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.34.0] - 2026-09-15",
+          "line": 1403,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.33.2] - 2026-09-15",
+          "line": 1414,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.33.1] - 2026-09-15",
+          "line": 1423,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.33.0] - 2026-09-15",
+          "line": 1433,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.32.0] - 2026-09-15",
+          "line": 1444,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.31.0] - 2026-09-15",
+          "line": 1454,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.30.0] - 2026-09-15",
+          "line": 1464,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.29.0] - 2026-09-15",
+          "line": 1473,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.28.0] - 2026-09-15",
+          "line": 1484,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.27.1] - 2026-09-15",
+          "line": 1494,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.27.0] - 2026-09-15",
+          "line": 1503,
+          "date": "2026-09-15"
+        },
+        {
+          "heading": "## [1.26.0] - 2026-09-14",
+          "line": 1516,
+          "date": "2026-09-14"
+        },
+        {
+          "heading": "## [1.25.0] - 2026-09-14",
+          "line": 1539,
+          "date": "2026-09-14"
+        },
+        {
+          "heading": "## [1.24.1] - 2026-09-05",
+          "line": 1566,
+          "date": "2026-09-05"
+        },
+        {
+          "heading": "## [1.24.0] - 2026-09-05",
+          "line": 1575,
+          "date": "2026-09-05"
+        },
+        {
+          "heading": "## [1.23.1] - 2026-09-05",
+          "line": 1584,
+          "date": "2026-09-05"
+        },
+        {
+          "heading": "## [1.23.0] - 2026-09-05",
+          "line": 1594,
+          "date": "2026-09-05"
+        },
+        {
+          "heading": "## [1.22.1] - 2026-09-05",
+          "line": 1614,
+          "date": "2026-09-05"
+        },
+        {
+          "heading": "## [1.22.0] - 2026-09-05",
+          "line": 1628,
+          "date": "2026-09-05"
+        },
+        {
+          "heading": "## [1.21.2] - 2026-09-05",
+          "line": 1654,
+          "date": "2026-09-05"
+        },
+        {
+          "heading": "## [1.21.1] - 2026-09-05",
+          "line": 1684,
+          "date": "2026-09-05"
+        },
+        {
+          "heading": "## [1.21.0] - 2026-09-05",
+          "line": 1698,
+          "date": "2026-09-05"
+        },
+        {
+          "heading": "## [1.19.0] - 2026-09-05",
+          "line": 1716,
+          "date": "2026-09-05"
+        },
+        {
+          "heading": "## [1.18.1] - 2026-09-05",
+          "line": 1752,
+          "date": "2026-09-05"
+        },
+        {
+          "heading": "## [1.18.0] - 2026-09-04",
+          "line": 1787,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.17.0] - 2026-09-04",
+          "line": 1818,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.16.3] - 2026-09-04",
+          "line": 1857,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.16.2] - 2026-09-04",
+          "line": 1882,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.16.1] - 2026-09-04",
+          "line": 1910,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.16.0] - 2026-09-04",
+          "line": 1948,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.15.1] - 2026-09-04",
+          "line": 1975,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.15.0] - 2026-09-04",
+          "line": 1999,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.14.0] - 2026-09-04",
+          "line": 2023,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.13.0] - 2026-09-04",
+          "line": 2061,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.12.2] - 2026-09-04",
+          "line": 2102,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.12.1] - 2026-09-04",
+          "line": 2120,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.12.0] - 2026-09-04",
+          "line": 2149,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.11.1] - 2026-09-04",
+          "line": 2182,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.11.0] - 2026-09-04",
+          "line": 2213,
+          "date": "2026-09-04"
+        },
+        {
+          "heading": "## [1.10.0] - 2026-09-02",
+          "line": 2251,
+          "date": "2026-09-02"
+        },
+        {
+          "heading": "## [1.9.1] - 2026-09-02",
+          "line": 2280,
+          "date": "2026-09-02"
+        },
+        {
+          "heading": "## [1.9.0] - 2026-09-02",
+          "line": 2299,
+          "date": "2026-09-02"
+        },
+        {
+          "heading": "## [1.8.2] - 2026-09-02",
+          "line": 2329,
+          "date": "2026-09-02"
+        },
+        {
+          "heading": "## [1.8.1] - 2026-09-01",
+          "line": 2359,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.8.0] - 2026-09-01",
+          "line": 2393,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.7.0] - 2026-09-01",
+          "line": 2445,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.6.0] - 2026-09-01",
+          "line": 2488,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.5.0] - 2026-09-01",
+          "line": 2525,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.4.2] - 2026-09-01",
+          "line": 2557,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.4.1] - 2026-09-01",
+          "line": 2582,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.4.0] - 2026-09-01",
+          "line": 2613,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.3.0] - 2026-09-01",
+          "line": 2654,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.2.1] - 2026-09-01",
+          "line": 2688,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.2.0] - 2026-09-01",
+          "line": 2715,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.1.0] - 2026-09-01",
+          "line": 2753,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.0.2] - 2026-09-01",
+          "line": 2784,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.0.1] - 2026-09-01",
+          "line": 2808,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [1.0.0] - 2026-09-01",
+          "line": 2835,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [0.23.1] - 2026-09-01",
+          "line": 2882,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [0.23.0] - 2026-09-01",
+          "line": 2929,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [0.22.0] - 2026-09-01",
+          "line": 2983,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [0.21.0] - 2026-09-01",
+          "line": 3045,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [0.20.0] - 2026-09-01",
+          "line": 3106,
+          "date": "2026-09-01"
+        },
+        {
+          "heading": "## [0.19.0] - 2026-08-31",
+          "line": 3158,
+          "date": "2026-08-31"
+        },
+        {
+          "heading": "## [0.18.0] - 2026-08-31",
+          "line": 3200,
+          "date": "2026-08-31"
+        },
+        {
+          "heading": "## [0.17.0] - 2026-08-31",
+          "line": 3238,
+          "date": "2026-08-31"
+        },
+        {
+          "heading": "## [0.16.1] - 2026-08-31",
+          "line": 3274,
+          "date": "2026-08-31"
+        },
+        {
+          "heading": "## [0.16.0] - 2026-08-31",
+          "line": 3295,
+          "date": "2026-08-31"
+        },
+        {
+          "heading": "## [0.15.0] - 2026-08-31",
+          "line": 3323,
+          "date": "2026-08-31"
+        },
+        {
+          "heading": "## [0.14.0] - 2026-08-31",
+          "line": 3349,
+          "date": "2026-08-31"
+        },
+        {
+          "heading": "## [0.13.1] - 2026-08-15",
+          "line": 3384,
+          "date": "2026-08-15"
+        },
+        {
+          "heading": "## [0.13.0] - 2026-08-15",
+          "line": 3420,
+          "date": "2026-08-15"
+        },
+        {
+          "heading": "## [0.12.0] - 2026-08-15",
+          "line": 3463,
+          "date": "2026-08-15"
+        },
+        {
+          "heading": "## [0.11.0] - 2026-08-15",
+          "line": 3508,
+          "date": "2026-08-15"
+        },
+        {
+          "heading": "## [0.10.0] - 2026-08-15",
+          "line": 3549,
+          "date": "2026-08-15"
+        },
+        {
+          "heading": "## [0.9.0] - 2026-08-15",
+          "line": 3600,
+          "date": "2026-08-15"
+        },
+        {
+          "heading": "## [0.8.0] - 2026-08-15",
+          "line": 3655,
+          "date": "2026-08-15"
+        },
+        {
+          "heading": "## [0.7.0] - 2026-08-15",
+          "line": 3709,
+          "date": "2026-08-15"
+        },
+        {
+          "heading": "## [0.6.0] - 2026-08-15",
+          "line": 3752,
+          "date": "2026-08-15"
+        },
+        {
+          "heading": "## [0.5.0] - 2026-08-14",
+          "line": 3798,
+          "date": "2026-08-14"
+        },
+        {
+          "heading": "## [0.4.0] - 2026-08-14",
+          "line": 3846,
+          "date": "2026-08-14"
+        },
+        {
+          "heading": "## [0.3.0] - 2026-08-14",
+          "line": 3886,
+          "date": "2026-08-14"
+        },
+        {
+          "heading": "## [0.2.0] - 2026-08-14",
+          "line": 3929,
+          "date": "2026-08-14"
+        },
+        {
+          "heading": "## [0.1.0] - 2026-08-14",
+          "line": 3984,
+          "date": "2026-08-14"
+        },
+        {
+          "heading": "## 2026-09-05 — Kasper Bingo 1.20.0",
+          "line": 4033,
+          "date": "2026-09-05"
+        },
+        {
+          "heading": "## [1.42.6] - 2026-09-23",
+          "line": 4066,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## [1.42.7] - 2026-09-23",
+          "line": 4070,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## [1.42.8] - 2026-09-23",
+          "line": 4073,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## [1.42.9] - 2026-09-23",
+          "line": 4076,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## [1.43.0] - 2026-09-23",
+          "line": 4080,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "## 2026-09-23 — «ГРОБ» 2.5D polish and global live-tab routing",
+          "line": 4084,
+          "date": "2026-09-23"
+        },
+        {
+          "heading": "# 2026-09-24",
+          "line": 4103,
+          "date": "2026-09-24"
+        },
+        {
+          "heading": "# 2026-09-25 — Docker storage maintenance",
+          "line": 4118,
+          "date": "2026-09-25"
+        },
+        {
+          "heading": "## Casper LIVE casino scratch experience — 2026-10-05",
+          "line": 4124,
+          "date": "2026-10-05"
+        },
+        {
+          "heading": "## Casper LIVE brand labels — 2026-10-05",
+          "line": 4132,
+          "date": "2026-10-05"
+        },
+        {
+          "heading": "## Casper LIVE prize symbol hierarchy — 2026-10-05",
+          "line": 4137,
+          "date": "2026-10-05"
+        },
+        {
+          "heading": "## Publication emergency stop — 2026-10-06",
+          "line": 4143,
+          "date": "2026-10-06"
+        },
+        {
+          "heading": "## Fast publication eligibility correction — 2026-10-06",
+          "line": 4147,
+          "date": "2026-10-06"
+        },
+        {
+          "heading": "## Strict publication criteria and retired participant records — 2026-10-06",
+          "line": 4152,
+          "date": "2026-10-06"
+        },
+        {
+          "heading": "## Corrected replay completed — 2026-10-06 04:50 MSK",
+          "line": 4158,
+          "date": "2026-10-06"
+        },
+        {
+          "heading": "## Publication editorial cleanup — 2026-10-06",
+          "line": 4164,
+          "date": "2026-10-06"
+        },
+        {
+          "heading": "## Telegram Stories player — 2026-10-06",
+          "line": 4169,
+          "date": "2026-10-06"
+        },
+        {
+          "heading": "## Telegram post Mini App link — 2026-10-06",
+          "line": 4175,
+          "date": "2026-10-06"
+        },
+        {
+          "heading": "## Ready publication proposals — 2026-10-08",
+          "line": 4181,
+          "date": "2026-10-08"
+        },
+        {
+          "heading": "## 2026-10-09 — Casper Vault implementation",
+          "line": 4189,
+          "date": "2026-10-09"
+        },
+        {
+          "heading": "## 2026-10-09 — Instant header and repeat-purchase regression fix",
+          "line": 4201,
+          "date": "2026-10-09"
+        },
+        {
+          "heading": "## 2026-10-09 — Distribution draws implementation",
+          "line": 4209,
+          "date": "2026-10-09"
+        },
+        {
+          "heading": "## 2026-10-11 — Distribution results and 24-hour editorial proposals",
+          "line": 4219,
+          "date": "2026-10-11"
+        },
+        {
+          "heading": "## 2026-10-11 — Storage audit and retention coverage",
+          "line": 4230,
+          "date": "2026-10-11"
+        },
+        {
+          "heading": "## 2026-10-11 — Mini App read paths and repeated purchase latency",
+          "line": 4241,
+          "date": "2026-10-11"
+        },
+        {
+          "heading": "## 2026-10-11 — Performance release production verification",
+          "line": 4280,
+          "date": "2026-10-11"
+        },
+        {
+          "heading": "## [Approved achievement rewards and automatic gifts — local only] - 2026-10-20",
+          "line": 4297,
+          "date": "2026-10-20"
+        }
+      ]
+    }
+  ]
+}

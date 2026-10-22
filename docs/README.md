@@ -13,6 +13,8 @@ documents are currently in Russian.
 - [GitHub readiness](GITHUB_READINESS.md) and [first publication checklist](GITHUB_PUBLICATION_PLAN.md).
 - [Decisions and open questions](OPEN_DECISIONS.md).
 - [Changelog](../CHANGELOG.md) and [development journal](../DEVLOG.md).
+- [Versions and journals](HISTORY_GUIDE.md), [history archive](history/README.md)
+  and [MIT licensing details](LICENSING.md).
 
 ## Application and games
 

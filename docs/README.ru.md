@@ -16,7 +16,9 @@
 - [Готовность к GitHub и оставшиеся шаги](GITHUB_READINESS.md).
 - [Дальнейшие шаги проекта](NEXT_STEPS.md).
 - [Принятые решения и открытые вопросы](OPEN_DECISIONS.md).
-- [Изменения продукта](../CHANGELOG.md) и [журнал разработки](../DEVLOG.md).
+- [Изменения продукта](../CHANGELOG.ru.md) и [журнал разработки](../DEVLOG.ru.md).
+- [Версии и журналы](HISTORY_GUIDE.ru.md), [архив истории](history/README.ru.md)
+  и [пояснения к MIT](LICENSING.ru.md).
 
 ## Достижения
 
