@@ -6,20 +6,24 @@ Notable changes to Casper Loto, newest first. Entries describe product releases;
 this document has no version number of its own. Related small changes are
 summarised together, with their original release numbers preserved.
 
-Before this editorial cleanup, API, Mini App and Admin used separate version
-sequences. Those numbers remain unchanged. A future numbering policy is still
-under review; this documentation update does not release a new application version.
-See [how to read these journals](docs/HISTORY_GUIDE.md).
+The shared public baseline is **Casper Loto 1.70.0**, recorded in
+[`VERSION`](VERSION). API, Mini App and Admin keep their independent internal
+versions. Earlier component-version headings remain historical records.
+See the [approved versioning rules](docs/VERSIONING.md) and
+[journal guide](docs/HISTORY_GUIDE.md).
 
 ## [Unreleased]
 
-### Repository
+No unreleased player-facing changes are recorded here yet.
+Repository preparation and documentation work are covered in the [Devlog](DEVLOG.md).
 
-- Added the MIT licence for original code and associated documentation.
-- Prepared English and Russian public journals, with complete original records
-  preserved in the [history archive](docs/history/README.md).
+## [1.70.0] - 2026-10-23
 
-## [Mini App 1.70.0] - 2026-10-23
+**Casper Loto 1.70.0** is the first shared public baseline for the existing
+released application. Internal components: API **1.59.0**, Mini App **1.70.0**,
+Admin **1.61.2**. See the [baseline record](docs/releases/1.70.0.md).
+The shared public designation was adopted on 23 October; no additional
+game deployment is implied by this documentation update.
 
 ### Added
 

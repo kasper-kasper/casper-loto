@@ -19,6 +19,7 @@
 - [Изменения продукта](../CHANGELOG.ru.md) и [журнал разработки](../DEVLOG.ru.md).
 - [Версии и журналы](HISTORY_GUIDE.ru.md), [архив истории](history/README.ru.md)
   и [пояснения к MIT](LICENSING.ru.md).
+- [Утверждённые правила версий](VERSIONING.ru.md) и [исходный Casper Loto 1.70.0](releases/1.70.0.md).
 
 ## Достижения
 

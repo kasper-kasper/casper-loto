@@ -24,6 +24,8 @@
 
 <p align="center">App languages: <strong>English · Русский</strong></p>
 
+<p align="center">Current public version: <a href="CHANGELOG.md"><strong>Casper Loto 1.70.0</strong></a></p>
+
 ---
 
 [About the game](#about-the-game) · [Screenshots](#screenshots) · [Getting started](#getting-started) · [My story](#my-story) · [Roadmap](#roadmap) · [For developers](#for-developers)
@@ -281,6 +283,8 @@ Read [AGENTS.md](AGENTS.md) before making changes.
 The [history archive](docs/history/README.md) preserves the complete earlier
 technical journals. Some technical documents retain their original language.
 See [how versions and journals work](docs/HISTORY_GUIDE.md).
+The [versioning rules](docs/VERSIONING.md) distinguish the public product version
+from internal component versions.
 
 ## Licence
 

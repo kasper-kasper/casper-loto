@@ -11,6 +11,23 @@ including local experiments, checks and deployment reports, is preserved in the
 [history archive](docs/history/README.md). Product changes are in the
 [Changelog](CHANGELOG.md), and future plans are in the [Roadmap](docs/ROADMAP.md).
 
+## [One public version for Casper Loto] - 2026-10-23
+
+I have adopted **Casper Loto 1.70.0** as the shared public baseline for the
+already released application. API, Mini App and Admin keep their own internal
+versions. The Changelog uses the public product number; this journal continues
+with dates and subjects. Earlier records remain available unchanged in the archive.
+
+I approved the [versioning rules](docs/VERSIONING.md): compatible features use
+a MINOR increase, compatible fixes use PATCH, and broken public compatibility
+uses MAJOR. The next number must be agreed with me before a release. Documentation,
+GitHub preparation and local work do not create another product version.
+
+The [baseline record](docs/releases/1.70.0.md) maps the public version to the
+verified component versions and deployment evidence. The approval follows the
+earlier discussion recorded below. Opening the source repository does not need
+a new game deployment or a GitHub Release.
+
 ## [Preparing the source for others to read] - 2026-10-23
 
 I have put Casper Loto in a private GitHub repository while I prepare its public

@@ -15,6 +15,7 @@ documents are currently in Russian.
 - [Changelog](../CHANGELOG.md) and [development journal](../DEVLOG.md).
 - [Versions and journals](HISTORY_GUIDE.md), [history archive](history/README.md)
   and [MIT licensing details](LICENSING.md).
+- [Approved versioning rules](VERSIONING.md) and [Casper Loto 1.70.0 baseline](releases/1.70.0.md).
 
 ## Application and games
 

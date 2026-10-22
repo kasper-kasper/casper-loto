@@ -6,8 +6,8 @@
 
 | Item | Meaning | Example |
 | --- | --- | --- |
-| Application version | Identifies a released software state | Mini App `1.70.0` |
-| Changelog entry | Describes notable changes in that release, using its number | What changed in Mini App `1.70.0` |
+| Public application version | Identifies a released product state | Casper Loto `1.70.0` |
+| Changelog entry | Describes notable changes in that release, using its number | What changed in Casper Loto `1.70.0` |
 | Devlog entry | Explains development work and decisions, using a date and title | “An English interface”, 23 October 2026 |
 
 Changelog has no independent version counter. Devlog entries do not create
@@ -15,9 +15,11 @@ application versions. A commit records a change in Git; it need not be a new
 release or a separate journal entry. A GitHub Release packages a tagged state
 with release notes; it need not be created for every commit.
 
-## Current state: numbering is unchanged
+## Approved public version and internal versions
 
-At the 23 October 2026 review, the source metadata is:
+The owner approved **Casper Loto 1.70.0** as the shared public baseline on
+23 October 2026. It is recorded in [`VERSION`](../VERSION).
+The independent internal package versions remain:
 
 | Component | Existing version |
 | --- | --- |
@@ -25,10 +27,12 @@ At the 23 October 2026 review, the source metadata is:
 | Mini App | `1.70.0` |
 | Admin | `1.61.2` |
 
-The owner asked to postpone the numbering decision. This editorial cleanup
-does not change package manifests, lockfiles, runtime versions, tags or previous
-releases. There is no newly assigned overall project version. A shared future
-number or continued component versions will be decided separately.
+The [versioning rules](VERSIONING.md) define SemVer and require owner approval
+of each new public version. A compatible feature release after 1.70.0 would be
+1.71.0; a fixes-only release would be 1.70.1. Documentation and GitHub preparation
+alone do not increase the version. The [baseline record](releases/1.70.0.md)
+maps the public version to verified deployment evidence. Past package manifests,
+lockfiles, runtime versions, release snapshots and tags remain unchanged.
 
 ## How the history is edited
 

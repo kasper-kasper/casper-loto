@@ -78,3 +78,16 @@ These rules apply to every human or AI change in this repository.
     ticket's contribution upward and burn the integer remainder (3,333 CAS means
     1,667 to jackpot and 1,666 burned). Bulk/multi-draw purchases sum these
     per-ticket contributions; do not round half of the combined purchase instead.
+
+20. Follow `docs/VERSIONING.md` (Russian: `docs/VERSIONING.ru.md`). The owner-approved
+    shared public baseline is Casper Loto 1.70.0, recorded in `VERSION`; internal
+    API, Mini App and Admin versions remain independent. CHANGELOG describes
+    shared public product releases and has no version of its own. DEVLOG entries
+    use dates and subjects, without a new journal-version sequence. Preserve
+    all historical numbers, records, release manifests and tags. Use Unreleased
+    for player-facing changes not yet published. Documentation, GitHub preparation,
+    testing and local work alone do not increase the public version. Before a
+    product release, classify the changes, propose the SemVer number and obtain
+    explicit owner approval of that number; never change it independently.
+    From 1.70.0, a compatible feature release is 1.71.0 and a fixes-only release
+    is 1.70.1. A major visual update or feature count alone does not require MAJOR.

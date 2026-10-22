@@ -27,6 +27,8 @@
   <a href="README.md">Read this page in English →</a>
 </p>
 
+<p align="center">Текущая публичная версия: <a href="CHANGELOG.ru.md"><strong>Casper Loto 1.70.0</strong></a></p>
+
 ---
 
 [Об игре](#об-игре) · [Скриншоты](#скриншоты) · [Как начать](#как-начать) · [От автора](#от-автора) · [Планы](#планы) · [Разработчикам](#разработчикам)
@@ -280,6 +282,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check.ps1
 
 Полные прежние технические журналы сохранены в [архиве истории](docs/history/README.ru.md).
 Подробнее — [как устроены версии и журналы](docs/HISTORY_GUIDE.ru.md).
+[Правила версионирования](docs/VERSIONING.ru.md) разделяют публичную версию
+продукта и внутренние версии компонентов.
 
 ## Лицензия
 
