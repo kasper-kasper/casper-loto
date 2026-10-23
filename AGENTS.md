@@ -91,3 +91,11 @@ These rules apply to every human or AI change in this repository.
     explicit owner approval of that number; never change it independently.
     From 1.70.0, a compatible feature release is 1.71.0 and a fixes-only release
     is 1.70.1. A major visual update or feature count alone does not require MAJOR.
+
+21. The owner-approved 2026-10-23 storage profile is VPS-only: two newest validated
+    database dumps; current/referenced application images plus two previous tagged
+    rollback versions per service; two recognized release archives per category.
+    Keep diagnostic logs under their separate 90-day policy. Do not add automatic
+    computer/cloud backup transfers unless the owner requests a new policy.
+    Apply retention only through the locked, guarded maintenance tool; never delete
+    purchased tickets, draws, ledger history, live volumes or unknown files.

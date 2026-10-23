@@ -17,8 +17,10 @@ For now I am the only player, so I chose to keep backups on the VPS without
 an automatic computer or cloud transfer. The approved storage policy keeps two
 database copies, the running application plus two rollback versions per service,
 and two recognised archives of each kind. Diagnostic logs keep their existing
-retention. The change is being checked and applied through the maintenance tool;
-the game rules and public version 1.70.0 stay the same.
+retention. The maintenance tool applied this policy after the full GitHub checks,
+Linux maintenance regressions and two complete restore rehearsals. Production
+health passed, and running containers and data volumes were unchanged.
+The game rules and public version 1.70.0 stay the same.
 
 ## [One public version for Casper Loto] - 2026-10-23
 

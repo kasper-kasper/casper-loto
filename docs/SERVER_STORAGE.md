@@ -200,3 +200,36 @@ draws overdue by ten minutes and zero invalid indexes. No app services restarted
 ## Retention verification after the live/Admin release, 2026-10-16
 
 At 2026-10-16T18:12:15.800691+00:00, central maintenance retained seven database dumps and removed 5 expired owned files and 4 eligible project images. Removed paths were checked absent; the follow-up plan found 0 surplus recognized files and 0 eligible images. Public health passed. The daily persistent maintenance timer remains enabled; database dumps are pruned after successful creation as well. No ticket, draw, ledger row or Docker volume was deleted.
+
+## Two-copy profile applied, 2026-10-23
+
+Owner approval: OD-084. Database dumps and recognized release archives now keep
+two copies; image retention remains current/referenced plus two prior tagged
+versions. No automatic computer or cloud transfer was added. Public version
+remains 1.70.0 because this is host storage administration, with no player change.
+
+Code verification before application: 27 local maintenance tests passed and one
+Windows symlink case was unavailable; all 28 passed on the actual Linux host.
+The complete [GitHub verification](https://github.com/kasper-kasper/casper-loto/actions/runs/39881450341)
+passed for code commit `6afb0d46` before the production operation.
+
+The entire source-backup/upload/validation/application/health sequence held the
+operations lock. The backup lock also protected restore checks and cleanup.
+A fresh database dump and a private backup of the two host files and active
+source manifest were created first. Both retained database dumps were fully
+restored sequentially into unique disposable databases; schema, all five
+ledger/account families and index validity passed. Temporary restore databases
+were removed by the restore helper.
+
+Only `scripts/server_maintenance.py` and `infrastructure/server-maintenance.toml`
+were promoted on the host. The complete active source manifest was verified and
+updated for those two files; past release manifests/snapshots remain unchanged.
+The normal guarded maintenance tool removed 10 recognized surplus files and
+6 eligible images, reclaiming approximately 0.85 GiB. Two database copies remain,
+and no surplus recognized release archives remain above the per-category limit.
+
+Container IDs/images and the Docker volume list matched before/after. No service
+was recreated. Public HTTPS/client hashes/auth checks and the independent health
+monitor passed. Backup, maintenance and log-archive timers remained active.
+Private audit, restore and cleanup evidence is retained in ignored
+`.tools/two-copy-retention/` and the operation's private VPS maintenance directory.
