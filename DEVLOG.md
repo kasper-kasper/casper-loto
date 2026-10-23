@@ -11,6 +11,14 @@ including local experiments, checks and deployment reports, is preserved in the
 [history archive](docs/history/README.md). Product changes are in the
 [Changelog](CHANGELOG.md), and future plans are in the [Roadmap](docs/ROADMAP.md).
 
+## [Version approval for MAJOR only] - 2026-10-23
+
+The owner now requires separate version-number approval only for MAJOR. MINOR
+and PATCH releases follow the normal checks, backup, publication and health process
+without an extra numbering question. Production was verified at 1.70.2; achievement
+notification navigation and settings are prepared as compatible feature release
+1.71.0. Historical release records retain their original wording.
+
 ## [Achievement notification navigation and settings] - 2026-10-23
 
 Achievement popups and bell entries now open the exact achievement in its category.

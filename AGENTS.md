@@ -87,10 +87,12 @@ These rules apply to every human or AI change in this repository.
     all historical numbers, records, release manifests and tags. Use Unreleased
     for player-facing changes not yet published. Documentation, GitHub preparation,
     testing and local work alone do not increase the public version. Before a
-    product release, classify the changes, propose the SemVer number and obtain
-    explicit owner approval of that number; never change it independently.
-    From 1.70.0, a compatible feature release is 1.71.0 and a fixes-only release
-    is 1.70.1. A major visual update or feature count alone does not require MAJOR.
+    product release, classify the changes and select the appropriate SemVer number.
+    MINOR and PATCH releases may be numbered and published without separate version
+    approval. Obtain explicit owner approval only before increasing MAJOR (the
+    first number, for example 1.x.x to 2.0.0). A major visual update or feature
+    count alone does not require MAJOR. This approval scope was updated by the
+    owner on 23 October 2026; normal backup, checks and deployment rules still apply.
 
 21. The owner-approved 2026-10-23 storage profile is VPS-only: two newest validated
     database dumps; current/referenced application images plus two previous tagged

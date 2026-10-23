@@ -26,7 +26,7 @@ do not automatically require a MAJOR increase.
 From the current baseline, the next compatible feature release is **1.71.0**;
 the next fixes-only release is **1.70.1**. These are alternative next releases,
 not releases that have already happened. Later numbers follow the latest
-approved public release; for example, a fix after 1.71.0 would be 1.71.1.
+published public release; for example, a fix after 1.71.0 would be 1.71.1.
 
 ## Release and journal rules
 
@@ -50,10 +50,12 @@ approved public release; for example, a fix after 1.71.0 would be 1.71.1.
    tags. The original Changelog and Devlog remain in the
    [history archive](history/README.md); older component-version headings below
    the 1.70.0 baseline are historical records.
-9. Before a release, the agent must classify the changes, select the appropriate
-   public version and obtain the owner's explicit approval of that version.
-   Changing the public version without approval is prohibited. Once approved,
-   follow the repository's normal backup, checks, deployment and health rules.
+9. Before a release, classify the changes and select the appropriate public
+   version. MINOR and PATCH numbers may be selected and published without separate
+   version approval. Obtain explicit owner approval only before increasing MAJOR,
+   the first number, for example `1.x.x → 2.0.0`.
+   The owner clarified this approval scope on 23 October 2026. Normal backup,
+   checks, deployment and health verification rules remain in effect.
 10. A GitHub Release/tag is optional for opening the source repository. Creating
     one is a separate release action; it does not justify a version increase
     or alter past deployment manifests.
