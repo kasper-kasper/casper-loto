@@ -11,6 +11,14 @@ including local experiments, checks and deployment reports, is preserved in the
 [history archive](docs/history/README.md). Product changes are in the
 [Changelog](CHANGELOG.md), and future plans are in the [Roadmap](docs/ROADMAP.md).
 
+## [Achievement notifications published] - 2026-10-23
+
+Public 1.71.0, API/bot 1.60.0 and Mini App 1.71.0 were published under the
+operations lock with VPS-only backups. Targeted feature checks and current-schema
+preference migration passed; HTTPS, exact assets and health were verified.
+The achievement launch epoch is unchanged and monitoring has no warnings.
+See [release results](docs/releases/1.71.0.md).
+
 ## [Version approval for MAJOR only] - 2026-10-23
 
 The owner now requires separate version-number approval only for MAJOR. MINOR

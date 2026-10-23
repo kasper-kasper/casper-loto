@@ -14,6 +14,8 @@ See the [approved versioning rules](docs/VERSIONING.md) and
 
 ## [Unreleased]
 
+## [1.71.0] - 2026-10-23
+
 ### Added
 
 - An independent in-app achievement notification switch below the profile language
@@ -26,6 +28,10 @@ See the [approved versioning rules](docs/VERSIONING.md) and
   highlighted after closing its details.
 - Popups allow more reading time and pause while interacting. Re-enabling popups
   does not replay achievements earned while they were disabled.
+
+Public **1.71.0**; API **1.60.0**, Mini App **1.71.0**, Admin **1.61.2**.
+[Release record](docs/releases/1.71.0.md).
+
 
 ## [1.70.0] - 2026-10-23
 
