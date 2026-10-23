@@ -222,6 +222,7 @@ class MiniAppNotificationPreferences:
     telegram_enabled: bool
     draw_results_enabled: bool
     inactivity_reminders_enabled: bool
+    in_app_enabled: bool = True
 
 
 @dataclass(frozen=True, slots=True)
@@ -411,6 +412,7 @@ class MiniAppQueryService:
                 inactivity_reminders_enabled=(
                     preference.inactivity_reminders_enabled if preference else True
                 ),
+                in_app_enabled=preference.in_app_enabled if preference else True,
             ),
         )
 
@@ -448,6 +450,7 @@ class MiniAppQueryService:
         telegram_enabled: bool,
         draw_results_enabled: bool,
         inactivity_reminders_enabled: bool,
+        in_app_enabled: bool | None = None,
         now: datetime | None = None,
     ) -> MiniAppNotificationPreferences:
         timestamp = now or datetime.now(UTC)
@@ -456,8 +459,18 @@ class MiniAppQueryService:
                 UserNotificationPreference, user_id, with_for_update=True
             )
             if preference is None:
-                preference = UserNotificationPreference(user_id=user_id)
+                preference = UserNotificationPreference(
+                    user_id=user_id, in_app_enabled=True
+                )
                 self._session.add(preference)
+            if (
+                in_app_enabled is not None
+                and in_app_enabled != preference.in_app_enabled
+            ):
+                preference.in_app_enabled = in_app_enabled
+                if in_app_enabled:
+                    # A deliberate re-enable should not replay a silent backlog.
+                    preference.in_app_enabled_at = timestamp
             preference.telegram_enabled = telegram_enabled
             preference.draw_results_enabled = draw_results_enabled
             preference.inactivity_reminders_enabled = inactivity_reminders_enabled
@@ -467,6 +480,7 @@ class MiniAppQueryService:
             telegram_enabled,
             draw_results_enabled,
             inactivity_reminders_enabled,
+            preference.in_app_enabled,
         )
 
     async def mark_notifications_read(

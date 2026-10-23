@@ -11,6 +11,21 @@ including local experiments, checks and deployment reports, is preserved in the
 [history archive](docs/history/README.md). Product changes are in the
 [Changelog](CHANGELOG.md), and future plans are in the [Roadmap](docs/ROADMAP.md).
 
+## [Achievement notification navigation and settings] - 2026-10-23
+
+Achievement popups and bell entries now open the exact achievement in its category.
+A bounded catalog response can include the focused card independently of the first
+page, preserving pagination and secret redaction. The profile has an independent,
+persisted popup switch; re-enabling sets a UTC delivery boundary without changing
+inbox history or rewards. Migration 0068 adds two preference fields.
+
+Validation is limited to the affected UI tests, two isolated PostgreSQL regressions,
+frontend lint/typecheck/build and backend static checks, as requested by the owner.
+No full project suite was run. Prepared in an isolated branch so concurrent purchase
+receipt work and previously local commits are excluded from this Git publication.
+Public release/version approval and VPS deployment remain pending; see the
+[implementation note](docs/achievements/NOTIFICATION_NAVIGATION.md).
+
 ## [Simpler backup storage for the current stage] - 2026-10-23
 
 For now I am the only player, so I chose to keep backups on the VPS without

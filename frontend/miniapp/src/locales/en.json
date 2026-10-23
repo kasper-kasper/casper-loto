@@ -1198,5 +1198,12 @@
   "ХАН-лото": "6 of 36",
   "Ежедневная лотерея": "Daily lottery",
   "Получено достижение": "Achievement unlocked",
-  "Ближайший тираж уже открыт": "The next draw is open"
+  "Ближайший тираж уже открыт": "The next draw is open",
+  "Уведомления в приложении": "In-app notifications",
+  "Всплывающие достижения. История остаётся в колокольчике.": "Achievement popups. Your notification history stays in the inbox.",
+  "Всплывающие уведомления о достижениях": "Achievement popups",
+  "Открыть достижение": "Open achievement",
+  "Открыть достижение «{0}»": "Open achievement “{0}”",
+  "Посмотреть достижение": "View achievement",
+  "Это достижение больше недоступно": "This achievement is no longer available"
 }

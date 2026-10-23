@@ -78,3 +78,14 @@
 .hub-language button { flex:1; min-height:44px; padding:10px 16px; border:1px solid #ffffff24; border-radius:12px; background:#ffffff08; color:inherit; font:inherit; cursor:pointer; }
 .hub-language button[aria-pressed="true"] { background:#d9b56a20; border-color:#d9b56a; color:#f7dca2; }
 .hub-language button:focus-visible { outline:2px solid #f7dca2; outline-offset:3px; }
+.hub-in-app-settings { display:flex; align-items:center; gap:14px; padding:16px; border:1px solid #ffffff16; border-radius:18px; }
+.hub-in-app-settings > div { flex:1; min-width:0; }
+.hub-in-app-settings strong { display:block; font-size:14px; line-height:1.4; }
+.hub-in-app-settings p { margin:6px 0 0; color:#99a8bf; font-size:11px; line-height:1.5; }
+.hub-in-app-settings [role="switch"] { flex:none; width:48px; height:30px; padding:3px; border:1px solid #ffffff30; border-radius:18px; background:#263249; cursor:pointer; }
+.hub-in-app-settings [role="switch"] > span { display:block; width:22px; height:22px; border-radius:50%; background:#aab7ce; transition:transform .15s ease; }
+.hub-in-app-settings [aria-checked="true"] { background:#8ed8b030; border-color:#8ed8b0; }
+.hub-in-app-settings [aria-checked="true"] > span { transform:translateX(17px); background:#8ed8b0; }
+.hub-in-app-settings [role="switch"]:focus-visible { outline:2px solid #f7dca2; outline-offset:3px; }
+.hub-in-app-settings [role="switch"]:disabled { opacity:.5; cursor:wait; }
+@media(prefers-reduced-motion:reduce) { .hub-in-app-settings [role="switch"] > span { transition:none; } }

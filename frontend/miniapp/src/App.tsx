@@ -9,6 +9,7 @@ import { GiftTicketBadge } from "./GiftTicketBadge";
 import { NewYearTicketDetail, NewYearSymbols, NewYearPurchaseNotice } from "./NewYear";
 import { MiniTicketDetail } from "./MiniTicket";
 import { AchievementNotices } from "./AchievementNotices";
+import type { AchievementTarget } from "./achievementTypes";
 import { ApiError, miniAppApi } from "./api";
 import { recoveredEvent } from "./purchaseJournal";
 import { Today } from "./Today";
@@ -182,13 +183,14 @@ function TicketDetail({ ticket, lottery, onClose }: { ticket: Ticket; lottery?: 
   </motion.article></div>;
 }
 
-function NotificationCenter({ notifications, onPlay, onTickets }: { notifications: UserNotification[]; onPlay: () => void; onTickets: () => void }) {
+function NotificationCenter({ notifications, onPlay, onTickets, onAchievement }: { notifications: UserNotification[]; onPlay: () => void; onTickets: () => void; onAchievement: (code: string) => void }) {
   if (!notifications.length) return <EmptyState title={tr(copy.notifications.emptyTitle)} text={tr(copy.notifications.emptyText)} />;
   return <div className="inbox-list">{notifications.map((item) => {
+    const achievementCode = item.type === "ACHIEVEMENT" && typeof item.payload.achievement === "string" ? item.payload.achievement : null;
     const isWin = item.type === "WIN";
     const isFastResult = item.type === "DRAW_RESULT";
     const isJackpot = item.type === "JACKPOT_NEWS";
-    return <article className={`${isWin ? "win" : isFastResult ? "result" : isJackpot ? "news" : "invite"} ${item.read_at ? "read" : "unread"}`} key={item.id}><div className="inbox-symbol">{isWin ? "+" : isFastResult ? "ϟ" : isJackpot ? "J" : "K"}</div><div><header><strong>{notificationText(item.title)}</strong><time>{tr(formatMoscow(item.created_at))}  {tr("МСК")}</time></header><p>{notificationText(item.body)}</p><button onClick={isWin || isFastResult ? onTickets : onPlay} type="button">{tr(isWin || isFastResult ? copy.actions.openTickets : copy.actions.chooseNumbers)}<span>→</span></button></div></article>;
+    return <article className={`${isWin ? "win" : isFastResult ? "result" : isJackpot ? "news" : "invite"} ${item.read_at ? "read" : "unread"}`} key={item.id}><div className="inbox-symbol">{isWin ? "+" : isFastResult ? "ϟ" : isJackpot ? "J" : "K"}</div><div><header><strong>{notificationText(item.title)}</strong><time>{tr(formatMoscow(item.created_at))}  {tr("МСК")}</time></header><p>{notificationText(item.body)}</p><button onClick={achievementCode ? () => onAchievement(achievementCode) : isWin || isFastResult ? onTickets : onPlay} type="button">{tr(achievementCode ? "Открыть достижение" : isWin || isFastResult ? copy.actions.openTickets : copy.actions.chooseNumbers)}<span aria-hidden="true">→</span></button></div></article>;
   })}</div>;
 }
 
@@ -206,14 +208,18 @@ function CartView({ cart, groups, receipt, purchasing, success, progress, canAdd
 }
 
 export default function App(props: AppProps) {
-  return <><AppContent {...props} /><AchievementNotices initData={props.initData} /></>;
+  const achievementNavigationRef = useRef<(target: AchievementTarget) => void>(() => {});
+  const [inAppEnabled, setInAppEnabled] = useState(false);
+  return <><AppContent {...props} achievementNavigationRef={achievementNavigationRef} onInAppPreference={setInAppEnabled} />{inAppEnabled && <AchievementNotices initData={props.initData} onOpen={target => achievementNavigationRef.current(target)} />}</>;
 }
 
-function AppContent({ initData, localDev = false }: AppProps) {
+function AppContent({ initData, localDev = false, achievementNavigationRef, onInAppPreference }: AppProps & { achievementNavigationRef: { current: (target: AchievementTarget) => void }; onInAppPreference: (enabled: boolean) => void }) {
   const authenticated = Boolean(initData) || localDev;
   const [cartTtl] = useState(() => configuredCartTtl());
   const [view, setView] = useState<View>(initialView);
   const [accountView, setAccountView] = useState<AccountView>("overview");
+  const [achievementTarget, setAchievementTarget] = useState<AchievementTarget | null>(null);
+  const [preferencesSaving, setPreferencesSaving] = useState(false);
   const [ticketView, setTicketView] = useState<TicketView>("active");
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [account, setAccount] = useState<Account | null>(null);
@@ -321,13 +327,25 @@ function AppContent({ initData, localDev = false }: AppProps) {
       if (epoch !== snapshotEpoch.current || sequence !== accountSequence.current) return null;
       accountCache.current = { epoch, identity: initData, loadedAt: Date.now(), value };
       setAccount(value);
+      onInAppPreference(value.notification_preferences.in_app_enabled ?? true);
       return value;
     }).finally(() => {
       if (accountRequest.current?.promise === promise) accountRequest.current = null;
     });
     accountRequest.current = { epoch, identity: initData, promise };
     return promise;
-  }, [authenticated, initData]);
+  }, [authenticated, initData, onInAppPreference]);
+
+  const openAchievement = useCallback((target: AchievementTarget) => {
+    setAchievementTarget(target);
+    setPickerLottery(null); setBingoOpen(false); setAuroraOpen(false); setVaultOpen(false); setKasperLiveOpen(false); setSelectedTicket(null);
+    setAccountView("achievements"); setView("account");
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, []);
+  useEffect(() => {
+    achievementNavigationRef.current = openAchievement;
+    return () => { achievementNavigationRef.current = () => {}; };
+  }, [achievementNavigationRef, openAchievement]);
 
   useEffect(() => {
     const recovered = (event: Event) => {
@@ -708,14 +726,19 @@ function AppContent({ initData, localDev = false }: AppProps) {
   };
 
   const saveNotificationPreferences = async (preferences: NotificationPreferences) => {
+    if (preferencesSaving) return;
+    setPreferencesSaving(true);
     try {
       const saved = await miniAppApi.notificationPreferences(initData, preferences);
+      accountSequence.current += 1;
+      accountCache.current = null;
       setAccount((current) => current ? { ...current, notification_preferences: saved } : current);
+      onInAppPreference(saved.in_app_enabled ?? true);
       successHaptic();
     } catch (reason) {
       errorHaptic();
       setError(reason instanceof Error ? reason.message : tr("Не удалось сохранить уведомления."));
-    }
+    } finally { setPreferencesSaving(false); }
   };
 
   const enableTelegramNotifications = async () => {
@@ -725,6 +748,7 @@ function AppContent({ initData, localDev = false }: AppProps) {
       return;
     }
     const preferences: NotificationPreferences = {
+      in_app_enabled: account?.notification_preferences.in_app_enabled ?? true,
       telegram_enabled: true,
       draw_results_enabled: true,
       inactivity_reminders_enabled: true,
@@ -783,11 +807,11 @@ function AppContent({ initData, localDev = false }: AppProps) {
 
     {view === "account" && <section className="view-content personal-section" key="account">
       {(accountView === "tickets" || accountView === "notifications") && <header className="personal-section-heading"><button type="button" aria-label={tr("Обзор")} onClick={() => { selectionHaptic(); setAccountView("overview"); void refreshAccount(false).catch(() => undefined); }}>← <span>{tr("Моё")}</span></button><h1>{accountView === "tickets" ? tr("Мои билеты") : tr("Уведомления")}</h1><button type="button" onClick={() => { if (accountView === "tickets") setAccountView("notifications"); else { setTicketsLoading(true); setAccountView("tickets"); } }}>{accountView === "tickets" ? tr("Уведомления") : tr("Билеты")}</button></header>}
-      {accountView === "overview" && (account ? <AccountOverview initData={initData} onCollection={() => { setAccountView("collection"); window.scrollTo({top:0,behavior:"instant"}); }} onAchievements={() => { setAccountView("achievements"); window.scrollTo({ top: 0, behavior: "instant" }); }} account={account} lotteries={dashboard.lotteries} onCatalog={() => setView("catalog")} onTickets={() => { setTicketLotteryFilter(""); setTicketWinsOnly(false); setTicketsLoading(true); setTicketView("active"); setAccountView("tickets"); }} onHistory={() => { setTicketsLoading(true); setTicketLotteryFilter(""); setTicketWinsOnly(false); setTicketView("history"); setAccountView("tickets"); }} onNotifications={() => setAccountView("notifications")} onEnableTelegram={() => void enableTelegramNotifications()} onSavePreferences={(preferences) => void saveNotificationPreferences(preferences)} /> : <div className="skeleton account-skeleton" />)}
+      {accountView === "overview" && (account ? <AccountOverview initData={initData} onCollection={() => { setAccountView("collection"); window.scrollTo({top:0,behavior:"instant"}); }} onAchievements={() => { setAchievementTarget(null); setAccountView("achievements"); window.scrollTo({ top: 0, behavior: "instant" }); }} account={account} preferencesSaving={preferencesSaving} lotteries={dashboard.lotteries} onCatalog={() => setView("catalog")} onTickets={() => { setTicketLotteryFilter(""); setTicketWinsOnly(false); setTicketsLoading(true); setTicketView("active"); setAccountView("tickets"); }} onHistory={() => { setTicketsLoading(true); setTicketLotteryFilter(""); setTicketWinsOnly(false); setTicketView("history"); setAccountView("tickets"); }} onNotifications={() => setAccountView("notifications")} onEnableTelegram={() => void enableTelegramNotifications()} onSavePreferences={(preferences) => void saveNotificationPreferences(preferences)} /> : <div className="skeleton account-skeleton" />)}
       {accountView === "tickets" && <><div className={`segmented-control ${ticketView}`}><i /><button className={ticketView === "active" ? "selected" : ""} onClick={() => { selectionHaptic(); if (ticketView !== "active") setTicketsLoading(true); setTicketView("active"); }} type="button">{tr("Активные")}</button><button className={ticketView === "history" ? "selected" : ""} onClick={() => { selectionHaptic(); if (ticketView !== "history") setTicketsLoading(true); setTicketView("history"); }} type="button">{tr("История")}</button></div><div className="ticket-filters"><select aria-label={tr("Фильтр по лотерее")} value={ticketLotteryFilter} onChange={(event) => { setTicketsLoading(true); setTicketLotteryFilter(event.target.value); }}><option value="scope:standard">{tr("Обычные лотереи")}</option><option value="scope:fast">Casper Fast</option><option value="">{tr("Все игры")}</option><option value="kasper-live">Casper LIVE</option><option value="aurora">Casper Aurora</option><option value="vault">Casper Vault</option>{dashboard.lotteries.map((lottery) => <option key={lottery.code} value={lottery.code}>{tr(lottery.name)}</option>)}</select>{ticketView === "history" && <button aria-pressed={ticketWinsOnly} className={ticketWinsOnly ? "active" : ""} onClick={() => { setTicketsLoading(true); setTicketWinsOnly((value) => !value); }} type="button">{tr("Только выигрыши")}</button>}<span>{ticketTotal} {tr(plural(ticketTotal, tr("билет"), tr("билета"), tr("билетов")))}</span></div>{ticketsLoading ? <div className="ticket-skeletons"><div className="skeleton ticket-skeleton" /><div className="skeleton ticket-skeleton" /></div> : tickets.length ? <><TicketGroups active={ticketView === "active"} lotteries={dashboard.lotteries} now={serverNow} onOpen={setSelectedTicket} tickets={tickets} />{ticketsHaveMore && <button className="load-more-tickets" disabled={ticketsMoreLoading} onClick={() => void loadMoreTickets()} type="button">{ticketsMoreLoading ? tr("Загружаем…") : tr("Показать ещё · {0} из {1}", tickets.length, ticketTotal)}</button>}</> : <EmptyState title={ticketView === "active" ? tr("Нет активных билетов") : tr("История пока пуста")} text={ticketView === "active" ? tr("Выберите лотерею и соберите свою комбинацию.") : tr("Завершённые билеты появятся после розыгрыша.")} action={ticketView === "active" && firstAvailable ? { label: tr("Выбрать лотерею"), onClick: () => setView("catalog") } : undefined} />}{ticketView === "active" && firstAvailable && !ticketsLoading && tickets.length > 0 && <PrimaryButton className="sticky-action" onClick={() => void openLottery(firstAvailable.code)}>{tr("Ещё один билет")}</PrimaryButton>}</>}
-      {accountView === "achievements" && <Achievements initData={initData} onBack={() => setAccountView("overview")} />}
+      {accountView === "achievements" && <Achievements initData={initData} target={achievementTarget} onBack={() => setAccountView("overview")} />}
       {accountView === "collection" && <Collection initData={initData} onBack={() => setAccountView("overview")} />}
-      {accountView === "notifications" && <NotificationCenter notifications={notifications} onPlay={() => firstAvailable ? void openLottery(firstAvailable.code) : setView("home")} onTickets={() => { setTicketsLoading(true); setAccountView("tickets"); }} />}
+      {accountView === "notifications" && <NotificationCenter notifications={notifications} onAchievement={code => openAchievement({ code })} onPlay={() => firstAvailable ? void openLottery(firstAvailable.code) : setView("home")} onTickets={() => { setTicketsLoading(true); setAccountView("tickets"); }} />}
     </section>}
 
     {view === "cart" && <section className="view-content" key="cart">

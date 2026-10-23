@@ -2,18 +2,20 @@ import { tr } from "./i18n";
 import { useEffect, useRef, useState } from "react";
 import { miniAppApi } from "./api";
 import { AchievementBadge } from "./AchievementBadge";
-import type { AchievementNotice } from "./achievementTypes";
+import type { AchievementNotice, AchievementTarget } from "./achievementTypes";
 import { AchievementRewards } from "./AchievementRewards";
 import { AchievementTitle } from "./AchievementTitle";
 import "./achievements.css";
 
 /** Fetch only on entry, return to foreground or a committed purchase. No polling. */
-export function AchievementNotices({ initData }: { initData: string }) {
+export function AchievementNotices({ initData, enabled = true, onOpen }: { initData: string; enabled?: boolean; onOpen?: (target: AchievementTarget) => void }) {
   const [queue, setQueue] = useState<AchievementNotice[]>([]);
   const shown = useRef(new Set<string>());
   const lastUpdate = useRef("");
   const pendingAck = useRef(new Set<string>());
+  const [interacting, setInteracting] = useState(false);
   useEffect(() => {
+    if (!enabled) return;
     let active = true, inFlight = false;
     let timers: number[] = [];
     async function fetchNotices() {
@@ -48,20 +50,30 @@ export function AchievementNotices({ initData }: { initData: string }) {
     window.addEventListener("achievements:refresh", refresh);
     document.addEventListener("visibilitychange", foreground);
     return () => { active = false; timers.forEach(window.clearTimeout); window.removeEventListener("achievements:refresh", refresh); document.removeEventListener("visibilitychange", foreground); };
-  }, [initData]);
+  }, [initData, enabled]);
   const current = queue[0];
   useEffect(() => {
-    if (!current) return;
+    if (!current || !enabled || interacting) return;
     const timer = window.setTimeout(() => {
       shown.current.add(current.notification_id);
       pendingAck.current.add(current.notification_id);
       void miniAppApi.achievementSeen(initData, [current.notification_id]).then(() => pendingAck.current.delete(current.notification_id)).catch(() => undefined);
       setQueue(value => value.filter(item => item.notification_id !== current.notification_id));
       window.dispatchEvent(new Event("achievements:refresh"));
-    }, 4500);
+    }, 6500);
     return () => window.clearTimeout(timer);
-  }, [current, initData]);
-  if (!current) return null;
+  }, [current, initData, enabled, interacting]);
+  // Remounting after a preference change discards the old client queue.
+  if (!current || !enabled) return null;
 
-  return <aside className={`achievement-toast rarity-${current.rarity}`} role="status" aria-live="polite" key={current.notification_id}><AchievementBadge item={current} /><span><small>{tr("Достижение получено")}</small><strong><AchievementTitle item={current} /></strong><AchievementRewards item={current} compact /></span><button type="button" aria-label={tr("Скрыть уведомление о достижении")} onClick={() => { shown.current.add(current.notification_id); pendingAck.current.add(current.notification_id); void miniAppApi.achievementSeen(initData, [current.notification_id]).then(() => pendingAck.current.delete(current.notification_id)).catch(() => undefined); setQueue(value => value.slice(1)); }}>×</button></aside>;
+  function dismiss() {
+    if (!current) return;
+    shown.current.add(current.notification_id);
+    pendingAck.current.add(current.notification_id);
+    void miniAppApi.achievementSeen(initData, [current.notification_id]).then(() => pendingAck.current.delete(current.notification_id)).catch(() => undefined);
+    setQueue(value => value.filter(item => item.notification_id !== current.notification_id));
+    setInteracting(false);
+  }
+
+  return <aside className={`achievement-toast rarity-${current.rarity}`} role="status" aria-live="polite" key={current.notification_id} onMouseEnter={() => setInteracting(true)} onMouseLeave={() => setInteracting(false)} onFocusCapture={() => setInteracting(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setInteracting(false); }}><button className="achievement-toast-open" type="button" aria-label={tr("Открыть достижение «{0}»", tr(current.title))} onClick={() => { dismiss(); onOpen?.({ code: current.code, category: current.secret ? "secret" : current.rarity }); }}><AchievementBadge item={current} /><span><small>{tr("Достижение получено")}</small><strong><AchievementTitle item={current} /></strong><AchievementRewards item={current} compact /><span className="achievement-toast-hint">{tr("Посмотреть достижение")} →</span></span></button><button className="achievement-toast-dismiss" type="button" aria-label={tr("Скрыть уведомление о достижении")} onClick={dismiss}>×</button></aside>;
 }

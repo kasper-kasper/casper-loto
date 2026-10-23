@@ -772,6 +772,10 @@ class UserNotificationPreference(TimestampMixin, Base):
     telegram_enabled: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default="false"
     )
+    in_app_enabled: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default="true"
+    )
+    in_app_enabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     draw_results_enabled: Mapped[bool] = mapped_column(
         Boolean, default=True, server_default="true"
     )

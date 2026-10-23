@@ -106,6 +106,38 @@ describe("achievements UI", () => {
     fireEvent.click(screen.getByRole("button", { name: /Все достижения/ }));
     expect(open).toHaveBeenCalledOnce();
   });
+  it("opens the exact notified achievement even when it is outside the first page", async () => {
+    const target: Achievement = { ...won, code: "rare-14", title: "Охотник за удачей", rarity: "rare" };
+    vi.mocked(miniAppApi.achievements).mockResolvedValue({ ...page, total_by_category: { common: 22, rare: 20 }, focused_category: "rare", focused_item: target });
+    const { container } = render(<Achievements initData="fixture" target={{ code: target.code, category: "rare" }} onBack={vi.fn()} />);
+    expect(await screen.findByRole("dialog", { name: target.title })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Редкие/ })).toHaveAttribute("aria-pressed", "true");
+    expect(miniAppApi.achievements).toHaveBeenCalledWith("fixture", { category: "rare", status: "all", focus: "rare-14" }, expect.any(AbortSignal));
+    fireEvent.click(screen.getByRole("button", { name: "Закрыть подробности" }));
+    expect(container.querySelector('.achievement-highlighted')).toHaveTextContent(target.title!);
+    expect(screen.getByRole("button", { name: /^Все$/ })).toHaveAttribute("aria-pressed", "true");
+  });
+  it("makes a toast clickable, keeps it visible while interacting and dismisses separately", async () => {
+    vi.useFakeTimers();
+    const open = vi.fn();
+    vi.mocked(miniAppApi.achievementNotices).mockResolvedValue([{ ...won, rarity: "rare", notification_id: "navigation" }]);
+    render(<AchievementNotices initData="fixture" onOpen={open} />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+    fireEvent.mouseEnter(screen.getByRole("status"));
+    await act(async () => { await vi.advanceTimersByTimeAsync(10000); });
+    expect(screen.getByRole("status")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Открыть достижение «Ты с нами!»" }));
+    expect(open).toHaveBeenCalledWith({ code: "first_ticket", category: "rare" });
+    expect(miniAppApi.achievementSeen).toHaveBeenCalledWith("fixture", ["navigation"]);
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+  it("does not fetch or display popups when disabled", async () => {
+    vi.useFakeTimers();
+    render(<AchievementNotices initData="fixture" enabled={false} />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(10000); });
+    expect(miniAppApi.achievementNotices).not.toHaveBeenCalled();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
   it("shows one toast at a time, acknowledges after display and performs no continuous polling", async () => {
     vi.useFakeTimers();
     vi.mocked(miniAppApi.achievementNotices).mockResolvedValue([{ ...won, notification_id: "n1" }, { ...locked, status: "earned", notification_id: "n2" }]);
@@ -113,7 +145,7 @@ describe("achievements UI", () => {
     await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
     expect(screen.getByRole("status")).toHaveTextContent("Ты с нами!");
     expect(screen.queryByText("Затянуло")).not.toBeInTheDocument();
-    await act(async () => { await vi.advanceTimersByTimeAsync(4500); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(6500); });
     expect(miniAppApi.achievementSeen).toHaveBeenCalledWith("fixture", ["n1"]);
     expect(screen.getByRole("status")).toHaveTextContent("Затянуло");
     await act(async () => { await vi.advanceTimersByTimeAsync(30000); });

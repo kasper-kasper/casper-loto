@@ -1,5 +1,6 @@
 export type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
 export type AchievementCategory = Rarity | "secret";
+export interface AchievementTarget { code: string; category?: AchievementCategory }
 export interface Achievement {
   code: string;
   title?: string;
@@ -27,5 +28,7 @@ export interface AchievementPage {
   items: Achievement[];
   next_offset?: number | null;
   filtered_total?: number;
+  focused_item?: Achievement | null;
+  focused_category?: AchievementCategory | null;
 }
 export interface AchievementNotice extends Achievement { notification_id: string }

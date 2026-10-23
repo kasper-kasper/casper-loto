@@ -171,6 +171,7 @@ export interface NotificationPreferences {
   telegram_enabled: boolean;
   draw_results_enabled: boolean;
   inactivity_reminders_enabled: boolean;
+  in_app_enabled?: boolean;
 }
 
 export interface Account {

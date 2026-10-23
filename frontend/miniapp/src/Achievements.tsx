@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { miniAppApi } from "./api";
 import { AchievementIcon } from "./AchievementIcon";
 import { AchievementBadge } from "./AchievementBadge";
-import type { Achievement, AchievementCategory, AchievementPage } from "./achievementTypes";
+import type { Achievement, AchievementCategory, AchievementPage, AchievementTarget } from "./achievementTypes";
 import { AchievementRewards } from "./AchievementRewards";
 import { AchievementTitle } from "./AchievementTitle";
 import { lockInteractionViewport } from "./interactionLock";
@@ -60,7 +60,7 @@ export function AchievementSummary({ initData, onOpen }: { initData: string; onO
   </button>;
 }
 
-function AchievementList({ initData, category, status, onPage }: { initData: string; category?: AchievementCategory; status: string; onPage: (page: AchievementPage) => void }) {
+function AchievementList({ initData, category, status, focus, onPage }: { initData: string; category?: AchievementCategory; status: string; focus?: string; onPage: (page: AchievementPage) => void }) {
   const revision = useAchievementUpdates();
   const [page, setPage] = useState<AchievementPage | null>(null);
   const [items, setItems] = useState<Achievement[]>([]);
@@ -69,11 +69,20 @@ function AchievementList({ initData, category, status, onPage }: { initData: str
   const [detail, setDetail] = useState<Achievement | null>(null);
   const [retry, setRetry] = useState(0);
   const busy = useRef(false);
+  const focusOpened = useRef(false);
+  const highlighted = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const controller = new AbortController();
-    void miniAppApi.achievements(initData, { category, status }, controller.signal).then(data => { setPage(data); setItems(data.items); setError(""); onPage(data); }).catch((reason: unknown) => { if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : tr("Не удалось загрузить достижения")); });
+    void miniAppApi.achievements(initData, { category, status, ...(focus ? { focus } : {}) }, controller.signal).then(data => {
+      setPage(data);
+      const target = data.focused_item ?? data.items.find(item => item.code === focus);
+      setItems(target && !data.items.some(item => item.code === target.code) ? [target, ...data.items] : data.items);
+      setError(focus && !target ? tr("Это достижение больше недоступно") : "");
+      onPage(data);
+      if (target && focus && !focusOpened.current && (!data.focused_category || data.focused_category === category)) { focusOpened.current = true; setDetail(target); }
+    }).catch((reason: unknown) => { if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : tr("Не удалось загрузить достижения")); });
     return () => controller.abort();
-  }, [initData, category, status, onPage, retry, revision]);
+  }, [initData, category, status, focus, onPage, retry, revision]);
   async function more() {
     if (busy.current || page?.next_offset == null) return;
     busy.current = true; setLoading(true);
@@ -88,19 +97,25 @@ function AchievementList({ initData, category, status, onPage }: { initData: str
     } catch (reason) { setError(reason instanceof Error ? reason.message : tr("Не удалось загрузить достижения")); }
     finally { busy.current = false; setLoading(false); }
   }
-  return <>{error && <div className="achievement-empty" role="alert"><p>{tr(error)}</p><button type="button" onClick={() => setRetry(value => value + 1)}>{tr("Повторить")}</button></div>}{!page && !error && <p role="status">{tr("Загружаем достижения…")}</p>}{page && !page.enabled && <div className="achievement-empty"><AchievementIcon /><h2>{tr("Скоро начнём")}</h2><p>{tr("Достижения готовятся к запуску. Прогресс начнёт учитываться с момента запуска системы.")}</p></div>}{page?.enabled && !items.length && <div className="achievement-empty"><AchievementIcon /><p>{status === "earned" ? tr("Пока нет полученных достижений") : status === "locked" ? tr("Все достижения этой категории получены") : tr("Здесь пока нет достижений")}</p></div>}<div className="achievement-list">{items.map(item => <button type="button" className={`achievement-card rarity-${item.rarity} ${item.status}`} key={item.code} onClick={() => setDetail(item)}><AchievementBadge item={item} /><span className="achievement-card-copy"><strong><AchievementTitle item={item} /></strong><span>{tr(item.description ?? tr("Условие скрыто до получения"))}</span>{item.status === "earned" ? <span className="achievement-earned">{tr("Получено")} <span aria-hidden="true">✓</span></span> : <Progress item={item} />}<AchievementRewards item={item} /></span><span className="achievement-card-arrow" aria-hidden="true">›</span></button>)}</div>{page?.next_offset != null && <button type="button" disabled={loading} className="achievement-more" onClick={() => void more()}>{loading ? tr("Загружаем…") : tr("Показать ещё")}</button>}{detail && <Detail item={detail} onClose={() => setDetail(null)} />}</>;
+  return <>{error && <div className="achievement-empty" role="alert"><p>{tr(error)}</p><button type="button" onClick={() => setRetry(value => value + 1)}>{tr("Повторить")}</button></div>}{!page && !error && <p role="status">{tr("Загружаем достижения…")}</p>}{page && !page.enabled && <div className="achievement-empty"><AchievementIcon /><h2>{tr("Скоро начнём")}</h2><p>{tr("Достижения готовятся к запуску. Прогресс начнёт учитываться с момента запуска системы.")}</p></div>}{page?.enabled && !items.length && <div className="achievement-empty"><AchievementIcon /><p>{status === "earned" ? tr("Пока нет полученных достижений") : status === "locked" ? tr("Все достижения этой категории получены") : tr("Здесь пока нет достижений")}</p></div>}<div className="achievement-list">{items.map(item => <button type="button" className={`achievement-card rarity-${item.rarity} ${item.status} ${item.code === focus ? "achievement-highlighted" : ""}`} ref={item.code === focus ? highlighted : undefined} aria-current={item.code === focus ? "true" : undefined} key={item.code} onClick={() => setDetail(item)}><AchievementBadge item={item} /><span className="achievement-card-copy"><strong><AchievementTitle item={item} /></strong><span>{tr(item.description ?? tr("Условие скрыто до получения"))}</span>{item.status === "earned" ? <span className="achievement-earned">{tr("Получено")} <span aria-hidden="true">✓</span></span> : <Progress item={item} />}<AchievementRewards item={item} /></span><span className="achievement-card-arrow" aria-hidden="true">›</span></button>)}</div>{page?.next_offset != null && <button type="button" disabled={loading} className="achievement-more" onClick={() => void more()}>{loading ? tr("Загружаем…") : tr("Показать ещё")}</button>}{detail && <Detail item={detail} onClose={() => { setDetail(null); window.requestAnimationFrame(() => highlighted.current?.scrollIntoView?.({block:"center",behavior:"smooth"})); }} />}</>;
 }
 
-export function Achievements({ initData, onBack }: { initData: string; onBack: () => void }) {
-  const [category, setCategory] = useState<AchievementCategory>("common");
+export function Achievements(props: { initData: string; onBack: () => void; target?: AchievementTarget | null }) {
+  return <AchievementScreen key={props.target?.code ?? "catalog"} {...props} />;
+}
+
+function AchievementScreen({ initData, onBack, target }: { initData: string; onBack: () => void; target?: AchievementTarget | null }) {
+  const [category, setCategory] = useState<AchievementCategory>(target?.category ?? "common");
+  const [focus, setFocus] = useState(target?.code);
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState<AchievementPage | null>(null);
   const acceptPage = useCallback((data: AchievementPage) => {
     setPage(data);
+    if (data.focused_category && data.focused_category !== category) { setCategory(data.focused_category); return; }
     if (data.enabled && data.total_by_category?.[category] === 0) {
       const first = categories.find(([key]) => (data.total_by_category?.[key] ?? 0) > 0);
       if (first) setCategory(first[0]);
     }
   }, [category]);
-  return <div className="achievements-screen"><button type="button" className="achievement-back" onClick={onBack}>{tr("← В профиль")}</button><header><span>{tr("CASPER LOTO / ПРОФИЛЬ")}</span><h1>{tr("Мои достижения")}</h1>{page?.enabled && <><p><strong>{page.earned}</strong> / {page.total}  {tr("открыто")}</p><progress aria-label={tr("Общий прогресс")} max={page.total || 1} value={page.earned} /></>}</header>{page?.enabled && <><div className="achievement-categories" aria-label={tr("Редкость")}>{categories.filter(([key]) => (page.total_by_category?.[key] ?? 0) > 0).map(([key, title]) => <button type="button" className={`rarity-${key}`} key={key} aria-pressed={category === key} onClick={() => { setCategory(key); setStatus("all"); }}>{tr(title)}<small>{page.earned_by_category[key] ?? 0} / {page.total_by_category?.[key]}</small></button>)}</div><div className="achievement-filters" aria-label={tr("Статус достижения")}>{[["all", tr("Все")], ["earned", tr("Получены")], ["locked", tr("Не получены")]].map(([key, title]) => <button type="button" key={key} aria-pressed={status === key} onClick={() => setStatus(key)}>{tr(title)}</button>)}</div></>}<AchievementList key={`${category}:${status}`} initData={initData} category={category} status={status} onPage={acceptPage} /></div>;
+  return <div className="achievements-screen"><button type="button" className="achievement-back" onClick={onBack}>{tr("← В профиль")}</button><header><span>{tr("CASPER LOTO / ПРОФИЛЬ")}</span><h1>{tr("Мои достижения")}</h1>{page?.enabled && <><p><strong>{page.earned}</strong> / {page.total}  {tr("открыто")}</p><progress aria-label={tr("Общий прогресс")} max={page.total || 1} value={page.earned} /></>}</header>{page?.enabled && <><div className="achievement-categories" aria-label={tr("Редкость")}>{categories.filter(([key]) => (page.total_by_category?.[key] ?? 0) > 0).map(([key, title]) => <button type="button" className={`rarity-${key}`} key={key} aria-pressed={category === key} onClick={() => { setFocus(undefined); setCategory(key); setStatus("all"); }}>{tr(title)}<small>{page.earned_by_category[key] ?? 0} / {page.total_by_category?.[key]}</small></button>)}</div><div className="achievement-filters" aria-label={tr("Статус достижения")}>{[["all", tr("Все")], ["earned", tr("Получены")], ["locked", tr("Не получены")]].map(([key, title]) => <button type="button" key={key} aria-pressed={status === key} onClick={() => { setFocus(undefined); setStatus(key); }}>{tr(title)}</button>)}</div></>}<AchievementList key={`${category}:${status}:${focus ?? ""}`} initData={initData} category={category} status={status} focus={focus} onPage={acceptPage} /></div>;
 }

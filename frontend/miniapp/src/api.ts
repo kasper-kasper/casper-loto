@@ -98,7 +98,7 @@ async function request<T>(path: string, initData: string, init?: RequestInit, ca
 export const miniAppApi = {
   collection: (initData:string) => request<CollectionState>("/api/v1/miniapp/achievements/collection",initData),
   chooseCollection: (initData:string,badge:string|null,theme:string|null) => request<Pick<CollectionState,"active_badge"|"active_theme">>("/api/v1/miniapp/achievements/collection",initData,{method:"PUT",body:JSON.stringify({badge,theme})}),
-  achievements: (initData: string, options: { category?: AchievementCategory; status?: string; offset?: number; summary?: boolean } = {}, signal?: AbortSignal) => {
+  achievements: (initData: string, options: { category?: AchievementCategory; status?: string; offset?: number; summary?: boolean; focus?: string } = {}, signal?: AbortSignal) => {
     const query = new URLSearchParams({ limit: options.summary ? "3" : "12" });
     Object.entries(options).forEach(([key, value]) => { if (value !== undefined) query.set(key, String(value)); });
     return request<AchievementPage>(`/api/v1/miniapp/achievements?${query}`, initData, { signal });

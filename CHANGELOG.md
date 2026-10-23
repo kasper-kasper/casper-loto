@@ -14,8 +14,18 @@ See the [approved versioning rules](docs/VERSIONING.md) and
 
 ## [Unreleased]
 
-No unreleased player-facing changes are recorded here yet.
-Repository preparation and documentation work are covered in the [Devlog](DEVLOG.md).
+### Added
+
+- An independent in-app achievement notification switch below the profile language
+  selector. Achievement history remains available in the bell when popups are off.
+
+### Fixed
+
+- Achievement notifications now open the relevant category and achievement details,
+  including achievements beyond the first catalog page. The selected card stays
+  highlighted after closing its details.
+- Popups allow more reading time and pause while interacting. Re-enabling popups
+  does not replay achievements earned while they were disabled.
 
 ## [1.70.0] - 2026-10-23
 

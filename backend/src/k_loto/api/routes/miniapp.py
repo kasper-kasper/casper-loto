@@ -210,10 +210,15 @@ class NotificationPreferencesResponse(BaseModel):
     telegram_enabled: bool
     draw_results_enabled: bool
     inactivity_reminders_enabled: bool
+    in_app_enabled: bool = True
 
 
-class NotificationPreferencesRequest(NotificationPreferencesResponse):
-    pass
+class NotificationPreferencesRequest(BaseModel):
+    telegram_enabled: bool
+    draw_results_enabled: bool
+    inactivity_reminders_enabled: bool
+    # Old clients changing Telegram settings must preserve the new preference.
+    in_app_enabled: bool | None = None
 
 
 class AccountResponse(BaseModel):
@@ -584,6 +589,7 @@ async def account(
             inactivity_reminders_enabled=(
                 item.notification_preferences.inactivity_reminders_enabled
             ),
+            in_app_enabled=item.notification_preferences.in_app_enabled,
         ),
     )
 
@@ -618,11 +624,13 @@ async def update_notification_preferences(
         telegram_enabled=payload.telegram_enabled,
         draw_results_enabled=payload.draw_results_enabled,
         inactivity_reminders_enabled=payload.inactivity_reminders_enabled,
+        in_app_enabled=payload.in_app_enabled,
     )
     return NotificationPreferencesResponse(
         telegram_enabled=item.telegram_enabled,
         draw_results_enabled=item.draw_results_enabled,
         inactivity_reminders_enabled=item.inactivity_reminders_enabled,
+        in_app_enabled=item.in_app_enabled,
     )
 
 

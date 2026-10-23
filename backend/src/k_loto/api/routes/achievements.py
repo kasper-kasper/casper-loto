@@ -26,7 +26,10 @@ from k_loto.infrastructure.database.achievement_models import (
     AchievementPlayer,
     AchievementRuntime,
 )
-from k_loto.infrastructure.database.models import UserNotification
+from k_loto.infrastructure.database.models import (
+    UserNotification,
+    UserNotificationPreference,
+)
 
 router = APIRouter(prefix="/api/v1/miniapp/achievements", tags=["achievements"])
 Session = Annotated[AsyncSession, Depends(get_db_session)]
@@ -51,6 +54,7 @@ async def achievements(
     | None = None,
     status: Literal["all", "earned", "locked"] = "all",
     summary: bool = False,
+    focus: Annotated[str | None, Query(max_length=80)] = None,
 ) -> dict[str, Any]:
     response.headers["Cache-Control"] = "private, no-store"
     runtime = await session.get(AchievementRuntime, 1)
@@ -81,6 +85,15 @@ async def achievements(
         key=lambda d: (d.sort_order, RARITIES.index(d.rarity), d.code),
     )
     visible_codes = {d.code for d in definitions}
+    selected_category: str | None = category
+    focused_definition = next((d for d in definitions if d.code == focus), None)
+    if focused_definition is not None and not summary:
+        selected_category = (
+            "secret"
+            if selected_category == "secret" and focused_definition.secret
+            else focused_definition.rarity
+        )
+        status = "all"
     all_awards = awards
     awards = {code: award for code, award in awards.items() if code in visible_codes}
     by_category = {
@@ -103,8 +116,12 @@ async def achievements(
             d
             for d in definitions
             if (
-                category is None
-                or (d.secret if category == "secret" else d.rarity == category)
+                selected_category is None
+                or (
+                    d.secret
+                    if selected_category == "secret"
+                    else d.rarity == selected_category
+                )
             )
             and (status == "all" or (d.code in awards) == (status == "earned"))
         ]
@@ -208,6 +225,10 @@ async def achievements(
         "featured": player.featured if player else [],
         "telegram_enabled": player.telegram_enabled if player else False,
         "items": items[offset : offset + limit],
+        "focused_item": next((item for item in items if item["code"] == focus), None),
+        "focused_category": selected_category
+        if focused_definition is not None
+        else None,
         "next_offset": offset + limit if offset + limit < filtered_total else None,
     }
 
@@ -220,16 +241,22 @@ async def unseen(
     runtime = await session.get(AchievementRuntime, 1)
     if runtime is None or not runtime.enabled:
         return []
+    preference = await session.get(UserNotificationPreference, user.id)
+    if preference is not None and not preference.in_app_enabled:
+        return []
+    pending_query = select(
+        UserNotification.id, UserNotification.payload, UserNotification.created_at
+    ).where(
+        UserNotification.user_id == user.id,
+        UserNotification.read_at.is_(None),
+        UserNotification.type == "ACHIEVEMENT",
+    )
+    if preference is not None and preference.in_app_enabled_at is not None:
+        pending_query = pending_query.where(
+            UserNotification.created_at >= preference.in_app_enabled_at
+        )
     pending = (
-        select(
-            UserNotification.id, UserNotification.payload, UserNotification.created_at
-        )
-        .where(
-            UserNotification.user_id == user.id,
-            UserNotification.read_at.is_(None),
-            UserNotification.type == "ACHIEVEMENT",
-        )
-        .order_by(UserNotification.created_at, UserNotification.id)
+        pending_query.order_by(UserNotification.created_at, UserNotification.id)
         .limit(10)
         .subquery()
     )
