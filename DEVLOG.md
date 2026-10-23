@@ -11,6 +11,15 @@ including local experiments, checks and deployment reports, is preserved in the
 [history archive](docs/history/README.md). Product changes are in the
 [Changelog](CHANGELOG.md), and future plans are in the [Roadmap](docs/ROADMAP.md).
 
+## [Simpler backup storage for the current stage] - 2026-10-23
+
+For now I am the only player, so I chose to keep backups on the VPS without
+an automatic computer or cloud transfer. The approved storage policy keeps two
+database copies, the running application plus two rollback versions per service,
+and two recognised archives of each kind. Diagnostic logs keep their existing
+retention. The change is being checked and applied through the maintenance tool;
+the game rules and public version 1.70.0 stay the same.
+
 ## [One public version for Casper Loto] - 2026-10-23
 
 I have adopted **Casper Loto 1.70.0** as the shared public baseline for the

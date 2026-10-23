@@ -42,17 +42,19 @@ class MaintenanceTests(unittest.TestCase):
             self.directory, ARCHIVES, now=self.now, age_seconds=0, keep=keep
         )
 
-    def test_only_latest_three_protected_even_when_all_archives_are_recent(
+    def test_only_latest_two_protected_even_when_all_archives_are_recent(
         self,
     ) -> None:
         for index in range(5):
             self.file(f"miniapp-before-1.0.0-{index}.tar.gz", index)
         self.file("before-branding-1.0.0-1.tar.gz", 40)
         self.file("miniapp-before-1.0.0-99.tar.gz", 1)
-        names = {Path(item.path).name for item in self.candidates(3)}
-        self.assertEqual(names, {f"miniapp-before-1.0.0-{i}.tar.gz" for i in (2, 3, 4)})
+        names = {Path(item.path).name for item in self.candidates(2)}
+        self.assertEqual(
+            names, {f"miniapp-before-1.0.0-{i}.tar.gz" for i in (1, 2, 3, 4)}
+        )
 
-    def test_latest_three_are_shared_across_both_directories(self) -> None:
+    def test_latest_two_are_shared_across_both_directories(self) -> None:
         second = self.directory / "second"
         second.mkdir()
         for index in range(6):
@@ -65,12 +67,12 @@ class MaintenanceTests(unittest.TestCase):
             ARCHIVES,
             now=self.now,
             age_seconds=0,
-            keep=3,
+            keep=2,
             extra_directories=(second, self.directory),
         )
         self.assertEqual(
             {Path(row.path).name for row in plan},
-            {f"miniapp-before-1.0.0-{index}.tar.gz" for index in (3, 4, 5)},
+            {f"miniapp-before-1.0.0-{index}.tar.gz" for index in (2, 3, 4, 5)},
         )
         self.assertTrue(protected_category.exists())
 
@@ -82,7 +84,9 @@ class MaintenanceTests(unittest.TestCase):
         with patch.object(server_maintenance, "CONFIG", config):
             values = server_maintenance.policy()
         self.assertEqual(values["archive_min_age_days"], 0)
-        self.assertEqual(values["archive_keep_per_category"], 3)
+        self.assertEqual(values["archive_keep_per_category"], 2)
+        self.assertEqual(values["database_backup_keep"], 2)
+        self.assertEqual(values["image_keep_versions"], 3)
         invalid = self.directory / "invalid.toml"
         invalid.write_text(
             config.read_text().replace(
@@ -92,6 +96,21 @@ class MaintenanceTests(unittest.TestCase):
         with patch.object(server_maintenance, "CONFIG", invalid):
             with self.assertRaisesRegex(ValueError, "archive_min_age_days"):
                 server_maintenance.policy()
+
+    def test_policy_refuses_fewer_than_two_recovery_points(self) -> None:
+        config = (
+            Path(__file__).resolve().parents[2]
+            / "infrastructure/server-maintenance.toml"
+        )
+        for key in ("database_backup_keep", "archive_keep_per_category"):
+            with self.subTest(key=key):
+                invalid = self.directory / (key + ".toml")
+                invalid.write_text(
+                    config.read_text().replace(f"{key} = 2", f"{key} = 1")
+                )
+                with patch.object(server_maintenance, "CONFIG", invalid):
+                    with self.assertRaisesRegex(ValueError, key):
+                        server_maintenance.policy()
 
     def test_never_selects_dump_unknown_directory_or_hardlink(self) -> None:
         self.file("k-loto-20260101.dump", 50)
@@ -296,7 +315,7 @@ class MaintenanceTests(unittest.TestCase):
             delete.assert_not_called()
             docker.assert_not_called()
 
-    def test_database_retention_keeps_seven_recent_copies_and_ignores_partial_files(
+    def test_database_retention_keeps_two_recent_copies_and_ignores_partial_files(
         self,
     ):
         for index in range(9):
@@ -306,16 +325,16 @@ class MaintenanceTests(unittest.TestCase):
         with (
             patch.object(server_maintenance, "DATABASE_BACKUPS", self.directory),
             patch.object(
-                server_maintenance, "policy", return_value={"database_backup_keep": 7}
+                server_maintenance, "policy", return_value={"database_backup_keep": 2}
             ),
             patch.object(server_maintenance, "run", return_value=str(self.directory)),
         ):
             removed = server_maintenance.prune_database_backups()
         self.assertEqual(
             {Path(row).name for row in removed},
-            {"k-loto-20261011T000007Z.dump", "k-loto-20261011T000008Z.dump"},
+            {f"k-loto-20261011T00000{i}Z.dump" for i in range(2, 9)},
         )
-        self.assertEqual(len(list(self.directory.glob("k-loto-*.dump"))), 7)
+        self.assertEqual(len(list(self.directory.glob("k-loto-*.dump"))), 2)
         self.assertTrue((self.directory / "unrecognized.dump").exists())
         self.assertTrue(
             (self.directory / "k-loto-20261011T000009Z.dump.partial").exists()
@@ -333,7 +352,7 @@ class MaintenanceTests(unittest.TestCase):
         with (
             patch.object(server_maintenance, "DATABASE_BACKUPS", self.directory),
             patch.object(
-                server_maintenance, "policy", return_value={"database_backup_keep": 7}
+                server_maintenance, "policy", return_value={"database_backup_keep": 2}
             ),
             patch.object(server_maintenance, "run", side_effect=inspect_or_fail),
         ):
@@ -349,6 +368,30 @@ class MaintenanceTests(unittest.TestCase):
                 RuntimeError, "Unexpected database backup volume"
             ):
                 server_maintenance.database_backup_candidates(7)
+
+    def test_second_retained_dump_failure_preserves_every_recovery_point(self):
+        for index in range(5):
+            self.file(f"k-loto-20261011T00000{index}Z.dump", index)
+        inspected = []
+
+        def inspect_or_fail(*arguments, **options):
+            if "pg_restore" in arguments:
+                inspected.append(arguments[-1])
+                if len(inspected) == 2:
+                    raise subprocess.CalledProcessError(1, "pg_restore")
+            return str(self.directory)
+
+        with (
+            patch.object(server_maintenance, "DATABASE_BACKUPS", self.directory),
+            patch.object(
+                server_maintenance, "policy", return_value={"database_backup_keep": 2}
+            ),
+            patch.object(server_maintenance, "run", side_effect=inspect_or_fail),
+        ):
+            with self.assertRaises(subprocess.CalledProcessError):
+                server_maintenance.prune_database_backups()
+        self.assertEqual(len(inspected), 2)
+        self.assertEqual(len(list(self.directory.glob("*.dump"))), 5)
 
     def test_zero_age_retention_also_counts_files_with_future_timestamps(self):
         for index in range(9):

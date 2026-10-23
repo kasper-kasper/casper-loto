@@ -57,10 +57,10 @@ is centralized in `scripts/server_maintenance.py`. Retention settings live in
 | API and bot diagnostic logs | Private gzip archives for 90 days; capture hourly, before cleanup and before service recreation. Also retain the newest three archives per service. |
 | API and bot local Docker log buffer | 20 MB × 5 files per service (100 MB each). |
 | Gateway and PostgreSQL diagnostic buffer | 10 MB × 3 files per service (30 MB each). |
-| Database backup dumps | At most seven newest validated dumps in the backup volume, counting both daily and pre-release copies. Nightly creation at 03:30 MSK; prune after successful creation and during daily maintenance. Failed/incomplete dumps do not replace recovery points. |
+| Database backup dumps | At most two newest validated dumps in the backup volume, counting both daily and pre-release copies. Nightly creation at 03:30 MSK; prune after successful creation and during daily maintenance. Failed/incomplete dumps do not replace recovery points. Owner-approved 2026-10-23. |
 | Docker build cache | Target reserve 512 MB of unused cache, without an age exemption. Docker may retain cache required by active builds/images; this is a pruning target, not a guaranteed hard quota. |
 | Project Docker images | Keep current/referenced images and two most recent tagged rollback versions per repository; other eligible project images expire immediately regardless of age. Recheck tags, ownership and container references before removal. Required intermediate parent images/layers remain protected by Docker; they are not additional release versions. |
-| Known release rollback archives | Keep only the newest three per category across both archive directories combined; remove older copies regardless of age. Owner-approved 2026-10-11. |
+| Known release rollback archives | Keep only the newest two per category across both archive directories combined; remove older copies regardless of age. Owner-approved 2026-10-23. |
 | Known uploaded release tarballs in `/tmp` | Delete after 48 hours. Unknown files, dumps, directories, symlinks and hardlinks are excluded. |
 | OS journal and temporary files | Existing journald 1 GB cap, logrotate and systemd-tmpfiles policies. |
 
@@ -101,7 +101,7 @@ The latest cleanup report records freed space, removed paths/images, health
 and a warning flag at 80% filesystem usage. It does not send notifications.
 Failed service runs remain visible in systemd/journald.
 
-The database count is seven files, not seven calendar days: frequent pre-release
+The database count is two files, not two calendar days: frequent pre-release
 backups can shorten the time window. Backup creation writes a `.partial` file,
 checks its archive table of contents with `pg_restore --list`, then atomically
 renames it. Before pruning, the retained dumps' tables of contents are checked.
@@ -111,6 +111,13 @@ retention only touches the verified `k-loto_backups` volume and recognized dump
 names; it never deletes a Docker volume or touches `k-loto_postgres_data`.
 The owner chose server-only storage; no computer transfer is configured here.
 Copies on the same VPS do not protect against loss of that VPS.
+
+The owner's 2026-10-23 choice is server-only storage for the current single-player
+stage: two database dumps, current/referenced application images plus two tagged
+rollback versions, and two recognized archives per category. No automatic transfer
+to the computer or cloud is configured. Diagnostic log retention remains 90 days
+with its separate newest-three protection. Earlier seven-dump/three-archive
+measurements below are historical and do not override this policy.
 
 **When to increase limits:** if frequent releases rebuild old layers, raise
 `cache_keep_mb` to 1024 or 2048. If diagnostics approach the 100 MB per-hour
