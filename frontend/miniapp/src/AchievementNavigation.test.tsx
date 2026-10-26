@@ -94,3 +94,19 @@ it("saves and restores the independent in-app switch without changing Telegram",
   await waitFor(() => expect(toggle).toHaveAttribute("aria-checked", "true"));
   expect(miniAppApi.notificationPreferences).toHaveBeenLastCalledWith("signed", account.notification_preferences);
 });
+
+it("stops the popup queue immediately when a notification opens the catalog", async () => {
+  vi.mocked(miniAppApi.achievementNotices).mockResolvedValue([
+    { ...target, notification_id: "first-popup" },
+    { ...target, code: "second", title: "Второе достижение", notification_id: "second-popup" },
+  ]);
+  render(<App initData="signed" />);
+  fireEvent.click(await screen.findByRole("button", { name: "Открыть достижение «Охотник за удачей»" }, { timeout: 5000 }));
+  expect(await screen.findByRole("dialog", { name: target.title })).toBeInTheDocument();
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  await waitFor(() => expect(miniAppApi.achievementSeen).toHaveBeenCalledWith("signed", ["second-popup"]));
+  vi.mocked(miniAppApi.achievementNotices).mockResolvedValue([{ ...target, notification_id: "late-popup" }]);
+  window.dispatchEvent(new Event("achievements:refresh"));
+  await waitFor(() => expect(miniAppApi.achievementSeen).toHaveBeenCalledWith("signed", ["late-popup"]), { timeout: 5000 });
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+});

@@ -11,6 +11,17 @@ including local experiments, checks and deployment reports, is preserved in the
 [history archive](docs/history/README.md). Product changes are in the
 [Changelog](CHANGELOG.md), and future plans are in the [Roadmap](docs/ROADMAP.md).
 
+## [Compact achievement popups and a quiet catalog] - 2026-10-26
+
+The owner reported oversized achievement cards and continued popups after opening
+the catalog. Removed both redundant text rows, reduced badge/padding and kept
+CAS plus grouped ticket quantities in the compact reward line. Full reward details
+remain in the achievement sheet. Catalog visibility suppresses the existing queue
+and acknowledges fetched notices in batches of at most ten, including late arrivals.
+Acks retain retry handling; no polling or backend change is added. New achievements
+can notify normally after leaving the catalog. Only targeted frontend regressions,
+lint/typecheck/build, mobile smoke and gateway publication checks apply.
+
 ## [Achievement notifications published] - 2026-10-23
 
 Public 1.71.0, API/bot 1.60.0 and Mini App 1.71.0 were published under the

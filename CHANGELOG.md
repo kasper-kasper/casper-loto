@@ -14,6 +14,20 @@ See the [approved versioning rules](docs/VERSIONING.md) and
 
 ## [Unreleased]
 
+## [1.71.1] - 2026-10-26
+
+### Fixed
+
+- Achievement popups are more compact: icon, title and a short reward summary.
+  Removed the redundant received label and view-achievement line; the card remains clickable.
+- Opening achievements dismisses the popup queue. While the catalog is visible,
+  queued and arriving notifications are acknowledged silently and do not cover
+  the achievement details or replay when returning to the game.
+
+Mini App **1.71.1**; API **1.60.0** and Admin **1.61.2** are unchanged.
+[Release record](docs/releases/1.71.1.md).
+
+
 ## [1.71.0] - 2026-10-23
 
 ### Added

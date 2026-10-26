@@ -10,13 +10,21 @@ const games: Record<string, string> = {
 };
 
 export function AchievementRewards({ item, compact = false }: { item: Achievement; compact?: boolean }) {
-  if (item.reward_pending) return <span className="achievement-reward pending">{tr("Награда будет объявлена")}</span>;
+  if (item.reward_pending) return compact ? null : <span className="achievement-reward pending">{tr("Награда будет объявлена")}</span>;
   const cash = item.rewards?.filter(r => r.type === "cas").reduce((sum, r) => sum + (r.amount ?? 0), 0) ?? 0;
   const tickets = new Map<string, number>();
   for (const reward of item.rewards ?? []) {
     if (["ticket", "ticket_pack"].includes(reward.type) && reward.lottery) tickets.set(reward.lottery, (tickets.get(reward.lottery) ?? 0) + (reward.amount ?? 1));
   }
   const cosmetics=(item.rewards??[]).filter(r=>r.type==="cosmetic");
+  if (compact) {
+    const count = [...tickets.values()].reduce((sum, amount) => sum + amount, 0);
+    const bingoOnly = tickets.size === 1 && tickets.has("bingo");
+    return <span className="achievement-rewards compact">
+      {cash > 0 && <span className="achievement-reward"><Money value={cash} compact /></span>}
+      {count > 0 && <span className="achievement-extra-reward"><AchievementIcon name="ticket-check" />{count.toLocaleString(getLanguage() === "en" ? "en-US" : "ru-RU")} {tr(ticketWord(count, bingoOnly))}</span>}
+    </span>;
+  }
   return <span className={`achievement-rewards ${compact ? "compact" : ""}`}>
     {cash > 0 && <span className="achievement-reward"><Money value={cash} /></span>}
     {[...tickets].map(([lottery, amount]) => <span className="achievement-extra-reward" key={lottery}><AchievementIcon name="ticket-check" />{amount} {tr(ticketWord(amount, lottery === "bingo"))} «{tr(games[lottery] ?? lottery)}»</span>)}

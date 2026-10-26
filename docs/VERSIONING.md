@@ -3,7 +3,7 @@
 **English** · [Русский](VERSIONING.ru.md)
 
 The owner approved these project rules on 23 October 2026.
-The current shared public version is **Casper Loto 1.71.0**, recorded in
+The current shared public version is **Casper Loto 1.71.1**, recorded in
 [`VERSION`](../VERSION). API, Mini App and Admin retain independent internal
 versions. The [1.70.0 baseline record](releases/1.70.0.md) maps them to the
 shared public version.
@@ -24,7 +24,7 @@ to zero. Feature count, development time and the scale of a visual redesign
 do not automatically require a MAJOR increase.
 
 From the current release, the next compatible feature release is **1.72.0**;
-the next fixes-only release is **1.71.1**. These are alternative next releases,
+the next fixes-only release is **1.71.2**. These are alternative next releases,
 not releases that have already happened. Later numbers follow the latest
 published public release; for example, a fix after 1.71.0 would be 1.71.1.
 

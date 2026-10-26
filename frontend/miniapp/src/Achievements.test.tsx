@@ -138,6 +138,43 @@ describe("achievements UI", () => {
     expect(miniAppApi.achievementNotices).not.toHaveBeenCalled();
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
+  it("shows only the title and compact rewards without redundant toast lines", async () => {
+    vi.useFakeTimers();
+    vi.mocked(miniAppApi.achievementNotices).mockResolvedValue([{ ...won, notification_id: "compact", reward_pending: false, rewards: [
+      { type: "cas", amount: 100000 }, { type: "ticket", amount: 3, lottery: "weekly" },
+      { type: "ticket", amount: 2, lottery: "bingo" }, { type: "case", amount: 4, planned: true },
+    ] }]);
+    render(<AchievementNotices initData="fixture" onOpen={vi.fn()} />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+    const toast = screen.getByRole("status");
+    expect(toast).toHaveTextContent("Ты с нами!");
+    expect(toast).toHaveTextContent("5 билетов");
+    expect(toast).not.toHaveTextContent("Достижение получено");
+    expect(toast).not.toHaveTextContent("Посмотреть достижение");
+    expect(toast).not.toHaveTextContent("Casper Grand");
+    expect(toast).not.toHaveTextContent("кейс");
+    expect(within(toast).getByRole("button", { name: "Открыть достижение «Ты с нами!»" })).toBeEnabled();
+  });
+  it("silently consumes queued and late notices while the catalog is open without replaying them", async () => {
+    vi.useFakeTimers();
+    vi.mocked(miniAppApi.achievementNotices).mockResolvedValue([{ ...won, notification_id: "q1" }, { ...won, notification_id: "q2" }]);
+    const { rerender } = render(<AchievementNotices initData="fixture" />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+    expect(screen.getByRole("status")).toBeInTheDocument();
+    rerender(<AchievementNotices initData="fixture" suppressed />);
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(miniAppApi.achievementSeen).toHaveBeenCalledWith("fixture", ["q1", "q2"]);
+    vi.mocked(miniAppApi.achievementNotices).mockResolvedValue([{ ...won, notification_id: "late" }]);
+    await act(async () => { await vi.advanceTimersByTimeAsync(8000); });
+    expect(miniAppApi.achievementSeen).toHaveBeenCalledWith("fixture", ["late"]);
+    rerender(<AchievementNotices initData="fixture" />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(8000); });
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    vi.mocked(miniAppApi.achievementNotices).mockResolvedValue([{ ...won, notification_id: "new-after-leaving" }]);
+    window.dispatchEvent(new Event("achievements:refresh"));
+    await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+    expect(screen.getByRole("status")).toHaveTextContent("Ты с нами!");
+  });
   it("shows one toast at a time, acknowledges after display and performs no continuous polling", async () => {
     vi.useFakeTimers();
     vi.mocked(miniAppApi.achievementNotices).mockResolvedValue([{ ...won, notification_id: "n1" }, { ...locked, status: "earned", notification_id: "n2" }]);
